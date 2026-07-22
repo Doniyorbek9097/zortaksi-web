@@ -96,8 +96,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      baseURL: process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:5000/api/v1',
-      socketURL: process.env.NUXT_PUBLIC_SOCKET_URL || 'http://localhost:5000',
+      baseURL: process.env.NUXT_PUBLIC_BASE_URL || 'https://api.zortaksi.uz/api/v1',
+      socketURL: process.env.NUXT_PUBLIC_SOCKET_URL || 'https://api.zortaksi.uz',
       appURL: process.env.NUXT_PUBLIC_APP_URL || 'https://www.zortaksi.uz',
       adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'doniyorbek_ergashev',
       vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || '',
