@@ -1,7 +1,7 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-28 space-y-3">
-    <header class="sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-      <h1 class="text-lg font-black text-slate-900 dark:text-white">Haydovchilar</h1>
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-3">
+    <header class="sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
+      <h1 class="text-base font-black text-slate-900 dark:text-white">Haydovchilar</h1>
     </header>
 
     <AdminDriversFilterTabs v-model="filter" :tabs="filterTabs" />

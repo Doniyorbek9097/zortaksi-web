@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-28 space-y-4">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
     <AdminTariffsPageHeader />
 
     <AdminTariffsCreateForm

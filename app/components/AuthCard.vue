@@ -1,14 +1,14 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden flex flex-col items-center px-4 py-8 text-slate-900 dark:text-slate-100">
+  <div class="relative min-h-screen overflow-hidden flex flex-col items-center px-4 py-4 text-slate-900 dark:text-slate-100">
     <!-- Atmosphere -->
     <div class="pointer-events-none absolute inset-0 bg-slate-50 dark:bg-slate-950" />
-    <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full bg-[#2AABEE]/15 dark:bg-[#2AABEE]/10 blur-3xl" />
-    <div class="pointer-events-none absolute bottom-0 right-0 w-[280px] h-[280px] rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-3xl" />
+    <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full bg-[#2AABEE]/15 dark:bg-[#2AABEE]/10 blur-3xl" />
+    <div class="pointer-events-none absolute bottom-0 right-0 w-[220px] h-[220px] rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-3xl" />
 
     <header class="relative z-10 w-full max-w-[400px]">
       <button
         type="button"
-        class="group inline-flex items-center gap-2 text-[11px] uppercase tracking-widest font-black text-slate-400 hover:text-sky-500 transition-all active:scale-95"
+        class="group inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black text-slate-400 hover:text-sky-500 transition-all active:scale-95"
         @click="handleBack"
       >
         <font-awesome-icon icon="fa-solid fa-chevron-left" class="transition-transform group-hover:-translate-x-0.5" />
@@ -16,13 +16,13 @@
       </button>
     </header>
 
-    <main class="relative z-10 w-full max-w-[400px] my-auto space-y-5">
+    <main class="relative z-10 w-full max-w-[400px] my-auto space-y-3.5">
       <!-- Brand / step icon -->
-      <div class="text-center space-y-4">
-        <div class="relative w-[72px] h-[72px] mx-auto">
-          <div class="absolute inset-0 rounded-[1.35rem] bg-[#2AABEE]/25 blur-xl animate-pulse" />
+      <div class="text-center space-y-2.5">
+        <div class="relative w-14 h-14 mx-auto">
+          <div class="absolute inset-0 rounded-2xl bg-[#2AABEE]/25 blur-lg animate-pulse" />
           <div
-            class="relative w-full h-full rounded-[1.35rem] flex items-center justify-center border shadow-xl overflow-hidden transition-colors duration-300"
+            class="relative w-full h-full rounded-2xl flex items-center justify-center border shadow-lg overflow-hidden transition-colors duration-300"
             :class="iconShellClass"
           >
             <svg
@@ -30,7 +30,7 @@
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
-              class="w-9 h-9 text-[#2AABEE]"
+              class="w-7 h-7 text-[#2AABEE]"
               aria-hidden="true"
             >
               <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
@@ -38,37 +38,37 @@
             <font-awesome-icon
               v-else-if="currentStep === 'verify'"
               icon="fa-solid fa-shield-alt"
-              class="text-3xl text-emerald-500"
+              class="text-xl text-emerald-500"
             />
             <font-awesome-icon
               v-else
               icon="fa-solid fa-lock"
-              class="text-3xl text-amber-500"
+              class="text-xl text-amber-500"
             />
           </div>
         </div>
 
-        <div class="space-y-1.5">
-          <p class="text-[10px] font-black uppercase tracking-[0.22em] text-[#2AABEE]">
+        <div class="space-y-1">
+          <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#2AABEE]">
             ZorTaksi · Telegram
           </p>
-          <h1 class="text-[1.65rem] font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 class="text-xl font-black tracking-tight text-slate-900 dark:text-white">
             {{ stepMeta.title }}
           </h1>
-          <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed max-w-[300px] mx-auto">
+          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug max-w-[280px] mx-auto">
             {{ stepMeta.subtitle }}
           </p>
         </div>
 
         <!-- Steps -->
-        <div class="flex items-center justify-center gap-2 pt-1">
+        <div class="flex items-center justify-center gap-1.5">
           <template v-for="(s, i) in steps" :key="s.key">
             <div
-              class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all"
+              class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all"
               :class="stepChipClass(s.key)"
             >
               <span
-                class="w-4 h-4 rounded-full flex items-center justify-center text-[9px]"
+                class="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]"
                 :class="stepDotClass(s.key)"
               >
                 {{ i + 1 }}
@@ -77,7 +77,7 @@
             </div>
             <div
               v-if="i < steps.length - 1"
-              class="w-4 h-px bg-slate-200 dark:bg-slate-800"
+              class="w-3 h-px bg-slate-200 dark:bg-slate-800"
             />
           </template>
         </div>
@@ -85,28 +85,28 @@
 
       <!-- Form card -->
       <div
-        class="rounded-[1.75rem] p-5 sm:p-6 space-y-5 bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border border-white/80 dark:border-slate-800/80 shadow-2xl shadow-slate-200/60 dark:shadow-black/40"
+        class="rounded-2xl p-4 space-y-3.5 bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl border border-white/80 dark:border-slate-800/80 shadow-xl shadow-slate-200/50 dark:shadow-black/40"
       >
         <div
           v-if="form.error"
-          class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest text-center animate-shake"
+          class="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest text-center animate-shake"
         >
           {{ form.error }}
         </div>
 
         <template v-if="currentStep === 'register'">
-          <div class="rounded-2xl border border-[#2AABEE]/25 bg-[#2AABEE]/8 dark:bg-[#2AABEE]/10 px-4 py-3.5 flex items-start gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#2AABEE] text-white flex items-center justify-center shrink-0 shadow-lg shadow-sky-500/30">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5" aria-hidden="true">
+          <div class="rounded-xl border border-[#2AABEE]/25 bg-[#2AABEE]/8 dark:bg-[#2AABEE]/10 px-3 py-2.5 flex items-start gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-[#2AABEE] text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/25">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4" aria-hidden="true">
                 <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
               </svg>
             </div>
-            <div class="min-w-0 space-y-1">
-              <p class="text-[13px] font-black text-slate-900 dark:text-white leading-snug">
+            <div class="min-w-0 space-y-0.5">
+              <p class="text-[12px] font-black text-slate-900 dark:text-white leading-snug">
                 Ro‘yxatdan o‘tish — Telegram orqali
               </p>
-              <p class="text-[11px] font-medium text-slate-600 dark:text-slate-400 leading-relaxed">
-                Telegramdagi raqamingizni kiriting. Kod SMS emas — Telegram ilovasiga keladi.
+              <p class="text-[10px] font-medium text-slate-600 dark:text-slate-400 leading-snug">
+                Kod SMS emas — Telegram ilovasiga keladi.
               </p>
             </div>
           </div>
@@ -122,7 +122,7 @@
           <button
             type="button"
             :disabled="authStore.isLoading || !isPhoneValid"
-            class="w-full py-4 px-6 rounded-2xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-xs uppercase tracking-[0.18em] shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+            class="w-full py-3 px-5 rounded-xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleSendCode"
           >
             <span v-if="authStore.isLoading" class="inline-flex items-center justify-center gap-2">
@@ -137,10 +137,10 @@
         </template>
 
         <template v-else-if="currentStep === 'verify'">
-          <div class="rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 px-3 py-2.5 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Raqam</p>
-              <p class="text-sm font-black text-slate-900 dark:text-white tabular-nums truncate">
+              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Raqam</p>
+              <p class="text-[13px] font-black text-slate-900 dark:text-white tabular-nums truncate">
                 {{ formattedPhoneDisplay }}
               </p>
             </div>
@@ -159,11 +159,11 @@
             @submit="handleVerifyCode"
           />
 
-          <div class="rounded-2xl border border-emerald-200/70 dark:border-emerald-800/40 bg-emerald-50/80 dark:bg-emerald-950/30 px-4 py-3.5 flex items-start gap-3">
-            <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
-              <font-awesome-icon icon="fa-solid fa-check-circle" class="text-sm" />
+          <div class="rounded-xl border border-emerald-200/70 dark:border-emerald-800/40 bg-emerald-50/80 dark:bg-emerald-950/30 px-3 py-2.5 flex items-start gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
+              <font-awesome-icon icon="fa-solid fa-check-circle" class="text-xs" />
             </div>
-            <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+            <p class="text-[10px] text-slate-600 dark:text-slate-400 leading-snug font-medium">
               <strong class="text-slate-900 dark:text-white font-black">Telegram</strong>ni oching va kelgan
               <strong class="text-slate-900 dark:text-white font-black">kodni</strong> shu yerga yozing.
             </p>
@@ -172,7 +172,7 @@
 
         <template v-else-if="currentStep === 'password'">
           <div class="flex justify-center">
-            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 text-[10px] font-black uppercase tracking-widest">
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[9px] font-black uppercase tracking-widest">
               <font-awesome-icon icon="fa-solid fa-exclamation-triangle" />
               Ikki bosqichli himoya
             </div>
@@ -188,7 +188,7 @@
           <button
             type="button"
             :disabled="authStore.isLoading || !form.password"
-            class="w-full py-4 px-6 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-[0.18em] shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+            class="w-full py-3 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleVerifyPassword"
           >
             <span v-if="authStore.isLoading" class="inline-flex items-center justify-center gap-2">
@@ -200,12 +200,12 @@
         </template>
       </div>
 
-      <p class="text-center text-[11px] font-medium text-slate-400 dark:text-slate-500 px-4 leading-relaxed">
+      <p class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 px-3 leading-snug">
         Davom etish orqali siz Telegram akkauntingiz orqali ZorTaksi ga kirasiz.
       </p>
     </main>
 
-    <div class="relative z-10 h-6" />
+    <div class="relative z-10 h-3" />
   </div>
 </template>
 
