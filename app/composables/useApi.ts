@@ -38,7 +38,7 @@ export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
     }
   }
 
-  const url = `${config.public.baseURL}${path}`
+  const url = `${config.public.baseUrl}${path}`
 
   // FormData bo'lsa Content-Type'ni qo'ymaymiz — axios o'zi boundary qo'yadi
   if (typeof FormData !== 'undefined' && options.body instanceof FormData) {

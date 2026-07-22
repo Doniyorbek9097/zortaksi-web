@@ -148,7 +148,7 @@ const saving = ref(false)
 const error = ref('')
 
 const adminTelegram = computed(() => String(config.public.adminTelegram || 'doniyorbek_ergashev'))
-const appURL = computed(() => String(config.public.appURL || 'https://www.zortaksi.uz').replace(/\/$/, ''))
+const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => !!authStore.user?.active && !!authStore.user?.tariff)

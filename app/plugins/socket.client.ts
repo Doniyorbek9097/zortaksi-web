@@ -12,7 +12,7 @@ export default defineNuxtPlugin(() => {
 
   const connect = () => {
     if (socket || !token.value) return
-    socket = io(config.public.socketURL as string, {
+    socket = io(config.public.socketUrl as string, {
       auth: { token: token.value },
       transports: ['websocket', 'polling'],
     })

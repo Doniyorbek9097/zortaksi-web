@@ -21,7 +21,7 @@ export function useChatMedia() {
         const job = (async () => {
             const config = useRuntimeConfig()
             const token = useCookie('auth_token')
-            const res = await fetch(`${config.public.baseURL}/chats/messages/${messageId}/media`, {
+            const res = await fetch(`${config.public.baseUrl}/chats/messages/${messageId}/media`, {
                 headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
                 credentials: 'include',
             })
