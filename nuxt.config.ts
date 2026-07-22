@@ -100,7 +100,7 @@ export default defineNuxtConfig({
       socketURL: process.env.NUXT_PUBLIC_SOCKET_URL || 'https://api.zortaksi.uz',
       appURL: process.env.NUXT_PUBLIC_APP_URL || 'https://www.zortaksi.uz',
       adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'doniyorbek_ergashev',
-      vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || '',
+      vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || 'BC1fiqQ0E0AQAkUS3O07Z5msVOJtxIQb9cx1tkFApQPcNauEn5KYyBZH9dBfKBaZYeDrBhs_VsePieYbAyRIEyY',
     }
   },
 })
