@@ -1,0 +1,420 @@
+import { defineStore } from 'pinia'
+import type { IChat, IChatMessage } from '~/types'
+
+export interface FetchChatsParams {
+    page?: number
+    limit?: number
+    search?: string
+}
+
+export const useChatStore = defineStore('chat', () => {
+    const chats = ref<IChat[]>([])
+    const currentChat = ref<IChat | null>(null)
+    const messages = ref<IChatMessage[]>([])
+
+    const isLoading = ref(false)
+    const isLoadingMessages = ref(false)
+    const isSending = ref(false)
+
+    const total = ref(0)
+
+    // Ulanish holati (senderga yozish mumkinmi):
+    //  connecting -> tekshirilmoqda (loading)
+    //  ready      -> 100% yozish mumkin
+    //  restricted -> spam/blok/maxfiylik (reason ko'rsatiladi)
+    //  unreachable-> umuman bog'lanib bo'lmaydi ("boshqa yo'lovchi toping")
+    type ConnStatus = 'idle' | 'connecting' | 'ready' | 'restricted' | 'unreachable'
+    const connectionStatus = ref<ConnStatus>('idle')
+    const connectionReason = ref('')
+
+    // Suhbatdosh onlayn / oxirgi kirish
+    const peerPresence = ref<{
+        online: boolean
+        label: string
+        lastSeenAt?: string
+        kind?: string
+    } | null>(null)
+
+    // --- Senderga ulanishni tekshirish (xabar yubormasdan) ---
+    const connect = async (chatId: string) => {
+        try {
+            connectionStatus.value = 'connecting'
+            connectionReason.value = ''
+            const res = await useApi(`/chats/${chatId}/connect`, { method: 'POST' })
+            if (res.success) {
+                connectionStatus.value = res.data?.status ?? 'unreachable'
+                connectionReason.value = res.data?.reason ?? ''
+            } else {
+                connectionStatus.value = 'unreachable'
+                connectionReason.value = res.message ?? ''
+            }
+            // Ulanishdan keyin presence'ni ham yangilaymiz
+            fetchPresence(chatId)
+            return res
+        } catch (error: any) {
+            connectionStatus.value = 'unreachable'
+            connectionReason.value = error?.response?.data?.message ?? ''
+            console.error('connect error:', error)
+        }
+    }
+
+    const fetchPresence = async (chatId: string) => {
+        try {
+            const res = await useApi(`/chats/${chatId}/presence`, { method: 'GET' })
+            if (res.success) peerPresence.value = res.data
+        } catch (error) {
+            console.error('fetchPresence error:', error)
+        }
+    }
+
+    const resetConnection = () => {
+        connectionStatus.value = 'idle'
+        connectionReason.value = ''
+        peerPresence.value = null
+    }
+
+    // --- Chatlar ro'yxati ---
+    const fetchChats = async (params: FetchChatsParams = {}) => {
+        try {
+            isLoading.value = true
+            const res = await useApi('/chats', { method: 'GET', params })
+            if (res.success) {
+                chats.value = res.data.chats
+                total.value = res.data.pagination?.total ?? chats.value.length
+            }
+            return res
+        } catch (error) {
+            console.error('fetchChats error:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    // --- Bitta chat xabarlari ---
+    const fetchMessages = async (chatId: string) => {
+        try {
+            isLoadingMessages.value = true
+            const res = await useApi(`/chats/${chatId}/messages`, { method: 'GET' })
+            if (res.success) {
+                currentChat.value = res.data.chat
+                messages.value = res.data.messages
+                // Ro'yxatdagi unread'ni nolga tushiramiz
+                patchChat(chatId, { unreadCount: 0 })
+                // Voice'larni oldindan yuklaymiz — tinglash darhol ishlaydi
+                if (import.meta.client) {
+                    useChatMedia().prefetch(messages.value)
+                }
+            }
+            return res
+        } catch (error) {
+            console.error('fetchMessages error:', error)
+            throw error
+        } finally {
+            isLoadingMessages.value = false
+        }
+    }
+
+    // --- Xabar yuborish ---
+    // Darhol "yuborilmoqda" (soat) bubble ko'rsatiladi; server javobi kelgach
+    // haqiqiy holat (sent/failed) bilan almashtiriladi — foydalanuvchi aniq ko'radi.
+    const sendMessage = async (chatId: string, text: string) => {
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const temp = {
+            _id: tempId,
+            chatId,
+            direction: 'out',
+            text,
+            type: 'text',
+            status: 'sending',
+            date: new Date().toISOString(),
+        } as unknown as IChatMessage
+        messages.value.push(temp)
+
+        try {
+            isSending.value = true
+            const res = await useApi(`/chats/${chatId}/messages`, {
+                method: 'POST',
+                body: { text },
+            })
+            if (res.success) {
+                // Temp bubble'ni serverdagi haqiqiy xabar (sent/failed) bilan almashtiramiz.
+                // Socket orqali shu xabar allaqachon kelib qolgan bo'lishi mumkin — dublikat qilmaymiz.
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                const exists = messages.value.some((m) => m._id === res.data._id)
+                if (idx !== -1) {
+                    if (exists) messages.value.splice(idx, 1) // socket'niki qoladi
+                    else messages.value.splice(idx, 1, res.data)
+                } else if (!exists) {
+                    appendMessage(res.data)
+                }
+                patchChat(chatId, { lastMessage: res.data.text, lastMessageAt: res.data.date })
+            } else {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            }
+            return res
+        } catch (error) {
+            const idx = messages.value.findIndex((m) => m._id === tempId)
+            if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            console.error('sendMessage error:', error)
+            throw error
+        } finally {
+            isSending.value = false
+        }
+    }
+
+    // --- Ovozli xabar yuborish ---
+    const sendVoice = async (chatId: string, blob: Blob, duration: number) => {
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const temp = {
+            _id: tempId,
+            chatId,
+            direction: 'out',
+            text: '',
+            type: 'voice',
+            status: 'sending',
+            duration,
+            date: new Date().toISOString(),
+        } as unknown as IChatMessage
+        messages.value.push(temp)
+
+        try {
+            isSending.value = true
+            const form = new FormData()
+            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm'
+            form.append('file', blob, `voice.${ext}`)
+            form.append('duration', String(Math.max(1, Math.round(duration))))
+
+            const res = await useApi(`/chats/${chatId}/messages/voice`, {
+                method: 'POST',
+                body: form,
+                timeout: 90000,
+            })
+            if (res.success) {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                const exists = messages.value.some((m) => m._id === res.data._id)
+                if (idx !== -1) {
+                    if (exists) messages.value.splice(idx, 1)
+                    else messages.value.splice(idx, 1, res.data)
+                } else if (!exists) {
+                    appendMessage(res.data)
+                }
+                patchChat(chatId, {
+                    lastMessage: `🎤 Ovozli xabar (${res.data.duration || duration}s)`,
+                    lastMessageAt: res.data.date,
+                })
+                if (import.meta.client && res.data._id) {
+                    useChatMedia().getUrl(res.data._id).catch(() => {})
+                }
+            } else {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            }
+            return res
+        } catch (error) {
+            const idx = messages.value.findIndex((m) => m._id === tempId)
+            if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            console.error('sendVoice error:', error)
+            throw error
+        } finally {
+            isSending.value = false
+        }
+    }
+
+    // --- Rasm yuborish ---
+    const sendPhoto = async (chatId: string, file: File, caption = '') => {
+        const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        const localUrl = URL.createObjectURL(file)
+        const temp = {
+            _id: tempId,
+            chatId,
+            direction: 'out',
+            text: caption,
+            type: 'photo',
+            status: 'sending',
+            date: new Date().toISOString(),
+        } as unknown as IChatMessage
+        messages.value.push(temp)
+
+        try {
+            isSending.value = true
+            const form = new FormData()
+            form.append('file', file, file.name || 'photo.jpg')
+            if (caption) form.append('caption', caption)
+
+            const res = await useApi(`/chats/${chatId}/messages/photo`, {
+                method: 'POST',
+                body: form,
+                timeout: 90000,
+            })
+            if (res.success) {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                const exists = messages.value.some((m) => m._id === res.data._id)
+                if (idx !== -1) {
+                    if (exists) messages.value.splice(idx, 1)
+                    else messages.value.splice(idx, 1, res.data)
+                } else if (!exists) {
+                    appendMessage(res.data)
+                }
+                patchChat(chatId, {
+                    lastMessage: caption || '📷 Rasm',
+                    lastMessageAt: res.data.date,
+                })
+                if (import.meta.client && res.data._id) {
+                    useChatMedia().getUrl(res.data._id).catch(() => {})
+                }
+            } else {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            }
+            return res
+        } catch (error) {
+            const idx = messages.value.findIndex((m) => m._id === tempId)
+            if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
+            console.error('sendPhoto error:', error)
+            throw error
+        } finally {
+            URL.revokeObjectURL(localUrl)
+            isSending.value = false
+        }
+    }
+
+    // --- Orderdan chat ochish ---
+    const startChatFromOrder = async (orderId: string) => {
+        const res = await useApi(`/chats/from-order/${orderId}`, { method: 'POST' })
+        return res
+    }
+
+    // --- O'qilgan deb belgilash ---
+    const markRead = async (chatId: string) => {
+        try {
+            await useApi(`/chats/${chatId}/read`, { method: 'POST' })
+            patchChat(chatId, { unreadCount: 0 })
+        } catch (error) {
+            console.error('markRead error:', error)
+        }
+    }
+
+    // --- O'chirish ---
+    const deleteChats = async (ids: string[]) => {
+        const res = await useApi('/chats', { method: 'DELETE', body: { ids } })
+        if (res.success) {
+            chats.value = chats.value.filter((c) => !ids.includes(c._id))
+        }
+        return res
+    }
+
+    // ==================== Yordamchilar / socket ====================
+
+    const patchChat = (chatId: string, patch: Partial<IChat>) => {
+        const idx = chats.value.findIndex((c) => c._id === chatId)
+        if (idx !== -1) chats.value[idx] = { ...chats.value[idx], ...patch } as IChat
+        if (currentChat.value?._id === chatId) {
+            currentChat.value = { ...currentChat.value, ...patch } as IChat
+        }
+    }
+
+    const appendMessage = (msg: IChatMessage) => {
+        if (currentChat.value?._id !== msg.chatId) return
+        if (messages.value.some((m) => m._id === msg._id)) return
+        messages.value.push(msg)
+    }
+
+    // Socket: yangi xabar keldi (kiruvchi yoki chiquvchi)
+    const onNewMessage = (msg: IChatMessage) => {
+        appendMessage(msg)
+        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+            useChatMedia().getUrl(msg._id).catch(() => {})
+        }
+
+        // Ro'yxatda oxirgi xabar + tartibni yangilaymiz
+        const idx = chats.value.findIndex((c) => c._id === msg.chatId)
+        if (idx !== -1) {
+            const preview =
+                msg.type === 'voice'
+                    ? `🎤 Ovozli xabar${msg.duration ? ` (${msg.duration}s)` : ''}`
+                    : msg.type === 'photo'
+                        ? (msg.text || '📷 Rasm')
+                        : msg.text
+            const chat = { ...chats.value[idx], lastMessage: preview, lastMessageAt: msg.date } as IChat
+            // Ochiq chat bo'lmasa va kiruvchi bo'lsa — unread oshiramiz
+            if (msg.direction === 'in' && currentChat.value?._id !== msg.chatId) {
+                chat.unreadCount = (chat.unreadCount || 0) + 1
+            }
+            chats.value.splice(idx, 1)
+            chats.value.unshift(chat)
+        }
+
+        // Ochiq chatga kiruvchi kelsa — darrov o'qilgan deb belgilaymiz
+        if (msg.direction === 'in' && currentChat.value?._id === msg.chatId) {
+            markRead(msg.chatId)
+        }
+    }
+
+    // Socket: chat holati yangilandi (unread, oxirgi xabar)
+    const onChatUpdate = (chat: IChat) => {
+        const idx = chats.value.findIndex((c) => c._id === chat._id)
+        if (idx !== -1) {
+            chats.value[idx] = { ...chats.value[idx], ...chat } as IChat
+        } else {
+            chats.value.unshift(chat)
+        }
+        if (currentChat.value?._id === chat._id) {
+            currentChat.value = { ...currentChat.value, ...chat } as IChat
+        }
+    }
+
+    // Socket: peer xabarlarimizni o'qidi — ikki ✓
+    const onMessagesRead = (data: { chatId: string; maxTgMessageId: number }) => {
+        if (!data?.chatId) return
+        const chatId = String(data.chatId)
+        messages.value = messages.value.map((m) => {
+            if (
+                String(m.chatId) === chatId &&
+                m.direction === 'out' &&
+                m.status !== 'failed' &&
+                m.status !== 'read' &&
+                m.tgMessageId != null &&
+                m.tgMessageId <= data.maxTgMessageId
+            ) {
+                return { ...m, status: 'read' } as IChatMessage
+            }
+            return m
+        })
+    }
+
+    // Socket: suhbatdosh onlayn/oxirgi kirish
+    const onPeerPresence = (data: { peerUserId: string; presence: any }) => {
+        if (!currentChat.value || currentChat.value.peer?.userId !== data.peerUserId) return
+        peerPresence.value = data.presence
+    }
+
+    return {
+        chats,
+        currentChat,
+        messages,
+        isLoading,
+        isLoadingMessages,
+        isSending,
+        total,
+        connectionStatus,
+        connectionReason,
+        peerPresence,
+        connect,
+        fetchPresence,
+        resetConnection,
+        fetchChats,
+        fetchMessages,
+        sendMessage,
+        sendVoice,
+        sendPhoto,
+        startChatFromOrder,
+        markRead,
+        deleteChats,
+        onNewMessage,
+        onChatUpdate,
+        onMessagesRead,
+        onPeerPresence,
+    }
+})

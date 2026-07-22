@@ -1,0 +1,106 @@
+// https://nuxt.com/docs/api/configuration/nuxt-config
+const isProd = process.env.NODE_ENV === 'production'
+
+export default defineNuxtConfig({
+  compatibilityDate: '2025-07-15',
+  devtools: { enabled: !isProd },
+  modules: ['@pinia/nuxt', '@nuxtjs/tailwindcss', '@vite-pwa/nuxt'],
+  css: [
+    '@fortawesome/fontawesome-svg-core/styles.css'
+  ],
+  build: {
+    transpile: [
+      '@fortawesome/fontawesome-svg-core',
+      '@fortawesome/free-solid-svg-icons',
+      '@fortawesome/vue-fontawesome'
+    ]
+  },
+  nitro: {
+    compressPublicAssets: true,
+    // Vercel deployda avtomatik `vercel` preset; lokal preview uchun node-server
+    preset: process.env.VERCEL || process.env.NITRO_PRESET === 'vercel' ? 'vercel' : undefined,
+  },
+  app: {
+    head: {
+      title: "Zo'r Taksi",
+      meta: [
+        { name: 'theme-color', content: '#0f172a' },
+        { name: 'mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-title', content: 'ZorTaksi' },
+        { name: 'description', content: "ZorTaksi — Telegram buyurtmalari va haydovchi paneli" },
+      ],
+      link: [
+        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
+        { rel: 'apple-touch-startup-image', href: '/logo.jpg' },
+      ],
+    },
+  },
+  pwa: {
+    strategies: 'injectManifest',
+    srcDir: 'service-worker',
+    filename: 'sw.ts',
+    registerType: 'autoUpdate',
+    injectRegister: 'auto',
+    manifest: {
+      name: "Zo'r Taksi",
+      short_name: 'ZorTaksi',
+      description: 'Telegram buyurtmalari — tez kirish va bildirishnomalar',
+      theme_color: '#0f172a',
+      background_color: '#0f172a',
+      display: 'standalone',
+      orientation: 'portrait',
+      start_url: '/',
+      scope: '/',
+      lang: 'uz',
+      icons: [
+        {
+          src: '/logo.jpg',
+          sizes: '512x512',
+          type: 'image/jpeg',
+          purpose: 'any',
+        },
+        {
+          src: '/icons/icon-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: '/icons/icon-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any',
+        },
+        {
+          src: '/icons/icon-maskable-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'maskable',
+        },
+      ],
+    },
+    injectManifest: {
+      globPatterns: ['**/*.{js,css,html,png,svg,ico,jpg,woff2,webp}'],
+    },
+    client: {
+      installPrompt: true,
+      periodicSyncForUpdates: 3600,
+    },
+    devOptions: {
+      enabled: !isProd,
+      type: 'module',
+    },
+  },
+  runtimeConfig: {
+    public: {
+      baseURL: process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:5000/api/v1',
+      socketURL: process.env.NUXT_PUBLIC_SOCKET_URL || 'http://localhost:5000',
+      appURL: process.env.NUXT_PUBLIC_APP_URL || 'https://www.zortaksi.uz',
+      adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'doniyorbek_ergashev',
+      vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || '',
+    }
+  },
+})

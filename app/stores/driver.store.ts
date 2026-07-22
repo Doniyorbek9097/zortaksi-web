@@ -1,0 +1,189 @@
+import { defineStore } from 'pinia'
+
+export type DriverFilter = 'all' | 'expiring' | 'debt'
+
+export interface DriverRow {
+  id: string
+  name: string
+  phone: string
+  username?: string
+  avatar?: string
+  active: boolean
+  balance: number
+  tariffName?: string
+  expireAt?: string
+  daysLeft?: number
+  debt?: boolean
+}
+
+export const useDriverStore = defineStore('driver', () => {
+  const drivers = ref<DriverRow[]>([])
+  const counts = ref({ all: 0, expiring: 0, debt: 0 })
+  const isLoading = ref(false)
+  const isSaving = ref(false)
+  const page = ref(1)
+  const totalPages = ref(1)
+  const total = ref(0)
+
+  const fetchDrivers = async (params: {
+    page?: number
+    limit?: number
+    search?: string
+    filter?: DriverFilter
+  } = {}) => {
+    try {
+      isLoading.value = true
+      const response = await useApi('/drivers', {
+        method: 'GET',
+        params: {
+          page: params.page ?? 1,
+          limit: params.limit ?? 100,
+          search: params.search || undefined,
+          filter: params.filter || 'all',
+        },
+      })
+      if (response.success) {
+        drivers.value = response.data.drivers ?? []
+        counts.value = response.data.counts ?? { all: 0, expiring: 0, debt: 0 }
+        page.value = response.data.pagination?.page ?? 1
+        totalPages.value = response.data.pagination?.totalPages ?? 1
+        total.value = response.data.pagination?.total ?? drivers.value.length
+      }
+      return response
+    } catch (error) {
+      console.error('FetchDrivers error:', error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const patchLocal = (row: DriverRow) => {
+    const idx = drivers.value.findIndex(d => d.id === row.id)
+    if (idx !== -1) drivers.value[idx] = row
+  }
+
+  const setActive = async (userId: string, active: boolean) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/active`, {
+        method: 'PATCH',
+        body: { active },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('SetDriverActive error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const setBalance = async (userId: string, balance: number) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/balance`, {
+        method: 'PATCH',
+        body: { balance },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('SetDriverBalance error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const adjustBalance = async (userId: string, amount: number) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/balance`, {
+        method: 'PATCH',
+        body: { amount },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('AdjustDriverBalance error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const assignTariff = async (
+    userId: string,
+    tariffId: string,
+    opts: { deductFromBalance?: boolean } = {}
+  ) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/tariff`, {
+        method: 'POST',
+        body: {
+          tariffId,
+          deductFromBalance: Boolean(opts.deductFromBalance),
+        },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('AssignDriverTariff error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const sendMessage = async (userIds: string[], text: string) => {
+    try {
+      isSaving.value = true
+      const response = await useApi('/drivers/message', {
+        method: 'POST',
+        body: { userIds, text },
+      })
+      return response
+    } catch (error) {
+      console.error('SendDriverMessage error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const bulkAction = async (ids: string[], action: 'block' | 'unblock') => {
+    try {
+      isSaving.value = true
+      const response = await useApi('/drivers/bulk', {
+        method: 'POST',
+        body: { ids, action },
+      })
+      return response
+    } catch (error) {
+      console.error('BulkDrivers error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  return {
+    drivers,
+    counts,
+    isLoading,
+    isSaving,
+    page,
+    totalPages,
+    total,
+    fetchDrivers,
+    setActive,
+    setBalance,
+    adjustBalance,
+    assignTariff,
+    sendMessage,
+    bulkAction,
+  }
+})

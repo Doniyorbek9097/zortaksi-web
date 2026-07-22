@@ -1,0 +1,43 @@
+export interface IChatPeer {
+    userId: string
+    firstName?: string
+    lastName?: string
+    username?: string
+    phone?: string
+    isBot: boolean
+    accessHash?: string
+}
+
+export interface IChat {
+    _id: string
+    ownerId: string
+    peer: IChatPeer
+    orderId?: string
+    lastMessage: string
+    lastMessageAt: string | Date
+    unreadCount: number
+    createdAt: string | Date
+    updatedAt: string | Date
+}
+
+export type ChatDirection = 'in' | 'out'
+export type ChatMessageType = 'text' | 'photo' | 'video' | 'voice' | 'document'
+export type ChatMessageStatus = 'sending' | 'sent' | 'failed' | 'read'
+
+export interface IChatMessage {
+    _id: string
+    chatId: string
+    ownerId: string
+    direction: ChatDirection
+    text: string
+    type: ChatMessageType
+    status: ChatMessageStatus
+    tgMessageId?: number
+    mediaPath?: string
+    mimeType?: string
+    duration?: number
+    fileSize?: number
+    date: string | Date
+    createdAt: string | Date
+    updatedAt: string | Date
+}
