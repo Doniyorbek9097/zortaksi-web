@@ -6,27 +6,6 @@
     <!-- Payment banner -->
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
-    <!-- Usage guide -->
-    <DashboardGuideCard v-if="showGuide" :items="guideItems" @close="showGuide = false" />
-
-    <!-- Quick actions -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <DashboardActionCard
-        icon="fa-solid fa-pen-to-square"
-        title="Mening e'lonlarim"
-        subtitle="Tahrir · o'chirish"
-        color="indigo"
-        @click="navigateTo('/driver/my-ads')"
-      />
-      <DashboardActionCard
-        icon="fa-solid fa-bullhorn"
-        title="E'lon joylash"
-        subtitle="Guruh · platforma"
-        color="amber"
-        @click="navigateTo('/driver/post')"
-      />
-    </div>
-
     <!-- Balance -->
     <DashboardBalanceCard :balance="balance" @buy="onBuyTariff" />
 
@@ -92,15 +71,6 @@ const today = computed(() => {
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}, ${days[d.getDay()]}`
 })
-
-// --- Guide card ---
-const showGuide = ref(true)
-const guideItems = [
-  { title: 'Buyurtmalar', desc: 'yangi buyurtmalarni jonli kuzating' },
-  { title: 'Filter tugmasi', desc: "qiziqtirgan yo'nalishlar uchun kalit so'zlar sozlang" },
-  { title: "E'lon joylash", desc: "guruhlarga yoki platformaga e'lon yuboring" },
-  { title: "Mening e'lonlarim", desc: "o'z e'lonlaringizni boshqaring" },
-]
 
 // --- Tariff card data ---
 const formatDate = (value?: string | Date) => {
