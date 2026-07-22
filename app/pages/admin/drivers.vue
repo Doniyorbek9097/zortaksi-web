@@ -1,6 +1,8 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-28 space-y-3">
-    <h1 class="text-xl font-black text-slate-900 dark:text-white">Haydovchilar</h1>
+    <header class="sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
+      <h1 class="text-lg font-black text-slate-900 dark:text-white">Haydovchilar</h1>
+    </header>
 
     <AdminDriversFilterTabs v-model="filter" :tabs="filterTabs" />
 
@@ -22,10 +24,12 @@
       />
     </div>
 
-    <div v-else-if="!list.length" class="py-10 text-center space-y-2">
-      <font-awesome-icon icon="fa-solid fa-users" class="text-3xl text-slate-300 dark:text-slate-600" />
-      <p class="text-sm font-bold text-slate-500">Haydovchi topilmadi</p>
-    </div>
+    <BaseEmptyState
+      v-else-if="!list.length"
+      icon="fa-solid fa-users"
+      title="Haydovchi topilmadi"
+      tone="slate"
+    />
 
     <div v-else class="space-y-3">
       <AdminDriversDriverCard
@@ -34,6 +38,7 @@
         :name="d.name"
         :phone="d.phone"
         :avatar="d.avatar"
+        :user-id="d.id"
         :active="d.active"
         :balance="d.balance"
         :tariff-line="d.tariffLine"

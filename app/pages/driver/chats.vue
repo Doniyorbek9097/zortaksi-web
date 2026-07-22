@@ -26,10 +26,11 @@
     </div>
 
     <!-- Empty -->
-    <div v-else-if="!chatStore.chats.length" class="py-16 text-center text-slate-400 dark:text-slate-500">
-      <font-awesome-icon icon="fa-solid fa-comments" class="text-3xl mb-3 opacity-50" />
-      <p class="text-sm font-bold">Hozircha yozishmalar yo'q</p>
-    </div>
+    <BaseEmptyState
+      v-else-if="!chatStore.chats.length"
+      icon="fa-solid fa-comments"
+      title="Hozircha yozishmalar yo'q"
+    />
 
     <!-- Chat list -->
     <div v-else class="space-y-2.5">
@@ -40,26 +41,32 @@
         :preview="chat.lastMessage || 'Yozishma boshlang'"
         :date="formatDate(chat.lastMessageAt)"
         :phone="chat.peer.phone"
+        :avatar="chat.peer.avatar"
+        :user-id="chat.peer.userId"
         :unread="chat.unreadCount"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
         @open="openChat(chat)"
         @toggle="toggleOne(chat._id)"
+        @delete="requestSwipeDelete(chat)"
       />
     </div>
 
     <!-- Universal o'chirish dialogi -->
     <BaseConfirmDialog
       v-model="showDeleteDialog"
-      title="Chatlarni tozalash"
+      :title="swipeDeleteId ? 'Chatni o\'chirish' : 'Chatlarni tozalash'"
       description="Bu amalni qaytarib bo'lmaydi"
-      :message="`${selectedIds.length} ta chatni o'chirasizmi?`"
-      confirm-text="Tozalash"
+      :message="swipeDeleteId
+        ? 'Bu chatni o\'chirasizmi?'
+        : `${selectedIds.length} ta chatni o\'chirasizmi?`"
+      confirm-text="O'chirish"
       cancel-text="Bekor"
       variant="danger"
       :loading="deleting"
       :close-on-confirm="false"
       @confirm="confirmClear"
+      @cancel="swipeDeleteId = null"
     />
   </div>
 </template>
@@ -98,6 +105,7 @@ const selectedIds = ref<string[]>([])
 const refreshing = ref(false)
 const deleting = ref(false)
 const showDeleteDialog = ref(false)
+const swipeDeleteId = ref<string | null>(null)
 
 const allSelected = computed(
   () => chatStore.chats.length > 0 && selectedIds.value.length === chatStore.chats.length
@@ -105,6 +113,7 @@ const allSelected = computed(
 
 const enterSelect = () => {
   selectionMode.value = true
+  swipeDeleteId.value = null
 }
 
 const cancelSelect = () => {
@@ -123,14 +132,23 @@ const toggleAll = () => {
 }
 
 const requestClear = () => {
+  swipeDeleteId.value = null
   if (selectedIds.value.length) showDeleteDialog.value = true
+}
+
+const requestSwipeDelete = (chat: IChat) => {
+  swipeDeleteId.value = chat._id
+  showDeleteDialog.value = true
 }
 
 const confirmClear = async () => {
   try {
     deleting.value = true
-    await chatStore.deleteChats(selectedIds.value)
+    const ids = swipeDeleteId.value ? [swipeDeleteId.value] : selectedIds.value
+    if (!ids.length) return
+    await chatStore.deleteChats(ids)
     showDeleteDialog.value = false
+    swipeDeleteId.value = null
     cancelSelect()
   } finally {
     deleting.value = false

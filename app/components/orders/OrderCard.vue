@@ -1,44 +1,42 @@
 <template>
-  <div class="relative overflow-hidden rounded-2xl">
-    <!-- Swipe orqasidagi o'chirish paneli (faqat admin) -->
-    <button
-      v-if="isAdmin"
-      type="button"
-      class="absolute inset-y-0 right-0 w-[88px] flex flex-col items-center justify-center gap-1 bg-red-500 text-white"
-      @click="onDelete"
-    >
-      <font-awesome-icon icon="fa-solid fa-trash" />
-      <span class="text-[11px] font-black">O'chirish</span>
-    </button>
-
-    <!-- Karta -->
-    <article
-      class="relative z-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-sky-400 dark:border-l-sky-500 pt-4 px-4 pb-4"
-      :class="dragging ? '' : 'transition-transform duration-200'"
-      :style="{ transform: `translateX(${translateX}px)`, touchAction: 'pan-y' }"
-      @pointerdown="onPointerDown"
-      @pointermove="onPointerMove"
-      @pointerup="onPointerUp"
-      @pointercancel="onPointerUp"
-    >
-      <!-- Group badge -->
-      <div class="flex justify-center mb-3">
-        <div
-          class="flex items-center gap-1.5 max-w-full px-3 py-1 rounded-full bg-indigo-50 dark:bg-slate-800 border border-indigo-200/70 dark:border-slate-700 shadow-sm"
-        >
-          <font-awesome-icon
-            :icon="group.username ? 'fa-solid fa-circle-check' : 'fa-solid fa-paper-plane'"
-            class="text-[11px] text-sky-500 shrink-0"
-          />
-          <span class="text-[11px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300 truncate">
-            {{ group.title }}
-          </span>
-        </div>
+  <div class="relative pt-3">
+    <!-- Group title — yuqori border markazida (overflow tashqarisida) -->
+    <div class="absolute left-1/2 top-3 z-20 -translate-x-1/2 -translate-y-1/2 max-w-[85%] px-2 pointer-events-none">
+      <div
+        class="flex items-center gap-1.5 max-w-full px-3 py-1 rounded-full bg-white dark:bg-slate-900 border border-indigo-200/70 dark:border-slate-700 shadow-sm">
+        <font-awesome-icon :icon="group.username ? 'fa-solid fa-circle-check' : 'fa-solid fa-paper-plane'"
+          class="text-[11px] text-sky-500 shrink-0" />
+        <span class="text-[11px] font-black uppercase tracking-wide text-indigo-600 dark:text-indigo-300 truncate">
+          {{ group.title }}
+        </span>
       </div>
+    </div>
 
+    <!-- Swipe konteyner — delete faqat tortilganda chiqadi -->
+    <div class="relative overflow-hidden rounded-2xl isolate">
+      <button
+        v-if="isAdmin && translateX < 0"
+        type="button"
+        class="absolute inset-y-0 right-0 z-0 w-[200px] flex flex-col items-center justify-center gap-1 bg-red-500 text-white"
+        @click="onDelete"
+      >
+        <font-awesome-icon icon="fa-solid fa-trash" />
+        <span class="text-[11px] font-black">O'chirish</span>
+      </button>
+
+      <!-- Karta -->
+      <article
+        class="relative z-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-sky-400 dark:border-l-sky-500 pt-5 px-4 pb-4 will-change-transform"
+        :class="dragging ? '' : 'transition-transform duration-200'"
+        :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: 'pan-y' }"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointercancel="onPointerUp"
+      >
       <!-- Sender -->
       <div class="flex items-center gap-3">
-        <ProfileAvatar :name="senderName" size="sm" />
+        <ProfileAvatar :name="senderName" :src="order.sender?.avatar" :user-id="order.sender?.userId" size="sm" />
         <div class="min-w-0">
           <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
           <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
@@ -47,86 +45,89 @@
 
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
 
-      <!-- Message (telefon raqamlar server tomonda yashirilgan) -->
-      <p class="text-[13px] leading-relaxed text-slate-700 dark:text-slate-200 whitespace-pre-line break-words">{{ order.message?.text }}</p>
+      <!-- Message -->
+      <p class="text-[13px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words">{{
+        order.message?.text }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
-      <button
-        v-if="locked"
-        type="button"
+      <button v-if="locked" type="button" data-no-swipe
         class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
-        @click="$emit('unlock')"
-      >
+        @pointerdown.stop @click.stop="$emit('unlock')">
         <font-awesome-icon icon="fa-solid fa-lock" class="text-xs" />
         Tariffga ulanish →
       </button>
 
-      <!-- Amallar (admin yoki aktiv user) -->
-      <div v-else class="mt-4 space-y-2">
-        <!-- Band qilish -->
-        <button
-          type="button"
-          class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
-          @click="$emit('book')"
-        >
-          <font-awesome-icon icon="fa-solid fa-circle-check" />
-          Band qilish · {{ bookPrice.toLocaleString('ru-RU') }} so'm
-        </button>
-
-        <!-- Xabar yozish / Guruhda ko'rish -->
-        <div class="grid grid-cols-2 gap-2">
-          <button
-            type="button"
+      <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
+      <div v-else class="mt-4 space-y-2" data-no-swipe @pointerdown.stop>
+        <!-- Xabar yozish / Telefon -->
+        <div :class="callPhone ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'">
+          <button type="button"
             class="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
-            @click="$emit('message')"
-          >
+            @click.stop="$emit('message')">
             <font-awesome-icon icon="fa-solid fa-comments" />
             Xabar yozish
           </button>
-          <button
-            type="button"
+          <a v-if="callPhone" :href="normalizeTelHref(callPhone)"
             class="inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
-            @click="$emit('view-group')"
-          >
+            @click.stop>
+            <font-awesome-icon icon="fa-solid fa-phone" />
+            Telefon qilish
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <!-- Band qilish (matn uslubi — Xabar yozish bilan bir xil) -->
+          <button v-if="!isBooked" type="button"
+            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+            @click.stop="$emit('book')">
+            <font-awesome-icon icon="fa-solid fa-circle-check" />
+            Band qilish
+          </button>
+          <div v-else
+            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800">
+            <font-awesome-icon icon="fa-solid fa-lock" />
+            Band qilingan
+          </div>
+
+
+          <button type="button"
+            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
+            @click.stop="$emit('view-group')">
             <font-awesome-icon icon="fa-solid fa-search" />
             Guruhda ko'rish
           </button>
-        </div>
 
+        </div>
         <!-- Admin amallari -->
         <div v-if="isAdmin" class="grid grid-cols-3 gap-2">
-          <button
-            type="button"
+          <button type="button"
             class="inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
-            @click="$emit('agent')"
-          >
+            @click.stop="$emit('agent')">
             <font-awesome-icon icon="fa-solid fa-headset" />
             Agent
           </button>
-          <button
-            type="button"
+          <button type="button"
             class="inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
-            @click="$emit('stop-group')"
-          >
+            @click.stop="$emit('stop-group')">
             <font-awesome-icon icon="fa-solid fa-ban" />
-            Guruh to'xtat
+            Guruh
           </button>
-          <button
-            type="button"
+          <button type="button"
             class="inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
-            @click="$emit('stop-user')"
-          >
+            @click.stop="$emit('stop-user')">
             <font-awesome-icon icon="fa-solid fa-ban" />
-            User to'xtat
+            User
           </button>
         </div>
       </div>
-    </article>
+      </article>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { IOrder } from '~/types'
+import { normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
 
 interface Props {
   order: IOrder
@@ -156,8 +157,12 @@ const isAdmin = computed(() => props.role === 'admin')
 const canAct = computed(() => isAdmin.value || props.active)
 // Aktiv emas va admin emas — qulflangan (telefonlar server tomonda yashirilgan)
 const locked = computed(() => !canAct.value)
+const isBooked = computed(() => props.order.status === 'booked')
 
 const group = computed(() => props.order.group)
+
+/** 1) message.text → 2) sender.phone; ikkalasi yo'q → tugma chiqmaydi */
+const callPhone = computed(() => resolveOrderPhone(props.order))
 
 const senderName = computed(() => {
   const s = props.order.sender
@@ -187,20 +192,44 @@ const time = computed(() => {
   return `${dd}.${mo}, ${hh}:${mm}`
 })
 
-// --- Swipe-to-delete (faqat admin) ---
-const REVEAL = 88
+// --- Swipe-to-delete (faqat admin) — o'ngdan 200px ---
+const REVEAL = 200
 const translateX = ref(0)
 const dragging = ref(false)
 const startX = ref(0)
+const originX = ref(0)
+const axisLocked = ref<'h' | 'v' | null>(null)
+
+const isInteractiveTarget = (target: EventTarget | null) => {
+  const el = target as HTMLElement | null
+  if (!el?.closest) return false
+  return !!el.closest('button, a, input, textarea, select, label, [data-no-swipe]')
+}
 
 const onPointerDown = (e: PointerEvent) => {
+  // Swipe faqat admin + touch; sichqoncha/click tugmalarda ishlashi uchun
   if (!isAdmin.value) return
+  if (e.pointerType === 'mouse') return
+  if (isInteractiveTarget(e.target)) return
   dragging.value = true
+  axisLocked.value = null
+  originX.value = e.clientX
   startX.value = e.clientX - translateX.value
+    ; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
 }
 
 const onPointerMove = (e: PointerEvent) => {
   if (!dragging.value) return
+  const rawDx = e.clientX - originX.value
+  if (!axisLocked.value) {
+    if (Math.abs(rawDx) < 8) return
+    axisLocked.value = Math.abs(rawDx) > Math.abs(e.movementY) ? 'h' : 'v'
+    if (axisLocked.value === 'v') {
+      dragging.value = false
+      return
+    }
+  }
+  if (axisLocked.value !== 'h') return
   let dx = e.clientX - startX.value
   if (dx > 0) dx = 0
   if (dx < -REVEAL) dx = -REVEAL
@@ -208,9 +237,14 @@ const onPointerMove = (e: PointerEvent) => {
 }
 
 const onPointerUp = () => {
-  if (!dragging.value) return
+  if (!dragging.value && axisLocked.value !== 'h') {
+    axisLocked.value = null
+    return
+  }
   dragging.value = false
-  translateX.value = translateX.value < -REVEAL / 2 ? -REVEAL : 0
+  axisLocked.value = null
+  // 200px ga yaqin tortilsa ochiladi
+  translateX.value = translateX.value <= -REVEAL * 0.75 ? -REVEAL : 0
 }
 
 const onDelete = () => {

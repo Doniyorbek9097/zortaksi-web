@@ -4,6 +4,7 @@ export interface IChatPeer {
     lastName?: string
     username?: string
     phone?: string
+    avatar?: string
     isBot: boolean
     accessHash?: string
 }
@@ -13,6 +14,8 @@ export interface IChat {
     ownerId: string
     peer: IChatPeer
     orderId?: string
+    /** Order e'lon matni — chat yuqorisida ko'rsatiladi */
+    orderText?: string
     lastMessage: string
     lastMessageAt: string | Date
     unreadCount: number

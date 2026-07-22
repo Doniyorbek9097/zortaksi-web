@@ -1,15 +1,15 @@
 <template>
-  <header class="flex items-start gap-3">
+  <header class="flex items-center gap-2.5 sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
     <div
-      class="w-11 h-11 rounded-2xl flex items-center justify-center text-lg text-white shrink-0 bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-sky-500/25"
+      class="w-9 h-9 rounded-xl flex items-center justify-center text-base text-white shrink-0 bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-sky-500/20"
     >
       <font-awesome-icon icon="fa-solid fa-key" />
     </div>
     <div class="leading-tight min-w-0">
-      <h1 class="text-lg font-black tracking-tight text-slate-900 dark:text-white">
+      <h1 class="text-[15px] font-black tracking-tight text-slate-900 dark:text-white">
         Tariflar boshqaruvi
       </h1>
-      <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+      <p class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
         {{ greeting }} — {{ dateLabel }}
       </p>
     </div>

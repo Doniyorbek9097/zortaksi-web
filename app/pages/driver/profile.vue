@@ -8,6 +8,7 @@
       :name="user.name"
       :phone="user.phone"
       :avatar="user.avatar"
+      :user-id="user.userId"
       :active="user.active"
       :balance="user.balance"
       :tariff-name="user.tariffName"
@@ -23,8 +24,12 @@
       </div>
 
       <!-- Empty -->
-      <div v-else-if="!accountStore.accounts.length" class="px-4 py-6 text-center text-[12px] font-medium text-slate-400 dark:text-slate-500">
-        Hali qo'shimcha hisob yo'q
+      <div
+        v-else-if="!accountStore.accounts.length"
+        class="flex flex-col items-center justify-center px-4 py-10 text-center text-slate-400 dark:text-slate-500"
+      >
+        <font-awesome-icon icon="fa-solid fa-user-plus" class="text-2xl mb-2 opacity-50" />
+        <p class="text-[12px] font-medium">Hali qo'shimcha hisob yo'q</p>
       </div>
 
       <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -34,6 +39,7 @@
           :name="accName(acc)"
           :phone="`+${acc.phoneNumber}`"
           :avatar="acc.avatar"
+          :user-id="acc.userId"
           :active="acc.userId === accountStore.activeUserId"
           @select="onSelectAccount(acc)"
           @delete="requestDeleteAccount(acc)"
@@ -130,6 +136,7 @@ const user = computed(() => ({
   name: authStore.user?.firstName || 'Foydalanuvchi',
   phone: authStore.user?.phoneNumber || '',
   avatar: authStore.user?.avatar,
+  userId: authStore.user?.userId,
   active: !!authStore.user?.active,
   balance: authStore.user?.balance ?? 0,
   tariffName: authStore.user?.tariff?.name || 'Kunlik sinov',
@@ -147,8 +154,11 @@ const deletingAccount = ref(false)
 
 // --- Settings state ---
 const script = ref<ScriptType>('latin')
-const soundOn = ref(true)
-const adminUsername = 'zdravjorbek_ergashev'
+const { soundOn } = useNotifySound()
+const config = useRuntimeConfig()
+const adminUsername = computed(() =>
+  String(config.public.adminTelegram || 'doniyorbek_ergashev').replace(/^@/, '')
+)
 
 // --- Actions ---
 const onBonus = () => navigateTo('/driver/bonus')
@@ -185,6 +195,6 @@ onMounted(async () => {
 })
 
 const onContactAdmin = () => {
-  if (import.meta.client) window.open(`https://t.me/${adminUsername}`, '_blank')
+  if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
 }
 </script>

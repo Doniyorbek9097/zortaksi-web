@@ -1,14 +1,14 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-36 space-y-3">
     <!-- Header -->
-    <header class="flex items-start justify-between gap-3">
-      <div>
-        <h1 class="text-xl font-black text-slate-900 dark:text-white">E'lon joylash</h1>
-        <p class="text-[12px] font-semibold text-slate-400 mt-0.5">
+    <header class="flex items-center justify-between gap-2.5 sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
+      <div class="min-w-0 leading-tight">
+        <h1 class="text-lg font-black text-slate-900 dark:text-white">E'lon joylash</h1>
+        <p class="text-[12px] font-semibold text-slate-400 mt-0.5 truncate">
           Kalit so'zlar Buyurtmalar bilan umumiy
         </p>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-1.5 shrink-0">
         <button
           type="button"
           class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900"
@@ -41,7 +41,7 @@
         @click="store.setTab('mine')"
       >
         <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
-        Meniki {{ store.mineGroups.length }}
+        Meniki {{ store.mineTotal }}
       </button>
       <button
         v-if="store.isAdmin"
@@ -53,14 +53,14 @@
         @click="store.setTab('ads')"
       >
         <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-[10px]" />
-        Reklama berish {{ store.adsGroups.length }}
+        Reklama berish {{ store.adsTotal }}
       </button>
     </div>
 
     <!-- Count + filters -->
     <div class="flex items-center justify-between gap-2">
       <p class="text-[12px] font-bold text-slate-400">
-        {{ selectedCount }} / {{ filtered.length }} ta guruh
+        {{ selectedCount }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
       </p>
       <div class="flex items-center gap-2">
         <button
@@ -82,12 +82,12 @@
       <div v-for="n in 6" :key="n" class="h-16 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     </div>
 
-    <div v-else-if="!filtered.length" class="py-12 text-center space-y-2">
-      <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-3xl text-slate-300" />
-      <p class="text-sm font-bold text-slate-500">
-        {{ store.tab === 'mine' ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring' : 'Guruhlar topilmadi' }}
-      </p>
-    </div>
+    <BaseEmptyState
+      v-else-if="!filtered.length"
+      icon="fa-solid fa-bullhorn"
+      :title="store.tab === 'mine' ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring' : 'Guruhlar topilmadi'"
+      tone="slate"
+    />
 
     <div v-else class="space-y-1.5">
       <button
@@ -128,6 +128,20 @@
           {{ g.free || store.tab === 'mine' ? 'Bepul' : `${g.price.toLocaleString('ru-RU')}` }}
         </span>
       </button>
+
+      <!-- Infinite scroll sentinel -->
+      <div ref="sentinel" class="h-1" />
+
+      <div v-if="store.isLoadingMore" class="space-y-2 pt-1">
+        <div v-for="n in 2" :key="n" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+      </div>
+
+      <p
+        v-else-if="!store.hasMore && filtered.length"
+        class="py-3 text-center text-[11px] font-medium text-slate-400 dark:text-slate-600"
+      >
+        Barcha guruhlar ko'rsatildi
+      </p>
     </div>
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
@@ -211,11 +225,30 @@ const onSend = async (text: string) => {
   }
 }
 
+// --- Infinite scroll (10 tadan) ---
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
 onMounted(async () => {
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }
   }
-  // Admin layout emas — lekin admin ham kirishi mumkin
   await store.load()
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) store.loadMore()
+    },
+    { rootMargin: '200px' }
+  )
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+watch(sentinel, (el) => {
+  if (observer && el) observer.observe(el)
+})
+
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect()
 })
 </script>

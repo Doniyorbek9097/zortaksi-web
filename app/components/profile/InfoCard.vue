@@ -2,7 +2,7 @@
   <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 md:p-5">
     <!-- Identity -->
     <div class="flex items-start gap-3">
-      <ProfileAvatar :name="name" :src="avatar" size="lg" />
+      <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="lg" />
       <div class="min-w-0">
         <p class="text-[10px] font-black uppercase tracking-wider text-emerald-500">Faol hisob</p>
         <h2 class="text-lg font-black text-slate-900 dark:text-white truncate">{{ name }}</h2>
@@ -61,6 +61,7 @@ interface Props {
   name?: string
   phone?: string
   avatar?: string
+  userId?: string
   active?: boolean
   balance?: number
   tariffName?: string

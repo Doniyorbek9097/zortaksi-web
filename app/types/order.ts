@@ -17,6 +17,7 @@ export interface ISender {
     firstName?: string;
     lastName?: string;
     phone?: string;
+    avatar?: string;
     isBot: boolean;
     accessHashes?: ISenderAccessHash[];
 }
@@ -45,7 +46,10 @@ export interface IOrder {
     sender: ISender;
     group: IGroup;
     message: IMessage;
-    status: 'new' | 'processing' | 'confirmed' | 'cancelled' | 'completed';
+    status: 'new' | 'booked' | 'processing' | 'confirmed' | 'cancelled' | 'completed';
+    bookedBy?: string | null;
+    bookedAt?: string | Date | null;
+    bookPrice?: number;
     createdAt: string | Date;
     updatedAt: string | Date;
 }

@@ -1,104 +1,162 @@
 <template>
-  <label for="phoneInput" class="flex flex-col p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl transition-colors">
-    <p v-if="error" class="text-red-500 text-[10px] font-bold uppercase tracking-wider">{{ error }}</p>
-    <p v-else class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Telefon raqamingiz</p>
-    <div class="flex justify-between items-center">
-      <div class="flex gap-2 items-center text-slate-900 dark:text-white">
-        <span class="font-bold text-[18px] md:text-[22px] tracking-tight">+998</span>
-        <input ref="inputRef" id="phoneInput" :value="formattedPhone" type="tel" placeholder="(__) ___ - __ - __"
-          maxlength="14" minlength="14"
-          class="w-[150px] md:w-[200px] font-bold text-[18px] md:text-[22px] placeholder:text-slate-300 dark:placeholder:text-slate-600 bg-transparent outline-none border-none selection:bg-emerald-500/30"
-          @focus="handleFocus" @input="handleInput" @keydown="restrictInput" />
+  <div class="relative group">
+    <div class="flex justify-between items-center mb-1.5 px-1">
+      <label
+        for="phoneInput"
+        class="text-[11px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400"
+      >
+        {{ label }}
+      </label>
+      <span
+        v-if="errorText"
+        class="text-[10px] font-black text-red-500 uppercase tracking-wider bg-red-500/10 px-2 py-0.5 rounded-full"
+      >
+        {{ errorText }}
+      </span>
+    </div>
+
+    <div
+      class="relative flex items-center gap-2.5 rounded-2xl border px-4 py-3.5 transition-all duration-300"
+      :class="[
+        errorText
+          ? 'border-red-500/40 ring-4 ring-red-500/5 bg-red-500/5'
+          : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus-within:border-sky-500/50 focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:bg-white dark:focus-within:bg-slate-950',
+      ]"
+    >
+      <div
+        class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
+        :class="errorText ? 'bg-red-500/10 text-red-500' : 'bg-sky-500/10 text-sky-500 group-focus-within:bg-[#2AABEE]/15 group-focus-within:text-[#2AABEE]'"
+      >
+        <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
       </div>
 
-      <LoadingIcon v-if="loading" class="animate-spin fill-slate-400 w-5 h-5" />
-      <RefreshSmsIcon v-else @click="handleInput"
-        :class="[[disabled ? 'cursor-not-allowed fill-slate-400' : 'fill-emerald-500 hover:scale-110 active:scale-95'], 'w-5 h-5 transition-all cursor-pointer']" />
+      <div class="flex items-baseline gap-2 min-w-0 flex-1">
+        <span class="text-lg md:text-xl font-black text-slate-900 dark:text-white tabular-nums shrink-0">
+          +998
+        </span>
+        <input
+          id="phoneInput"
+          ref="inputRef"
+          :value="displayValue"
+          type="tel"
+          inputmode="numeric"
+          autocomplete="tel-national"
+          placeholder="(90) 123-45-67"
+          maxlength="14"
+          :disabled="disabled"
+          class="w-full min-w-0 bg-transparent outline-none border-none text-lg md:text-xl font-black text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 tabular-nums tracking-wide selection:bg-sky-500/20 disabled:opacity-50"
+          @focus="onFocus"
+          @input="onInput"
+          @keydown="onKeydown"
+        >
+      </div>
+
+      <font-awesome-icon
+        v-if="loading"
+        icon="fa-solid fa-spinner"
+        class="animate-spin text-sky-500 shrink-0"
+      />
+      <span
+        v-else-if="isComplete"
+        class="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0"
+      >
+        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+      </span>
     </div>
-  </label>
+  </div>
 </template>
 
 <script setup lang="ts">
-import LoadingIcon from "~/assets/icons/time-past.svg"
-import RefreshSmsIcon from "~/assets/icons/email-refresh.svg"
+/** modelValue: faqat milliy 9 raqam (masalan 901234567) yoki to'liq 998... */
 
-const props = defineProps<{ modelValue: string | null, disabled: boolean, loading: boolean }>()
+const props = withDefaults(
+  defineProps<{
+    modelValue?: string | null
+    label?: string
+    disabled?: boolean
+    loading?: boolean
+    error?: string
+  }>(),
+  {
+    modelValue: '',
+    label: 'Telefon raqam',
+    disabled: false,
+    loading: false,
+    error: '',
+  }
+)
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | null): void,
-  (e: 'submit', value: string | null): void
+  'update:modelValue': [value: string]
+  submit: [value: string]
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
-const rawPhone = ref<string>(props.modelValue?.replace(/\D/g, '').slice(3) || '')
-const error = ref<string>('')
+const localError = ref('')
 
-// O‘zbekiston operator kodlari
-const validCodes = ['90', '91', '93', '94', '95', '97', '98', '99', '33', '55', '88']
+const nationalDigits = computed(() => {
+  let d = String(props.modelValue || '').replace(/\D/g, '')
+  if (d.startsWith('998')) d = d.slice(3)
+  return d.slice(0, 9)
+})
 
+/** (90) 123-45-67 */
+const displayValue = computed(() => {
+  const digits = nationalDigits.value
+  if (!digits) return ''
+  const a = digits.slice(0, 2)
+  const b = digits.slice(2, 5)
+  const c = digits.slice(5, 7)
+  const d = digits.slice(7, 9)
+  let out = ''
+  if (a) out += `(${a}`
+  if (a.length === 2) out += ')'
+  if (b) out += ` ${b}`
+  if (c) out += `-${c}`
+  if (d) out += `-${d}`
+  return out
+})
+
+const isComplete = computed(() => nationalDigits.value.length === 9)
+const errorText = computed(() => props.error || localError.value)
+
+const emitValue = (national: string) => {
+  emit('update:modelValue', national)
+}
+
+const onFocus = () => {
+  nextTick(() => {
+    const el = inputRef.value
+    if (!el) return
+    const len = el.value.length
+    el.setSelectionRange(len, len)
+  })
+}
+
+const onKeydown = (e: KeyboardEvent) => {
+  const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    if (isComplete.value) emit('submit', `998${nationalDigits.value}`)
+    return
+  }
+  if (!/[0-9]/.test(e.key) && !allowed.includes(e.key)) {
+    e.preventDefault()
+  }
+}
+
+const onInput = (e: Event) => {
+  const el = e.target as HTMLInputElement
+  const digits = el.value.replace(/\D/g, '').slice(0, 9)
+  localError.value = ''
+  emitValue(digits)
+  nextTick(() => {
+    const len = displayValue.value.length
+    el.setSelectionRange(len, len)
+  })
+}
 
 onMounted(() => {
-  nextTick(() => {
-    // faqat mobile input fokus oladi
-    inputRef.value?.focus()
-  })
+  nextTick(() => inputRef.value?.focus())
 })
-
-// Formatlash
-const formattedPhone = computed(() => {
-  const digits = rawPhone.value.replace(/\D/g, '')
-  if (!digits) return ''
-  const match = digits.match(/^(\d{0,2})(\d{0,3})(\d{0,2})(\d{0,2})$/)
-  if (!match) return digits
-
-  const [, code, part1, part2, part3] = match
-  let formatted = ''
-
-  if (code) formatted += `(${code}${code.length === 2 ? ')' : ''}`
-  if (part1) formatted += ` ${part1}`
-  if (part2) formatted += `-${part2}`
-  if (part3) formatted += `-${part3}`
-
-  return formatted.trim()
-})
-
-// Fokusda kursorni oxiriga qo‘yish
-const handleFocus = () => {
-  setTimeout(() => {
-    const input = inputRef.value
-    if (input) input.setSelectionRange(input.value.length, input.value.length)
-  }, 0)
-}
-
-// Faqat raqam kiritish
-const restrictInput = (event: KeyboardEvent) => {
-  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab']
-  if (!/[0-9]/.test(event.key) && !allowedKeys.includes(event.key)) {
-    event.preventDefault()
-  }
-}
-
-// 🔧 MUHIM QISIM: `rawPhone` ni inputdan har safar yangilab turish
-const handleInput = () => {
-  const input = inputRef.value;
-  if (!input) return;
-
-  const digits = input.value.replace(/\D/g, '')
-
-  rawPhone.value = digits.slice(0, 9)
-
-  if (rawPhone.value.length === 9) {
-    const code = rawPhone.value.slice(0, 2)
-    if (validCodes.includes(code)) {
-      error.value = ''
-      emit('submit', `998${rawPhone.value}`)
-    } else {
-      error.value = 'Operator kodi xato'
-      emit('submit', null)
-    }
-  } else {
-    error.value = ''
-    emit('submit', null)
-  }
-}
-
 </script>

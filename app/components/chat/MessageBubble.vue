@@ -88,16 +88,20 @@
         </button>
         <p
           v-if="text"
-          class="px-2 text-[13px] leading-relaxed whitespace-pre-line break-words"
+          class="px-2 text-[15px] leading-relaxed"
           :class="out ? 'text-white' : ''"
-        >{{ text }}</p>
+        >
+          <ChatLinkifiedText :text="text" :out="out" />
+        </p>
       </div>
 
-      <!-- Matn -->
+      <!-- Matn (link / telefon bosiladi) -->
       <p
         v-else
-        class="text-[13px] leading-relaxed whitespace-pre-line break-words"
-      >{{ text }}</p>
+        class="text-[15px] leading-relaxed"
+      >
+        <ChatLinkifiedText :text="text" :out="out" />
+      </p>
 
       <div
         class="mt-1 flex items-center justify-end gap-1 text-[10px]"

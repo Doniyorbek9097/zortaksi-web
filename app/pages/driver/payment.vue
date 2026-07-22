@@ -1,18 +1,18 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-28 space-y-4">
     <!-- Header -->
-    <header class="flex items-center gap-3">
+    <header class="flex items-center gap-2.5 sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
       <button
         type="button"
-        class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
+        class="w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95 transition-all"
         aria-label="Orqaga"
         @click="navigateTo('/driver/dashboard')"
       >
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
-      <div>
-        <h1 class="text-xl font-black text-slate-900 dark:text-white">To'lov</h1>
-        <p class="text-[13px] font-semibold text-slate-400 dark:text-slate-500">
+      <div class="leading-tight">
+        <h1 class="text-lg font-black text-slate-900 dark:text-white">To'lov</h1>
+        <p class="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
           Tarif sotib olish
         </p>
       </div>
@@ -75,9 +75,13 @@
           </span>
         </button>
 
-        <p v-if="!tariffStore.tariffs.length" class="py-6 text-center text-[12px] text-slate-400">
-          Tariflar topilmadi
-        </p>
+        <div
+          v-if="!tariffStore.tariffs.length"
+          class="flex flex-col items-center justify-center py-8 text-center text-slate-400"
+        >
+          <font-awesome-icon icon="fa-solid fa-tags" class="text-xl mb-2 opacity-50" />
+          <p class="text-[12px]">Tariflar topilmadi</p>
+        </div>
       </div>
     </section>
 
@@ -206,43 +210,18 @@ const openAdminTelegram = (t: TariffRow) => {
   if (import.meta.client) window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-/** Adminga haqiqiy Telegram xabar — draft emas, chatda qoladi */
-const notifyAdmin = async (t: TariffRow) => {
-  const text = buildAdminMessage(t)
-  saving.value = true
-  error.value = ''
-  try {
-    const res = await useApi('/me/tariff/request-payment', {
-      method: 'POST',
-      body: { text, tariffId: t.id },
-    })
-    if (res.success) {
-      // Xabar Telegram chatda saqlanadi
-      return true
-    }
-    openAdminTelegram(t)
-    return false
-  } catch (e: any) {
-    // Sessiya yo'q / yozib bo'lmadi — Telegram draft ochiladi (zaxira)
-    openAdminTelegram(t)
-    return false
-  } finally {
-    saving.value = false
-  }
+/** Adminga xabar — Telegram ochiladi (matn tayyor) */
+const notifyAdmin = (t: TariffRow) => {
+  openAdminTelegram(t)
 }
 
 const onPay = async () => {
   if (!selected.value) return
   error.value = ''
 
-  // Balans yetmasa — adminga xabar (chatda qoladi)
+  // Balans yetmasa — Telegramga o'tib, adminga xabar matni bilan
   if (shortage.value > 0) {
-    const ok = await notifyAdmin(selected.value)
-    if (ok) {
-      // qisqa feedback — sahifada qoladi
-      error.value = ''
-      await navigateTo('/driver/dashboard')
-    }
+    notifyAdmin(selected.value)
     return
   }
 
@@ -263,8 +242,7 @@ const onPay = async () => {
     const status = e?.response?.status
     const msg = e?.response?.data?.message
     if (status === 402) {
-      await notifyAdmin(selected.value)
-      await navigateTo('/driver/dashboard')
+      notifyAdmin(selected.value)
     } else {
       error.value = msg || e?.message || 'To\'lov amalga oshmadi'
     }

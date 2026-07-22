@@ -17,10 +17,12 @@
       />
     </div>
 
-    <div v-else-if="!store.tariffs.length" class="py-10 text-center space-y-2">
-      <font-awesome-icon icon="fa-solid fa-tags" class="text-3xl text-slate-300 dark:text-slate-600" />
-      <p class="text-sm font-bold text-slate-500">Hali tarif yo'q</p>
-    </div>
+    <BaseEmptyState
+      v-else-if="!store.tariffs.length"
+      icon="fa-solid fa-tags"
+      title="Hali tarif yo'q"
+      tone="slate"
+    />
 
     <div v-else class="space-y-3">
       <AdminTariffsTariffItem

@@ -13,14 +13,17 @@ export interface JoinedUser {
   id: string
   name: string
   username: string
+  avatar?: string
   active: boolean
   date: string
 }
 
 export interface LeaderboardRow {
   rank: number
+  id?: string
   name: string
   username: string
+  avatar?: string
   invites: number
   bonus: number
 }

@@ -5,7 +5,7 @@
   >
     <!-- Butun qatorni bosilganda shu accountga almashadi -->
     <button type="button" class="flex items-center gap-3 flex-1 min-w-0 text-left" @click="$emit('select')">
-      <ProfileAvatar :name="name" :src="avatar" size="sm" />
+      <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="sm" />
 
       <div class="flex-1 min-w-0">
         <p class="text-sm font-black text-slate-900 dark:text-white truncate">{{ name }}</p>
@@ -39,6 +39,7 @@ interface Props {
   name: string
   phone: string
   avatar?: string
+  userId?: string
   active?: boolean
 }
 

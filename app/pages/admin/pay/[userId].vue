@@ -1,18 +1,18 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-5 pb-28 space-y-4">
     <!-- Header -->
-    <header class="flex items-center gap-3">
+    <header class="flex items-center gap-2.5 sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
       <button
         type="button"
-        class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95"
+        class="w-9 h-9 rounded-full flex items-center justify-center bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-300 active:scale-95"
         aria-label="Orqaga"
         @click="navigateTo('/admin/dashboard')"
       >
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
-      <div>
-        <h1 class="text-xl font-black text-slate-900 dark:text-white">To'lov qilish</h1>
-        <p class="text-[13px] font-semibold text-slate-400 dark:text-slate-500">Haydovchi hisobi</p>
+      <div class="leading-tight">
+        <h1 class="text-lg font-black text-slate-900 dark:text-white">To'lov qilish</h1>
+        <p class="text-[12px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">Haydovchi hisobi</p>
       </div>
     </header>
 
@@ -31,10 +31,11 @@
           class="w-14 h-14 rounded-2xl overflow-hidden bg-emerald-500/15 flex items-center justify-center shrink-0"
         >
           <img
-            v-if="driver.avatar"
-            :src="driver.avatar"
+            v-if="payAvatarSrc"
+            :src="payAvatarSrc"
             :alt="driver.name"
             class="w-full h-full object-cover"
+            @error="payAvatarBroken = true"
           >
           <font-awesome-icon v-else icon="fa-solid fa-car" class="text-emerald-500 text-xl" />
         </div>
@@ -200,9 +201,11 @@
       </section>
     </template>
 
-    <p v-else-if="!loading" class="py-10 text-center text-sm font-bold text-slate-400">
-      Haydovchi topilmadi
-    </p>
+    <BaseEmptyState
+      v-else-if="!loading"
+      icon="fa-solid fa-user-slash"
+      title="Haydovchi topilmadi"
+    />
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
     <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500">{{ success }}</p>
@@ -230,6 +233,15 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const success = ref('')
+
+const { avatarUrl } = useMediaUrl()
+const payAvatarBroken = ref(false)
+watch(driver, () => { payAvatarBroken.value = false })
+const payAvatarSrc = computed(() =>
+  payAvatarBroken.value
+    ? undefined
+    : avatarUrl(driver.value?.avatar, driver.value?.id || userId.value)
+)
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 

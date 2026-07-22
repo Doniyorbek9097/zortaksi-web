@@ -12,6 +12,7 @@
         :reward="rewardPerInvite"
         :invites="totalInvites"
         :per-invite="rewardPerInvite"
+        :earned="totalEarned"
       />
 
       <AdminReferralLinkSection
@@ -33,15 +34,18 @@
             :key="user.id"
             :name="user.name"
             :username="user.username"
+            :avatar="user.avatar"
+            :user-id="user.id"
             :active="user.active"
             :date="user.date"
           />
-          <p
+          <div
             v-if="!joinedUsers.length"
-            class="py-6 text-center text-[12px] font-medium text-slate-400"
+            class="flex flex-col items-center justify-center py-10 text-center text-slate-400"
           >
-            Hali referal orqali qo'shilganlar yo'q
-          </p>
+            <font-awesome-icon icon="fa-solid fa-users" class="text-2xl mb-2 opacity-50" />
+            <p class="text-[12px] font-medium">Hali referal orqali qo'shilganlar yo'q</p>
+          </div>
         </div>
       </AdminSectionCard>
 
@@ -67,8 +71,9 @@ const store = useReferralStore()
 
 const rewardPerInvite = computed(() => store.summary?.rewardPerInvite ?? 5000)
 const totalInvites = computed(() => store.summary?.totalInvites ?? 0)
+const totalEarned = computed(() => store.summary?.totalBonusEarned ?? 0)
 const referralLink = computed(() => store.summary?.link ?? '')
-const adText = computed(() => store.summary?.adText ?? 'Sizni ZorTaksi ga taklif qildim!')
+const adText = computed(() => store.summary?.adText ?? '')
 const joinedUsers = computed(() => store.joined)
 const leaderboard = computed(() => store.leaderboard)
 

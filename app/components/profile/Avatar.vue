@@ -1,9 +1,15 @@
 <template>
   <div
     class="rounded-full overflow-hidden flex items-center justify-center font-black text-white shrink-0"
-    :class="[sizeClass, !src && colorClass]"
+    :class="[sizeClass, !showImg && colorClass]"
   >
-    <img v-if="src" :src="src" :alt="name" class="w-full h-full object-cover" >
+    <img
+      v-if="showImg"
+      :src="resolvedSrc"
+      :alt="name"
+      class="w-full h-full object-cover"
+      @error="onError"
+    >
     <span v-else>{{ initial }}</span>
   </div>
 </template>
@@ -12,12 +18,31 @@
 interface Props {
   name: string
   src?: string
+  /** Telegram userId — src bo'lmasa `/media/avatars/{id}.jpg` sinab ko'riladi */
+  userId?: string
   size?: 'sm' | 'md' | 'lg'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
 })
+
+const { avatarUrl } = useMediaUrl()
+const broken = ref(false)
+
+watch(
+  () => [props.src, props.userId],
+  () => {
+    broken.value = false
+  }
+)
+
+const resolvedSrc = computed(() => {
+  if (broken.value) return undefined
+  return avatarUrl(props.src, props.userId)
+})
+
+const showImg = computed(() => !!resolvedSrc.value)
 
 const sizeMap = {
   sm: 'w-10 h-10 text-sm',
@@ -40,4 +65,8 @@ const colorClass = computed(() => {
   const code = (props.name || '?').charCodeAt(0) || 0
   return palette[code % palette.length]
 })
+
+const onError = () => {
+  broken.value = true
+}
 </script>

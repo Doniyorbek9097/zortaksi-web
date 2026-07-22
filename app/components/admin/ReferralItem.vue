@@ -14,13 +14,7 @@
       <span v-else class="text-sm font-black text-slate-400">{{ rank }}</span>
     </div>
 
-    <!-- Avatar -->
-    <div
-      class="w-10 h-10 rounded-full flex items-center justify-center text-[12px] font-black text-white shrink-0"
-      :style="{ background: avatarColor }"
-    >
-      {{ initials }}
-    </div>
+    <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="sm" />
 
     <!-- Name -->
     <div class="flex-1 min-w-0">
@@ -44,21 +38,13 @@ interface Props {
   name: string
   username?: string
   phone?: string
+  avatar?: string
+  userId?: string
   invites: number
   bonus: number
 }
 
 const props = defineProps<Props>()
-
-const initials = computed(() => {
-  const parts = props.name.trim().split(/\s+/).filter(Boolean)
-  if (!parts.length) return '?'
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0][0] + parts[1][0]).toUpperCase()
-})
-
-const colors = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6', '#f43f5e', '#06b6d4']
-const avatarColor = computed(() => colors[(props.rank - 1) % colors.length])
 
 const medalClass = computed(() => {
   if (props.rank === 1) return 'bg-amber-400/20 text-amber-500'

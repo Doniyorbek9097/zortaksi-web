@@ -1,45 +1,42 @@
 <template>
-  <header class="flex items-center justify-between gap-3">
-    <div class="min-w-0">
-      <h1 class="text-xl md:text-2xl font-black text-slate-900 dark:text-white">Chatlar</h1>
-      <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 truncate">
+  <header class="flex items-center justify-between gap-2.5 sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
+    <div class="min-w-0 leading-tight">
+      <h1 class="text-lg font-black text-slate-900 dark:text-white">Chatlar</h1>
+      <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5 truncate">
         <template v-if="selectionMode">{{ selectedCount }} tanlangan · {{ count }}</template>
-        <template v-else>Buyurtmachilar bilan yozishmalar · {{ count }}</template>
+        <template v-else>{{ count }} yozishma</template>
       </p>
     </div>
 
-    <div class="flex items-center gap-2 shrink-0">
-      <!-- Bekor (selection mode) -->
+    <div class="flex items-center gap-1.5 shrink-0">
       <button
         v-if="selectionMode"
         type="button"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-95 transition-all"
+        class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 active:scale-95 transition-all"
         @click="$emit('cancel-select')"
       >
         <font-awesome-icon icon="fa-solid fa-times" />
         Bekor
       </button>
 
-      <!-- Tanlash rejimiga kirish -->
       <button
         v-else
         type="button"
-        class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 active:scale-95 transition-all"
+        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 active:scale-95 transition-all"
         aria-label="Tanlash"
         @click="$emit('enter-select')"
       >
-        <font-awesome-icon icon="fa-solid fa-check" />
+        <font-awesome-icon icon="fa-solid fa-check" class="text-xs" />
       </button>
 
-      <!-- Yangilash -->
       <button
         type="button"
-        class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 active:scale-95 transition-all"
+        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 active:scale-95 transition-all"
         :class="{ 'animate-spin': refreshing }"
         aria-label="Yangilash"
         @click="$emit('refresh')"
       >
-        <font-awesome-icon icon="fa-solid fa-rotate" />
+        <font-awesome-icon icon="fa-solid fa-rotate" class="text-xs" />
       </button>
     </div>
   </header>

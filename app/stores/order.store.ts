@@ -78,6 +78,48 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    const bookOrder = async (orderId: string) => {
+        try {
+            const response = await useApi(`/orders/${orderId}/book`, { method: 'POST' })
+            if (response.success) {
+                const idx = orders.value.findIndex((o) => o._id === orderId)
+                if (idx !== -1 && response.data?.order) {
+                    orders.value[idx] = { ...orders.value[idx], ...response.data.order }
+                }
+            }
+            return response
+        } catch (error: any) {
+            // 402 va boshqa xatolarni caller ko'rsatadi
+            throw error
+        }
+    }
+
+    const blockGroup = async (orderId: string) => {
+        const response = await useApi(`/orders/${orderId}/block-group`, { method: 'POST' })
+        if (response.success) {
+            const groupId = response.data?.groupId
+            if (groupId) {
+                orders.value = orders.value.filter((o) => o.group?.groupId !== groupId)
+            } else {
+                orders.value = orders.value.filter((o) => o._id !== orderId)
+            }
+        }
+        return response
+    }
+
+    const blockSender = async (orderId: string) => {
+        const response = await useApi(`/orders/${orderId}/block-sender`, { method: 'POST' })
+        if (response.success) {
+            const senderId = response.data?.senderId
+            if (senderId) {
+                orders.value = orders.value.filter((o) => o.sender?.userId !== senderId)
+            } else {
+                orders.value = orders.value.filter((o) => o._id !== orderId)
+            }
+        }
+        return response
+    }
+
     return {
         orders,
         currentOrder,
@@ -90,5 +132,8 @@ export const useOrderStore = defineStore('order', () => {
         fetchOrders,
         loadMore,
         fetchOrderById,
+        bookOrder,
+        blockGroup,
+        blockSender,
     }
 })

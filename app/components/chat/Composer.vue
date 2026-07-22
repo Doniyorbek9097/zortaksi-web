@@ -58,10 +58,14 @@
         <input
           v-model="text"
           type="text"
+          inputmode="text"
+          enterkeyhint="send"
+          autocomplete="off"
+          autocapitalize="sentences"
           :disabled="disabled"
           :placeholder="disabled ? 'Yozish uchun ulanish kutilmoqda...' : 'Xabar yozing...'"
-          class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          @keyup.enter="send"
+          class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          @keydown.enter.prevent="send"
         >
 
         <button

@@ -12,13 +12,11 @@
     </div>
 
     <!-- Empty -->
-    <div
+    <BaseEmptyState
       v-else-if="!orderStore.orders.length"
-      class="py-16 text-center text-slate-400 dark:text-slate-500"
-    >
-      <font-awesome-icon icon="fa-solid fa-clipboard-list" class="text-3xl mb-3 opacity-50" />
-      <p class="text-sm font-bold">Buyurtma topilmadi</p>
-    </div>
+      icon="fa-solid fa-clipboard-list"
+      title="Buyurtma topilmadi"
+    />
 
     <!-- Orders list -->
     <div v-else class="space-y-6 pt-2">
@@ -54,6 +52,78 @@
         Barcha buyurtmalar ko'rsatildi
       </p>
     </div>
+
+    <!-- Band qilish tasdiqlash -->
+    <BaseConfirmDialog
+      v-model="showBookDialog"
+      title="Band qilish"
+      :description="isAdmin ? 'Admin uchun bepul' : 'Hisobdan pul yechiladi'"
+      :message="bookConfirmMessage"
+      confirm-text="Band qilish"
+      cancel-text="Bekor"
+      variant="success"
+      :loading="booking"
+      :close-on-confirm="false"
+      @confirm="confirmBook"
+      @cancel="bookTarget = null"
+    />
+
+    <!-- Pul yo'q / xato -->
+    <BaseConfirmDialog
+      v-model="showNoMoneyDialog"
+      :title="noMoneyIsBalance ? 'Pul yo\'q' : 'Xatolik'"
+      :description="noMoneyIsBalance ? 'Balans yetarli emas' : undefined"
+      :message="noMoneyMessage"
+      :confirm-text="noMoneyIsBalance ? 'Hisob to\'ldirish' : 'OK'"
+      :cancel-text="noMoneyIsBalance ? 'Yopish' : 'Yopish'"
+      variant="warning"
+      @confirm="onNoMoneyConfirm"
+    />
+
+    <!-- Guruhni bloklash -->
+    <BaseConfirmDialog
+      v-model="showBlockGroupDialog"
+      title="Guruhni bloklash"
+      description="Bu guruhdan boshqa buyurtma olinmaydi"
+      :message="blockGroupTarget
+        ? `«${blockGroupTarget.group?.title || 'Guruh'}» bloklansinmi?`
+        : ''"
+      confirm-text="Bloklash"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="blocking"
+      :close-on-confirm="false"
+      @confirm="confirmBlockGroup"
+      @cancel="blockGroupTarget = null"
+    />
+
+    <!-- Senderni bloklash -->
+    <BaseConfirmDialog
+      v-model="showBlockUserDialog"
+      title="Foydalanuvchini bloklash"
+      description="Bu userdan boshqa buyurtma olinmaydi"
+      :message="blockUserTarget
+        ? `«${senderLabel(blockUserTarget)}» bloklansinmi?`
+        : ''"
+      confirm-text="Bloklash"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="blocking"
+      :close-on-confirm="false"
+      @confirm="confirmBlockUser"
+      @cancel="blockUserTarget = null"
+    />
+
+    <!-- Amal xatosi -->
+    <BaseConfirmDialog
+      v-model="showActionError"
+      title="Xatolik"
+      :message="actionError"
+      confirm-text="OK"
+      cancel-text="Yopish"
+      variant="warning"
+      @confirm="showActionError = false"
+    />
   </div>
 </template>
 
@@ -142,8 +212,68 @@ const openLink = (url: string) => {
   if (import.meta.client) window.open(url, '_blank')
 }
 
-const onBook = (_order: IOrder) => {
-  // TODO: band qilish (backend endpoint) — buyurtmani band qilish
+const BOOK_PRICE = 1000
+const isAdmin = computed(() => role.value === 'admin')
+const showBookDialog = ref(false)
+const showNoMoneyDialog = ref(false)
+const booking = ref(false)
+const bookTarget = ref<IOrder | null>(null)
+const noMoneyMessage = ref('')
+const noMoneyIsBalance = ref(true)
+
+const bookConfirmMessage = computed(() => {
+  if (isAdmin.value) {
+    return "Bu buyurtmani band qilasizmi? Admin uchun bepul."
+  }
+  return `Bu buyurtmani band qilasizmi? Hisobingizdan ${BOOK_PRICE.toLocaleString('ru-RU')} so'm yechiladi.`
+})
+
+const onBook = (order: IOrder) => {
+  if (!order._id || order.status === 'booked') return
+  bookTarget.value = order
+  showBookDialog.value = true
+}
+
+const confirmBook = async () => {
+  const order = bookTarget.value
+  if (!order?._id || booking.value) return
+  booking.value = true
+  try {
+    await orderStore.bookOrder(order._id)
+    showBookDialog.value = false
+    bookTarget.value = null
+    try { await authStore.getMe() } catch { /* ignore */ }
+  } catch (e: any) {
+    const status = e?.response?.status
+    const data = e?.response?.data
+    showBookDialog.value = false
+    if (status === 402 || data?.data?.shortage != null) {
+      const price = Number(data?.data?.price || BOOK_PRICE)
+      const balance = Number(data?.data?.balance ?? authStore.user?.balance ?? 0)
+      const shortage = Number(data?.data?.shortage || Math.max(0, price - balance))
+      noMoneyIsBalance.value = true
+      noMoneyMessage.value =
+        data?.message ||
+        `Pul yo'q. Balansingiz: ${balance.toLocaleString('ru-RU')} so'm. Yetishmaydi: ${shortage.toLocaleString('ru-RU')} so'm.`
+      showNoMoneyDialog.value = true
+      return
+    }
+    noMoneyIsBalance.value = false
+    noMoneyMessage.value = data?.message || e?.message || 'Band qilish amalga oshmadi'
+    showNoMoneyDialog.value = true
+  } finally {
+    booking.value = false
+  }
+}
+
+const goPayment = () => {
+  showNoMoneyDialog.value = false
+  navigateTo('/driver/payment')
+}
+
+const onNoMoneyConfirm = () => {
+  if (noMoneyIsBalance.value) goPayment()
+  else showNoMoneyDialog.value = false
 }
 
 const onMessage = async (order: IOrder) => {
@@ -167,16 +297,85 @@ const onViewGroup = (order: IOrder) => {
   if (username) openLink(`https://t.me/${username}${msgId ? '/' + msgId : ''}`)
 }
 
-const onAgent = (_order: IOrder) => {
-  // TODO: admin — agentga biriktirish
+const senderLabel = (order: IOrder) => {
+  const s = order.sender
+  const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
+  return full || s?.username || s?.userId || 'Foydalanuvchi'
 }
 
-const onStopGroup = (_order: IOrder) => {
-  // TODO: admin — guruhni to'xtatish (kuzatuvdan olib tashlash)
+const onAgent = async (order: IOrder) => {
+  // Agent — order egasi (owner) bilan chat
+  if (!order._id) return
+  try {
+    const res = await chatStore.startChatWithOrderOwner(order._id)
+    if (res?.success && res.data?._id) {
+      return navigateTo(`/driver/chat/${res.data._id}`)
+    }
+    showError(res?.message || 'Agent chat ochilmadi')
+  } catch (err: any) {
+    console.error('startChatWithOrderOwner error:', err)
+    showError(err?.response?.data?.message || 'Agent chat ochilmadi')
+  }
+  // Fallback — owner Telegram profili
+  const username = order.owner?.username
+  if (username) openLink(`https://t.me/${username}`)
 }
 
-const onStopUser = (_order: IOrder) => {
-  // TODO: admin — foydalanuvchini to'xtatish/bloklash
+const showBlockGroupDialog = ref(false)
+const showBlockUserDialog = ref(false)
+const blockGroupTarget = ref<IOrder | null>(null)
+const blockUserTarget = ref<IOrder | null>(null)
+const blocking = ref(false)
+const actionError = ref('')
+const showActionError = ref(false)
+
+const showError = (msg: string) => {
+  actionError.value = msg
+  showActionError.value = true
+}
+
+const onStopGroup = (order: IOrder) => {
+  if (!order._id) return
+  blockGroupTarget.value = order
+  showBlockGroupDialog.value = true
+}
+
+const onStopUser = (order: IOrder) => {
+  if (!order._id) return
+  blockUserTarget.value = order
+  showBlockUserDialog.value = true
+}
+
+const confirmBlockGroup = async () => {
+  const order = blockGroupTarget.value
+  if (!order?._id || blocking.value) return
+  blocking.value = true
+  try {
+    await orderStore.blockGroup(order._id)
+    showBlockGroupDialog.value = false
+    blockGroupTarget.value = null
+  } catch (err: any) {
+    showBlockGroupDialog.value = false
+    showError(err?.response?.data?.message || 'Guruhni bloklash amalga oshmadi')
+  } finally {
+    blocking.value = false
+  }
+}
+
+const confirmBlockUser = async () => {
+  const order = blockUserTarget.value
+  if (!order?._id || blocking.value) return
+  blocking.value = true
+  try {
+    await orderStore.blockSender(order._id)
+    showBlockUserDialog.value = false
+    blockUserTarget.value = null
+  } catch (err: any) {
+    showBlockUserDialog.value = false
+    showError(err?.response?.data?.message || 'Foydalanuvchini bloklash amalga oshmadi')
+  } finally {
+    blocking.value = false
+  }
 }
 
 const onDelete = (order: IOrder) => {

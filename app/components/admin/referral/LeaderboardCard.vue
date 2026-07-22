@@ -25,6 +25,8 @@
         :rank="item.rank"
         :name="item.name"
         :username="item.username"
+        :avatar="item.avatar"
+        :user-id="item.id"
         :invites="item.invites"
         :bonus="item.bonus"
       />
@@ -35,8 +37,10 @@
 <script setup lang="ts">
 interface LeaderboardRow {
   rank: number
+  id?: string
   name: string
   username: string
+  avatar?: string
   invites: number
   bonus: number
 }

@@ -17,6 +17,7 @@ export interface PostGroup {
 }
 
 export const AD_PRICE = 2000
+export const GROUPS_PAGE_SIZE = 10
 
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()
@@ -26,13 +27,24 @@ export const usePostStore = defineStore('post', () => {
   const adsGroups = ref<PostGroup[]>([])
   const selected = ref<Set<string>>(new Set())
   const isLoading = ref(false)
+  const isLoadingMore = ref(false)
   const isSending = ref(false)
   const error = ref('')
+
+  const minePage = ref(1)
+  const adsPage = ref(1)
+  const mineTotal = ref(0)
+  const adsTotal = ref(0)
+  const mineHasMore = ref(false)
+  const adsHasMore = ref(false)
 
   const isAdmin = computed(() => authStore.user?.role === 'admin')
   const balance = computed(() => authStore.user?.balance ?? 0)
 
   const groups = computed(() => (tab.value === 'mine' ? mineGroups.value : adsGroups.value))
+  const totalGroups = computed(() => (tab.value === 'mine' ? mineTotal.value : adsTotal.value))
+  const hasMore = computed(() => (tab.value === 'mine' ? mineHasMore.value : adsHasMore.value))
+  const page = computed(() => (tab.value === 'mine' ? minePage.value : adsPage.value))
 
   const selectedList = computed(() => groups.value.filter(g => selected.value.has(g.id)))
 
@@ -49,32 +61,85 @@ export const usePostStore = defineStore('post', () => {
     return Math.floor(balance.value / pricePerGroup.value)
   })
 
-  const fetchMine = async (force = false) => {
+  const applyPageResult = (
+    mode: PostTab,
+    groupsPage: PostGroup[],
+    pagination: { total?: number; page?: number; hasMore?: boolean },
+    append: boolean
+  ) => {
+    const total = Number(pagination?.total ?? groupsPage.length)
+    const p = Number(pagination?.page ?? 1)
+    const more = Boolean(pagination?.hasMore)
+
+    if (mode === 'mine') {
+      mineGroups.value = append ? [...mineGroups.value, ...groupsPage] : groupsPage
+      mineTotal.value = total
+      minePage.value = p
+      mineHasMore.value = more
+    } else {
+      adsGroups.value = append ? [...adsGroups.value, ...groupsPage] : groupsPage
+      adsTotal.value = total
+      adsPage.value = p
+      adsHasMore.value = more
+    }
+  }
+
+  const fetchMine = async (opts: { page?: number; force?: boolean; append?: boolean } = {}) => {
+    const pageNum = opts.page ?? 1
     const res = await useApi('/groups/mine', {
-      params: force ? { force: '1' } : undefined,
+      params: {
+        page: pageNum,
+        limit: GROUPS_PAGE_SIZE,
+        ...(opts.force ? { force: '1' } : {}),
+      },
       timeout: 120_000,
     })
-    if (res.success) mineGroups.value = res.data.groups ?? []
+    if (res.success) {
+      applyPageResult(
+        'mine',
+        res.data.groups ?? [],
+        res.data.pagination ?? { total: res.data.count, page: pageNum, hasMore: false },
+        Boolean(opts.append)
+      )
+    }
+    return res
   }
 
-  const fetchAds = async (force = false) => {
+  const fetchAds = async (opts: { page?: number; force?: boolean; append?: boolean } = {}) => {
     if (!isAdmin.value) {
       adsGroups.value = []
+      adsTotal.value = 0
+      adsPage.value = 1
+      adsHasMore.value = false
       return
     }
+    const pageNum = opts.page ?? 1
     const res = await useApi('/groups/ads', {
-      params: force ? { force: '1' } : undefined,
+      params: {
+        page: pageNum,
+        limit: GROUPS_PAGE_SIZE,
+        ...(opts.force ? { force: '1' } : {}),
+      },
       timeout: 180_000,
     })
-    if (res.success) adsGroups.value = res.data.groups ?? []
+    if (res.success) {
+      applyPageResult(
+        'ads',
+        res.data.groups ?? [],
+        res.data.pagination ?? { total: res.data.count, page: pageNum, hasMore: false },
+        Boolean(opts.append)
+      )
+    }
+    return res
   }
 
+  /** Birinchi sahifa (ro'yxatni almashtiradi) */
   const load = async (force = false) => {
     try {
       isLoading.value = true
       error.value = ''
-      await fetchMine(force)
-      if (isAdmin.value) await fetchAds(force)
+      await fetchMine({ page: 1, force, append: false })
+      if (isAdmin.value) await fetchAds({ page: 1, force, append: false })
     } catch (e: any) {
       error.value = e?.response?.data?.message || 'Guruhlar yuklanmadi'
     } finally {
@@ -82,10 +147,33 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  /** Keyingi 10 ta (infinite scroll) */
+  const loadMore = async () => {
+    if (isLoading.value || isLoadingMore.value || !hasMore.value) return
+    try {
+      isLoadingMore.value = true
+      error.value = ''
+      const next = page.value + 1
+      if (tab.value === 'mine') {
+        await fetchMine({ page: next, append: true })
+      } else {
+        await fetchAds({ page: next, append: true })
+      }
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Keyingi guruhlar yuklanmadi'
+    } finally {
+      isLoadingMore.value = false
+    }
+  }
+
   const setTab = (t: PostTab) => {
     if (t === 'ads' && !isAdmin.value) return
     tab.value = t
     selected.value = new Set()
+    // Tabda hali yuklanmagan bo'lsa — 1-sahifa
+    if (t === 'ads' && !adsGroups.value.length && isAdmin.value) {
+      fetchAds({ page: 1, append: false }).catch(() => {})
+    }
   }
 
   const toggle = (id: string) => {
@@ -95,7 +183,6 @@ export const usePostStore = defineStore('post', () => {
       selected.value = next
       return
     }
-    // Balans yetmasa — belgilashni to'xtatish
     if (pricePerGroup.value > 0 && next.size >= maxSelectable.value) {
       error.value = `Balans yetarli emas. Har bir guruh ${pricePerGroup.value.toLocaleString('ru-RU')} so'm`
       return
@@ -154,18 +241,25 @@ export const usePostStore = defineStore('post', () => {
     tab,
     mineGroups,
     adsGroups,
+    mineTotal,
+    adsTotal,
     selected,
     isLoading,
+    isLoadingMore,
     isSending,
     error,
     isAdmin,
     balance,
     groups,
+    totalGroups,
+    hasMore,
+    page,
     selectedList,
     pricePerGroup,
     totalCost,
     maxSelectable,
     load,
+    loadMore,
     setTab,
     toggle,
     selectAllVisible,

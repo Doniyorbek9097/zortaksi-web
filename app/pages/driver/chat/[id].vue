@@ -5,6 +5,9 @@
       :name="name"
       :status="statusText"
       :online="isOnline"
+      :avatar="peerAvatar"
+      :user-id="peerUserId"
+      :can-call="!!callPhone"
       @back="goBack"
       @call="onCall"
     />
@@ -12,16 +15,31 @@
     <!-- Xabarlar -->
     <div ref="scrollEl" class="flex-1 overflow-y-auto">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2">
+        <!-- Order e'lon matni -->
+        <div
+          v-if="orderText"
+          class="rounded-2xl px-3.5 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
+        >
+          <p class="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 mb-1.5">
+            Buyurtma e'loni
+          </p>
+          <p class="text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+            <ChatLinkifiedText :text="orderText" />
+          </p>
+        </div>
+
         <!-- Loading -->
         <div v-if="chatStore.isLoadingMessages && !chatStore.messages.length" class="space-y-2">
           <div v-for="n in 6" :key="n" class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'" />
         </div>
 
         <!-- Empty -->
-        <div v-else-if="!chatStore.messages.length" class="py-16 text-center text-slate-400 dark:text-slate-500">
-          <font-awesome-icon icon="fa-solid fa-comments" class="text-3xl mb-3 opacity-50" />
-          <p class="text-sm font-bold">Yozishmani boshlang</p>
-        </div>
+        <BaseEmptyState
+          v-else-if="!chatStore.messages.length"
+          icon="fa-solid fa-comments"
+          title="Yozishmani boshlang"
+          class="!min-h-[40vh]"
+        />
 
         <ChatMessageBubble
           v-for="msg in chatStore.messages"
@@ -85,6 +103,7 @@
 
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chat.store'
+import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
 
 definePageMeta({
   layout: false,
@@ -104,11 +123,18 @@ const name = computed(() => {
   return (route.query.name as string) || 'Buyurtmachi'
 })
 
+const peerAvatar = computed(() => chatStore.currentChat?.peer?.avatar)
+const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
+
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   return '...'
 })
+
+const orderText = computed(() =>
+  String(chatStore.currentChat?.orderText || '').trim()
+)
 
 const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)
@@ -164,9 +190,18 @@ const onPhoto = async (file: File) => {
 }
 
 const goBack = () => navigateTo('/driver/chats')
+
+const callPhone = computed(() =>
+  resolveChatPhone({
+    messages: chatStore.messages,
+    peerPhone: chatStore.currentChat?.peer?.phone,
+    fallbackPhone: route.query.phone as string | undefined,
+  })
+)
+
 const onCall = () => {
-  const phone = chatStore.currentChat?.peer?.phone || (route.query.phone as string | undefined)
-  if (phone && import.meta.client) window.location.href = `tel:${phone}`
+  if (!callPhone.value || !import.meta.client) return
+  window.location.href = normalizeTelHref(callPhone.value)
 }
 
 // Yangi xabar kelganda pastga surish

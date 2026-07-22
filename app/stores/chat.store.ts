@@ -280,9 +280,15 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
-    // --- Orderdan chat ochish ---
+    // --- Orderdan chat ochish (sender) ---
     const startChatFromOrder = async (orderId: string) => {
         const res = await useApi(`/chats/from-order/${orderId}`, { method: 'POST' })
+        return res
+    }
+
+    // --- Agent: order egasi (owner) bilan chat ---
+    const startChatWithOrderOwner = async (orderId: string) => {
+        const res = await useApi(`/chats/from-order/${orderId}/agent`, { method: 'POST' })
         return res
     }
 
@@ -410,6 +416,7 @@ export const useChatStore = defineStore('chat', () => {
         sendVoice,
         sendPhoto,
         startChatFromOrder,
+        startChatWithOrderOwner,
         markRead,
         deleteChats,
         onNewMessage,

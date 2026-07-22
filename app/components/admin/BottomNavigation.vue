@@ -48,6 +48,7 @@ const props = withDefaults(defineProps<Props>(), {
   chatsBadge: 0,
 })
 
+// Home (Asosiy) — admin tabbarda umuman yo'q
 const items = computed<NavItem[]>(() => [
   { to: '/admin/dashboard', label: 'Admin', icon: 'fa-solid fa-shield-alt' },
   {
