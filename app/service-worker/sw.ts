@@ -11,14 +11,16 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// Offline navigation fallback — only if `/` was precached (SSR/Nuxt often skips HTML).
 try {
+  const handler = createHandlerBoundToURL('/')
   registerRoute(
-    new NavigationRoute(createHandlerBoundToURL('/'), {
-      denylist: [/^\/api\//, /^\/sw\.js$/, /^\/workbox-/],
+    new NavigationRoute(handler, {
+      denylist: [/^\/api\//, /^\/sw\.js$/, /^\/manifest\.webmanifest$/, /^\/workbox-/],
     })
   )
 } catch {
-  /* SPA fallback ixtiyoriy */
+  /* no precached index — online navigations still work */
 }
 
 function iconUrl(path: string) {

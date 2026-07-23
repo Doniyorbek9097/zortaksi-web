@@ -1,5 +1,6 @@
 <template>
   <div class="theme-page safe-app min-h-screen w-full">
+    <NuxtPwaManifest />
     <NuxtRouteAnnouncer />
     <NuxtLayout>
       <NuxtPage />
@@ -8,6 +9,7 @@
     <PwaInstallModal
       v-model:open="open"
       :ios-hint="iosHint"
+      :manual-hint="manualHint"
       @install="install"
       @later="remindLater"
     />
@@ -16,7 +18,7 @@
 
 <script setup lang="ts">
 const { theme, initTheme } = useTheme()
-const { open, iosHint, install, remindLater } = usePwaInstall()
+const { open, iosHint, manualHint, install, remindLater } = usePwaInstall()
 
 useHead({
   htmlAttrs: {

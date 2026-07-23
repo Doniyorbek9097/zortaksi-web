@@ -35,6 +35,8 @@ export default defineNuxtConfig({
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
         { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
         { rel: 'apple-touch-startup-image', href: '/logo.jpg' },
+        // Backup if NuxtPwaManifest is missing from a layout; primary injection is <NuxtPwaManifest />
+        { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
     },
   },
@@ -44,7 +46,10 @@ export default defineNuxtConfig({
     filename: 'sw.ts',
     registerType: 'autoUpdate',
     injectRegister: 'auto',
+    // Manifest MIME / cache headers (Vercel/Nitro)
+    registerWebManifestInRouteRules: true,
     manifest: {
+      id: '/',
       name: "Zo'r Taksi",
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish va bildirishnomalar',
@@ -55,13 +60,8 @@ export default defineNuxtConfig({
       start_url: '/',
       scope: '/',
       lang: 'uz',
+      // PNG any icons first — required for Chrome installability
       icons: [
-        {
-          src: '/logo.jpg',
-          sizes: '512x512',
-          type: 'image/jpeg',
-          purpose: 'any',
-        },
         {
           src: '/icons/icon-192x192.png',
           sizes: '192x192',

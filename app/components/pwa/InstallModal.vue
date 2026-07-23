@@ -3,7 +3,7 @@
     <Transition name="pwa-fade">
       <div
         v-if="open"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4"
         role="dialog"
         aria-modal="true"
       >
@@ -28,9 +28,9 @@
               <img src="/logo.jpg" alt="Zo'r Taksi" class="w-full h-full object-cover" />
             </div>
 
-            <h2 class="mt-4 text-xl font-black tracking-tight">Ilovani o'rnating</h2>
+            <h2 class="mt-4 text-xl font-black tracking-tight">Ilovani o'rnatish</h2>
             <p class="mt-2 text-[13px] leading-relaxed text-slate-400 font-medium">
-              ZorTaksi.Uz ni telefoningizga o'rnating — tezroq kirish va buyurtmalarni oson kuzatish uchun.
+              ZorTaksi ni telefoningizga o'rnating — tezroq kirish va buyurtmalarni oson kuzatish uchun.
             </p>
 
             <ul class="mt-5 w-full space-y-2.5 text-left">
@@ -49,18 +49,36 @@
             </ul>
 
             <button
+              v-if="!iosHint && !manualHint"
               type="button"
-              class="mt-6 w-full py-3.5 rounded-xl text-sm font-black text-white bg-gradient-to-r from-sky-500 to-violet-600 shadow-lg shadow-violet-600/25 active:scale-[0.98] transition-transform"
+              class="mt-6 w-full py-3.5 rounded-xl text-sm font-black text-white bg-gradient-to-r from-sky-500 to-cyan-600 shadow-lg shadow-sky-600/25 active:scale-[0.98] transition-transform"
               @click="onInstall"
             >
-              Telefonga o'rnating
+              Ilovani o'rnatish
             </button>
 
             <p
               v-if="iosHint"
-              class="mt-3 text-[11px] text-slate-400 leading-relaxed"
+              class="mt-5 w-full rounded-xl bg-slate-800/80 border border-slate-700 px-3 py-3 text-[12px] text-slate-300 leading-relaxed text-left"
             >
-              Safari → Ulashish → <b class="text-slate-200">Add to Home Screen</b>
+              Safari da: pastki
+              <b class="text-white">Ulashish</b>
+              →
+              <b class="text-white">Add to Home Screen</b>
+              (Yoki «Asosiy ekranga qo‘shish»).
+            </p>
+
+            <p
+              v-else-if="manualHint"
+              class="mt-5 w-full rounded-xl bg-slate-800/80 border border-slate-700 px-3 py-3 text-[12px] text-slate-300 leading-relaxed text-left"
+            >
+              Chrome/Android da: menyu
+              <b class="text-white">⋮</b>
+              →
+              <b class="text-white">Ilovani o‘rnatish</b>
+              yoki
+              <b class="text-white">Add to Home screen</b>.
+              Telegram ichida ochilgan bo‘lsa, saytni brauzerda oching.
             </p>
 
             <button
@@ -78,9 +96,10 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
+defineProps<{
   open: boolean
   iosHint?: boolean
+  manualHint?: boolean
 }>()
 
 const emit = defineEmits<{
