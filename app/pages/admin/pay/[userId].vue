@@ -222,7 +222,11 @@ definePageMeta({ layout: 'admin' })
 const route = useRoute()
 const tariffStore = useTariffStore()
 
-const userId = computed(() => String(route.params.userId || ''))
+const userId = computed(() => decodeURIComponent(String(route.params.userId || '')).trim())
+
+const payApiPath = computed(() =>
+  userId.value ? `/drivers/pay/${encodeURIComponent(userId.value)}` : ''
+)
 
 const driver = ref<(DriverRow & { _id?: string }) | null>(null)
 const selectedTariffId = ref<string | null>(null)
@@ -269,12 +273,22 @@ const balanceAfterTariff = computed(() => {
 const load = async () => {
   loading.value = true
   error.value = ''
+  driver.value = null
+  if (!payApiPath.value) {
+    error.value = 'Haydovchi ID yo\'q'
+    loading.value = false
+    return
+  }
   try {
     const [driverRes] = await Promise.all([
-      useApi(`/drivers/pay/${userId.value}`),
+      useApi(payApiPath.value),
       tariffStore.tariffs.length ? Promise.resolve(null) : tariffStore.fetchTariffs(),
     ])
-    if (driverRes.success) driver.value = driverRes.data
+    if (driverRes?.success) {
+      driver.value = driverRes.data
+    } else {
+      error.value = driverRes?.message || 'Haydovchi topilmadi'
+    }
 
     const qTariff = String(route.query.tariffId || '')
     const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
@@ -301,16 +315,18 @@ const load = async () => {
 }
 
 const refreshDriver = async () => {
-  const res = await useApi(`/drivers/pay/${userId.value}`)
+  if (!payApiPath.value) return
+  const res = await useApi(payApiPath.value)
   if (res.success) driver.value = res.data
 }
 
 const run = async (body: Record<string, unknown>, okMsg: string) => {
+  if (!payApiPath.value) return
   saving.value = true
   error.value = ''
   success.value = ''
   try {
-    const res = await useApi(`/drivers/pay/${userId.value}`, {
+    const res = await useApi(payApiPath.value, {
       method: 'POST',
       body,
     })
@@ -318,6 +334,8 @@ const run = async (body: Record<string, unknown>, okMsg: string) => {
       driver.value = res.data
       success.value = okMsg
       await refreshDriver()
+    } else {
+      error.value = res?.message || 'Amal bajarilmadi'
     }
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Amal bajarilmadi'

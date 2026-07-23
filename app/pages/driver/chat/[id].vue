@@ -193,7 +193,13 @@ const showPaymentChatChrome = computed(() =>
   isSupport.value && authStore.user?.role !== 'admin'
 )
 
+/** Support chat: admin ↔ haydovchi. Admin tomonda peer — haydovchi. */
+const isDriverPeer = computed(() =>
+  isSupport.value && authStore.user?.role === 'admin'
+)
+
 const name = computed(() => {
+  if (isDriverPeer.value) return 'Haydovchi'
   if (isSupport.value) {
     const p = chatStore.currentChat?.peer
     const full = p ? [p.firstName, p.lastName].filter(Boolean).join(' ').trim() : ''

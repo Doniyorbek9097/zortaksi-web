@@ -74,18 +74,25 @@
 
 <script setup lang="ts">
 import type { IChat } from '~/types'
+import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 
 definePageMeta({
   layout: 'driver',
 })
 
+const authStore = useAuthStore()
 const chatStore = useChatStore()
 
 // --- Ko'rinish yordamchilari ---
 const isSupport = (chat: IChat) => chat.kind === 'support'
 
+/** Support chat: admin ↔ haydovchi. Admin tomonda peer — haydovchi. */
+const isDriverPeer = (chat: IChat) =>
+  isSupport(chat) && authStore.user?.role === 'admin'
+
 const peerName = (chat: IChat) => {
+  if (isDriverPeer(chat)) return 'Haydovchi'
   if (isSupport(chat)) {
     const p = chat.peer
     const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
