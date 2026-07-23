@@ -44,7 +44,6 @@
         :avatar="chat.peer.avatar"
         :user-id="chat.peer.userId"
         :unread="chat.unreadCount"
-        :support="isSupport(chat)"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
         @open="openChat(chat)"
@@ -74,33 +73,25 @@
 
 <script setup lang="ts">
 import type { IChat } from '~/types'
-import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 
 definePageMeta({
   layout: 'driver',
 })
 
-const authStore = useAuthStore()
 const chatStore = useChatStore()
 
 // --- Ko'rinish yordamchilari ---
 const isSupport = (chat: IChat) => chat.kind === 'support'
 
-/** Support chat: admin ↔ haydovchi. Admin tomonda peer — haydovchi. */
-const isDriverPeer = (chat: IChat) =>
-  isSupport(chat) && authStore.user?.role === 'admin'
-
+/** Peer ismi — haydovchi/admin ham oddiy foydalanuvchi kabi */
 const peerName = (chat: IChat) => {
-  if (isDriverPeer(chat)) return 'Haydovchi'
-  if (isSupport(chat)) {
-    const p = chat.peer
-    const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
-    return full || p.username || 'Admin'
-  }
   const p = chat.peer
   const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
-  return full || p.username || p.userId || 'Buyurtmachi'
+  if (full) return full
+  if (p.username) return p.username
+  if (p.userId) return p.userId
+  return isSupport(chat) ? 'Admin' : 'Buyurtmachi'
 }
 
 const formatDate = (value: string | Date) => {

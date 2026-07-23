@@ -37,8 +37,8 @@ interface Props {
 }
 
 withDefaults(defineProps<Props>(), {
-  title: "To'lov qilish",
-  subtitle: "Tarif faol emas — to'lov qiling",
+  title: 'Tarifga ulaning',
+  subtitle: "Hisobni to'ldiring, keyin tarifni o'zingiz ulang",
   buttonText: 'Ochish',
 })
 

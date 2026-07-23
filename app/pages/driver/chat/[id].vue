@@ -1,13 +1,10 @@
 <template>
   <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
   <div
-    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden"
-    :class="showPaymentChatChrome
-      ? 'bg-gradient-to-b from-teal-50 via-slate-50 to-slate-100 dark:from-teal-950/50 dark:via-slate-950 dark:to-slate-950'
-      : 'bg-slate-50 dark:bg-slate-950'"
+    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
     :style="shellStyle"
   >
-    <!-- Header -->
+    <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
       :name="name"
       :status="statusText"
@@ -15,7 +12,6 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!isSupport && !!callPhone"
-      :support="showPaymentChatChrome"
       @back="goChats"
       @call="onCall"
     />
@@ -23,22 +19,9 @@
     <!-- Xabarlar -->
     <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
-        <!-- Support/to'lov banner — faqat haydovchi/user uchun -->
-        <div
-          v-if="showPaymentChatChrome"
-          class="rounded-2xl px-3.5 py-3 bg-teal-500/10 border border-teal-400/30 dark:border-teal-700/50"
-        >
-          <p class="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600 dark:text-teal-400 mb-1">
-            To'lov chati
-          </p>
-          <p class="text-[13px] leading-relaxed text-slate-600 dark:text-slate-300">
-            To'lov so'rovi va karta ma'lumotlari shu yerda ko'rinadi.
-          </p>
-        </div>
-
         <!-- Order e'lon matni -->
         <div
-          v-else-if="orderText"
+          v-if="orderText"
           class="rounded-2xl px-3.5 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
         >
           <p class="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 mb-1.5">
@@ -83,10 +66,7 @@
           class="flex justify-start"
         >
           <div
-            class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
-            :class="showPaymentChatChrome
-              ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
-              : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
+            class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700"
           >
             <span class="inline-flex items-center gap-1">
               yozmoqda
@@ -170,7 +150,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
 
@@ -179,7 +158,6 @@ definePageMeta({
 })
 
 const route = useRoute()
-const authStore = useAuthStore()
 const chatStore = useChatStore()
 
 const chatId = computed(() => route.params.id as string)
@@ -188,29 +166,18 @@ const isSupport = computed(() =>
   chatStore.currentChat?.kind === 'support' || route.query.support === '1'
 )
 
-/** To'lov chati UI faqat haydovchi/user uchun; admin oddiy chat ko'radi */
-const showPaymentChatChrome = computed(() =>
-  isSupport.value && authStore.user?.role !== 'admin'
-)
-
-/** Support chat: admin ↔ haydovchi. Admin tomonda peer — haydovchi. */
-const isDriverPeer = computed(() =>
-  isSupport.value && authStore.user?.role === 'admin'
-)
-
+/** Peer ismi — haydovchi ham oddiy foydalanuvchi kabi (haqiqiy ism) */
 const name = computed(() => {
-  if (isDriverPeer.value) return 'Haydovchi'
-  if (isSupport.value) {
-    const p = chatStore.currentChat?.peer
-    const full = p ? [p.firstName, p.lastName].filter(Boolean).join(' ').trim() : ''
-    return full || (route.query.name as string) || 'Admin'
-  }
   const p = chatStore.currentChat?.peer
   if (p) {
     const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
-    return full || p.username || p.userId || 'Buyurtmachi'
+    if (full) return full
+    if (p.username) return p.username
+    if (p.userId) return p.userId
   }
-  return (route.query.name as string) || 'Buyurtmachi'
+  const qName = (route.query.name as string) || ''
+  if (qName) return qName
+  return isSupport.value ? 'Admin' : 'Buyurtmachi'
 })
 
 const peerAvatar = computed(() => chatStore.currentChat?.peer?.avatar)

@@ -116,6 +116,7 @@
       <!-- To'lov so'rovi (haydovchi → admin) -->
       <ChatPaymentRequestBubble
         v-else-if="paymentRequest"
+        :type="paymentRequest.type"
         :name="paymentRequest.name"
         :phone="paymentRequest.phone"
         :tariff="paymentRequest.tariff"
@@ -278,6 +279,7 @@ const paymentRequest = computed(() => {
     try {
       const data = JSON.parse(m[1].trim())
       return {
+        type: String(data.type || (data.tariffId || data.tariff ? 'tariff' : 'topup')).trim(),
         name: String(data.name || '').trim(),
         phone: String(data.phone || '').trim(),
         tariff: String(data.tariff || '').trim(),
@@ -292,16 +294,21 @@ const paymentRequest = computed(() => {
   }
 
   if (
+    /hisobni to['']ldir/i.test(raw) ||
     /tarif sotib olmoqchiman/i.test(raw) ||
     /🛒/.test(raw) ||
+    /💰/.test(raw) ||
     (/karta raqamini yuboring/i.test(raw) && /summa/i.test(raw))
   ) {
     const url = pickLine(raw, /(https?:\/\/[^\s]+\/admin\/pay\/[^\s]+)/i)
       || pickLine(raw, /(https?:\/\/[^\s]+)/i)
+    const tariff = pickLine(raw, /Tarif:\s*(.+)/i)
+    const isTopup = /hisobni to['']ldir/i.test(raw) || !tariff
     return {
+      type: isTopup ? 'topup' : 'tariff',
       name: pickLine(raw, /Ism:\s*(.+)/i),
       phone: pickLine(raw, /Tel:\s*(.+)/i),
-      tariff: pickLine(raw, /Tarif:\s*(.+)/i),
+      tariff,
       amount: pickLine(raw, /Summa:\s*([^\n]+?)(?:\s*so['']m)?$/im).replace(/\s*so['']m/i, '').trim(),
       payUrl: url,
       userId: '',

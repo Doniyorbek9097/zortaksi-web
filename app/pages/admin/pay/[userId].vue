@@ -11,15 +11,14 @@
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
       <div class="leading-none">
-        <h1 class="text-base font-black text-slate-900 dark:text-white">To'lov qilish</h1>
-        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">Haydovchi hisobi</p>
+        <h1 class="text-base font-black text-slate-900 dark:text-white">Hisobni to'ldirish</h1>
+        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">Haydovchi balansiga qo'shish</p>
       </div>
     </header>
 
     <div v-if="loading" class="space-y-3">
       <div class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       <div class="h-40 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      <div class="h-48 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     </div>
 
     <template v-else-if="driver">
@@ -69,7 +68,7 @@
           Balansga qo'shish
         </p>
         <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          Foydalanuvchi yuborgan summani qo'lda kiriting. Tarif tanlash shart emas.
+          Haydovchi so'ragan summani kiriting. Tarifni haydovchi o'zi balansidan ulaydi.
         </p>
 
         <div class="space-y-1">
@@ -98,107 +97,10 @@
         </button>
       </section>
 
-      <!-- Tarif tanlash -->
-      <section class="space-y-3">
-        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 px-1">Tarif</p>
-
-        <div class="space-y-2">
-          <button
-            v-for="t in tariffStore.tariffs"
-            :key="t.id"
-            type="button"
-            class="w-full flex items-center gap-3 px-3.5 py-3.5 rounded-2xl border text-left transition-all bg-white dark:bg-slate-900"
-            :class="selectedTariffId === t.id
-              ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/40'
-              : 'border-slate-200 dark:border-slate-800'"
-            @click="selectedTariffId = t.id"
-          >
-            <span
-              class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
-              :class="selectedTariffId === t.id ? 'border-violet-500' : 'border-slate-300 dark:border-slate-600'"
-            >
-              <span v-if="selectedTariffId === t.id" class="w-2.5 h-2.5 rounded-full bg-violet-500" />
-            </span>
-            <span class="flex-1 min-w-0">
-              <span class="block text-sm font-black text-slate-900 dark:text-white">{{ t.name }}</span>
-              <span class="text-[11px] font-medium text-slate-400">
-                {{ t.info || `${t.expireDays} kun` }}
-                <template v-if="t.info"> · {{ t.expireDays }} kun</template>
-              </span>
-            </span>
-            <span class="text-sm font-black text-sky-500 shrink-0">{{ formatMoney(t.price) }}</span>
-          </button>
-
-          <p v-if="!tariffStore.tariffs.length" class="py-4 text-center text-[12px] text-slate-400">
-            Tariflar topilmadi
-          </p>
-        </div>
-      </section>
-
-      <!-- Tarif bilan birga -->
-      <section
-        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
-      >
-        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-          Tarif bilan birga
-        </p>
-
-        <label class="flex items-start gap-3 cursor-pointer select-none">
-          <input
-            v-model="attachTariff"
-            type="checkbox"
-            class="mt-1 w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-          >
-          <span>
-            <span class="block text-sm font-black text-slate-900 dark:text-white">Tarifni ulash</span>
-            <span class="text-[11px] font-medium text-slate-400">
-              {{ selectedTariff ? `${selectedTariff.name} — ${formatMoney(selectedTariff.price)} so'm` : 'Tarif tanlang' }}
-            </span>
-          </span>
-        </label>
-
-        <label class="flex items-start gap-3 cursor-pointer select-none">
-          <input
-            v-model="deductTariff"
-            type="checkbox"
-            class="mt-1 w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
-          >
-          <span class="block text-sm font-black text-slate-900 dark:text-white">
-            Balansdan tarif narxini yechish
-          </span>
-        </label>
-
-        <div class="space-y-1.5 pt-1 text-[12px] font-bold">
-          <div class="flex justify-between">
-            <span class="text-slate-400">To'lovdan keyin balans</span>
-            <span class="text-sky-500">{{ formatMoney(balanceAfterCredit) }} so'm</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-400">Tarifdan keyin</span>
-            <span class="text-emerald-500">{{ formatMoney(balanceAfterTariff) }} so'm</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          :disabled="saving || creditAmount <= 0 || !attachTariff || !selectedTariff"
-          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-          @click="payAndAttach"
-        >
-          <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'" :class="saving ? 'animate-spin' : ''" />
-          To'lov + ulash
-        </button>
-
-        <button
-          type="button"
-          :disabled="saving || !selectedTariff"
-          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-violet-600 dark:text-violet-400 border-2 border-violet-400/60 bg-white dark:bg-slate-950 active:scale-[0.98] transition-all disabled:opacity-50"
-          @click="attachOnly"
-        >
-          <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-key'" :class="saving ? 'animate-spin' : ''" />
-          Faqat tarifni ulash
-        </button>
-      </section>
+      <p class="text-center text-[11px] font-medium text-slate-400 leading-relaxed px-2">
+        Tarif ulash kerak bo'lsa — Haydovchilar sahifasidagi tarif dialogidan foydalaning.
+        Oddiy holatda haydovchi o'zi ulaydi.
+      </p>
     </template>
 
     <BaseEmptyState
@@ -213,14 +115,11 @@
 </template>
 
 <script setup lang="ts">
-import type { TariffRow } from '~/stores/tariff.store'
-import { useTariffStore } from '~/stores/tariff.store'
 import type { DriverRow } from '~/stores/driver.store'
 
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
-const tariffStore = useTariffStore()
 
 const userId = computed(() => decodeURIComponent(String(route.params.userId || '')).trim())
 
@@ -229,10 +128,7 @@ const payApiPath = computed(() =>
 )
 
 const driver = ref<(DriverRow & { _id?: string }) | null>(null)
-const selectedTariffId = ref<string | null>(null)
 const amountText = ref('')
-const attachTariff = ref(true)
-const deductTariff = ref(true)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
@@ -256,19 +152,7 @@ const parseAmount = (raw: string) => {
 
 const creditAmount = computed(() => parseAmount(amountText.value))
 
-const selectedTariff = computed(() =>
-  tariffStore.tariffs.find(t => t.id === selectedTariffId.value) || null
-)
-
 const balanceAfterCredit = computed(() => (driver.value?.balance ?? 0) + creditAmount.value)
-
-const balanceAfterTariff = computed(() => {
-  let bal = balanceAfterCredit.value
-  if (attachTariff.value && deductTariff.value && selectedTariff.value) {
-    bal -= selectedTariff.value.price
-  }
-  return bal
-})
 
 const load = async () => {
   loading.value = true
@@ -280,33 +164,17 @@ const load = async () => {
     return
   }
   try {
-    const [driverRes] = await Promise.all([
-      useApi(payApiPath.value),
-      tariffStore.tariffs.length ? Promise.resolve(null) : tariffStore.fetchTariffs(),
-    ])
+    const driverRes = await useApi(payApiPath.value)
     if (driverRes?.success) {
       driver.value = driverRes.data
     } else {
       error.value = driverRes?.message || 'Haydovchi topilmadi'
     }
 
-    const qTariff = String(route.query.tariffId || '')
     const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
-
-    if (qTariff && tariffStore.tariffs.some(t => t.id === qTariff)) {
-      selectedTariffId.value = qTariff
-    } else if (tariffStore.tariffs[0]) {
-      selectedTariffId.value = tariffStore.tariffs[0].id
-    }
-
     if (Number.isFinite(qAmount) && qAmount > 0) {
       amountText.value = formatMoney(qAmount)
-    } else if (selectedTariff.value) {
-      amountText.value = formatMoney(selectedTariff.value.price)
     }
-
-    attachTariff.value = true
-    deductTariff.value = true
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ma\'lumot yuklanmadi'
   } finally {
@@ -320,19 +188,19 @@ const refreshDriver = async () => {
   if (res.success) driver.value = res.data
 }
 
-const run = async (body: Record<string, unknown>, okMsg: string) => {
-  if (!payApiPath.value) return
+const addBalanceOnly = async () => {
+  if (creditAmount.value <= 0 || !payApiPath.value) return
   saving.value = true
   error.value = ''
   success.value = ''
   try {
     const res = await useApi(payApiPath.value, {
       method: 'POST',
-      body,
+      body: { creditAmount: creditAmount.value, attachTariff: false },
     })
     if (res.success) {
       driver.value = res.data
-      success.value = okMsg
+      success.value = `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi`
       await refreshDriver()
     } else {
       error.value = res?.message || 'Amal bajarilmadi'
@@ -343,51 +211,6 @@ const run = async (body: Record<string, unknown>, okMsg: string) => {
     saving.value = false
   }
 }
-
-/** Faqat balansga qo'shish */
-const addBalanceOnly = () => {
-  if (creditAmount.value <= 0) return
-  run(
-    { creditAmount: creditAmount.value, attachTariff: false },
-    `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi`
-  )
-}
-
-/** To'lov + tarif ulash */
-const payAndAttach = () => {
-  if (!selectedTariff.value || creditAmount.value <= 0) return
-  run(
-    {
-      creditAmount: creditAmount.value,
-      tariffId: selectedTariff.value.id,
-      attachTariff: true,
-      deductTariff: deductTariff.value,
-    },
-    'To\'lov qabul qilindi va tarif ulandi'
-  )
-}
-
-/** Faqat tarifni ulash (to'lovsiz) */
-const attachOnly = () => {
-  if (!selectedTariff.value) return
-  run(
-    {
-      tariffId: selectedTariff.value.id,
-      attachTariff: true,
-      deductTariff: deductTariff.value,
-      creditAmount: 0,
-    },
-    'Tarif ulandi'
-  )
-}
-
-watch(selectedTariffId, (id) => {
-  const t = tariffStore.tariffs.find(x => x.id === id)
-  if (t && !route.query.amount) {
-    // query amount yo'q bo'lsa — tanlangan tarif narxini to'ldirish
-    amountText.value = formatMoney(t.price)
-  }
-})
 
 onMounted(load)
 </script>

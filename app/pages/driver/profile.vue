@@ -169,7 +169,7 @@ const adminUsername = computed(() =>
 
 // --- Actions ---
 const onBonus = () => navigateTo('/driver/bonus')
-const onTopup = () => navigateTo('/driver/payment')
+const onTopup = () => navigateTo({ path: '/driver/payment', query: { mode: 'topup' } })
 const onBuyTariff = () => navigateTo('/driver/payment')
 
 const switchError = ref('')

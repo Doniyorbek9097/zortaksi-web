@@ -19,7 +19,7 @@
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
     <!-- Balance -->
-    <DashboardBalanceCard :balance="balance" @buy="onBuyTariff" />
+    <DashboardBalanceCard :balance="balance" :active="tariffActive" @buy="onBuyTariff" />
 
     <!-- Tariff / subscription -->
     <DashboardTariffCard

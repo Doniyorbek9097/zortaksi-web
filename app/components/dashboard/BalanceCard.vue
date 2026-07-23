@@ -13,6 +13,7 @@
     </div>
 
     <button
+      v-if="!active"
       type="button"
       class="mt-4 w-full flex items-center justify-between gap-3 rounded-xl p-3 text-left bg-white/70 dark:bg-slate-900/60 border border-amber-400/40 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/50 active:scale-[0.98] transition-all"
       @click="$emit('buy')"
@@ -36,10 +37,13 @@
 <script setup lang="ts">
 interface Props {
   balance?: number
+  /** Faol tarif — "Tarif sotib olish" tugmasi yashiriladi */
+  active?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   balance: 0,
+  active: false,
 })
 
 defineEmits<{ buy: [] }>()

@@ -28,7 +28,7 @@
         @click="onDelete"
       >
         <font-awesome-icon icon="fa-solid fa-trash" class="text-base" />
-        <span class="text-[13px] font-black">O'chirish</span>
+        <span class="text-[11px] font-black">O'chirish</span>
       </button>
 
       <!-- Karta -->
@@ -58,36 +58,36 @@
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
       <button v-if="locked" type="button" data-no-swipe
-        class="mt-4 w-full min-h-12 inline-flex items-center justify-center gap-2.5 px-3 py-3.5 rounded-xl text-[15px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+        class="mt-4 w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[13px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
         @pointerdown.stop @click.stop="$emit('unlock')">
         <font-awesome-icon icon="fa-solid fa-lock" class="text-sm" />
         Tariffga ulanish →
       </button>
 
       <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
-      <div v-else class="mt-4 space-y-2.5" data-no-swipe @pointerdown.stop>
+      <div v-else class="mt-4 space-y-2" data-no-swipe @pointerdown.stop>
         <!-- Xabar yozish / Telefon -->
-        <div :class="callPhone ? 'grid grid-cols-2 gap-2.5' : 'grid grid-cols-1'">
+        <div :class="callPhone ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'">
           <button type="button"
-            class="min-h-12 inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-xl text-[14px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('message')">
             <font-awesome-icon icon="fa-solid fa-comments" class="text-sm" />
             Xabar yozish
           </button>
           <a v-if="callPhone" :href="normalizeTelHref(callPhone)"
-            class="min-h-12 inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-xl text-[14px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
             @click.stop>
             <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
             Telefon qilish
           </a>
         </div>
 
-        <div class="grid grid-cols-1 gap-2.5">
+        <div class="grid grid-cols-1 gap-2">
           <!-- Band qilish / Band bekor qilish -->
           <button
             v-if="!isBooked"
             type="button"
-            class="w-full min-h-12 inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-xl text-[14px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('book')"
           >
             <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm" />
@@ -96,7 +96,7 @@
           <button
             v-else-if="canUnbook"
             type="button"
-            class="w-full min-h-12 inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-xl text-[14px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('unbook')"
           >
             <font-awesome-icon icon="fa-solid fa-rotate" class="text-sm" />
@@ -104,28 +104,28 @@
           </button>
           <div
             v-else
-            class="w-full min-h-12 inline-flex items-center justify-center gap-2 px-3 py-3.5 rounded-xl text-[14px] font-black text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800"
+            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800"
           >
             <font-awesome-icon icon="fa-solid fa-lock" class="text-sm" />
             Band qilingan
           </div>
         </div>
         <!-- Admin amallari -->
-        <div v-if="isAdmin" class="grid grid-cols-3 gap-2.5">
+        <div v-if="isAdmin" class="grid grid-cols-3 gap-2">
           <button type="button"
-            class="min-h-12 inline-flex items-center justify-center gap-1.5 px-2 py-3.5 rounded-xl text-[13px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('agent')">
             <font-awesome-icon icon="fa-solid fa-headset" class="text-sm" />
             Agent
           </button>
           <button type="button"
-            class="min-h-12 inline-flex items-center justify-center gap-1.5 px-2 py-3.5 rounded-xl text-[13px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('stop-group')">
             <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
             Guruh
           </button>
           <button type="button"
-            class="min-h-12 inline-flex items-center justify-center gap-1.5 px-2 py-3.5 rounded-xl text-[13px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('stop-user')">
             <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
             User

@@ -25,14 +25,24 @@
       <div>
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Balans</p>
         <p class="text-lg font-black text-blue-600 dark:text-blue-400">{{ formattedBalance }}</p>
-        <button type="button" class="text-[11px] font-bold text-amber-500 hover:underline" @click="$emit('topup')">
-          + To'ldirish
+        <button
+          v-if="!active"
+          type="button"
+          class="text-[11px] font-bold text-amber-500 hover:underline"
+          @click="$emit('topup')"
+        >
+          Hisobni to'ldirish
         </button>
       </div>
       <div>
         <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Tarif</p>
         <p class="text-lg font-black text-violet-600 dark:text-violet-400 truncate">{{ tariffName }}</p>
-        <button type="button" class="text-[11px] font-bold text-amber-500 hover:underline" @click="$emit('buy')">
+        <button
+          v-if="!active"
+          type="button"
+          class="text-[11px] font-bold text-amber-500 hover:underline"
+          @click="$emit('buy')"
+        >
           Sotib olish
         </button>
       </div>
@@ -44,8 +54,18 @@
       <p class="text-[13px] font-medium text-slate-600 dark:text-slate-300">Buyurtmalar sahifasida sozlang</p>
     </div>
 
-    <!-- Buy tariff button -->
+    <!-- Faol: hisob to'ldirish (faqat profil). Faol emas: tarif sotib olish -->
     <button
+      v-if="active"
+      type="button"
+      class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all"
+      @click="$emit('topup')"
+    >
+      <font-awesome-icon icon="fa-solid fa-wallet" />
+      Hisobni to'ldirish
+    </button>
+    <button
+      v-else
       type="button"
       class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-all"
       @click="$emit('buy')"

@@ -36,8 +36,9 @@
       </div>
     </div>
 
-    <!-- Action -->
+    <!-- Action — faqat tarifi yo'q / faol emas haydovchiga -->
     <button
+      v-if="!active"
       type="button"
       class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/15 active:scale-[0.98] transition-all"
       @click="$emit('buy')"

@@ -395,7 +395,7 @@ export const useChatStore = defineStore('chat', () => {
                         : String(msg.text || '').includes('[[ZT_PAYMENT_CARDS]]')
                             ? "💳 To'lov ma'lumoti"
                             : String(msg.text || '').includes('[[ZT_PAYMENT_REQUEST]]')
-                                ? "🛒 To'lov so'rovi"
+                                ? "💰 Hisobni to'ldirish"
                                 : msg.text
             const chat = { ...chats.value[idx], lastMessage: preview, lastMessageAt: msg.date } as IChat
             // Ochiq chat bo'lmasa va kiruvchi bo'lsa — unread oshiramiz
