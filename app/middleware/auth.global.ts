@@ -46,4 +46,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     if (token.value && isAdmin && to.path === '/driver/dashboard') {
         return navigateTo('/admin/dashboard')
     }
+
+    // Admin /driver/profile orqali kirsa ham — OK (hisob switch)
+    // Boshqa /driver sahifalarida admin qolishi mumkin (buyurtmalar va h.k.)
 })

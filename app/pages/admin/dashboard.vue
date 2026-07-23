@@ -123,6 +123,8 @@
 <script setup lang="ts">
 import { useReferralStore } from '~/stores/referral.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
+import { useAuthStore } from '~/stores/auth.store'
+import { useAccountStore } from '~/stores/account.store'
 
 definePageMeta({
   layout: 'admin',
@@ -130,6 +132,7 @@ definePageMeta({
 
 const referralStore = useReferralStore()
 const store = useAdminDashboardStore()
+const authStore = useAuthStore()
 
 const monthIncome = computed(() => store.data?.monthIncome ?? {
   amount: 0,
@@ -230,5 +233,11 @@ const onBonus = () => {
 onMounted(() => {
   store.fetchStats().catch(() => {})
   referralStore.fetchAll().catch(() => {})
+  // Admin hisobini local accountlar ro'yxatiga yozish (switch uchun)
+  try {
+    const accountStore = useAccountStore()
+    accountStore.load()
+    if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  } catch { /* */ }
 })
 </script>

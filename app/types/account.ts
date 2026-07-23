@@ -10,4 +10,6 @@ export interface ILocalAccount {
     username?: string
     phoneNumber?: string
     avatar?: string
+    /** admin | driver — switch dan keyin to'g'ri home */
+    role?: 'admin' | 'driver' | 'customer' | string
 }

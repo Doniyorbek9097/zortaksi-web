@@ -86,7 +86,6 @@ export const useAccountStore = defineStore('account', () => {
     if (!accounts.value.length) load()
 
     const userId = String(user.userId)
-    // Faqat shu user tokenini yangilash — boshqa hisoblarga tegilmasin
     const existing = accounts.value.find((a) => String(a.userId) === userId)
     upsert({
       userId,
@@ -96,6 +95,7 @@ export const useAccountStore = defineStore('account', () => {
       username: user.username ?? existing?.username,
       phoneNumber: user.phoneNumber ?? existing?.phoneNumber,
       avatar: user.avatar ?? existing?.avatar,
+      role: user.role ?? existing?.role,
     })
     activeId.value = userId
     writeActiveSession(userId, authToken)
@@ -200,9 +200,16 @@ export const useAccountStore = defineStore('account', () => {
       username: user.username,
       phoneNumber: user.phoneNumber,
       avatar: user.avatar,
+      role: user.role,
     })
     applyToken(authToken, userId)
     return { ok: true }
+  }
+
+  /** Switch: token yoziladi → rolga qarab home */
+  const homeForAccount = (acc: ILocalAccount) => {
+    if (acc.role === 'admin') return '/admin/dashboard'
+    return '/driver/profile'
   }
 
   const switchAccount = (userId: string) => {
@@ -223,9 +230,11 @@ export const useAccountStore = defineStore('account', () => {
     }
 
     switching.value = true
-    // Avval localStorage — reload dan keyin shu token ishlatiladi
     applyToken(acc.token, target)
-    window.location.assign('/driver/profile')
+    // Admin → admin dashboard; haydovchi → profil
+    // Rol noma'lum bo'lsa `/` — middleware /me dan keyin to'g'ri joyga yuboradi
+    const dest = acc.role ? homeForAccount(acc) : '/'
+    window.location.assign(dest)
   }
 
   const removeAccount = (userId: string) => {
@@ -241,7 +250,7 @@ export const useAccountStore = defineStore('account', () => {
     if (next?.token) {
       switching.value = true
       applyToken(next.token, String(next.userId))
-      window.location.assign('/driver/profile')
+      window.location.assign(next.role ? homeForAccount(next) : '/')
     } else {
       applyToken(null)
       window.location.assign('/')

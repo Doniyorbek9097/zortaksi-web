@@ -178,6 +178,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '../stores/auth.store'
+import { useAccountStore } from '../stores/account.store'
 import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
@@ -305,6 +306,11 @@ const handleVerifyCode = async () => {
         currentStep.value = 'password'
       } else {
         clearReferral()
+        try {
+          const accountStore = useAccountStore()
+          accountStore.load()
+          accountStore.ensureCurrent(authStore.user)
+        } catch { /* */ }
         await navigateTo(homeForUser())
       }
     } else if (response.needPassword || response.data?.needPassword) {
@@ -328,6 +334,11 @@ const handleVerifyPassword = async () => {
     )
     if (response.success) {
       clearReferral()
+      try {
+        const accountStore = useAccountStore()
+        accountStore.load()
+        accountStore.ensureCurrent(authStore.user)
+      } catch { /* */ }
       await navigateTo(homeForUser())
     } else {
       form.error = response.message || 'Parol noto\'g\'ri'
