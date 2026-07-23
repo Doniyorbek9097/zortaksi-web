@@ -188,7 +188,8 @@ const tariffMeta = (t: TariffRow) => {
 
 const payUserId = computed(() => {
   const u = authStore.user
-  return String(u?._id || u?.userId || '')
+  // Admin pay sahifasi Telegram userId bilan ishlaydi
+  return String(u?.userId || u?._id || '')
 })
 
 const buildAdminMessage = (t: TariffRow) => {

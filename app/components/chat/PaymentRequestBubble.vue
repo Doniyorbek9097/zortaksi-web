@@ -35,19 +35,24 @@
         : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
     </p>
 
-    <!-- Admin uchun to'lov havolasi -->
+    <!-- Admin uchun to'lov qilish -->
     <a
-      v-if="payUrl && !out"
+      v-if="showPayButton"
       :href="payUrl"
-      class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-black bg-sky-500 text-white shadow-sm shadow-sky-500/25 active:scale-[0.99] transition-all overflow-hidden"
+      class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-black active:scale-[0.99] transition-all overflow-hidden"
+      :class="out
+        ? 'bg-white text-sky-600'
+        : 'bg-sky-500 text-white shadow-sm shadow-sky-500/25'"
     >
       <font-awesome-icon icon="fa-solid fa-wallet" class="shrink-0" />
-      <span class="truncate">To'lovni ochish</span>
+      <span class="truncate">To'lov qilish</span>
     </a>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth.store'
+
 interface Props {
   name?: string
   phone?: string
@@ -57,7 +62,7 @@ interface Props {
   out?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   name: '',
   phone: '',
   tariff: '',
@@ -65,4 +70,11 @@ withDefaults(defineProps<Props>(), {
   payUrl: '',
   out: false,
 })
+
+const authStore = useAuthStore()
+
+/** Admin ko'rsa — to'lov tugmasi (kiruvchi yoki chiquvchi xabarda ham) */
+const showPayButton = computed(() =>
+  !!props.payUrl && authStore.user?.role === 'admin'
+)
 </script>
