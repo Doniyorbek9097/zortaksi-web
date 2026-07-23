@@ -1,7 +1,20 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-5">
     <!-- Header -->
-    <DashboardHeader :name="firstName" :greeting="greeting" :date="today" @bonus="onBonus" />
+    <DashboardHeader @bonus="onBonus" />
+
+    <!-- Caption — header emas, sahifa ichida -->
+    <div class="flex items-center gap-2 -mt-1 px-0.5">
+      <font-awesome-icon
+        :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'"
+        class="text-sm shrink-0"
+        :class="isNight ? 'text-indigo-400' : 'text-amber-400'"
+      />
+      <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200 min-w-0 truncate">
+        {{ greeting }}, {{ firstName }}!
+        <span class="text-slate-400 dark:text-slate-500 font-semibold"> · {{ today }}</span>
+      </p>
+    </div>
 
     <!-- Payment banner -->
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
@@ -71,6 +84,8 @@ const today = computed(() => {
   const dd = String(d.getDate()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd}, ${days[d.getDay()]}`
 })
+
+const isNight = computed(() => /tun|kech/i.test(greeting.value))
 
 // --- Tariff card data ---
 const formatDate = (value?: string | Date) => {

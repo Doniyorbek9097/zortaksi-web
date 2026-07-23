@@ -1,32 +1,42 @@
 <template>
-  <header class="flex items-center justify-between gap-2 sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-    <div class="flex items-center gap-2 min-w-0">
-      <div
-        class="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white shrink-0 bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-sky-500/20"
-      >
-        <font-awesome-icon icon="fa-solid fa-car" />
-      </div>
-      <div class="leading-none min-w-0">
-        <h1 class="text-[13px] font-black tracking-tight truncate">
-          <span class="text-sky-600 dark:text-sky-400">ZorTaksi</span><span class="text-red-500">.uz</span>
+  <header class="sticky top-0 z-30 -mx-4 px-4 py-2.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
+    <div class="flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <div
+          class="relative w-12 h-12 rounded-2xl overflow-hidden shrink-0 ring-2 ring-sky-500/20 shadow-lg shadow-sky-500/20 bg-gradient-to-br from-sky-400 to-sky-600"
+        >
+          <img
+            src="/logo.jpg"
+            alt="Zo'r Taksi"
+            class="w-full h-full object-cover"
+            @error="imgBroken = true"
+          >
+          <div
+            v-if="imgBroken"
+            class="absolute inset-0 flex items-center justify-center text-white text-lg"
+          >
+            <font-awesome-icon icon="fa-solid fa-car" />
+          </div>
+        </div>
+        <h1 class="text-lg font-black tracking-tight truncate leading-none">
+          <span class="text-sky-500">Zo'r</span>
+          <span class="text-slate-900 dark:text-white"> Taksi</span>
         </h1>
-        <p class="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500 mt-0.5">
-          Admin
-        </p>
       </div>
-    </div>
 
-    <button
-      type="button"
-      class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-500 active:scale-95 transition-all shadow-sm shrink-0"
-      @click="$emit('bonus')"
-    >
-      <font-awesome-icon icon="fa-solid fa-gift" />
-      Bonus
-    </button>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-500 active:scale-95 transition-all shadow-sm shrink-0"
+        @click="$emit('bonus')"
+      >
+        <font-awesome-icon icon="fa-solid fa-gift" />
+        Bonus
+      </button>
+    </div>
   </header>
 </template>
 
 <script setup lang="ts">
 defineEmits<{ bonus: [] }>()
+const imgBroken = ref(false)
 </script>

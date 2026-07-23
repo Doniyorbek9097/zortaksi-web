@@ -2,6 +2,16 @@
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
     <AdminHeader @bonus="onBonus" />
 
+    <!-- Caption — header emas, sahifa ichida -->
+    <div class="-mt-0.5 px-0.5">
+      <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200">
+        Admin panel
+      </p>
+      <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+        Platforma boshqaruvi va statistika
+      </p>
+    </div>
+
     <div v-if="store.isLoading && !store.data" class="space-y-3">
       <div class="h-36 rounded-3xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       <div class="h-20 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
