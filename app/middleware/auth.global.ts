@@ -7,16 +7,20 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     })
     const authStore = useAuthStore()
 
-    // Agar token bo'lsa va user ma'lumotlari bo'lmasa, ularni yuklash
+    // Token bor — /me orqali user + Telegram session tekshiriladi
     if (token.value && !authStore.user) {
         try {
             await authStore.getMe()
         } catch (e: any) {
             const statusCode = e.response?.status
-            // Faqat token haqiqatda noto'g'ri (401 yoki 403) bo'lsagina o'chiramiz.
-            // Tarmoq xatosi yoki server o'chib qolgan bo'lsa cookieni asrab qolamiz.
-            if (statusCode === 401 || statusCode === 403) {
+            const code = e.response?.data?.code
+            // Token yoki Telegram session yaroqsiz
+            if (statusCode === 401 || statusCode === 403 || code === 'SESSION_EXPIRED') {
                 token.value = null
+                authStore.user = null
+                if (to.path.startsWith('/driver') || to.path.startsWith('/admin')) {
+                    return navigateTo('/auth')
+                }
             } else {
                 console.warn("[Middleware] Tarmoq yoki server xatosi, lekin cookie saqlab qolindi:", e.message)
             }
@@ -27,13 +31,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const homePath = isAdmin ? '/admin/dashboard' : '/driver/dashboard'
 
     // Login qilgan foydalanuvchini landing/auth'dan o'z dashboardiga yo'naltirish
-    if (token.value && (to.path === '/' || to.path === '/auth' || to.path === '/login' || to.path === '/register')) {
+    if (token.value && authStore.user && (to.path === '/' || to.path === '/auth' || to.path === '/login' || to.path === '/register')) {
         return navigateTo(homePath)
     }
 
     // Login qilmagan — himoyalangan sahifalarga kira olmasin
     if (!token.value && (to.path.startsWith('/driver') || to.path.startsWith('/admin'))) {
-        return navigateTo('/')
+        return navigateTo('/auth')
     }
 
     // Admin bo'lmagan /admin ga kirmasin

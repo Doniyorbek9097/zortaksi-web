@@ -214,6 +214,7 @@ import { useAuthStore } from '../stores/auth.store'
 import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
+import { isValidIntlPhone } from '~/utils/phone'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -291,7 +292,7 @@ const stepDotClass = (key: Step) => {
   return 'bg-slate-300 dark:bg-slate-700 text-white'
 }
 
-/** milliy 9 raqam */
+/** to'liq E.164 raqamlar (+ siz) */
 const form = reactive({
   phoneLocal: '',
   code: '',
@@ -299,26 +300,13 @@ const form = reactive({
   error: '',
 })
 
-const phoneDigits = computed(() => {
-  const local = form.phoneLocal.replace(/\D/g, '').slice(0, 9)
-  return local.length === 9 ? `998${local}` : ''
-})
+const phoneDigits = computed(() => form.phoneLocal.replace(/\D/g, ''))
 
-const isPhoneValid = computed(() => phoneDigits.value.length === 12)
+const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 
 const formattedPhoneDisplay = computed(() => {
-  const d = form.phoneLocal.replace(/\D/g, '').slice(0, 9)
-  const a = d.slice(0, 2)
-  const b = d.slice(2, 5)
-  const c = d.slice(5, 7)
-  const e = d.slice(7, 9)
-  let out = '+998'
-  if (a) out += ` (${a}`
-  if (a.length === 2) out += ')'
-  if (b) out += ` ${b}`
-  if (c) out += `-${c}`
-  if (e) out += `-${e}`
-  return out
+  const d = phoneDigits.value
+  return d ? `+${d}` : ''
 })
 
 const clearReferral = () => {

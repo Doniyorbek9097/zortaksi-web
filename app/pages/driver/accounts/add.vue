@@ -208,6 +208,7 @@ import { useAccountStore } from '~/stores/account.store'
 import BaseSmsInput from '~/components/base/SmsInput.vue'
 import BasePasswordInput from '~/components/base/PasswordInput.vue'
 import BasePhoneInput from '~/components/base/PhoneInput.vue'
+import { isValidIntlPhone } from '~/utils/phone'
 
 definePageMeta({
   layout: false,
@@ -277,26 +278,13 @@ const stepDotClass = (key: Step) => {
   return 'bg-slate-300 dark:bg-slate-700 text-white'
 }
 
-const phoneDigits = computed(() => {
-  const local = phoneLocal.value.replace(/\D/g, '').slice(0, 9)
-  return local.length === 9 ? `998${local}` : ''
-})
+const phoneDigits = computed(() => phoneLocal.value.replace(/\D/g, ''))
 
-const isPhoneValid = computed(() => phoneDigits.value.length === 12)
+const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 
 const formattedPhoneDisplay = computed(() => {
-  const d = phoneLocal.value.replace(/\D/g, '').slice(0, 9)
-  const a = d.slice(0, 2)
-  const b = d.slice(2, 5)
-  const c = d.slice(5, 7)
-  const e = d.slice(7, 9)
-  let out = '+998'
-  if (a) out += ` (${a}`
-  if (a.length === 2) out += ')'
-  if (b) out += ` ${b}`
-  if (c) out += `-${c}`
-  if (e) out += `-${e}`
-  return out
+  const d = phoneDigits.value
+  return d ? `+${d}` : ''
 })
 
 const handleSendCode = async () => {
