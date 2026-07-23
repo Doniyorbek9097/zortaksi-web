@@ -37,7 +37,7 @@
             :value="c.key"
             class="text-lg font-black tabular-nums"
           >
-            {{ c.flag }} +{{ c.dial || '…' }} {{ c.short }}
+            +{{ c.dial || '…' }} {{ c.short }}
           </option>
         </select>
         <font-awesome-icon
@@ -102,32 +102,31 @@ type Country = {
   key: string
   short: string
   dial: string
-  flag: string
   nationalLen?: number
 }
 
 const countries: Country[] = [
-  { key: 'UZ', short: 'UZ', dial: '998', flag: '🇺🇿', nationalLen: 9 },
-  { key: 'RU', short: 'RU', dial: '7', flag: '🇷🇺', nationalLen: 10 },
-  { key: 'KZ', short: 'KZ', dial: '7', flag: '🇰🇿', nationalLen: 10 },
-  { key: 'KG', short: 'KG', dial: '996', flag: '🇰🇬', nationalLen: 9 },
-  { key: 'TJ', short: 'TJ', dial: '992', flag: '🇹🇯', nationalLen: 9 },
-  { key: 'TM', short: 'TM', dial: '993', flag: '🇹🇲', nationalLen: 8 },
-  { key: 'AF', short: 'AF', dial: '93', flag: '🇦🇫', nationalLen: 9 },
-  { key: 'AZ', short: 'AZ', dial: '994', flag: '🇦🇿', nationalLen: 9 },
-  { key: 'TR', short: 'TR', dial: '90', flag: '🇹🇷', nationalLen: 10 },
-  { key: 'UA', short: 'UA', dial: '380', flag: '🇺🇦', nationalLen: 9 },
-  { key: 'BY', short: 'BY', dial: '375', flag: '🇧🇾', nationalLen: 9 },
-  { key: 'AM', short: 'AM', dial: '374', flag: '🇦🇲', nationalLen: 8 },
-  { key: 'GE', short: 'GE', dial: '995', flag: '🇬🇪', nationalLen: 9 },
-  { key: 'AE', short: 'AE', dial: '971', flag: '🇦🇪', nationalLen: 9 },
-  { key: 'DE', short: 'DE', dial: '49', flag: '🇩🇪', nationalLen: 11 },
-  { key: 'GB', short: 'GB', dial: '44', flag: '🇬🇧', nationalLen: 10 },
-  { key: 'US', short: 'US', dial: '1', flag: '🇺🇸', nationalLen: 10 },
-  { key: 'KR', short: 'KR', dial: '82', flag: '🇰🇷', nationalLen: 10 },
-  { key: 'CN', short: 'CN', dial: '86', flag: '🇨🇳', nationalLen: 11 },
-  { key: 'IN', short: 'IN', dial: '91', flag: '🇮🇳', nationalLen: 10 },
-  { key: 'XX', short: '…', dial: '', flag: '🌐' },
+  { key: 'UZ', short: 'UZ', dial: '998', nationalLen: 9 },
+  { key: 'RU', short: 'RU', dial: '7', nationalLen: 10 },
+  { key: 'KZ', short: 'KZ', dial: '7', nationalLen: 10 },
+  { key: 'KG', short: 'KG', dial: '996', nationalLen: 9 },
+  { key: 'TJ', short: 'TJ', dial: '992', nationalLen: 9 },
+  { key: 'TM', short: 'TM', dial: '993', nationalLen: 8 },
+  { key: 'AF', short: 'AF', dial: '93', nationalLen: 9 },
+  { key: 'AZ', short: 'AZ', dial: '994', nationalLen: 9 },
+  { key: 'TR', short: 'TR', dial: '90', nationalLen: 10 },
+  { key: 'UA', short: 'UA', dial: '380', nationalLen: 9 },
+  { key: 'BY', short: 'BY', dial: '375', nationalLen: 9 },
+  { key: 'AM', short: 'AM', dial: '374', nationalLen: 8 },
+  { key: 'GE', short: 'GE', dial: '995', nationalLen: 9 },
+  { key: 'AE', short: 'AE', dial: '971', nationalLen: 9 },
+  { key: 'DE', short: 'DE', dial: '49', nationalLen: 11 },
+  { key: 'GB', short: 'GB', dial: '44', nationalLen: 10 },
+  { key: 'US', short: 'US', dial: '1', nationalLen: 10 },
+  { key: 'KR', short: 'KR', dial: '82', nationalLen: 10 },
+  { key: 'CN', short: 'CN', dial: '86', nationalLen: 11 },
+  { key: 'IN', short: 'IN', dial: '91', nationalLen: 10 },
+  { key: 'XX', short: '…', dial: '' },
 ]
 
 const props = withDefaults(
