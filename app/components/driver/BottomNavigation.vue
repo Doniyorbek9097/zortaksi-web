@@ -31,7 +31,6 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
-import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
 
 interface NavItem {
@@ -42,14 +41,12 @@ interface NavItem {
 }
 
 const authStore = useAuthStore()
-const orderStore = useOrderStore()
 const chatStore = useChatStore()
 const isAdmin = computed(() => authStore.user?.role === 'admin')
 
 const formatBadge = (n: number) => (n > 99 ? '99+' : n)
 
 const items = computed<NavItem[]>(() => {
-  const ordersBadge = orderStore.newOrdersCount
   const chatsBadge = chatStore.unreadTotal
 
   const base: NavItem[] = [
@@ -57,7 +54,6 @@ const items = computed<NavItem[]>(() => {
       to: '/driver/orders',
       label: 'Buyurtmalar',
       icon: 'fa-solid fa-clipboard-list',
-      badge: ordersBadge > 0 ? ordersBadge : undefined,
     },
     {
       to: '/driver/chats',

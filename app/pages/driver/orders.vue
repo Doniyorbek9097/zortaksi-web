@@ -20,23 +20,25 @@
 
     <!-- Orders list -->
     <div v-else class="space-y-6 pt-2">
-      <OrdersOrderCard
-        v-for="order in orderStore.orders"
-        :key="order._id"
-        :order="order"
-        :role="role"
-        :active="active"
-        :current-user-id="authStore.user?.userId"
-        @unlock="onUnlock"
-        @book="onBook(order)"
-        @unbook="onUnbook(order)"
-        @message="onMessage(order)"
-        @view-group="onViewGroup(order)"
-        @agent="onAgent(order)"
-        @stop-group="onStopGroup(order)"
-        @stop-user="onStopUser(order)"
-        @delete="onDelete(order)"
-      />
+      <TransitionGroup name="order-drop" tag="div" class="space-y-6">
+        <OrdersOrderCard
+          v-for="order in orderStore.orders"
+          :key="order._id"
+          :order="order"
+          :role="role"
+          :active="active"
+          :current-user-id="authStore.user?.userId"
+          @unlock="onUnlock"
+          @book="onBook(order)"
+          @unbook="onUnbook(order)"
+          @message="onMessage(order)"
+          @view-group="onViewGroup(order)"
+          @agent="onAgent(order)"
+          @stop-group="onStopGroup(order)"
+          @stop-user="onStopUser(order)"
+          @delete="onDelete(order)"
+        />
+      </TransitionGroup>
 
       <!-- Infinite scroll sentinel -->
       <div ref="sentinel" class="h-1" />
@@ -428,3 +430,32 @@ const onDelete = (order: IOrder) => {
   orderStore.orders = orderStore.orders.filter((o) => o._id !== order._id)
 }
 </script>
+
+<style scoped>
+.order-drop-enter-active {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.order-drop-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  pointer-events: none;
+}
+.order-drop-enter-from {
+  opacity: 0;
+  transform: translateY(-28px) scale(0.98);
+}
+.order-drop-leave-to {
+  opacity: 0;
+  transform: translateY(-12px) scale(0.98);
+}
+.order-drop-move {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+</style>

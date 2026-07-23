@@ -38,13 +38,10 @@ interface NavItem {
 }
 
 interface Props {
-  items?: NavItem[]
-  ordersBadge?: number | string
   chatsBadge?: number | string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  ordersBadge: 0,
   chatsBadge: 0,
 })
 
@@ -55,7 +52,6 @@ const items = computed<NavItem[]>(() => [
     to: '/driver/orders',
     label: 'Buyurtmalar',
     icon: 'fa-solid fa-clipboard-list',
-    badge: props.ordersBadge || undefined,
   },
   {
     to: '/driver/chats',

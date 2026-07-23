@@ -392,7 +392,11 @@ export const useChatStore = defineStore('chat', () => {
                     ? `🎤 Ovozli xabar${msg.duration ? ` (${msg.duration}s)` : ''}`
                     : msg.type === 'photo'
                         ? (msg.text || '📷 Rasm')
-                        : msg.text
+                        : String(msg.text || '').includes('[[ZT_PAYMENT_CARDS]]')
+                            ? "💳 To'lov ma'lumoti"
+                            : String(msg.text || '').includes('[[ZT_PAYMENT_REQUEST]]')
+                                ? "🛒 To'lov so'rovi"
+                                : msg.text
             const chat = { ...chats.value[idx], lastMessage: preview, lastMessageAt: msg.date } as IChat
             // Ochiq chat bo'lmasa va kiruvchi bo'lsa — unread oshiramiz
             if (msg.direction === 'in' && currentChat.value?._id !== msg.chatId) {

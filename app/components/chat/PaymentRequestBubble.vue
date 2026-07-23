@@ -30,18 +30,18 @@
     </div>
 
     <p class="text-[12px] leading-relaxed opacity-80 break-words">
-      To'lovdan keyin chek/skrinshot yuboriladi.
+      {{ out
+        ? 'So\'rov yuborildi. Admin karta ma\'lumotini yuboradi.'
+        : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
     </p>
 
+    <!-- Admin uchun to'lov havolasi -->
     <a
-      v-if="payUrl"
+      v-if="payUrl && !out"
       :href="payUrl"
-      class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-black active:scale-[0.99] transition-all overflow-hidden"
-      :class="out
-        ? 'bg-white text-sky-600'
-        : 'bg-sky-500 text-white shadow-sm shadow-sky-500/25'"
+      class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-black bg-sky-500 text-white shadow-sm shadow-sky-500/25 active:scale-[0.99] transition-all overflow-hidden"
     >
-      <font-awesome-icon icon="fa-solid fa-link" class="shrink-0" />
+      <font-awesome-icon icon="fa-solid fa-wallet" class="shrink-0" />
       <span class="truncate">To'lovni ochish</span>
     </a>
   </div>

@@ -223,44 +223,86 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { getUrl } = useChatMedia()
 
-/** [[ZT_PAYMENT_CARDS]] ... [[/ZT_PAYMENT_CARDS]] — admin karta javobi */
+const pickLine = (raw: string, re: RegExp) => {
+  const m = raw.match(re)
+  return m?.[1]?.trim() || ''
+}
+
+/** [[ZT_PAYMENT_CARDS]] yoki oddiy karta matni */
 const paymentCards = computed(() => {
   const raw = String(props.text || '')
   const m = raw.match(/\[\[ZT_PAYMENT_CARDS\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_CARDS\]\]/)
-  if (!m?.[1]) return null
-  try {
-    const data = JSON.parse(m[1].trim())
-    const cards = (Array.isArray(data.cards) ? data.cards : [])
-      .map((c: unknown) => String(c || '').replace(/\D/g, ''))
-      .filter((c: string) => c.length >= 16)
-    if (!cards.length) return null
-    return {
-      name: String(data.name || '').trim(),
-      owner: String(data.owner || '').trim(),
-      cards,
+  if (m?.[1]) {
+    try {
+      const data = JSON.parse(m[1].trim())
+      const cards = (Array.isArray(data.cards) ? data.cards : [])
+        .map((c: unknown) => String(c || '').replace(/\D/g, ''))
+        .filter((c: string) => c.length >= 16)
+      if (!cards.length) return null
+      return {
+        name: String(data.name || '').trim(),
+        owner: String(data.owner || '').trim(),
+        cards,
+      }
+    } catch {
+      /* fallback below */
     }
-  } catch {
-    return null
   }
+
+  // Telegram oddiy matn / eski format
+  const digits = raw.replace(/\D/g, ' ').match(/\d{16}/g) || []
+  const unique = [...new Set(digits)]
+  if (
+    unique.length >= 1 &&
+    (/to['']lov so['']rovingiz qabul/i.test(raw) ||
+      /karta egasi/i.test(raw) ||
+      /kartadan biriga/i.test(raw) ||
+      /💳/.test(raw))
+  ) {
+    return {
+      name: pickLine(raw, /Assalomu alaykum[,\s]+(.+?)!/i).replace(/\s+/g, ' '),
+      owner: pickLine(raw, /Karta egasi:\s*(.+)/i),
+      cards: unique.slice(0, 3),
+    }
+  }
+  return null
 })
 
-/** [[ZT_PAYMENT_REQUEST]] ... — haydovchi to'lov so'rovi */
+/** [[ZT_PAYMENT_REQUEST]] yoki oddiy so'rov matni */
 const paymentRequest = computed(() => {
   const raw = String(props.text || '')
   const m = raw.match(/\[\[ZT_PAYMENT_REQUEST\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_REQUEST\]\]/)
-  if (!m?.[1]) return null
-  try {
-    const data = JSON.parse(m[1].trim())
-    return {
-      name: String(data.name || '').trim(),
-      phone: String(data.phone || '').trim(),
-      tariff: String(data.tariff || '').trim(),
-      amount: String(data.amount || '').trim(),
-      payUrl: String(data.payUrl || '').trim(),
+  if (m?.[1]) {
+    try {
+      const data = JSON.parse(m[1].trim())
+      return {
+        name: String(data.name || '').trim(),
+        phone: String(data.phone || '').trim(),
+        tariff: String(data.tariff || '').trim(),
+        amount: String(data.amount || '').trim(),
+        payUrl: String(data.payUrl || '').trim(),
+      }
+    } catch {
+      /* fallback */
     }
-  } catch {
-    return null
   }
+
+  if (
+    /tarif sotib olmoqchiman/i.test(raw) ||
+    /🛒/.test(raw) ||
+    (/karta raqamini yuboring/i.test(raw) && /summa/i.test(raw))
+  ) {
+    const url = pickLine(raw, /(https?:\/\/[^\s]+\/admin\/pay\/[^\s]+)/i)
+      || pickLine(raw, /(https?:\/\/[^\s]+)/i)
+    return {
+      name: pickLine(raw, /Ism:\s*(.+)/i),
+      phone: pickLine(raw, /Tel:\s*(.+)/i),
+      tariff: pickLine(raw, /Tarif:\s*(.+)/i),
+      amount: pickLine(raw, /Summa:\s*([^\n]+?)(?:\s*so['']m)?$/im).replace(/\s*so['']m/i, '').trim(),
+      payUrl: url,
+    }
+  }
+  return null
 })
 
 const audioEl = ref<HTMLAudioElement | null>(null)
