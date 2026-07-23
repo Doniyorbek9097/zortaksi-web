@@ -212,8 +212,17 @@ let presenceTimer: ReturnType<typeof setInterval> | null = null
 onMounted(async () => {
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
-  // Senderga 100% ulanish tekshiruvi — tayyor bo'lguncha composer loading/disabled
-  chatStore.connect(chatId.value)
+
+  const peer = chatStore.currentChat?.peer
+  const alreadyLinked = !!(peer?.viaUserbotId && peer?.accessHash)
+  if (alreadyLinked) {
+    // Bir marta bog'langan — loadingsiz darhol yozish mumkin
+    chatStore.connectionStatus = 'ready'
+    void chatStore.connect(chatId.value, { silent: true })
+  } else {
+    chatStore.connect(chatId.value)
+  }
+
   // Oxirgi kirish vaqtini davriy yangilab turamiz
   presenceTimer = setInterval(() => {
     chatStore.fetchPresence(chatId.value)

@@ -7,6 +7,8 @@ export interface IChatPeer {
     avatar?: string
     isBot: boolean
     accessHash?: string
+    /** Oldin muvaffaqiyatli bog'langan userbot — loadingsiz ochish uchun */
+    viaUserbotId?: string
 }
 
 export interface IChat {

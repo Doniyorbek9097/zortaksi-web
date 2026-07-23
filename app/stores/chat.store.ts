@@ -36,15 +36,22 @@ export const useChatStore = defineStore('chat', () => {
     } | null>(null)
 
     // --- Senderga ulanishni tekshirish (xabar yubormasdan) ---
-    const connect = async (chatId: string) => {
+    // silent: true — UI loading ko'rsatilmaydi (allaqachon bog'langan chat)
+    const connect = async (chatId: string, opts: { silent?: boolean } = {}) => {
         try {
-            connectionStatus.value = 'connecting'
-            connectionReason.value = ''
+            if (!opts.silent) {
+                connectionStatus.value = 'connecting'
+                connectionReason.value = ''
+            }
             const res = await useApi(`/chats/${chatId}/connect`, { method: 'POST' })
             if (res.success) {
-                connectionStatus.value = res.data?.status ?? 'unreachable'
-                connectionReason.value = res.data?.reason ?? ''
-            } else {
+                const next = res.data?.status ?? 'unreachable'
+                // Silent: faqat ready/restricted yangilanadi — transient fail UI ni yopmasin
+                if (!opts.silent || next === 'ready' || next === 'restricted') {
+                    connectionStatus.value = next
+                    connectionReason.value = res.data?.reason ?? ''
+                }
+            } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = res.message ?? ''
             }
@@ -52,8 +59,10 @@ export const useChatStore = defineStore('chat', () => {
             fetchPresence(chatId)
             return res
         } catch (error: any) {
-            connectionStatus.value = 'unreachable'
-            connectionReason.value = error?.response?.data?.message ?? ''
+            if (!opts.silent) {
+                connectionStatus.value = 'unreachable'
+                connectionReason.value = error?.response?.data?.message ?? ''
+            }
             console.error('connect error:', error)
         }
     }
