@@ -271,9 +271,25 @@ const saveTariff = async (payload: { tariffId: string; deductFromBalance: boolea
   }
 }
 
-const openSingleMessage = (d: DriverRow) => {
-  messageIds.value = [d.id]
-  messageOpen.value = true
+const openSingleMessage = async (d: DriverRow) => {
+  error.value = ''
+  try {
+    const res = await useApi('/chats/support', {
+      method: 'POST',
+      body: { driverUserId: d.id },
+    })
+    if (res.success && res.data?._id) {
+      const name = d.name || 'Haydovchi'
+      await navigateTo({
+        path: `/driver/chat/${res.data._id}`,
+        query: { name, support: '1' },
+      })
+      return
+    }
+    error.value = res.message || 'Chat ochilmadi'
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || e?.message || 'Chat ochilmadi'
+  }
 }
 
 const openBulkMessage = () => {

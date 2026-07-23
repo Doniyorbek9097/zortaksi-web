@@ -206,7 +206,6 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
   if (chatStore.isPeerTyping) return 'yozmoqda...'
-  if (isSupport.value) return 'To\'lov'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   return '...'
 })
@@ -327,6 +326,10 @@ onMounted(async () => {
 
   if (isSupport.value || chatStore.currentChat?.kind === 'support') {
     chatStore.connectionStatus = 'ready'
+    void chatStore.fetchPresence(chatId.value)
+    presenceTimer = setInterval(() => {
+      chatStore.fetchPresence(chatId.value)
+    }, 45000)
   } else {
     const peer = chatStore.currentChat?.peer
     const alreadyLinked = !!(peer?.viaUserbotId && peer?.accessHash)

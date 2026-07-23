@@ -130,6 +130,17 @@ export const useOrderStore = defineStore('order', () => {
         return response
     }
 
+    const deleteOrder = async (orderId: string) => {
+        const prev = orders.value.find((o) => o._id === orderId)
+        const response = await useApi(`/orders/${orderId}`, { method: 'DELETE' })
+        if (response.success) {
+            orders.value = orders.value.filter((o) => o._id !== orderId)
+            total.value = Math.max(0, total.value - 1)
+            if (prev?.status === 'new') bumpNewCount(-1)
+        }
+        return response
+    }
+
     const blockGroup = async (orderId: string) => {
         const response = await useApi(`/orders/${orderId}/block-group`, { method: 'POST' })
         if (response.success) {
@@ -171,6 +182,7 @@ export const useOrderStore = defineStore('order', () => {
         fetchOrderById,
         bookOrder,
         unbookOrder,
+        deleteOrder,
         blockGroup,
         blockSender,
         refreshNewCount,

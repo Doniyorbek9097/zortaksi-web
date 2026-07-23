@@ -34,9 +34,9 @@
         <p
           class="text-[10px] font-medium truncate mt-0.5"
           :class="support
-            ? 'text-teal-100'
+            ? (online ? 'text-emerald-200' : 'text-teal-100')
             : online ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'"
-        >{{ support ? (status || 'To\'lov') : status }}</p>
+        >{{ status }}</p>
       </div>
 
       <button

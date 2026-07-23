@@ -82,7 +82,7 @@
           </a>
         </div>
 
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-1 gap-2">
           <!-- Band qilish / Band bekor qilish -->
           <button
             v-if="!isBooked"
@@ -109,15 +109,6 @@
             <font-awesome-icon icon="fa-solid fa-lock" />
             Band qilingan
           </div>
-
-
-          <button type="button"
-            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
-            @click.stop="$emit('view-group')">
-            <font-awesome-icon icon="fa-solid fa-search" />
-            Guruhda ko'rish
-          </button>
-
         </div>
         <!-- Admin amallari -->
         <div v-if="isAdmin" class="grid grid-cols-3 gap-2">
@@ -168,7 +159,6 @@ const emit = defineEmits<{
   book: []
   unbook: []
   message: []
-  'view-group': []
   agent: []
   'stop-group': []
   'stop-user': []

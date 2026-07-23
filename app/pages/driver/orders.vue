@@ -32,7 +32,6 @@
           @book="onBook(order)"
           @unbook="onUnbook(order)"
           @message="onMessage(order)"
-          @view-group="onViewGroup(order)"
           @agent="onAgent(order)"
           @stop-group="onStopGroup(order)"
           @stop-user="onStopUser(order)"
@@ -338,12 +337,6 @@ const onMessage = async (order: IOrder) => {
   if (username) openLink(`https://t.me/${username}`)
 }
 
-const onViewGroup = (order: IOrder) => {
-  const username = order.group?.username
-  const msgId = order.message?.messageId
-  if (username) openLink(`https://t.me/${username}${msgId ? '/' + msgId : ''}`)
-}
-
 const senderLabel = (order: IOrder) => {
   const s = order.sender
   const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
@@ -425,9 +418,13 @@ const confirmBlockUser = async () => {
   }
 }
 
-const onDelete = (order: IOrder) => {
-  // TODO: backend delete endpoint. Hozircha ro'yxatdan lokal olib tashlaymiz.
-  orderStore.orders = orderStore.orders.filter((o) => o._id !== order._id)
+const onDelete = async (order: IOrder) => {
+  if (!order._id) return
+  try {
+    await orderStore.deleteOrder(order._id)
+  } catch (err: any) {
+    showError(err?.response?.data?.message || "Buyurtmani o'chirib bo'lmadi")
+  }
 }
 </script>
 
