@@ -13,11 +13,16 @@
 
     <button
       type="button"
-      class="relative z-10 w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left bg-white dark:bg-slate-900 border will-change-transform"
+      class="relative z-10 w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left border will-change-transform"
       :class="[
+        support
+          ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-800/70'
+          : 'bg-white dark:bg-slate-900',
         selected
           ? 'border-indigo-400 dark:border-indigo-500/60 ring-2 ring-indigo-500/20'
-          : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700',
+          : support
+            ? ''
+            : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700',
         dragging ? '' : 'transition-transform duration-200',
       ]"
       :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: selectionMode ? 'auto' : 'pan-y' }"
@@ -38,11 +43,23 @@
         <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
       </span>
 
-      <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="md" />
+      <div
+        v-if="support"
+        class="w-11 h-11 shrink-0 rounded-xl bg-teal-500 text-white flex items-center justify-center"
+      >
+        <font-awesome-icon icon="fa-solid fa-headset" />
+      </div>
+      <ProfileAvatar v-else :name="name" :src="avatar" :user-id="userId" size="md" />
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-sm font-black text-slate-900 dark:text-white truncate">{{ name }}</p>
+          <p class="text-sm font-black text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+            {{ name }}
+            <span
+              v-if="support"
+              class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-teal-500 text-white"
+            >Yordam</span>
+          </p>
           <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">{{ date }}</span>
         </div>
 
@@ -86,6 +103,7 @@ interface Props {
   unread?: number
   selectionMode?: boolean
   selected?: boolean
+  support?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -94,6 +112,7 @@ const props = withDefaults(defineProps<Props>(), {
   unread: 0,
   selectionMode: false,
   selected: false,
+  support: false,
 })
 
 const emit = defineEmits<{ open: []; toggle: []; delete: [] }>()

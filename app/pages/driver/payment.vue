@@ -47,15 +47,15 @@
       </p>
       <ol class="space-y-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-200">
         <li class="flex gap-2"><span class="text-sky-500 shrink-0">1.</span> Pastdan tarifni tanlang</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">2.</span> Kartaga pul o'tkazing</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">3.</span> Adminga chek/skrinshot yuboring</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">4.</span> 5–10 daqiqada tarif yoqiladi</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">2.</span> Adminga chat orqali xabar yuboring</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">3.</span> Chatda karta ma'lumotini oling va to'lang</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">4.</span> Chek/skrinshotni shu chatga yuboring</li>
       </ol>
     </section>
 
     <!-- Tariflar -->
     <section class="space-y-3">
-      <h2 class="text-sm font-black text-slate-900 dark:text-white">1. Tarifni tanlang</h2>
+      <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
 
       <div v-if="tariffStore.isLoading" class="space-y-2">
         <div v-for="n in 4" :key="n" class="h-16 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
@@ -125,36 +125,6 @@
         Balans yetarli — darhol faollashtirish mumkin
       </p>
 
-      <!-- Kartalar (balans yetmasa) -->
-      <div v-if="shortage > 0" class="space-y-2">
-        <h3 class="text-sm font-black text-slate-900 dark:text-white">2. Kartaga o'tkazing</h3>
-        <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400">
-          Quyidagi kartalardan biriga {{ formatMoney(selected.price) }} so'm o'tkazing. Raqamga bosib nusxa oling.
-        </p>
-
-        <button
-          v-for="card in paymentCards"
-          :key="card"
-          type="button"
-          class="w-full flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 active:scale-[0.99] transition-all"
-          @click="copyCard(card)"
-        >
-          <span class="flex items-center gap-2 min-w-0">
-            <font-awesome-icon icon="fa-solid fa-wallet" class="text-sky-500" />
-            <span class="text-[15px] font-black tabular-nums text-slate-900 dark:text-white tracking-wide">
-              {{ formatCard(card) }}
-            </span>
-          </span>
-          <span class="text-[11px] font-black text-sky-500 shrink-0">
-            {{ copiedCard === card ? 'Nusxa olindi' : 'Nusxa' }}
-          </span>
-        </button>
-
-        <p class="text-[12px] font-bold text-slate-600 dark:text-slate-300 text-center">
-          Karta egasi: {{ paymentCardOwner }}
-        </p>
-      </div>
-
       <button
         type="button"
         :disabled="saving || !selectedId"
@@ -163,7 +133,7 @@
       >
         <font-awesome-icon v-if="saving" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
         <template v-if="shortage > 0">
-          3. Adminga xabar yuborish
+          Adminga chat orqali yozish
         </template>
         <template v-else>
           To'lash — {{ formatMoney(selected.price) }} so'm
@@ -171,33 +141,9 @@
       </button>
 
       <p v-if="shortage > 0" class="text-center text-[11px] font-medium text-slate-400 leading-relaxed">
-        Xabar yuborilgach admin karta ma'lumotini yuboradi.
-        To'lovdan keyin <b class="text-slate-500">chek yoki skrinshot</b>ni shu chatga yuboring.
-        Admin: @{{ adminTelegram }}
+        Xabar chat sahifasiga yuboriladi. Admin karta ma'lumotini shu yerda yuboradi —
+        Telegramga o'tish shart emas.
       </p>
-    </section>
-
-    <!-- Muvaffaqiyat -->
-    <section
-      v-if="requestSent"
-      class="rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/70 dark:border-emerald-800/50 space-y-2"
-    >
-      <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">
-        <font-awesome-icon icon="fa-solid fa-circle-check" class="mr-1" />
-        Adminga xabar yuborildi
-      </p>
-      <p class="text-[12px] font-bold text-emerald-700/80 dark:text-emerald-300/80 leading-relaxed">
-        Telegramda admin javobini kuting — karta raqami keladi.
-        Pul o'tkazib, chekni shu suhbatga yuboring. Tarif 5–10 daqiqada yoqiladi.
-      </p>
-      <a
-        :href="`https://t.me/${adminTelegram}`"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-[12px] font-black text-sky-600 dark:text-sky-400"
-      >
-        Telegramni ochish →
-      </a>
     </section>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
@@ -218,17 +164,8 @@ const tariffStore = useTariffStore()
 const selectedId = ref<string | null>(null)
 const saving = ref(false)
 const error = ref('')
-const requestSent = ref(false)
-const copiedCard = ref('')
 
-const adminTelegram = computed(() => String(config.public.adminTelegram || 'doniyorbek_ergashev'))
 const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
-const paymentCardOwner = computed(() => String(config.public.paymentCardOwner || 'Doniyor Mirgiyozov'))
-const paymentCards = computed(() =>
-  [config.public.paymentCard1, config.public.paymentCard2]
-    .map((c) => String(c || '').replace(/\D/g, ''))
-    .filter(Boolean)
-)
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => !!authStore.user?.active && !!authStore.user?.tariff)
@@ -244,9 +181,6 @@ const shortage = computed(() => {
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
-const formatCard = (digits: string) =>
-  digits.replace(/(\d{4})(?=\d)/g, '$1 ').trim()
-
 const tariffMeta = (t: TariffRow) => {
   const days = `${t.expireDays} kun`
   if (t.info) return `${days} • ${t.info}`
@@ -257,18 +191,6 @@ const payUserId = computed(() => {
   const u = authStore.user
   return String(u?._id || u?.userId || '')
 })
-
-const copyCard = async (card: string) => {
-  try {
-    await navigator.clipboard.writeText(card)
-    copiedCard.value = card
-    setTimeout(() => {
-      if (copiedCard.value === card) copiedCard.value = ''
-    }, 2000)
-  } catch {
-    error.value = 'Nusxa olish ishlamadi — raqamni qo\'lda belgilang'
-  }
-}
 
 const buildAdminMessage = (t: TariffRow) => {
   const u = authStore.user
@@ -295,13 +217,7 @@ const buildAdminMessage = (t: TariffRow) => {
   ].join('\n')
 }
 
-const openAdminTelegram = (t: TariffRow) => {
-  const text = buildAdminMessage(t)
-  const url = `https://t.me/${adminTelegram.value}?text=${encodeURIComponent(text)}`
-  if (import.meta.client) window.open(url, '_blank', 'noopener,noreferrer')
-}
-
-/** Adminga xabar — avval server orqali, bo'lmasa Telegram draft */
+/** Adminga xabar — ilova chat sahifasi orqali */
 const notifyAdmin = async (t: TariffRow) => {
   const text = buildAdminMessage(t)
   saving.value = true
@@ -312,20 +228,16 @@ const notifyAdmin = async (t: TariffRow) => {
       body: { text, tariffId: t.id },
       timeout: 30000,
     })
-    if (res.success) {
-      requestSent.value = true
+    if (res.success && res.data?.chatId) {
+      await navigateTo({
+        path: `/driver/chat/${res.data.chatId}`,
+        query: { name: 'Admin yordam', support: '1' },
+      })
       return
     }
-    openAdminTelegram(t)
-    requestSent.value = true
+    error.value = res.message || 'Adminga yozib bo\'lmadi'
   } catch (e: any) {
-    // Sessiya yo'q / yuborilmadi — Telegram draft
-    openAdminTelegram(t)
-    requestSent.value = true
-    const code = e?.response?.data?.data?.code
-    if (code === 'SESSION_MISSING' || code === 'TG_SEND_FAILED') {
-      error.value = 'Telegram ochildi — xabarni yuborish tugmasini bosing'
-    }
+    error.value = e?.response?.data?.message || e?.message || 'Adminga yozib bo\'lmadi'
   } finally {
     saving.value = false
   }
@@ -334,7 +246,6 @@ const notifyAdmin = async (t: TariffRow) => {
 const onPay = async () => {
   if (!selected.value) return
   error.value = ''
-  requestSent.value = false
 
   if (shortage.value > 0) {
     await notifyAdmin(selected.value)

@@ -1,7 +1,10 @@
 <template>
   <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
   <div
-    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden"
+    :class="isSupport
+      ? 'bg-gradient-to-b from-teal-50 via-slate-50 to-slate-100 dark:from-teal-950/50 dark:via-slate-950 dark:to-slate-950'
+      : 'bg-slate-50 dark:bg-slate-950'"
     :style="shellStyle"
   >
     <!-- Header -->
@@ -11,7 +14,8 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :can-call="!!callPhone"
+      :can-call="!isSupport && !!callPhone"
+      :support="isSupport"
       @back="goChats"
       @call="onCall"
     />
@@ -19,9 +23,22 @@
     <!-- Xabarlar -->
     <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
+        <!-- Support banner -->
+        <div
+          v-if="isSupport"
+          class="rounded-2xl px-3.5 py-3 bg-teal-500/10 border border-teal-400/30 dark:border-teal-700/50"
+        >
+          <p class="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600 dark:text-teal-400 mb-1">
+            Admin yordam chati
+          </p>
+          <p class="text-[13px] leading-relaxed text-slate-600 dark:text-slate-300">
+            To'lov va tarif bo'yicha yozing. Karta ma'lumoti va javoblar shu yerda ko'rinadi.
+          </p>
+        </div>
+
         <!-- Order e'lon matni -->
         <div
-          v-if="orderText"
+          v-else-if="orderText"
           class="rounded-2xl px-3.5 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
         >
           <p class="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 mb-1.5">
@@ -62,15 +79,15 @@
       </div>
     </div>
 
-    <!-- Ulanish holati banneri -->
-    <div v-if="conn === 'connecting' || conn === 'idle'" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <!-- Ulanish holati banneri (support chatda kerak emas) -->
+    <div v-if="!isSupport && (conn === 'connecting' || conn === 'idle')" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         Yo'lovchiga ulanmoqda... Iltimos kuting
       </div>
     </div>
 
-    <div v-else-if="conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="!isSupport && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
@@ -94,7 +111,7 @@
       </div>
     </div>
 
-    <div v-else-if="conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="!isSupport && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
@@ -120,11 +137,11 @@
       </div>
     </div>
 
-    <!-- Composer — ulanish yakunlanmaguncha kutadi; yozib bo'lmasa yashiriladi -->
+    <!-- Composer — support doim ochiq; oddiy chatda ulanish kutadi -->
     <ChatComposer
-      v-if="conn === 'ready' || conn === 'connecting' || conn === 'idle'"
+      v-if="isSupport || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
       v-model="draft"
-      :disabled="conn !== 'ready'"
+      :disabled="!isSupport && conn !== 'ready'"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -145,7 +162,16 @@ const chatStore = useChatStore()
 
 const chatId = computed(() => route.params.id as string)
 
+const isSupport = computed(() =>
+  chatStore.currentChat?.kind === 'support' || route.query.support === '1'
+)
+
 const name = computed(() => {
+  if (isSupport.value) {
+    const p = chatStore.currentChat?.peer
+    const full = p ? [p.firstName, p.lastName].filter(Boolean).join(' ').trim() : ''
+    return full || (route.query.name as string) || 'Admin yordam'
+  }
   const p = chatStore.currentChat?.peer
   if (p) {
     const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
@@ -159,6 +185,7 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
+  if (isSupport.value) return 'To\'lov va yordam'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   return '...'
 })
@@ -222,19 +249,19 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (chatStore.connectionStatus !== 'ready') return
+  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendMessage(chatId.value, text)
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (chatStore.connectionStatus !== 'ready') return
+  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendVoice(chatId.value, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  if (chatStore.connectionStatus !== 'ready') return
+  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
 }
@@ -276,20 +303,22 @@ onMounted(async () => {
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
 
-  const peer = chatStore.currentChat?.peer
-  const alreadyLinked = !!(peer?.viaUserbotId && peer?.accessHash)
-  if (alreadyLinked) {
-    // Bir marta bog'langan — loadingsiz darhol yozish mumkin
+  if (isSupport.value || chatStore.currentChat?.kind === 'support') {
     chatStore.connectionStatus = 'ready'
-    void chatStore.connect(chatId.value, { silent: true })
   } else {
-    chatStore.connect(chatId.value)
-  }
+    const peer = chatStore.currentChat?.peer
+    const alreadyLinked = !!(peer?.viaUserbotId && peer?.accessHash)
+    if (alreadyLinked) {
+      chatStore.connectionStatus = 'ready'
+      void chatStore.connect(chatId.value, { silent: true })
+    } else {
+      chatStore.connect(chatId.value)
+    }
 
-  // Oxirgi kirish vaqtini davriy yangilab turamiz
-  presenceTimer = setInterval(() => {
-    chatStore.fetchPresence(chatId.value)
-  }, 45000)
+    presenceTimer = setInterval(() => {
+      chatStore.fetchPresence(chatId.value)
+    }, 45000)
+  }
 })
 
 onBeforeUnmount(() => {

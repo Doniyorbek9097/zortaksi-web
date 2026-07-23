@@ -11,6 +11,8 @@ export interface IChatPeer {
     viaUserbotId?: string
 }
 
+export type ChatKind = 'normal' | 'support'
+
 export interface IChat {
     _id: string
     ownerId: string
@@ -18,6 +20,8 @@ export interface IChat {
     orderId?: string
     /** Order e'lon matni — chat yuqorisida ko'rsatiladi */
     orderText?: string
+    /** support — admin ↔ haydovchi to'lov/yordam */
+    kind?: ChatKind
     lastMessage: string
     lastMessageAt: string | Date
     unreadCount: number

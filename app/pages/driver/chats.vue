@@ -40,10 +40,11 @@
         :name="peerName(chat)"
         :preview="chat.lastMessage || 'Yozishma boshlang'"
         :date="formatDate(chat.lastMessageAt)"
-        :phone="chat.peer.phone"
+        :phone="isSupport(chat) ? undefined : chat.peer.phone"
         :avatar="chat.peer.avatar"
         :user-id="chat.peer.userId"
         :unread="chat.unreadCount"
+        :support="isSupport(chat)"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
         @open="openChat(chat)"
@@ -82,7 +83,14 @@ definePageMeta({
 const chatStore = useChatStore()
 
 // --- Ko'rinish yordamchilari ---
+const isSupport = (chat: IChat) => chat.kind === 'support'
+
 const peerName = (chat: IChat) => {
+  if (isSupport(chat)) {
+    const p = chat.peer
+    const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
+    return full || p.username || 'Admin yordam'
+  }
   const p = chat.peer
   const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
   return full || p.username || p.userId || 'Buyurtmachi'
@@ -167,7 +175,11 @@ const refresh = async () => {
 const openChat = (chat: IChat) => {
   navigateTo({
     path: `/driver/chat/${chat._id}`,
-    query: { name: peerName(chat), phone: chat.peer.phone },
+    query: {
+      name: peerName(chat),
+      phone: isSupport(chat) ? undefined : chat.peer.phone,
+      support: isSupport(chat) ? '1' : undefined,
+    },
   })
 }
 
