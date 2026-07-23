@@ -205,6 +205,7 @@ const buildAdminMessage = (t: TariffRow) => {
     tariff: t.name,
     amount: sum,
     payUrl,
+    userId: payUserId.value,
     tariffId: t.id,
   })
 

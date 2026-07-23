@@ -121,6 +121,8 @@
         :tariff="paymentRequest.tariff"
         :amount="paymentRequest.amount"
         :pay-url="paymentRequest.payUrl"
+        :user-id="paymentRequest.userId"
+        :tariff-id="paymentRequest.tariffId"
         :out="out"
       />
 
@@ -281,6 +283,8 @@ const paymentRequest = computed(() => {
         tariff: String(data.tariff || '').trim(),
         amount: String(data.amount || '').trim(),
         payUrl: String(data.payUrl || '').trim(),
+        userId: String(data.userId || '').trim(),
+        tariffId: String(data.tariffId || '').trim(),
       }
     } catch {
       /* fallback */
@@ -300,6 +304,8 @@ const paymentRequest = computed(() => {
       tariff: pickLine(raw, /Tarif:\s*(.+)/i),
       amount: pickLine(raw, /Summa:\s*([^\n]+?)(?:\s*so['']m)?$/im).replace(/\s*so['']m/i, '').trim(),
       payUrl: url,
+      userId: '',
+      tariffId: '',
     }
   }
   return null

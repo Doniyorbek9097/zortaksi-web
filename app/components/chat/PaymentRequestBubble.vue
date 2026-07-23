@@ -35,18 +35,19 @@
         : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
     </p>
 
-    <!-- Admin uchun to'lov qilish -->
-    <a
+    <!-- Admin uchun to'lov qilish — SPA ichida /admin/pay -->
+    <button
       v-if="showPayButton"
-      :href="payUrl"
+      type="button"
       class="inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-[13px] font-black active:scale-[0.99] transition-all overflow-hidden"
       :class="out
         ? 'bg-white text-sky-600'
         : 'bg-sky-500 text-white shadow-sm shadow-sky-500/25'"
+      @click.stop.prevent="goPay"
     >
       <font-awesome-icon icon="fa-solid fa-wallet" class="shrink-0" />
       <span class="truncate">To'lov qilish</span>
-    </a>
+    </button>
   </div>
 </template>
 
@@ -59,6 +60,8 @@ interface Props {
   tariff?: string
   amount?: string
   payUrl?: string
+  userId?: string
+  tariffId?: string
   out?: boolean
 }
 
@@ -68,13 +71,54 @@ const props = withDefaults(defineProps<Props>(), {
   tariff: '',
   amount: '',
   payUrl: '',
+  userId: '',
+  tariffId: '',
   out: false,
 })
 
 const authStore = useAuthStore()
 
-/** Admin ko'rsa — to'lov tugmasi (kiruvchi yoki chiquvchi xabarda ham) */
+/** payUrl yoki userId dan haydovchi id */
+const resolvedUserId = computed(() => {
+  if (props.userId) return String(props.userId)
+  const m = String(props.payUrl || '').match(/\/admin\/pay\/([^/?#]+)/)
+  return m?.[1] ? decodeURIComponent(m[1]) : ''
+})
+
+const resolvedTariffId = computed(() => {
+  if (props.tariffId) return String(props.tariffId)
+  try {
+    const u = new URL(props.payUrl, 'https://local.invalid')
+    return u.searchParams.get('tariffId') || ''
+  } catch {
+    return ''
+  }
+})
+
+const resolvedAmount = computed(() => {
+  try {
+    const u = new URL(props.payUrl, 'https://local.invalid')
+    return u.searchParams.get('amount') || ''
+  } catch {
+    return ''
+  }
+})
+
 const showPayButton = computed(() =>
-  !!props.payUrl && authStore.user?.role === 'admin'
+  !!resolvedUserId.value && authStore.user?.role === 'admin'
 )
+
+const goPay = async () => {
+  const id = resolvedUserId.value
+  if (!id) return
+  const query: Record<string, string> = {}
+  if (resolvedTariffId.value) query.tariffId = resolvedTariffId.value
+  if (resolvedAmount.value) query.amount = resolvedAmount.value
+  // amount matnda "150 000" bo'lishi mumkin — queryda raqam afzal
+  else if (props.amount) {
+    const digits = props.amount.replace(/\D/g, '')
+    if (digits) query.amount = digits
+  }
+  await navigateTo({ path: `/admin/pay/${id}`, query })
+}
 </script>
