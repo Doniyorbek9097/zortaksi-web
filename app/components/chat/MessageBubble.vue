@@ -9,9 +9,13 @@
     <div
       class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm"
       :class="[
-        out
-          ? 'bg-sky-500 text-white rounded-br-md'
-          : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700',
+        paymentCards
+          ? (out
+            ? 'bg-teal-600 text-white rounded-br-md max-w-[92%]'
+            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-teal-300 dark:border-teal-700 max-w-[92%]')
+          : out
+            ? 'bg-sky-500 text-white rounded-br-md'
+            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700',
         type === 'photo' ? 'overflow-hidden !p-1.5' : '',
       ]"
     >
@@ -94,6 +98,15 @@
           <ChatLinkifiedText :text="text" :out="out" />
         </p>
       </div>
+
+      <!-- To'lov kartalari (admin javobi) -->
+      <ChatPaymentCardsBubble
+        v-else-if="paymentCards"
+        :name="paymentCards.name"
+        :owner="paymentCards.owner"
+        :cards="paymentCards.cards"
+        :out="out"
+      />
 
       <!-- Matn (link / telefon bosiladi) -->
       <p
@@ -193,6 +206,27 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { getUrl } = useChatMedia()
+
+/** [[ZT_PAYMENT_CARDS]] ... [[/ZT_PAYMENT_CARDS]] — admin karta javobi */
+const paymentCards = computed(() => {
+  const raw = String(props.text || '')
+  const m = raw.match(/\[\[ZT_PAYMENT_CARDS\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_CARDS\]\]/)
+  if (!m?.[1]) return null
+  try {
+    const data = JSON.parse(m[1].trim())
+    const cards = (Array.isArray(data.cards) ? data.cards : [])
+      .map((c: unknown) => String(c || '').replace(/\D/g, ''))
+      .filter((c: string) => c.length >= 16)
+    if (!cards.length) return null
+    return {
+      name: String(data.name || '').trim(),
+      owner: String(data.owner || '').trim(),
+      cards,
+    }
+  } catch {
+    return null
+  }
+})
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')

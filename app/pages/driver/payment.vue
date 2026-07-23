@@ -47,9 +47,9 @@
       </p>
       <ol class="space-y-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-200">
         <li class="flex gap-2"><span class="text-sky-500 shrink-0">1.</span> Pastdan tarifni tanlang</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">2.</span> Adminga chat orqali xabar yuboring</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">3.</span> Chatda karta ma'lumotini oling va to'lang</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">4.</span> Chek/skrinshotni shu chatga yuboring</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">2.</span> To'lov so'rovini yuboring</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">3.</span> Karta ma'lumotini oling va to'lang</li>
+        <li class="flex gap-2"><span class="text-sky-500 shrink-0">4.</span> Chek/skrinshotni yuboring</li>
       </ol>
     </section>
 
@@ -133,7 +133,7 @@
       >
         <font-awesome-icon v-if="saving" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
         <template v-if="shortage > 0">
-          Adminga chat orqali yozish
+          To'lov so'rovini yuborish
         </template>
         <template v-else>
           To'lash — {{ formatMoney(selected.price) }} so'm
@@ -141,8 +141,7 @@
       </button>
 
       <p v-if="shortage > 0" class="text-center text-[11px] font-medium text-slate-400 leading-relaxed">
-        Xabar chat sahifasiga yuboriladi. Admin karta ma'lumotini shu yerda yuboradi —
-        Telegramga o'tish shart emas.
+        So'rov adminga yuboriladi. Javobda karta ma'lumoti keladi — to'lab, chekni yuboring.
       </p>
     </section>
 
@@ -235,9 +234,9 @@ const notifyAdmin = async (t: TariffRow) => {
       })
       return
     }
-    error.value = res.message || 'Adminga yozib bo\'lmadi'
+    error.value = res.message || 'To\'lov so\'rovi yuborilmadi'
   } catch (e: any) {
-    error.value = e?.response?.data?.message || e?.message || 'Adminga yozib bo\'lmadi'
+    error.value = e?.response?.data?.message || e?.message || 'To\'lov so\'rovi yuborilmadi'
   } finally {
     saving.value = false
   }
