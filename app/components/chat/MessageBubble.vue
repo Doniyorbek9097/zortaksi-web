@@ -7,16 +7,21 @@
     ]"
   >
     <div
-      class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm"
+      class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden"
       :class="[
-        paymentCards
+        paymentCards || paymentRequest
           ? (out
             ? 'bg-teal-600 text-white rounded-br-md max-w-[92%]'
             : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-teal-300 dark:border-teal-700 max-w-[92%]')
           : out
             ? 'bg-sky-500 text-white rounded-br-md'
             : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700',
-        type === 'photo' ? 'overflow-hidden !p-1.5' : '',
+        paymentRequest && !paymentCards
+          ? (out
+            ? '!bg-sky-500'
+            : '!border-sky-300 dark:!border-sky-700')
+          : '',
+        type === 'photo' ? '!p-1.5' : '',
       ]"
     >
       <!-- Voice player -->
@@ -105,6 +110,17 @@
         :name="paymentCards.name"
         :owner="paymentCards.owner"
         :cards="paymentCards.cards"
+        :out="out"
+      />
+
+      <!-- To'lov so'rovi (haydovchi → admin) -->
+      <ChatPaymentRequestBubble
+        v-else-if="paymentRequest"
+        :name="paymentRequest.name"
+        :phone="paymentRequest.phone"
+        :tariff="paymentRequest.tariff"
+        :amount="paymentRequest.amount"
+        :pay-url="paymentRequest.payUrl"
         :out="out"
       />
 
@@ -222,6 +238,25 @@ const paymentCards = computed(() => {
       name: String(data.name || '').trim(),
       owner: String(data.owner || '').trim(),
       cards,
+    }
+  } catch {
+    return null
+  }
+})
+
+/** [[ZT_PAYMENT_REQUEST]] ... — haydovchi to'lov so'rovi */
+const paymentRequest = computed(() => {
+  const raw = String(props.text || '')
+  const m = raw.match(/\[\[ZT_PAYMENT_REQUEST\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_REQUEST\]\]/)
+  if (!m?.[1]) return null
+  try {
+    const data = JSON.parse(m[1].trim())
+    return {
+      name: String(data.name || '').trim(),
+      phone: String(data.phone || '').trim(),
+      tariff: String(data.tariff || '').trim(),
+      amount: String(data.amount || '').trim(),
+      payUrl: String(data.payUrl || '').trim(),
     }
   } catch {
     return null

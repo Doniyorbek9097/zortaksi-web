@@ -196,24 +196,18 @@ const buildAdminMessage = (t: TariffRow) => {
   const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || 'Haydovchi'
   const phone = u?.phoneNumber || '—'
   const sum = formatMoney(t.price)
-  const payLink = `${appURL.value}/admin/pay/${payUserId.value}?tariffId=${t.id}&amount=${t.price}`
+  const payUrl = `${appURL.value}/admin/pay/${payUserId.value}?tariffId=${t.id}&amount=${t.price}`
 
-  return [
-    '🛒 Tarif sotib olmoqchiman',
-    '',
-    `👤 Ism:  ${name}`,
-    `📞 Tel:  ${phone}`,
-    '',
-    `💰 Summa: ${sum} so'm`,
-    `📦 Tarif: ${t.name}`,
-    '',
-    '💳 Karta raqamini yuboring.',
-    '',
-    '✅ To\'lovdan keyin chek/skrinshot yuboraman.',
-    '',
-    '🔗 Admin to\'lov:',
-    payLink,
-  ].join('\n')
+  const payload = JSON.stringify({
+    name,
+    phone,
+    tariff: t.name,
+    amount: sum,
+    payUrl,
+    tariffId: t.id,
+  })
+
+  return `[[ZT_PAYMENT_REQUEST]]\n${payload}\n[[/ZT_PAYMENT_REQUEST]]`
 }
 
 /** Adminga xabar — ilova chat sahifasi orqali */
@@ -230,7 +224,7 @@ const notifyAdmin = async (t: TariffRow) => {
     if (res.success && res.data?.chatId) {
       await navigateTo({
         path: `/driver/chat/${res.data.chatId}`,
-        query: { name: 'Admin yordam', support: '1' },
+        query: { name: 'Admin', support: '1' },
       })
       return
     }

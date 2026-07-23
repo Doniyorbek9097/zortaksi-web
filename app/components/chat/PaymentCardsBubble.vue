@@ -1,13 +1,13 @@
 <template>
-  <div class="space-y-2.5 min-w-[220px]">
-    <div>
-      <p class="text-[11px] font-black uppercase tracking-wider opacity-80 mb-1">
+  <div class="space-y-2.5 w-full min-w-0 max-w-full overflow-hidden">
+    <div class="min-w-0 overflow-hidden">
+      <p class="text-[11px] font-black uppercase tracking-wider opacity-80 mb-1 truncate">
         To'lov ma'lumoti
       </p>
-      <p class="text-[14px] font-bold leading-snug">
+      <p class="text-[14px] font-bold leading-snug break-words">
         Assalomu alaykum{{ name ? `, ${name}` : '' }}!
       </p>
-      <p class="text-[13px] leading-relaxed mt-1 opacity-90">
+      <p class="text-[13px] leading-relaxed mt-1 opacity-90 break-words">
         So'rovingiz qabul qilindi. Pulni quyidagi kartadan biriga o'tkazing.
       </p>
     </div>
@@ -16,15 +16,15 @@
       v-for="card in cards"
       :key="card"
       type="button"
-      class="w-full flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 active:scale-[0.99] transition-all"
+      class="w-full min-w-0 max-w-full overflow-hidden flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 active:scale-[0.99] transition-all"
       :class="out
         ? 'bg-white/15 hover:bg-white/20'
         : 'bg-teal-50 dark:bg-teal-950/50 border border-teal-200/70 dark:border-teal-800/50'"
       @click="copyCard(card)"
     >
-      <span class="flex items-center gap-2 min-w-0">
+      <span class="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
         <font-awesome-icon icon="fa-solid fa-credit-card" class="shrink-0 opacity-80" />
-        <span class="text-[15px] font-black tabular-nums tracking-wide truncate">
+        <span class="text-[13px] sm:text-[15px] font-black tabular-nums tracking-wide truncate overflow-hidden">
           {{ formatCard(card) }}
         </span>
       </span>
@@ -36,11 +36,11 @@
       </span>
     </button>
 
-    <p v-if="owner" class="text-[12px] font-bold opacity-90">
+    <p v-if="owner" class="text-[12px] font-bold opacity-90 truncate overflow-hidden">
       Karta egasi: {{ owner }}
     </p>
 
-    <p class="text-[12px] leading-relaxed opacity-80">
+    <p class="text-[12px] leading-relaxed opacity-80 break-words">
       To'lovdan keyin chek yoki skrinshotni shu yerga yuboring. Tarif 5–10 daqiqada yoqiladi.
     </p>
   </div>
@@ -54,7 +54,7 @@ interface Props {
   out?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   name: '',
   owner: '',
   out: false,

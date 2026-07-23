@@ -89,7 +89,7 @@ const peerName = (chat: IChat) => {
   if (isSupport(chat)) {
     const p = chat.peer
     const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
-    return full || p.username || 'Admin yordam'
+    return full || p.username || 'Admin'
   }
   const p = chat.peer
   const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()

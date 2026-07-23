@@ -53,12 +53,8 @@
 
       <div class="flex-1 min-w-0">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-sm font-black text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+          <p class="text-sm font-black text-slate-900 dark:text-white truncate">
             {{ name }}
-            <span
-              v-if="support"
-              class="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide bg-teal-500 text-white"
-            >Yordam</span>
           </p>
           <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">{{ date }}</span>
         </div>

@@ -36,18 +36,11 @@
           :class="support
             ? 'text-teal-100'
             : online ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'"
-        >{{ support ? (status || 'To\'lov va yordam') : status }}</p>
+        >{{ support ? (status || 'To\'lov') : status }}</p>
       </div>
 
-      <span
-        v-if="support"
-        class="shrink-0 px-2 py-1 rounded-md bg-white/15 text-white text-[10px] font-black uppercase tracking-wide"
-      >
-        Yordam
-      </span>
-
       <button
-        v-else-if="canCall"
+        v-if="!support && canCall"
         type="button"
         class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 active:scale-95 transition-all shrink-0"
         @click="$emit('call')"

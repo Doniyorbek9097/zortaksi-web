@@ -29,10 +29,10 @@
           class="rounded-2xl px-3.5 py-3 bg-teal-500/10 border border-teal-400/30 dark:border-teal-700/50"
         >
           <p class="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600 dark:text-teal-400 mb-1">
-            Admin yordam chati
+            To'lov chati
           </p>
           <p class="text-[13px] leading-relaxed text-slate-600 dark:text-slate-300">
-            To'lov va tarif bo'yicha yozing. Karta ma'lumoti va javoblar shu yerda ko'rinadi.
+            To'lov so'rovi va karta ma'lumotlari shu yerda ko'rinadi.
           </p>
         </div>
 
@@ -170,7 +170,7 @@ const name = computed(() => {
   if (isSupport.value) {
     const p = chatStore.currentChat?.peer
     const full = p ? [p.firstName, p.lastName].filter(Boolean).join(' ').trim() : ''
-    return full || (route.query.name as string) || 'Admin yordam'
+    return full || (route.query.name as string) || 'Admin'
   }
   const p = chatStore.currentChat?.peer
   if (p) {
@@ -185,7 +185,7 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
-  if (isSupport.value) return 'To\'lov va yordam'
+  if (isSupport.value) return 'To\'lov'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   return '...'
 })
