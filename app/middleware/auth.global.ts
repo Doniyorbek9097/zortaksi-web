@@ -38,8 +38,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     // Admin bo'lmagan /admin ga kirmasin
+    // Muhim: clientda authStore.user allaqachon yangilangan bo'lsa (account switch) — shunga ishonamiz
     if (token.value && to.path.startsWith('/admin') && !isAdmin) {
-        return navigateTo('/driver/dashboard')
+        // Client navigatsiyada user hali yuklanmagan bo'lishi mumkin — qayta /me
+        if (import.meta.client && !authStore.user) {
+            try {
+                await authStore.getMe()
+            } catch { /* */ }
+        }
+        if (authStore.user?.role !== 'admin') {
+            return navigateTo('/driver/dashboard')
+        }
     }
 
     // Admin asosiy sahifaga kelsa — admin dashboard

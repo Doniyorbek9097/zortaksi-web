@@ -12,7 +12,7 @@ import {
 
 /**
  * Accountlar localStorage'da. Faol hisob — reactive ref + localStorage.
- * Switch: localStorage yoziladi, keyin hard reload (mobil uchun ishonchli).
+ * Switch: soft (getMe + navigateTo) — admin uchun hard reload SSR cookie bilan buziladi.
  */
 export const useAccountStore = defineStore('account', () => {
   const accounts = ref<ILocalAccount[]>([])
@@ -206,13 +206,24 @@ export const useAccountStore = defineStore('account', () => {
     return { ok: true }
   }
 
-  /** Switch: token yoziladi → rolga qarab home */
-  const homeForAccount = (acc: ILocalAccount) => {
-    if (acc.role === 'admin') return '/admin/dashboard'
+  const homeForUser = (user: { role?: string } | null | undefined) => {
+    if (user?.role === 'admin') return '/admin/dashboard'
     return '/driver/profile'
   }
 
-  const switchAccount = (userId: string) => {
+  const reconnectSocket = () => {
+    if (!import.meta.client) return
+    try {
+      const nuxt = useNuxtApp() as any
+      if (typeof nuxt.$reconnectSocket === 'function') nuxt.$reconnectSocket()
+    } catch { /* */ }
+  }
+
+  /**
+   * Soft switch — full reload yo'q.
+   * Hard reload admin uchun buziladi: SSR eski cookie bilan /admin dan haydovchiga qaytaradi.
+   */
+  const switchAccount = async (userId: string) => {
     if (!import.meta.client || switching.value) return
     load()
     const target = String(userId)
@@ -222,32 +233,57 @@ export const useAccountStore = defineStore('account', () => {
       return
     }
 
-    if (String(activeUserId.value) === target) {
-      try {
-        const auth = useAuthStore()
-        if (auth.user && String(auth.user.userId) === target) return
-      } catch { /* */ }
+    const auth = useAuthStore()
+
+    // Allaqachon shu hisob — kerakli home ga o'tkaz
+    if (
+      String(activeUserId.value) === target &&
+      auth.user &&
+      String(auth.user.userId) === target
+    ) {
+      await navigateTo(homeForUser(auth.user))
+      return
     }
 
     switching.value = true
-    applyToken(acc.token, target)
-    // Admin → admin dashboard; haydovchi → profil
-    // Rol noma'lum bo'lsa `/` — middleware /me dan keyin to'g'ri joyga yuboradi
-    const dest = acc.role ? homeForAccount(acc) : '/'
-    window.location.assign(dest)
+    const prevToken = resolveAuthToken(token.value)
+    const prevId = activeUserId.value
+
+    try {
+      applyToken(acc.token, target)
+      await auth.getMe()
+
+      if (!auth.user || String(auth.user.userId) !== target) {
+        throw new Error('Hisob yuklanmadi')
+      }
+
+      ensureCurrent(auth.user)
+      reconnectSocket()
+      await navigateTo(homeForUser(auth.user))
+    } catch (e) {
+      console.warn('[account] switch failed', e)
+      // Oldingi hisobga qaytarish
+      if (prevToken && prevId) {
+        applyToken(prevToken, String(prevId))
+        try {
+          await auth.getMe()
+          if (auth.user) ensureCurrent(auth.user)
+        } catch { /* */ }
+      }
+    } finally {
+      switching.value = false
+    }
   }
 
-  const removeAccount = (userId: string) => {
+  const removeAccount = async (userId: string) => {
     if (!import.meta.client) return
     load()
     const target = String(userId)
     const wasActive = String(activeUserId.value || '') === target
       || String(readActiveUserId() || '') === target
 
-    // Ro'yxatdan olib tashlash
     accounts.value = accounts.value.filter((a) => String(a.userId) !== target)
 
-    // localStorage ga darhol yozish
     try {
       if (accounts.value.length) {
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts.value))
@@ -256,20 +292,13 @@ export const useAccountStore = defineStore('account', () => {
       }
     } catch { /* */ }
 
-    // Faol bo'lmagan hisob — faqat ro'yxatdan o'chirildi, sessiya saqlanadi
     if (!wasActive) return
 
-    // Faol hisob o'chirildi — boshqa hisob bo'lsa shunga o'tamiz
     const next = accounts.value[0]
     if (next?.token) {
-      switching.value = true
-      applyToken(next.token, String(next.userId))
-      window.location.assign(next.role ? homeForAccount(next) : '/')
-      return
+      await switchAccount(String(next.userId))
     }
-
-    // Boshqa hisob yo'q — faol sessiya saqlanadi (logout qilinmaydi)
-    // Joriy token/cookie/user o'zgarishsiz qoladi
+    // Boshqa hisob yo'q — faol sessiya saqlanadi
   }
 
   return {

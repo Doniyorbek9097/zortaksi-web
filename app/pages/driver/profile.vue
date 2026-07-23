@@ -167,12 +167,16 @@ const onTopup = () => navigateTo('/driver/payment')
 const onBuyTariff = () => navigateTo('/driver/payment')
 
 // Accountni almashtirish
-const onSelectAccount = (acc: ILocalAccount) => {
+const onSelectAccount = async (acc: ILocalAccount) => {
   if (accountStore.switching) return
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
-  if (target === active && String(authStore.user?.userId || '') === target) return
-  accountStore.switchAccount(target)
+  if (target === active && String(authStore.user?.userId || '') === target) {
+    // Allaqachon shu hisob — admin bo'lsa panelga
+    if (authStore.user?.role === 'admin') await navigateTo('/admin/dashboard')
+    return
+  }
+  await accountStore.switchAccount(target)
 }
 
 const requestDeleteAccount = (acc: ILocalAccount) => {
@@ -180,10 +184,10 @@ const requestDeleteAccount = (acc: ILocalAccount) => {
   showDeleteAccount.value = true
 }
 
-const confirmDeleteAccount = () => {
+const confirmDeleteAccount = async () => {
   if (!accountToDelete.value) return
   deletingAccount.value = true
-  accountStore.removeAccount(accountToDelete.value.userId)
+  await accountStore.removeAccount(accountToDelete.value.userId)
   showDeleteAccount.value = false
   accountToDelete.value = null
   deletingAccount.value = false
