@@ -115,35 +115,80 @@ export const useAccountStore = defineStore('account', () => {
         })
     }
 
-    const sendCode = (phone: string) => useApi('/send-code', { method: 'POST', body: { phone } })
+    const digitsPhone = (phone?: string | null) => String(phone || '').replace(/\D/g, '')
+
+    /** localStorage'da shu telefon / userId bo'lsa true */
+    const hasAccount = (opts: { phone?: string | null; userId?: string | null }) => {
+        load()
+        const phone = digitsPhone(opts.phone)
+        const userId = opts.userId != null ? String(opts.userId) : ''
+        return accounts.value.some((a) => {
+            if (userId && String(a.userId) === userId) return true
+            if (phone && digitsPhone(a.phoneNumber) === phone) return true
+            return false
+        })
+    }
+
+    const sendCode = async (phone: string) => {
+        if (hasAccount({ phone })) {
+            return {
+                success: false,
+                message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
+            }
+        }
+        return useApi('/send-code', { method: 'POST', body: { phone } })
+    }
 
     const verifyCode = async (phone: string, code: string) => {
+        if (hasAccount({ phone })) {
+            return {
+                success: false,
+                message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
+            }
+        }
         const res = await useApi('/verify-code', { method: 'POST', body: { phone, code } })
-        if (res.success && res.data?.authToken) activateNew(res.data.user, res.data.authToken)
+        if (res.success && res.data?.authToken) {
+            const activated = activateNew(res.data.user, res.data.authToken)
+            if (!activated.ok) {
+                return {
+                    success: false,
+                    message: activated.message,
+                }
+            }
+        }
         return res
     }
 
     const verifyPassword = async (phone: string, password: string) => {
+        if (hasAccount({ phone })) {
+            return {
+                success: false,
+                message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
+            }
+        }
         const res = await useApi('/verify-password', { method: 'POST', body: { phone, password } })
-        if (res.success && res.data?.authToken) activateNew(res.data.user, res.data.authToken)
+        if (res.success && res.data?.authToken) {
+            const activated = activateNew(res.data.user, res.data.authToken)
+            if (!activated.ok) {
+                return {
+                    success: false,
+                    message: activated.message,
+                }
+            }
+        }
         return res
     }
 
-    const activateNew = (user: any, authToken: string) => {
-        // #region agent log
-        const storageRaw = typeof localStorage !== 'undefined' ? (localStorage.getItem(STORAGE_KEY) || '') : ''
-        let storageCount = 0
-        try { storageCount = storageRaw ? JSON.parse(storageRaw).length : 0 } catch { /* */ }
-        dbg('H1', 'account.store.ts:activateNew', 'activateNew before load', {
-            userId: user?.userId != null ? String(user.userId) : null,
-            memCount: accounts.value.length,
-            storageCount,
-            storageRawLen: storageRaw.length,
-        })
-        // #endregion
-
+    const activateNew = (user: any, authToken: string): { ok: true } | { ok: false; message: string } => {
         // Muhim: xotira bo'sh bo'lsa ham localStorage'dagi hisoblarni saqlab qolish
         load()
+
+        if (hasAccount({ phone: user?.phoneNumber, userId: user?.userId })) {
+            return {
+                ok: false,
+                message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
+            }
+        }
 
         upsert({
             userId: String(user.userId),
@@ -155,14 +200,7 @@ export const useAccountStore = defineStore('account', () => {
             avatar: user.avatar,
         })
         token.value = authToken
-
-        // #region agent log
-        dbg('H1', 'account.store.ts:activateNew', 'activateNew after load+upsert', {
-            userId: String(user.userId),
-            memCount: accounts.value.length,
-            memIds: accounts.value.map((a) => String(a.userId)),
-        })
-        // #endregion
+        return { ok: true }
     }
 
     const switchAccount = (userId: string) => {
@@ -222,6 +260,7 @@ export const useAccountStore = defineStore('account', () => {
         activeUserId,
         load,
         ensureCurrent,
+        hasAccount,
         sendCode,
         verifyCode,
         verifyPassword,

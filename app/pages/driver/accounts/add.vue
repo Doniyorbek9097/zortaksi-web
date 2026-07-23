@@ -290,6 +290,11 @@ const formattedPhoneDisplay = computed(() => {
 const handleSendCode = async () => {
   if (loading.value || !isPhoneValid.value) return
   error.value = ''
+  accountStore.load()
+  if (accountStore.hasAccount({ phone: phoneDigits.value })) {
+    error.value = 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.'
+    return
+  }
   loading.value = true
   try {
     const res = await accountStore.sendCode(phoneDigits.value)
