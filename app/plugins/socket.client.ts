@@ -38,6 +38,7 @@ export default defineNuxtPlugin(() => {
       chatStore.onNewMessage(msg)
       if (msg?.direction === 'in') playChatSound()
     })
+    socket.on('message:update', (msg) => chatStore.onMessageUpdate(msg))
     socket.on('chat:update', (chat) => chatStore.onChatUpdate(chat))
     socket.on('messages:read', (data) => chatStore.onMessagesRead(data))
     socket.on('peer:presence', (data) => chatStore.onPeerPresence(data))

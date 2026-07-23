@@ -200,6 +200,9 @@
     </section>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
+
+    <!-- To'lovlar tarixi -->
+    <DriverPaymentHistoryList ref="historyList" :max-items="30" />
   </div>
 </template>
 
@@ -221,6 +224,7 @@ const savingTopup = ref(false)
 const savingBuy = ref(false)
 const error = ref('')
 const topupSection = ref<HTMLElement | null>(null)
+const historyList = ref<{ load: () => Promise<void> } | null>(null)
 
 const amountPresets = [50000, 100000, 150000, 200000]
 
@@ -273,6 +277,7 @@ const buildTopupMessage = (amount: number) => {
     amountRaw: amount,
     payUrl,
     userId: payUserId.value,
+    paymentStatus: 'unpaid',
   })
 
   return `[[ZT_PAYMENT_REQUEST]]\n${payload}\n[[/ZT_PAYMENT_REQUEST]]`
@@ -332,6 +337,7 @@ const buyTariff = async () => {
     })
     if (res.success) {
       await authStore.getMe()
+      await historyList.value?.load()
       await navigateTo('/driver/dashboard')
     } else {
       error.value = res.message || 'Tarif ulanmadi'

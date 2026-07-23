@@ -16,6 +16,13 @@
       @buy="onBuyTariff"
     />
 
+    <!-- To'lovlar tarixi -->
+    <DriverPaymentHistoryList
+      :max-items="8"
+      :refreshable="false"
+      more-to="/driver/payment"
+    />
+
     <!-- Accounts -->
     <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/10`" no-padding>
       <!-- Loading -->

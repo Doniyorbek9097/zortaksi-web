@@ -149,6 +149,13 @@ const navItems = [
     to: '/admin/drivers',
   },
   {
+    title: "To'lovlar tarixi",
+    subtitle: "Hisob to'ldirish · tarif to'lovlari",
+    icon: 'fa-solid fa-receipt',
+    tone: 'amber' as const,
+    to: '/admin/payments',
+  },
+  {
     title: 'Tariflar boshqaruvi',
     subtitle: 'Narx · muddat · faollashtirish',
     icon: 'fa-solid fa-tags',

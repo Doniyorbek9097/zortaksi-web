@@ -124,6 +124,9 @@
         :pay-url="paymentRequest.payUrl"
         :user-id="paymentRequest.userId"
         :tariff-id="paymentRequest.tariffId"
+        :payment-status="paymentRequest.paymentStatus"
+        :date="date || undefined"
+        :message-id="messageId"
         :out="out"
       />
 
@@ -204,6 +207,7 @@
 interface Props {
   text?: string
   time?: string
+  date?: string | Date
   out?: boolean
   read?: boolean
   status?: 'sending' | 'sent' | 'failed' | 'read'
@@ -216,6 +220,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   text: '',
   time: '',
+  date: '',
   out: false,
   read: false,
   status: 'sent',
@@ -278,6 +283,7 @@ const paymentRequest = computed(() => {
   if (m?.[1]) {
     try {
       const data = JSON.parse(m[1].trim())
+      const statusRaw = String(data.paymentStatus || 'unpaid').trim().toLowerCase()
       return {
         type: String(data.type || (data.tariffId || data.tariff ? 'tariff' : 'topup')).trim(),
         name: String(data.name || '').trim(),
@@ -287,6 +293,7 @@ const paymentRequest = computed(() => {
         payUrl: String(data.payUrl || '').trim(),
         userId: String(data.userId || '').trim(),
         tariffId: String(data.tariffId || '').trim(),
+        paymentStatus: statusRaw === 'paid' ? 'paid' : 'unpaid',
       }
     } catch {
       /* fallback */
@@ -313,6 +320,7 @@ const paymentRequest = computed(() => {
       payUrl: url,
       userId: '',
       tariffId: '',
+      paymentStatus: 'unpaid',
     }
   }
   return null

@@ -101,6 +101,14 @@
         Tarif ulash kerak bo'lsa — Haydovchilar sahifasidagi tarif dialogidan foydalaning.
         Oddiy holatda haydovchi o'zi ulaydi.
       </p>
+
+      <DriverPaymentHistoryList
+        v-if="paymentsApiPath"
+        ref="historyList"
+        :api-path="paymentsApiPath"
+        :max-items="30"
+        subtitle="Shu haydovchi bo'yicha"
+      />
     </template>
 
     <BaseEmptyState
@@ -126,6 +134,12 @@ const userId = computed(() => decodeURIComponent(String(route.params.userId || '
 const payApiPath = computed(() =>
   userId.value ? `/drivers/pay/${encodeURIComponent(userId.value)}` : ''
 )
+
+const paymentsApiPath = computed(() =>
+  userId.value ? `/drivers/${encodeURIComponent(userId.value)}/payments` : ''
+)
+
+const historyList = ref<{ load: () => Promise<void> } | null>(null)
 
 const driver = ref<(DriverRow & { _id?: string }) | null>(null)
 const amountText = ref('')
@@ -188,20 +202,30 @@ const refreshDriver = async () => {
   if (res.success) driver.value = res.data
 }
 
+const requestMessageId = computed(() => String(route.query.messageId || '').trim())
+
 const addBalanceOnly = async () => {
   if (creditAmount.value <= 0 || !payApiPath.value) return
   saving.value = true
   error.value = ''
   success.value = ''
   try {
+    const body: Record<string, unknown> = {
+      creditAmount: creditAmount.value,
+      attachTariff: false,
+    }
+    if (requestMessageId.value) body.messageId = requestMessageId.value
+
     const res = await useApi(payApiPath.value, {
       method: 'POST',
-      body: { creditAmount: creditAmount.value, attachTariff: false },
+      body,
     })
     if (res.success) {
       driver.value = res.data
-      success.value = `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi`
+      success.value = `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi — To'lov muvaffaqiyatli`
+      amountText.value = ''
       await refreshDriver()
+      await historyList.value?.load()
     } else {
       error.value = res?.message || 'Amal bajarilmadi'
     }

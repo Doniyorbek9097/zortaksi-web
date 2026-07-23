@@ -377,6 +377,15 @@ export const useChatStore = defineStore('chat', () => {
         messages.value.push(msg)
     }
 
+    /** Socket: mavjud xabar matni/status yangilandi (masalan to'lov holati) */
+    const onMessageUpdate = (msg: IChatMessage) => {
+        if (!msg?._id) return
+        const idx = messages.value.findIndex((m) => m._id === msg._id)
+        if (idx !== -1) {
+            messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
+        }
+    }
+
     // Socket: yangi xabar keldi (kiruvchi yoki chiquvchi)
     const onNewMessage = (msg: IChatMessage) => {
         appendMessage(msg)
@@ -498,6 +507,7 @@ export const useChatStore = defineStore('chat', () => {
         markRead,
         deleteChats,
         onNewMessage: onNewMessageWithTyping,
+        onMessageUpdate,
         onChatUpdate,
         onMessagesRead,
         onPeerPresence,

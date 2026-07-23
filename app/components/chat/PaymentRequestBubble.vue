@@ -1,9 +1,17 @@
 <template>
   <div class="space-y-2.5 w-full min-w-0 max-w-full overflow-hidden">
     <div class="min-w-0 overflow-hidden">
-      <p class="text-[11px] font-black uppercase tracking-wider opacity-80 mb-1">
-        {{ isTopup ? "Hisobni to'ldirish" : "To'lov so'rovi" }}
-      </p>
+      <div class="flex items-start justify-between gap-2 mb-1">
+        <p class="text-[11px] font-black uppercase tracking-wider opacity-80">
+          {{ isTopup ? "Hisobni to'ldirish" : "To'lov so'rovi" }}
+        </p>
+        <p
+          v-if="dateLabel"
+          class="shrink-0 text-[11px] font-bold opacity-75 tabular-nums"
+        >
+          {{ dateLabel }}
+        </p>
+      </div>
       <p class="text-[14px] font-bold leading-snug break-words">
         {{ isTopup ? "Hisobni to'ldirmoqchiman" : 'Tarif sotib olmoqchiman' }}
       </p>
@@ -29,15 +37,39 @@
       </p>
     </div>
 
+    <!-- To'lov holati (topup) -->
+    <div
+      v-if="isTopup"
+      class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-black"
+      :class="isPaid
+        ? (out
+          ? 'bg-emerald-400/25 text-white'
+          : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/50')
+        : (out
+          ? 'bg-amber-400/25 text-white'
+          : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/50')"
+    >
+      <font-awesome-icon
+        :icon="isPaid ? 'fa-solid fa-circle-check' : 'fa-solid fa-clock'"
+        class="text-[11px] shrink-0"
+      />
+      <span>{{ isPaid ? "To'lov muvaffaqiyatli" : "To'lov qilinmagan" }}</span>
+    </div>
+
     <p class="text-[12px] leading-relaxed opacity-80 break-words">
-      {{ out
-        ? 'So\'rov yuborildi. Admin karta ma\'lumotini yuboradi.'
-        : isTopup
-          ? 'To\'lovdan keyin summani haydovchi balansiga qo\'shing.'
-          : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
+      <template v-if="isTopup && isPaid">
+        {{ out ? "Hisobingiz to'ldirildi." : "Balansga muvaffaqiyatli qo'shildi." }}
+      </template>
+      <template v-else>
+        {{ out
+          ? 'So\'rov yuborildi. Admin karta ma\'lumotini yuboradi.'
+          : isTopup
+            ? 'To\'lovdan keyin summani haydovchi balansiga qo\'shing.'
+            : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
+      </template>
     </p>
 
-    <!-- Admin: balansga qo'shish -->
+    <!-- Admin: balansga qo'shish (faqat to'lanmagan) -->
     <button
       v-if="showPayButton"
       type="button"
@@ -65,6 +97,9 @@ interface Props {
   userId?: string
   tariffId?: string
   type?: string
+  paymentStatus?: string
+  date?: string | Date
+  messageId?: string
   out?: boolean
 }
 
@@ -77,6 +112,9 @@ const props = withDefaults(defineProps<Props>(), {
   userId: '',
   tariffId: '',
   type: '',
+  paymentStatus: 'unpaid',
+  date: '',
+  messageId: '',
   out: false,
 })
 
@@ -87,6 +125,18 @@ const isTopup = computed(() => {
   if (props.type === 'tariff') return false
   // Yangi so'rovlar tariffId siz; eski tarif so'rovlari ham ko'rsatiladi
   return !props.tariffId && !props.tariff
+})
+
+const isPaid = computed(() => String(props.paymentStatus || '').toLowerCase() === 'paid')
+
+const dateLabel = computed(() => {
+  if (!props.date) return ''
+  const d = new Date(props.date)
+  if (Number.isNaN(d.getTime())) return ''
+  const day = String(d.getDate()).padStart(2, '0')
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const year = d.getFullYear()
+  return `${day}.${month}.${year}`
 })
 
 /** payUrl yoki userId dan haydovchi id */
@@ -110,7 +160,9 @@ const resolvedAmount = computed(() => {
 })
 
 const showPayButton = computed(() =>
-  !!resolvedUserId.value && authStore.user?.role === 'admin'
+  !!resolvedUserId.value &&
+  authStore.user?.role === 'admin' &&
+  !(isTopup.value && isPaid.value)
 )
 
 const goPay = async () => {
@@ -118,6 +170,7 @@ const goPay = async () => {
   if (!id) return
   const query: Record<string, string> = {}
   if (resolvedAmount.value) query.amount = resolvedAmount.value
+  if (props.messageId) query.messageId = String(props.messageId)
   await navigateTo({ path: `/admin/pay/${id}`, query })
 }
 </script>

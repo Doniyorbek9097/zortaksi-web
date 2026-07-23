@@ -51,6 +51,7 @@
           :id="`msg-${msg._id}`"
           :text="msg.text"
           :time="formatTime(msg.date)"
+          :date="msg.date"
           :out="msg.direction === 'out'"
           :read="msg.status === 'read'"
           :status="msg.status"
