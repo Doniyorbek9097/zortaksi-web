@@ -2,7 +2,7 @@
   <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
   <div
     class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden"
-    :class="isSupport
+    :class="showPaymentChatChrome
       ? 'bg-gradient-to-b from-teal-50 via-slate-50 to-slate-100 dark:from-teal-950/50 dark:via-slate-950 dark:to-slate-950'
       : 'bg-slate-50 dark:bg-slate-950'"
     :style="shellStyle"
@@ -15,7 +15,7 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!isSupport && !!callPhone"
-      :support="isSupport"
+      :support="showPaymentChatChrome"
       @back="goChats"
       @call="onCall"
     />
@@ -23,9 +23,9 @@
     <!-- Xabarlar -->
     <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
-        <!-- Support banner -->
+        <!-- Support/to'lov banner — faqat haydovchi/user uchun -->
         <div
-          v-if="isSupport"
+          v-if="showPaymentChatChrome"
           class="rounded-2xl px-3.5 py-3 bg-teal-500/10 border border-teal-400/30 dark:border-teal-700/50"
         >
           <p class="text-[10px] font-black uppercase tracking-[0.16em] text-teal-600 dark:text-teal-400 mb-1">
@@ -84,7 +84,7 @@
         >
           <div
             class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
-            :class="isSupport
+            :class="showPaymentChatChrome
               ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
               : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
           >
@@ -170,6 +170,7 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
 
@@ -178,12 +179,18 @@ definePageMeta({
 })
 
 const route = useRoute()
+const authStore = useAuthStore()
 const chatStore = useChatStore()
 
 const chatId = computed(() => route.params.id as string)
 
 const isSupport = computed(() =>
   chatStore.currentChat?.kind === 'support' || route.query.support === '1'
+)
+
+/** To'lov chati UI faqat haydovchi/user uchun; admin oddiy chat ko'radi */
+const showPaymentChatChrome = computed(() =>
+  isSupport.value && authStore.user?.role !== 'admin'
 )
 
 const name = computed(() => {
