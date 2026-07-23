@@ -169,15 +169,6 @@ const onBuyTariff = () => navigateTo('/driver/payment')
 const onSelectAccount = (acc: ILocalAccount) => {
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
-  // #region agent log
-  const sPayload = { sessionId: '1179ab', runId: 'post-fix', hypothesisId: 'H2', location: 'profile.vue:onSelectAccount', message: 'select account click', data: { targetUserId: target, activeUserId: active, sameActive: target === active, listCount: accountStore.accounts.length, listIds: accountStore.accounts.map((a) => String(a.userId)) }, timestamp: Date.now() }
-  fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1179ab' }, body: JSON.stringify(sPayload) }).catch(() => {})
-  fetch('/api/_debug/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sPayload) }).catch(() => {})
-  try {
-    const base = useRuntimeConfig().public.baseUrl as string
-    if (base) fetch(`${base}/_debug/log`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sPayload) }).catch(() => {})
-  } catch { /* */ }
-  // #endregion
   if (target === active) return
   accountStore.switchAccount(target)
 }

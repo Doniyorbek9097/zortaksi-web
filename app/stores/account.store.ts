@@ -4,21 +4,6 @@ import { authCookieOptions } from '~/utils/authCookie'
 
 const STORAGE_KEY = 'zt_accounts'
 
-// #region agent log
-const dbg = (hypothesisId: string, location: string, message: string, data: Record<string, unknown>, runId = 'post-fix') => {
-    if (!import.meta.client) return
-    const payload = { sessionId: '1179ab', runId, hypothesisId, location, message, data, timestamp: Date.now() }
-    fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1179ab' }, body: JSON.stringify(payload) }).catch(() => {})
-    fetch('/api/_debug/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
-    try {
-        const base = useRuntimeConfig().public.baseUrl as string
-        if (base) {
-            fetch(`${base}/_debug/log`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).catch(() => {})
-        }
-    } catch { /* */ }
-}
-// #endregion
-
 /**
  * Accountlar faqat frontend localStorage'da saqlanadi. Har biri mustaqil login
  * (o'z JWT tokeni bilan). Ustiga bosilganda o'sha accountning tokeniga almashadi.
@@ -38,12 +23,6 @@ export const useAccountStore = defineStore('account', () => {
 
     const persist = () => {
         if (import.meta.client) localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts.value))
-        // #region agent log
-        dbg('H1', 'account.store.ts:persist', 'persist accounts', {
-            count: accounts.value.length,
-            userIds: accounts.value.map((a) => String(a.userId)),
-        })
-        // #endregion
     }
 
     const load = () => {
@@ -55,52 +34,22 @@ export const useAccountStore = defineStore('account', () => {
                 ...a,
                 userId: String(a.userId),
             }))
-            // #region agent log
-            dbg('H5', 'account.store.ts:load', 'load from localStorage', {
-                rawLen: raw?.length || 0,
-                count: accounts.value.length,
-                userIds: accounts.value.map((a) => a.userId),
-            })
-            // #endregion
-        } catch (e: any) {
+        } catch {
             accounts.value = []
-            // #region agent log
-            dbg('H5', 'account.store.ts:load', 'load parse failed', { error: String(e?.message || e) })
-            // #endregion
         }
     }
 
     const upsert = (acc: ILocalAccount) => {
         const userId = String(acc.userId)
-        const beforeCount = accounts.value.length
-        const beforeIds = accounts.value.map((a) => String(a.userId))
         const idx = accounts.value.findIndex((a) => String(a.userId) === userId)
         const next = { ...acc, userId }
         if (idx !== -1) accounts.value[idx] = { ...accounts.value[idx], ...next }
         else accounts.value.push(next)
-        // #region agent log
-        dbg('H1', 'account.store.ts:upsert', 'upsert account', {
-            userId,
-            idx,
-            beforeCount,
-            afterCount: accounts.value.length,
-            beforeIds,
-            afterIds: accounts.value.map((a) => String(a.userId)),
-            possibleWipe: beforeCount === 0,
-        })
-        // #endregion
         persist()
     }
 
     const ensureCurrent = (user: any) => {
         if (!import.meta.client || !user?.userId || !token.value) {
-            // #region agent log
-            dbg('H4', 'account.store.ts:ensureCurrent', 'ensureCurrent skipped', {
-                hasUser: !!user?.userId,
-                hasToken: !!token.value,
-                memCount: accounts.value.length,
-            })
-            // #endregion
             return
         }
         if (!accounts.value.length) load()
@@ -208,17 +157,6 @@ export const useAccountStore = defineStore('account', () => {
         const target = String(userId)
         const acc = accounts.value.find((a) => String(a.userId) === target)
         const sameToken = !!(acc && acc.token === token.value)
-        // #region agent log
-        dbg('H2', 'account.store.ts:switchAccount', 'switchAccount attempt', {
-            targetUserId: target,
-            found: !!acc,
-            sameToken,
-            memCount: accounts.value.length,
-            memIds: accounts.value.map((a) => String(a.userId)),
-            activeByToken: activeUserId.value,
-            willNoop: !acc || sameToken,
-        })
-        // #endregion
         if (!acc || sameToken) return
 
         // auth.store bilan bir xil cookie opts orqali yozish

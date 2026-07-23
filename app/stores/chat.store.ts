@@ -53,11 +53,6 @@ export const useChatStore = defineStore('chat', () => {
         let lastError: any = null
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                // #region agent log
-                fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect attempt',data:{chatId,attempt,maxAttempts,silent:!!opts.silent},timestamp:Date.now()})}).catch(()=>{})
-                try { const base = useRuntimeConfig().public.baseUrl as string; if (base) fetch(`${base}/_debug/log`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'1179ab',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect attempt',data:{chatId,attempt,maxAttempts},timestamp:Date.now()})}).catch(()=>{}) } catch { /* */ }
-                // #endregion
-
                 const res = await useApi(`/chats/${chatId}/connect`, {
                     method: 'POST',
                     // Telegram resolve uzoqroq olishi mumkin — 8s yetmaydi
@@ -65,9 +60,6 @@ export const useChatStore = defineStore('chat', () => {
                 })
                 if (res.success) {
                     const next = res.data?.status ?? 'unreachable'
-                    // #region agent log
-                    fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect result',data:{chatId,attempt,next,reason:res.data?.reason||''},timestamp:Date.now()})}).catch(()=>{})
-                    // #endregion
 
                     // Transient unreachable — yana urinish (UI connecting da qoladi)
                     if (next === 'unreachable' && attempt < maxAttempts && !opts.silent) {
@@ -92,9 +84,6 @@ export const useChatStore = defineStore('chat', () => {
                 return res
             } catch (error: any) {
                 lastError = error
-                // #region agent log
-                fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect error',data:{chatId,attempt,status:error?.response?.status||null,code:error?.code||null,msg:String(error?.message||'').slice(0,120)},timestamp:Date.now()})}).catch(()=>{})
-                // #endregion
                 console.error('connect error:', error)
                 if (attempt < maxAttempts && !opts.silent) continue
                 if (!opts.silent) {
