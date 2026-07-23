@@ -238,23 +238,38 @@ export const useAccountStore = defineStore('account', () => {
   }
 
   const removeAccount = (userId: string) => {
+    if (!import.meta.client) return
     load()
     const target = String(userId)
     const wasActive = String(activeUserId.value || '') === target
-    accounts.value = accounts.value.filter((a) => String(a.userId) !== target)
-    persist()
+      || String(readActiveUserId() || '') === target
 
+    // Ro'yxatdan olib tashlash
+    accounts.value = accounts.value.filter((a) => String(a.userId) !== target)
+
+    // localStorage ga darhol yozish
+    try {
+      if (accounts.value.length) {
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts.value))
+      } else {
+        localStorage.removeItem(ACCOUNTS_KEY)
+      }
+    } catch { /* */ }
+
+    // Faol bo'lmagan hisob — faqat ro'yxatdan o'chirildi, sessiya saqlanadi
     if (!wasActive) return
 
+    // Faol hisob o'chirildi — boshqa hisob bo'lsa shunga o'tamiz
     const next = accounts.value[0]
     if (next?.token) {
       switching.value = true
       applyToken(next.token, String(next.userId))
       window.location.assign(next.role ? homeForAccount(next) : '/')
-    } else {
-      applyToken(null)
-      window.location.assign('/')
+      return
     }
+
+    // Boshqa hisob yo'q — faol sessiya saqlanadi (logout qilinmaydi)
+    // Joriy token/cookie/user o'zgarishsiz qoladi
   }
 
   return {
