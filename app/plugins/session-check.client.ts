@@ -1,15 +1,12 @@
+import { authCookieOptions } from '~/utils/authCookie'
+
 /**
  * Ilova ochilganda Telegram session tekshiriladi.
  * Eskirgan / yaroqsiz bo'lsa token tozalanadi va /auth ga yo'naltiriladi.
  */
 export default defineNuxtPlugin(async () => {
   const authStore = useAuthStore()
-  const token = useCookie('auth_token', {
-    maxAge: 30 * 24 * 60 * 60,
-    path: '/',
-    watch: true,
-    sameSite: 'lax',
-  })
+  const token = useCookie('auth_token', { ...authCookieOptions })
 
   if (!token.value) return
 

@@ -1,6 +1,5 @@
 <template>
   <div class="relative min-h-[100dvh] overflow-hidden flex flex-col items-center px-4 py-4 text-slate-900 dark:text-slate-100">
-    <!-- Atmosphere -->
     <div class="pointer-events-none absolute inset-0 bg-slate-50 dark:bg-slate-950" />
     <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full bg-[#2AABEE]/15 dark:bg-[#2AABEE]/10 blur-3xl" />
     <div class="pointer-events-none absolute bottom-0 right-0 w-[220px] h-[220px] rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-3xl" />
@@ -59,9 +58,8 @@
           </p>
         </div>
 
-        <!-- Steps -->
         <div class="flex items-center justify-center gap-1.5">
-          <template v-for="(s, i) in steps" :key="s.key">
+          <template v-for="(s, i) in visibleSteps" :key="s.key">
             <div
               class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all"
               :class="stepChipClass(s.key)"
@@ -75,7 +73,7 @@
               {{ s.label }}
             </div>
             <div
-              v-if="i < steps.length - 1"
+              v-if="i < visibleSteps.length - 1"
               class="w-3 h-px bg-slate-200 dark:bg-slate-800"
             />
           </template>
@@ -93,22 +91,6 @@
         </div>
 
         <template v-if="step === 'phone'">
-          <div class="rounded-xl border border-[#2AABEE]/25 bg-[#2AABEE]/8 dark:bg-[#2AABEE]/10 px-3 py-2.5 flex items-start gap-2.5">
-            <div class="w-8 h-8 rounded-lg bg-[#2AABEE] text-white flex items-center justify-center shrink-0 shadow-md shadow-sky-500/25">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4" aria-hidden="true">
-                <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
-              </svg>
-            </div>
-            <div class="min-w-0 space-y-0.5">
-              <p class="text-[12px] font-black text-slate-900 dark:text-white leading-snug">
-                Hisob qo‘shish — Telegram orqali
-              </p>
-              <p class="text-[10px] font-medium text-slate-600 dark:text-slate-400 leading-snug">
-                Kod SMS emas — Telegram ilovasiga keladi.
-              </p>
-            </div>
-          </div>
-
           <BasePhoneInput
             v-model="phoneLocal"
             label="Telegram telefon raqami"
@@ -116,6 +98,10 @@
             :disabled="loading"
             @submit="handleSendCode"
           />
+
+          <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 leading-snug -mt-1">
+            Kod SMS emas — Telegram ilovasiga keladi
+          </p>
 
           <button
             type="button"
@@ -152,26 +138,9 @@
           </div>
 
           <BaseSmsInput v-model="code" :loading="loading" @submit="handleVerifyCode" />
-
-          <div class="rounded-xl border border-emerald-200/70 dark:border-emerald-800/40 bg-emerald-50/80 dark:bg-emerald-950/30 px-3 py-2.5 flex items-start gap-2.5">
-            <div class="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0">
-              <font-awesome-icon icon="fa-solid fa-check-circle" class="text-xs" />
-            </div>
-            <p class="text-[10px] text-slate-600 dark:text-slate-400 leading-snug font-medium">
-              <strong class="text-slate-900 dark:text-white font-black">Telegram</strong>ni oching va kelgan
-              <strong class="text-slate-900 dark:text-white font-black">kodni</strong> shu yerga yozing.
-            </p>
-          </div>
         </template>
 
         <template v-else>
-          <div class="flex justify-center">
-            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 text-[9px] font-black uppercase tracking-widest">
-              <font-awesome-icon icon="fa-solid fa-exclamation-triangle" />
-              Ikki bosqichli himoya
-            </div>
-          </div>
-
           <BasePasswordInput
             v-model="password"
             label="Telegram 2FA paroli"
@@ -225,30 +194,32 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 
-const steps = [
+const allSteps = [
   { key: 'phone' as const, label: 'Telefon' },
   { key: 'code' as const, label: 'Kod' },
   { key: 'password' as const, label: 'Parol' },
 ]
 
-const stepOrder: Step[] = ['phone', 'code', 'password']
+const visibleSteps = computed(() =>
+  step.value === 'password' ? allSteps : allSteps.slice(0, 2)
+)
 
 const stepMeta = computed(() => {
   if (step.value === 'phone') {
     return {
       title: 'Hisob qo‘shish',
-      subtitle: 'Telegram raqamingizni kiriting — yangi hisob shu orqali ulanadi',
+      subtitle: 'Telegram raqamini davlat kodi bilan kiriting',
     }
   }
   if (step.value === 'code') {
     return {
       title: 'Kodni kiriting',
-      subtitle: 'Tasdiqlash kodi Telegram ilovangizga yuborildi',
+      subtitle: 'Kod Telegram ilovangizga yuborildi',
     }
   }
   return {
     title: 'Himoya',
-    subtitle: 'Telegram ikki bosqichli parolingizni kiriting',
+    subtitle: 'Telegram 2FA parolini kiriting',
   }
 })
 
@@ -262,37 +233,34 @@ const iconShellClass = computed(() => {
   return 'bg-white dark:bg-slate-900 border-sky-200/80 dark:border-sky-800/50'
 })
 
-const stepIndex = computed(() => stepOrder.indexOf(step.value))
+const stepIndex = computed(() =>
+  visibleSteps.value.findIndex((s) => s.key === step.value)
+)
 
 const stepChipClass = (key: Step) => {
-  const i = stepOrder.indexOf(key)
+  const i = visibleSteps.value.findIndex((s) => s.key === key)
   if (i === stepIndex.value) return 'bg-[#2AABEE]/12 text-[#2AABEE]'
   if (i < stepIndex.value) return 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
   return 'bg-slate-100 dark:bg-slate-900 text-slate-400'
 }
 
 const stepDotClass = (key: Step) => {
-  const i = stepOrder.indexOf(key)
+  const i = visibleSteps.value.findIndex((s) => s.key === key)
   if (i === stepIndex.value) return 'bg-[#2AABEE] text-white'
   if (i < stepIndex.value) return 'bg-emerald-500 text-white'
   return 'bg-slate-300 dark:bg-slate-700 text-white'
 }
 
 const phoneDigits = computed(() => phoneLocal.value.replace(/\D/g, ''))
-
 const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
-
-const formattedPhoneDisplay = computed(() => {
-  const d = phoneDigits.value
-  return d ? `+${d}` : ''
-})
+const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
 const handleSendCode = async () => {
   if (loading.value || !isPhoneValid.value) return
   error.value = ''
   accountStore.load()
   if (accountStore.hasAccount({ phone: phoneDigits.value })) {
-    error.value = 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.'
+    error.value = 'Bu hisob allaqachon qo\'shilgan'
     return
   }
   loading.value = true
@@ -362,6 +330,7 @@ const handleBack = () => {
 .animate-shake {
   animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
 }
+
 @keyframes shake {
   10%, 90% { transform: translate3d(-1px, 0, 0); }
   20%, 80% { transform: translate3d(2px, 0, 0); }

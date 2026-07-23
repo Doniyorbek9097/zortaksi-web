@@ -1,5 +1,6 @@
 import type { AxiosProgressEvent, Method } from "axios"
 import { api } from "~/config/axios"
+import { authCookieOptions } from "~/utils/authCookie"
 
 interface IOptions {
   method?: Method
@@ -12,12 +13,7 @@ interface IOptions {
 
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
   const config = useRuntimeConfig()
-  const token = useCookie('auth_token', {
-    maxAge: 30 * 24 * 60 * 60,
-    path: '/',
-    watch: true,
-    sameSite: 'lax'
-  })
+  const token = useCookie('auth_token', { ...authCookieOptions })
 
   // Merge headers
   const headers = { ...options.headers }

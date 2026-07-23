@@ -16,11 +16,11 @@
       :class="[
         error 
           ? 'border-red-500/40 ring-4 ring-red-500/5 bg-red-500/5' 
-          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-within:border-indigo-500/60 focus-within:ring-4 focus-within:ring-indigo-500/10'
+          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-within:border-sky-500/60 focus-within:ring-4 focus-within:ring-sky-500/10'
       ]"
     >
       <!-- Icon Left -->
-      <div class="pl-4 pr-3 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-indigo-500">
+      <div class="pl-4 pr-3 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-sky-500">
         <font-awesome-icon icon="fa-solid fa-lock" class="text-sm" />
       </div>
 
@@ -33,7 +33,7 @@
         v-model="rawCode"
         placeholder="• • • •"
         maxlength="6"
-        class="w-full py-4 pr-4 bg-transparent outline-none text-slate-900 dark:text-slate-100 font-black text-xl placeholder:text-slate-200 dark:placeholder:text-slate-900 tracking-[0.4em] selection:bg-indigo-500/20"
+        class="w-full py-4 pr-4 bg-transparent outline-none text-slate-900 dark:text-slate-100 font-black text-xl placeholder:text-slate-200 dark:placeholder:text-slate-900 tracking-[0.4em] selection:bg-sky-500/20"
         @input="handleInput"
         @keydown="restrictInput"
         :disabled="disabled"
@@ -46,7 +46,7 @@
             v-if="loading" 
             icon="fa-solid fa-spinner" 
             spin 
-            class="text-indigo-500 w-4 h-4" 
+            class="text-sky-500 w-4 h-4" 
           />
         </transition>
         
@@ -56,7 +56,7 @@
             @click="handleSubmit"
             type="button"
             :disabled="disabled"
-            class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center hover:bg-indigo-500 hover:text-white transition-all duration-300 disabled:opacity-30 active:scale-90"
+            class="w-8 h-8 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center hover:bg-sky-500 hover:text-white transition-all duration-300 disabled:opacity-30 active:scale-90"
           >
             <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-xs" />
           </button>

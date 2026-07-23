@@ -23,47 +23,7 @@
           : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus-within:border-sky-500/50 focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:bg-white dark:focus-within:bg-slate-950',
       ]"
     >
-      <div class="relative shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2">
-        <select
-          v-model="countryKey"
-          :disabled="disabled"
-          aria-label="Davlat"
-          class="appearance-none min-w-[5.5rem] max-w-[7.5rem] pl-0.5 pr-5 py-0.5 rounded-lg bg-transparent text-lg font-black tabular-nums leading-none text-slate-900 dark:text-white outline-none cursor-pointer disabled:opacity-50"
-          @change="onCountryChange"
-        >
-          <option
-            v-for="c in countries"
-            :key="c.key"
-            :value="c.key"
-            class="text-lg font-black tabular-nums"
-          >
-            +{{ c.dial || '…' }} {{ c.short }}
-          </option>
-        </select>
-        <font-awesome-icon
-          icon="fa-solid fa-chevron-down"
-          class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"
-        />
-      </div>
-
-      <!-- Faqat "Boshqa" — selectda kod yo'q, qo'lda kiritiladi -->
-      <div
-        v-if="isOther"
-        class="flex items-baseline gap-0.5 shrink-0"
-      >
-        <span class="text-lg font-black text-slate-400">+</span>
-        <input
-          v-model="customDial"
-          type="tel"
-          inputmode="numeric"
-          maxlength="3"
-          :disabled="disabled"
-          placeholder="90"
-          aria-label="Davlat kodi"
-          class="w-10 bg-transparent outline-none text-lg font-black text-slate-900 dark:text-white tabular-nums disabled:opacity-50"
-          @input="onCustomDialInput"
-        >
-      </div>
+      <span class="text-lg font-black text-slate-400 shrink-0 select-none">+</span>
 
       <input
         id="phoneInput"
@@ -71,8 +31,8 @@
         :value="displayValue"
         type="tel"
         inputmode="numeric"
-        autocomplete="tel-national"
-        :placeholder="placeholder"
+        autocomplete="tel"
+        placeholder="998 90 123 45 67"
         :disabled="disabled"
         class="w-full min-w-0 bg-transparent outline-none border-none text-lg font-black text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 tabular-nums tracking-wide selection:bg-sky-500/20 disabled:opacity-50"
         @focus="onFocus"
@@ -91,37 +51,6 @@
 
 <script setup lang="ts">
 /** modelValue: to'liq E.164 raqamlar (+ siz), masalan 998901234567 */
-
-type Country = {
-  key: string
-  short: string
-  dial: string
-  nationalLen?: number
-}
-
-const countries: Country[] = [
-  { key: 'UZ', short: 'UZ', dial: '998', nationalLen: 9 },
-  { key: 'RU', short: 'RU', dial: '7', nationalLen: 10 },
-  { key: 'KZ', short: 'KZ', dial: '7', nationalLen: 10 },
-  { key: 'KG', short: 'KG', dial: '996', nationalLen: 9 },
-  { key: 'TJ', short: 'TJ', dial: '992', nationalLen: 9 },
-  { key: 'TM', short: 'TM', dial: '993', nationalLen: 8 },
-  { key: 'AF', short: 'AF', dial: '93', nationalLen: 9 },
-  { key: 'AZ', short: 'AZ', dial: '994', nationalLen: 9 },
-  { key: 'TR', short: 'TR', dial: '90', nationalLen: 10 },
-  { key: 'UA', short: 'UA', dial: '380', nationalLen: 9 },
-  { key: 'BY', short: 'BY', dial: '375', nationalLen: 9 },
-  { key: 'AM', short: 'AM', dial: '374', nationalLen: 8 },
-  { key: 'GE', short: 'GE', dial: '995', nationalLen: 9 },
-  { key: 'AE', short: 'AE', dial: '971', nationalLen: 9 },
-  { key: 'DE', short: 'DE', dial: '49', nationalLen: 11 },
-  { key: 'GB', short: 'GB', dial: '44', nationalLen: 10 },
-  { key: 'US', short: 'US', dial: '1', nationalLen: 10 },
-  { key: 'KR', short: 'KR', dial: '82', nationalLen: 10 },
-  { key: 'CN', short: 'CN', dial: '86', nationalLen: 11 },
-  { key: 'IN', short: 'IN', dial: '91', nationalLen: 10 },
-  { key: 'XX', short: '…', dial: '' },
-]
 
 const props = withDefaults(
   defineProps<{
@@ -147,115 +76,43 @@ const emit = defineEmits<{
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const localError = ref('')
-const countryKey = ref('UZ')
-const customDial = ref('')
-const nationalDigits = ref('')
-
-const isOther = computed(() => countryKey.value === 'XX')
-
-const selectedCountry = computed((): Country => {
-  return countries.find((c) => c.key === countryKey.value) ?? countries[0]!
-})
-
-const dialCode = computed(() =>
-  isOther.value ? customDial.value.replace(/\D/g, '').slice(0, 3) : selectedCountry.value.dial
-)
-
-const sortedDials = countries
-  .filter((c) => c.dial)
-  .map((c) => ({ key: c.key, dial: c.dial }))
-  .sort((a, b) => b.dial.length - a.dial.length)
-
-const maxNational = computed(() => {
-  const dialLen = Math.max(dialCode.value.length, 1)
-  const hardMax = Math.max(4, 15 - dialLen)
-  const hint = selectedCountry.value.nationalLen
-  if (!isOther.value && hint) return Math.min(hint, hardMax)
-  return hardMax
-})
-
-const placeholder = computed(() => {
-  if (dialCode.value === '998') return '90 123 45 67'
-  return 'Raqamni kiriting'
-})
-
-const displayValue = computed(() => {
-  const digits = nationalDigits.value
-  if (!digits) return ''
-  if (dialCode.value === '998' && digits.length <= 9) {
-    const a = digits.slice(0, 2)
-    const b = digits.slice(2, 5)
-    const c = digits.slice(5, 7)
-    const d = digits.slice(7, 9)
-    return [a, b, c, d].filter(Boolean).join(' ')
-  }
-  return digits.replace(/(\d{3})(?=\d)/g, '$1 ').trim()
-})
-
-const fullDigits = computed(() => `${dialCode.value}${nationalDigits.value}`)
-
-const isComplete = computed(() => {
-  const full = fullDigits.value
-  if (!/^\d{8,15}$/.test(full)) return false
-  if (!dialCode.value || nationalDigits.value.length < 4) return false
-  const expected = !isOther.value ? selectedCountry.value.nationalLen : undefined
-  if (expected) return nationalDigits.value.length === expected
-  return true
-})
+const digits = ref('')
 
 const errorText = computed(() => props.error || localError.value)
 
-const emitFull = () => {
-  emit('update:modelValue', fullDigits.value)
-}
+/** O‘qish uchun engil format: 3+3+… */
+const displayValue = computed(() => {
+  const d = digits.value
+  if (!d) return ''
+  // UZ: 998 XX XXX XX XX
+  if (d.startsWith('998') && d.length <= 12) {
+    const rest = d.slice(3)
+    const parts = [
+      '998',
+      rest.slice(0, 2),
+      rest.slice(2, 5),
+      rest.slice(5, 7),
+      rest.slice(7, 9),
+    ].filter(Boolean)
+    return parts.join(' ')
+  }
+  return d.replace(/(\d{3})(?=\d)/g, '$1 ').trim()
+})
 
-const parseIncoming = (raw: string) => {
-  const d = String(raw || '').replace(/\D/g, '')
-  if (!d) {
-    nationalDigits.value = ''
-    return
-  }
-  const match = sortedDials.find((c) => d.startsWith(c.dial))
-  if (match) {
-    // +7 → RU (default); KZ ham bir xil dial
-    countryKey.value = match.dial === '7' ? 'RU' : match.key
-    customDial.value = ''
-    nationalDigits.value = d.slice(match.dial.length).slice(0, 15 - match.dial.length)
-    return
-  }
-  countryKey.value = 'XX'
-  if (d.length > 4) {
-    const guessLen = Math.min(3, d.length - 4)
-    customDial.value = d.slice(0, guessLen)
-    nationalDigits.value = d.slice(guessLen)
-  } else {
-    customDial.value = ''
-    nationalDigits.value = d
-  }
-}
+const isComplete = computed(() => /^\d{8,15}$/.test(digits.value))
 
 watch(
   () => props.modelValue,
   (v) => {
-    const next = String(v || '').replace(/\D/g, '')
-    if (next === fullDigits.value) return
-    parseIncoming(next)
+    const next = String(v || '').replace(/\D/g, '').slice(0, 15)
+    if (next === digits.value) return
+    digits.value = next
   },
   { immediate: true }
 )
 
-const onCountryChange = () => {
-  if (isOther.value && !customDial.value) customDial.value = ''
-  nationalDigits.value = nationalDigits.value.slice(0, maxNational.value)
-  localError.value = ''
-  emitFull()
-  nextTick(() => inputRef.value?.focus())
-}
-
-const onCustomDialInput = () => {
-  customDial.value = customDial.value.replace(/\D/g, '').slice(0, 3)
-  nationalDigits.value = nationalDigits.value.slice(0, maxNational.value)
-  emitFull()
+const emitFull = () => {
+  emit('update:modelValue', digits.value)
 }
 
 const onFocus = () => {
@@ -271,7 +128,7 @@ const onKeydown = (e: KeyboardEvent) => {
   const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']
   if (e.key === 'Enter') {
     e.preventDefault()
-    if (isComplete.value) emit('submit', fullDigits.value)
+    if (isComplete.value) emit('submit', digits.value)
     return
   }
   if (!/[0-9]/.test(e.key) && !allowed.includes(e.key)) {
@@ -281,9 +138,8 @@ const onKeydown = (e: KeyboardEvent) => {
 
 const onInput = (e: Event) => {
   const el = e.target as HTMLInputElement
-  const digits = el.value.replace(/\D/g, '').slice(0, maxNational.value)
   localError.value = ''
-  nationalDigits.value = digits
+  digits.value = el.value.replace(/\D/g, '').slice(0, 15)
   emitFull()
   nextTick(() => {
     const len = displayValue.value.length

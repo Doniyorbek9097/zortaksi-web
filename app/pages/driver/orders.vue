@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
   if (observer) observer.disconnect()
 })
 
-const onUnlock = () => navigateTo('/driver/tariffs')
+const onUnlock = () => navigateTo('/driver/payment')
 
 // --- Karta amallari ---
 const openLink = (url: string) => {

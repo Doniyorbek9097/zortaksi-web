@@ -3,6 +3,7 @@ import type { ILocalAccount } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
 
 const STORAGE_KEY = 'zt_accounts'
+const ACTIVE_KEY = 'zt_active_user'
 
 /**
  * Accountlar faqat frontend localStorage'da saqlanadi. Har biri mustaqil login
@@ -12,17 +13,55 @@ export const useAccountStore = defineStore('account', () => {
     const accounts = ref<ILocalAccount[]>([])
     const isLoading = ref(false)
 
-    const token = useCookie('auth_token', { ...authCookieOptions })
+    /** Bitta cookie manbai — auth.store bilan bir xil opts */
+    const token = useCookie<string | null>('auth_token', { ...authCookieOptions })
+
+    const readActiveId = () => {
+        if (!import.meta.client) return null
+        try {
+            return localStorage.getItem(ACTIVE_KEY)
+        } catch {
+            return null
+        }
+    }
+
+    const writeActiveId = (userId: string | null) => {
+        if (!import.meta.client) return
+        try {
+            if (userId) localStorage.setItem(ACTIVE_KEY, userId)
+            else localStorage.removeItem(ACTIVE_KEY)
+        } catch { /* private mode */ }
+    }
 
     const activeUserId = computed(() => {
         const t = token.value
-        if (!t) return null
-        const hit = accounts.value.find((a) => a.token === t)
-        return hit ? String(hit.userId) : null
+        if (t) {
+            const byToken = accounts.value.find((a) => a.token === t)
+            if (byToken) return String(byToken.userId)
+        }
+
+        // Token mos kelmasa (eski token / sync kechikishi) — saqlangan active id
+        const saved = readActiveId()
+        if (saved && accounts.value.some((a) => String(a.userId) === saved)) {
+            return saved
+        }
+
+        try {
+            const auth = useAuthStore()
+            const uid = auth.user?.userId
+            if (uid && accounts.value.some((a) => String(a.userId) === String(uid))) {
+                return String(uid)
+            }
+        } catch { /* */ }
+
+        return null
     })
 
     const persist = () => {
-        if (import.meta.client) localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts.value))
+        if (!import.meta.client) return
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts.value))
+        } catch { /* */ }
     }
 
     const load = () => {
@@ -48,13 +87,43 @@ export const useAccountStore = defineStore('account', () => {
         persist()
     }
 
+    /** Cookie + auth.store ni birga yangilash (mobil Safari uchun muhim) */
+    const applyToken = (authToken: string | null, userId?: string | null) => {
+        const auth = useAuthStore()
+        auth.user = null
+        auth.token = authToken
+        token.value = authToken
+        if (userId) writeActiveId(String(userId))
+        else if (!authToken) writeActiveId(null)
+
+        // iOS/PWA: useCookie ba'zan reload dan oldin yozib ulgurmaydi
+        if (import.meta.client) {
+            const maxAge = 30 * 24 * 60 * 60
+            const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+            if (authToken) {
+                document.cookie = `auth_token=${authToken}; Path=/; Max-Age=${maxAge}; SameSite=Lax${secure}`
+            } else {
+                document.cookie = `auth_token=; Path=/; Max-Age=0; SameSite=Lax${secure}`
+            }
+        }
+    }
+
+    const hardReload = (path = '/driver/profile') => {
+        if (!import.meta.client) return
+        // Cookie yozilishi uchun qisqa kutish (iOS Safari)
+        window.setTimeout(() => {
+            window.location.replace(path)
+        }, 60)
+    }
+
     const ensureCurrent = (user: any) => {
         if (!import.meta.client || !user?.userId || !token.value) {
             return
         }
         if (!accounts.value.length) load()
+        const userId = String(user.userId)
         upsert({
-            userId: String(user.userId),
+            userId,
             token: token.value,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -62,6 +131,7 @@ export const useAccountStore = defineStore('account', () => {
             phoneNumber: user.phoneNumber,
             avatar: user.avatar,
         })
+        writeActiveId(userId)
     }
 
     const digitsPhone = (phone?: string | null) => String(phone || '').replace(/\D/g, '')
@@ -129,7 +199,6 @@ export const useAccountStore = defineStore('account', () => {
     }
 
     const activateNew = (user: any, authToken: string): { ok: true } | { ok: false; message: string } => {
-        // Muhim: xotira bo'sh bo'lsa ham localStorage'dagi hisoblarni saqlab qolish
         load()
 
         if (hasAccount({ phone: user?.phoneNumber, userId: user?.userId })) {
@@ -139,8 +208,9 @@ export const useAccountStore = defineStore('account', () => {
             }
         }
 
+        const userId = String(user.userId)
         upsert({
-            userId: String(user.userId),
+            userId,
             token: authToken,
             firstName: user.firstName,
             lastName: user.lastName,
@@ -148,46 +218,39 @@ export const useAccountStore = defineStore('account', () => {
             phoneNumber: user.phoneNumber,
             avatar: user.avatar,
         })
-        token.value = authToken
+        applyToken(authToken, userId)
         return { ok: true }
     }
 
     const switchAccount = (userId: string) => {
+        if (!import.meta.client) return
         load()
         const target = String(userId)
         const acc = accounts.value.find((a) => String(a.userId) === target)
-        const sameToken = !!(acc && acc.token === token.value)
-        if (!acc || sameToken) return
+        if (!acc?.token) return
 
-        // auth.store bilan bir xil cookie opts orqali yozish
-        token.value = acc.token
-        try {
-            const auth = useAuthStore()
-            auth.token = acc.token
-        } catch { /* */ }
+        // Allaqachon shu hisobda bo'lsa — chiqish
+        if (String(activeUserId.value) === target && token.value === acc.token) return
 
-        if (import.meta.client) window.location.reload()
+        applyToken(acc.token, target)
+        hardReload('/driver/profile')
     }
 
     const removeAccount = (userId: string) => {
         load()
         const target = String(userId)
-        const wasActive = activeUserId.value === target
+        const wasActive = String(activeUserId.value || '') === target
         accounts.value = accounts.value.filter((a) => String(a.userId) !== target)
         persist()
 
         if (wasActive) {
             const next = accounts.value[0]
             if (next) {
-                token.value = next.token
-                try {
-                    const auth = useAuthStore()
-                    auth.token = next.token
-                } catch { /* */ }
-                if (import.meta.client) window.location.reload()
+                applyToken(next.token, String(next.userId))
+                hardReload('/driver/profile')
             } else {
-                token.value = null
-                if (import.meta.client) navigateTo('/')
+                applyToken(null)
+                if (import.meta.client) window.location.replace('/')
             }
         }
     }

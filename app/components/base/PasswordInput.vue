@@ -16,11 +16,11 @@
       :class="[
         error 
           ? 'border-red-500/40 ring-4 ring-red-500/5 bg-red-500/5' 
-          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-within:border-emerald-500/60 focus-within:ring-4 focus-within:ring-emerald-500/10'
+          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 focus-within:border-sky-500/60 focus-within:ring-4 focus-within:ring-sky-500/10'
       ]"
     >
       <!-- Icon Left -->
-      <div class="pl-4 pr-3 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-emerald-500">
+      <div class="pl-4 pr-3 text-slate-400 dark:text-slate-600 transition-colors group-focus-within:text-sky-500">
         <font-awesome-icon :icon="['fas', 'lock']" class="text-sm" />
       </div>
 
@@ -32,7 +32,7 @@
         :value="modelValue"
         @input="handleInput"
         :placeholder="placeholder"
-        class="w-full py-4 pr-12 bg-transparent outline-none text-slate-900 dark:text-slate-100 font-bold text-base placeholder:text-slate-300 dark:placeholder:text-slate-800 tracking-widest selection:bg-emerald-500/20"
+        class="w-full py-4 pr-12 bg-transparent outline-none text-slate-900 dark:text-slate-100 font-bold text-base placeholder:text-slate-300 dark:placeholder:text-slate-800 tracking-widest selection:bg-sky-500/20"
         :disabled="disabled"
       />
 

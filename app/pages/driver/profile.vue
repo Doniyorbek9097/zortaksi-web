@@ -165,11 +165,14 @@ const onBonus = () => navigateTo('/driver/bonus')
 const onTopup = () => navigateTo('/driver/payment')
 const onBuyTariff = () => navigateTo('/driver/payment')
 
-// Accountni almashtirish — ustiga bosilganda o'sha accountga o'tadi (ilova qayta yuklanadi)
+// Accountni almashtirish — ustiga bosilganda o'sha accountga o'tadi
+const switching = ref(false)
 const onSelectAccount = (acc: ILocalAccount) => {
+  if (switching.value) return
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
   if (target === active) return
+  switching.value = true
   accountStore.switchAccount(target)
 }
 

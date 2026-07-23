@@ -1,10 +1,7 @@
+import { authCookieOptions } from '~/utils/authCookie'
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    const token = useCookie('auth_token', {
-        maxAge: 30 * 24 * 60 * 60,
-        path: '/',
-        watch: true,
-        sameSite: 'lax'
-    })
+    const token = useCookie('auth_token', { ...authCookieOptions })
     const authStore = useAuthStore()
 
     // Token bor — /me orqali user + Telegram session tekshiriladi
