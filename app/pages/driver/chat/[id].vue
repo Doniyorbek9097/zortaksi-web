@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-[100dvh] bg-slate-50 dark:bg-slate-950">
+  <div class="flex flex-col h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950">
     <!-- Header -->
     <ChatHeader
       :name="name"
@@ -13,8 +13,8 @@
     />
 
     <!-- Xabarlar -->
-    <div ref="scrollEl" class="flex-1 overflow-y-auto">
-      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2">
+    <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon matni -->
         <div
           v-if="orderText"
@@ -37,8 +37,8 @@
         <BaseEmptyState
           v-else-if="!chatStore.messages.length"
           icon="fa-solid fa-comments"
-          title="Yozishmani boshlang"
-          class="!min-h-[40vh]"
+          title="Xabar yozishga tayyor"
+          class="!min-h-0 flex-1"
         />
 
         <ChatMessageBubble

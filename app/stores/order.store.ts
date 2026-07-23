@@ -94,6 +94,17 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    const unbookOrder = async (orderId: string) => {
+        const response = await useApi(`/orders/${orderId}/unbook`, { method: 'POST' })
+        if (response.success) {
+            const idx = orders.value.findIndex((o) => o._id === orderId)
+            if (idx !== -1 && response.data?.order) {
+                orders.value[idx] = { ...orders.value[idx], ...response.data.order }
+            }
+        }
+        return response
+    }
+
     const blockGroup = async (orderId: string) => {
         const response = await useApi(`/orders/${orderId}/block-group`, { method: 'POST' })
         if (response.success) {
@@ -133,6 +144,7 @@ export const useOrderStore = defineStore('order', () => {
         loadMore,
         fetchOrderById,
         bookOrder,
+        unbookOrder,
         blockGroup,
         blockSender,
     }

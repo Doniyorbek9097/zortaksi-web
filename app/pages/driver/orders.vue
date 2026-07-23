@@ -26,8 +26,10 @@
         :order="order"
         :role="role"
         :active="active"
+        :current-user-id="authStore.user?.userId"
         @unlock="onUnlock"
         @book="onBook(order)"
+        @unbook="onUnbook(order)"
         @message="onMessage(order)"
         @view-group="onViewGroup(order)"
         @agent="onAgent(order)"
@@ -66,6 +68,21 @@
       :close-on-confirm="false"
       @confirm="confirmBook"
       @cancel="bookTarget = null"
+    />
+
+    <!-- Band bekor qilish (pul qaytarilmaydi) -->
+    <BaseConfirmDialog
+      v-model="showUnbookDialog"
+      title="Band bekor qilish"
+      description="Yechilgan pul qaytarilmaydi"
+      message="Bandni bekor qilasizmi? Buyurtma yana ochiladi, lekin hisobdan olingan pul qaytmaydi."
+      confirm-text="Bekor qilish"
+      cancel-text="Yo'q"
+      variant="warning"
+      :loading="unbooking"
+      :close-on-confirm="false"
+      @confirm="confirmUnbook"
+      @cancel="unbookTarget = null"
     />
 
     <!-- Pul yo'q / xato -->
@@ -215,9 +232,12 @@ const openLink = (url: string) => {
 const BOOK_PRICE = 1000
 const isAdmin = computed(() => role.value === 'admin')
 const showBookDialog = ref(false)
+const showUnbookDialog = ref(false)
 const showNoMoneyDialog = ref(false)
 const booking = ref(false)
+const unbooking = ref(false)
 const bookTarget = ref<IOrder | null>(null)
+const unbookTarget = ref<IOrder | null>(null)
 const noMoneyMessage = ref('')
 const noMoneyIsBalance = ref(true)
 
@@ -232,6 +252,12 @@ const onBook = (order: IOrder) => {
   if (!order._id || order.status === 'booked') return
   bookTarget.value = order
   showBookDialog.value = true
+}
+
+const onUnbook = (order: IOrder) => {
+  if (!order._id || order.status !== 'booked') return
+  unbookTarget.value = order
+  showUnbookDialog.value = true
 }
 
 const confirmBook = async () => {
@@ -263,6 +289,25 @@ const confirmBook = async () => {
     showNoMoneyDialog.value = true
   } finally {
     booking.value = false
+  }
+}
+
+const confirmUnbook = async () => {
+  const order = unbookTarget.value
+  if (!order?._id || unbooking.value) return
+  unbooking.value = true
+  try {
+    await orderStore.unbookOrder(order._id)
+    showUnbookDialog.value = false
+    unbookTarget.value = null
+  } catch (e: any) {
+    showUnbookDialog.value = false
+    noMoneyIsBalance.value = false
+    noMoneyMessage.value =
+      e?.response?.data?.message || e?.message || 'Bandni bekor qilib bo\'lmadi'
+    showNoMoneyDialog.value = true
+  } finally {
+    unbooking.value = false
   }
 }
 

@@ -1,6 +1,11 @@
 <template>
-  <footer class="sticky bottom-0 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800">
-    <div class="mx-auto w-full max-w-2xl px-3 py-2.5">
+  <footer class="sticky bottom-0 z-30 shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 pb-[env(safe-area-inset-bottom)]">
+    <form
+      class="mx-auto w-full max-w-2xl px-3 py-2.5"
+      autocomplete="off"
+      novalidate
+      @submit.prevent="send"
+    >
       <!-- Recording holati -->
       <div v-if="recording" class="flex items-center gap-3">
         <button
@@ -52,29 +57,40 @@
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"
           class="hidden"
+          tabindex="-1"
           @change="onFileChange"
         >
 
         <input
           v-model="text"
-          type="text"
+          type="search"
+          name="zortaksi-chat-message"
           inputmode="text"
           enterkeyhint="send"
           autocomplete="off"
+          autocorrect="on"
           autocapitalize="sentences"
+          spellcheck="true"
+          data-lpignore="true"
+          data-1p-ignore="true"
+          data-form-type="other"
+          data-bwignore="true"
+          :readonly="draftLocked"
           :disabled="disabled"
           :placeholder="disabled ? 'Yozish uchun ulanish kutilmoqda...' : 'Xabar yozing...'"
-          class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
+          @touchstart.passive="unlockDraft"
+          @mousedown="unlockDraft"
           @keydown.enter.prevent="send"
+          @focus="unlockDraft"
         >
 
         <button
           v-if="text.trim()"
-          type="button"
+          type="submit"
           :disabled="disabled"
           class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500 text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           aria-label="Yuborish"
-          @click="send"
         >
           <font-awesome-icon icon="fa-solid fa-paper-plane" />
         </button>
@@ -91,7 +107,7 @@
       </div>
 
       <p v-if="micError" class="mt-1.5 px-1 text-[11px] font-bold text-red-500">{{ micError }}</p>
-    </div>
+    </form>
   </footer>
 </template>
 
@@ -110,6 +126,12 @@ const emit = defineEmits<{
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
+/** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
+const draftLocked = ref(true)
+
+const unlockDraft = () => {
+  draftLocked.value = false
+}
 
 const pickImage = () => {
   if (props.disabled) return

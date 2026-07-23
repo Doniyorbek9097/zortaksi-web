@@ -46,7 +46,7 @@
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
 
       <!-- Message -->
-      <p class="text-[13px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words">{{
+      <p class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words">{{
         order.message?.text }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
@@ -76,15 +76,29 @@
         </div>
 
         <div class="grid grid-cols-2 gap-2">
-          <!-- Band qilish (matn uslubi — Xabar yozish bilan bir xil) -->
-          <button v-if="!isBooked" type="button"
+          <!-- Band qilish / Band bekor qilish -->
+          <button
+            v-if="!isBooked"
+            type="button"
             class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
-            @click.stop="$emit('book')">
+            @click.stop="$emit('book')"
+          >
             <font-awesome-icon icon="fa-solid fa-circle-check" />
             Band qilish
           </button>
-          <div v-else
-            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800">
+          <button
+            v-else-if="canUnbook"
+            type="button"
+            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+            @click.stop="$emit('unbook')"
+          >
+            <font-awesome-icon icon="fa-solid fa-rotate" />
+            Band bekor qilish
+          </button>
+          <div
+            v-else
+            class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800"
+          >
             <font-awesome-icon icon="fa-solid fa-lock" />
             Band qilingan
           </div>
@@ -134,15 +148,18 @@ interface Props {
   role?: 'admin' | 'driver' | 'customer'
   active?: boolean
   bookPrice?: number
+  currentUserId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   active: false,
   bookPrice: 1000,
+  currentUserId: '',
 })
 
 const emit = defineEmits<{
   book: []
+  unbook: []
   message: []
   'view-group': []
   agent: []
@@ -158,6 +175,12 @@ const canAct = computed(() => isAdmin.value || props.active)
 // Aktiv emas va admin emas — qulflangan (telefonlar server tomonda yashirilgan)
 const locked = computed(() => !canAct.value)
 const isBooked = computed(() => props.order.status === 'booked')
+const canUnbook = computed(() => {
+  if (!isBooked.value) return false
+  if (isAdmin.value) return true
+  const bookedBy = String(props.order.bookedBy || '')
+  return !!props.currentUserId && bookedBy === props.currentUserId
+})
 
 const group = computed(() => props.order.group)
 

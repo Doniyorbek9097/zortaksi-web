@@ -1,5 +1,5 @@
 <template>
-  <header class="sticky top-0 z-20 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
+  <header class="sticky top-0 z-30 shrink-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-b border-slate-200 dark:border-slate-800">
     <div class="mx-auto w-full max-w-2xl px-3 py-1.5 flex items-center gap-2">
       <button
         type="button"

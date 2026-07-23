@@ -37,30 +37,56 @@ export function isValidIntlPhone(phone: string): boolean {
   return d.length >= 10 && d.length <= 15
 }
 
+/** 901234567 / 998901234567 / 0901234567 → 998901234567 (+998 formati) */
+export function normalizeTo998(raw: string | null | undefined): string | null {
+  const digits = String(raw || '').replace(/\D/g, '')
+  if (!digits) return null
+
+  if (digits.length === 12 && digits.startsWith('998')) return digits
+  if (digits.length === 9 && /^[39]\d{8}$/.test(digits)) return `998${digits}`
+  if (digits.length === 10 && digits.startsWith('0')) {
+    const rest = digits.slice(1)
+    if (/^[39]\d{8}$/.test(rest)) return `998${rest}`
+  }
+  // Xalqaro / boshqa — o'z holicha (8–15)
+  if (digits.length >= MIN_DIGITS && digits.length <= 15) return digits
+  return null
+}
+
 export function extractPhoneFromText(text?: string | null): string | null {
   if (!text) return null
   const matches = text.match(PHONE_CANDIDATE) || []
+  let fallback: string | null = null
+
   for (const m of matches) {
     // Maskalangan raqam emas
     if (m.includes('■')) continue
     const digits = (m.match(/\d/g) || []).join('')
-    if (digits.length < MIN_DIGITS) continue
-    return digits.startsWith('998') || digits.length > 9 ? digits : digits
+    if (digits.length < MIN_DIGITS || digits.length > 15) continue
+
+    const normalized = normalizeTo998(digits)
+    if (!normalized) continue
+
+    // UZ mobil — ustuvor
+    if (/^998(9\d|33|88|77)\d{7}$/.test(normalized)) return normalized
+    if (!fallback) fallback = normalized
   }
-  return null
+
+  return fallback
 }
 
 /** tel: uchun tozalangan raqam (+ bilan) */
 export function normalizeTelHref(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
+  const digits = normalizeTo998(phone) || phone.replace(/\D/g, '')
   if (!digits) return ''
   return `tel:+${digits}`
 }
 
 /**
  * Order uchun qo'ng'iroq raqami:
- * 1) message.text ichidan
+ * 1) message.text ichidan (+998 format)
  * 2) sender.phone
+ * ikkalasi yo'q → null (tugma ko'rinmaydi)
  */
 export function resolveOrderPhone(order: {
   message?: { text?: string } | null
@@ -69,8 +95,8 @@ export function resolveOrderPhone(order: {
   const fromText = extractPhoneFromText(order.message?.text)
   if (fromText) return fromText
 
-  const senderPhone = order.sender?.phone?.replace(/\D/g, '')
-  if (senderPhone && senderPhone.length >= MIN_DIGITS) return senderPhone
+  const senderPhone = normalizeTo998(order.sender?.phone)
+  if (senderPhone) return senderPhone
 
   return null
 }
