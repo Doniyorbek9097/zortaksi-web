@@ -195,7 +195,7 @@
       </div>
 
       <p class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 px-3 leading-snug">
-        Yangi hisob Telegram orqali ulanadi va buyurtmalarni kuzatishga qo‘shiladi.
+        Yangi hisob Telegram orqali ulanadi.
       </p>
     </main>
 

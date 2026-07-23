@@ -1,5 +1,9 @@
 <template>
-  <div class="flex flex-col h-[100dvh] overflow-hidden bg-slate-50 dark:bg-slate-950">
+  <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
+  <div
+    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    :style="shellStyle"
+  >
     <!-- Header -->
     <ChatHeader
       :name="name"
@@ -140,6 +144,25 @@ const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
 
+/** Klaviatura / visualViewport — shell doim ko'rinadigan zonada */
+const shellStyle = ref<Record<string, string>>({
+  top: '0px',
+  height: '100dvh',
+})
+
+const syncViewport = () => {
+  if (!import.meta.client) return
+  const vv = window.visualViewport
+  if (!vv) {
+    shellStyle.value = { top: '0px', height: '100dvh' }
+    return
+  }
+  shellStyle.value = {
+    top: `${Math.max(0, vv.offsetTop)}px`,
+    height: `${Math.max(0, vv.height)}px`,
+  }
+}
+
 // Ulanish holati (senderga yozish mumkinmi)
 const conn = computed(() => chatStore.connectionStatus)
 const connReason = computed(() => chatStore.connectionReason)
@@ -208,8 +231,20 @@ const onCall = () => {
 watch(() => chatStore.messages.length, scrollToBottom)
 
 let presenceTimer: ReturnType<typeof setInterval> | null = null
+let prevBodyOverflow = ''
+let prevHtmlOverflow = ''
 
 onMounted(async () => {
+  prevBodyOverflow = document.body.style.overflow
+  prevHtmlOverflow = document.documentElement.style.overflow
+  document.body.style.overflow = 'hidden'
+  document.documentElement.style.overflow = 'hidden'
+
+  syncViewport()
+  window.visualViewport?.addEventListener('resize', syncViewport)
+  window.visualViewport?.addEventListener('scroll', syncViewport)
+  window.addEventListener('resize', syncViewport)
+
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
 
@@ -230,6 +265,12 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  window.visualViewport?.removeEventListener('resize', syncViewport)
+  window.visualViewport?.removeEventListener('scroll', syncViewport)
+  window.removeEventListener('resize', syncViewport)
+  document.body.style.overflow = prevBodyOverflow
+  document.documentElement.style.overflow = prevHtmlOverflow
+
   if (presenceTimer) clearInterval(presenceTimer)
   chatStore.currentChat = null
   chatStore.messages = []

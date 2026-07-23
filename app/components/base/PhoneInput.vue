@@ -23,40 +23,35 @@
           : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus-within:border-sky-500/50 focus-within:ring-4 focus-within:ring-sky-500/10 focus-within:bg-white dark:focus-within:bg-slate-950',
       ]"
     >
-      <div
-        class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors"
-        :class="errorText ? 'bg-red-500/10 text-red-500' : 'bg-sky-500/10 text-sky-500 group-focus-within:bg-[#2AABEE]/15 group-focus-within:text-[#2AABEE]'"
-      >
-        <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
-      </div>
-
-      <div class="relative shrink-0">
+      <div class="relative shrink-0 border-r border-slate-200 dark:border-slate-800 pr-2">
         <select
           v-model="countryKey"
           :disabled="disabled"
           aria-label="Davlat"
-          class="appearance-none max-w-[8.5rem] pl-1 pr-6 py-1 rounded-lg bg-transparent text-[13px] md:text-sm font-black text-slate-900 dark:text-white outline-none cursor-pointer disabled:opacity-50"
+          class="appearance-none min-w-[5.5rem] max-w-[7.5rem] pl-0.5 pr-5 py-0.5 rounded-lg bg-transparent text-lg font-black tabular-nums leading-none text-slate-900 dark:text-white outline-none cursor-pointer disabled:opacity-50"
           @change="onCountryChange"
         >
           <option
             v-for="c in countries"
             :key="c.key"
             :value="c.key"
+            class="text-lg font-black tabular-nums"
           >
             {{ c.flag }} +{{ c.dial || '…' }} {{ c.short }}
           </option>
         </select>
         <font-awesome-icon
           icon="fa-solid fa-chevron-down"
-          class="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-slate-400"
+          class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400"
         />
       </div>
 
+      <!-- Faqat "Boshqa" — selectda kod yo'q, qo'lda kiritiladi -->
       <div
         v-if="isOther"
         class="flex items-baseline gap-0.5 shrink-0"
       >
-        <span class="text-base font-black text-slate-400">+</span>
+        <span class="text-lg font-black text-slate-400">+</span>
         <input
           v-model="customDial"
           type="tel"
@@ -65,16 +60,10 @@
           :disabled="disabled"
           placeholder="90"
           aria-label="Davlat kodi"
-          class="w-10 bg-transparent outline-none text-base font-black text-slate-900 dark:text-white tabular-nums disabled:opacity-50"
+          class="w-10 bg-transparent outline-none text-lg font-black text-slate-900 dark:text-white tabular-nums disabled:opacity-50"
           @input="onCustomDialInput"
         >
       </div>
-      <span
-        v-else
-        class="text-base md:text-lg font-black text-slate-900 dark:text-white tabular-nums shrink-0"
-      >
-        +{{ dialCode }}
-      </span>
 
       <input
         id="phoneInput"
@@ -85,7 +74,7 @@
         autocomplete="tel-national"
         :placeholder="placeholder"
         :disabled="disabled"
-        class="w-full min-w-0 bg-transparent outline-none border-none text-lg md:text-xl font-black text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 tabular-nums tracking-wide selection:bg-sky-500/20 disabled:opacity-50"
+        class="w-full min-w-0 bg-transparent outline-none border-none text-lg font-black text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 tabular-nums tracking-wide selection:bg-sky-500/20 disabled:opacity-50"
         @focus="onFocus"
         @input="onInput"
         @keydown="onKeydown"
