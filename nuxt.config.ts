@@ -102,6 +102,9 @@ export default defineNuxtConfig({
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'doniyorbek_ergashev',
       vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || '',
+      paymentCard1: process.env.NUXT_PUBLIC_PAYMENT_CARD_1 || '4067070007722601',
+      paymentCard2: process.env.NUXT_PUBLIC_PAYMENT_CARD_2 || '9860260115547846',
+      paymentCardOwner: process.env.NUXT_PUBLIC_PAYMENT_CARD_OWNER || 'Doniyor Mirgiyozov',
     }
   },
 })
