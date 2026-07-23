@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
-import { resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
+import { readActiveUserId, resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...authCookieOptions })
@@ -18,20 +18,21 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    const getMe = async () => {
+    const getMe = async (opts?: { authToken?: string }) => {
         try {
             isLoading.value = true
-            const response = await useApi('/me')
+            const forced = opts?.authToken
+            const response = await useApi('/me', forced ? { authToken: forced } : {})
             if (response.success) {
                 user.value = response.data
-                const t = resolveAuthToken(token.value)
-                if (t && response.data?.userId) {
-                    writeActiveSession(String(response.data.userId), t)
-                    // Cookie ham sync
-                    if (token.value !== t) {
-                        token.value = t
-                        writeAuthCookie(t)
-                    }
+                const t = forced || resolveAuthToken(token.value)
+                const wanted = readActiveUserId()
+                const gotId = response.data?.userId != null ? String(response.data.userId) : ''
+                // Kutilgan hisob bilan mos bo'lsa — session sync
+                if (t && gotId && (!wanted || wanted === gotId)) {
+                    writeActiveSession(gotId, t)
+                    token.value = t
+                    writeAuthCookie(t)
                 }
             }
             return response

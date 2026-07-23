@@ -137,6 +137,8 @@ export const useAccountStore = defineStore('account', () => {
     const phone = digitsPhone(opts.phone)
     const userId = opts.userId != null ? String(opts.userId) : ''
     return accounts.value.some((a) => {
+      // Tokensiz yozuv — qayta login uchun joy ochiq
+      if (!a.token) return false
       if (userId && String(a.userId) === userId) return true
       if (phone && digitsPhone(a.phoneNumber) === phone) return true
       return false
@@ -185,13 +187,23 @@ export const useAccountStore = defineStore('account', () => {
 
   const activateNew = (user: any, authToken: string): { ok: true } | { ok: false; message: string } => {
     load()
-    if (hasAccount({ phone: user?.phoneNumber, userId: user?.userId })) {
+    const userId = String(user.userId)
+    const phone = digitsPhone(user?.phoneNumber)
+    const existing = accounts.value.find(
+      (a) =>
+        String(a.userId) === userId ||
+        (phone && digitsPhone(a.phoneNumber) === phone)
+    )
+
+    // Tokeni bor hisob — dublikat
+    if (existing?.token) {
       return {
         ok: false,
         message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
       }
     }
-    const userId = String(user.userId)
+
+    // Tokensiz eski yozuv yoki yangi — upsert
     upsert({
       userId,
       token: authToken,
@@ -220,29 +232,28 @@ export const useAccountStore = defineStore('account', () => {
   }
 
   /**
-   * Soft switch — full reload yo'q.
-   * Hard reload admin uchun buziladi: SSR eski cookie bilan /admin dan haydovchiga qaytaradi.
+   * Soft switch — xotira token + aniq Bearer.
+   * Muvaffaqiyatli bo'lsa true.
    */
-  const switchAccount = async (userId: string) => {
-    if (!import.meta.client || switching.value) return
+  const switchAccount = async (userId: string): Promise<boolean> => {
+    if (!import.meta.client || switching.value) return false
     load()
     const target = String(userId)
     const acc = accounts.value.find((a) => String(a.userId) === target)
     if (!acc?.token) {
       console.warn('[account] switch: token yo\'q', target)
-      return
+      return false
     }
 
     const auth = useAuthStore()
 
-    // Allaqachon shu hisob — kerakli home ga o'tkaz
     if (
       String(activeUserId.value) === target &&
       auth.user &&
       String(auth.user.userId) === target
     ) {
       await navigateTo(homeForUser(auth.user))
-      return
+      return true
     }
 
     switching.value = true
@@ -251,25 +262,51 @@ export const useAccountStore = defineStore('account', () => {
 
     try {
       applyToken(acc.token, target)
-      await auth.getMe()
 
-      if (!auth.user || String(auth.user.userId) !== target) {
-        throw new Error('Hisob yuklanmadi')
+      const res = await auth.getMe({ authToken: acc.token })
+      const gotId =
+        res?.data?.userId != null
+          ? String(res.data.userId)
+          : String(auth.user?.userId || '')
+
+      if (!auth.user || gotId !== target) {
+        console.warn('[account] switch mismatch', { target, gotId })
+        // Bu hisob tokeni eskirgan / noto'g'ri — ro'yxatdan tokenni tozalash
+        const idx = accounts.value.findIndex((a) => String(a.userId) === target)
+        if (idx !== -1) {
+          const row = accounts.value[idx]!
+          accounts.value[idx] = { ...row, token: '' }
+          persist()
+        }
+        if (prevToken && prevId) {
+          applyToken(prevToken, String(prevId))
+          try {
+            await auth.getMe({ authToken: prevToken })
+            if (auth.user) ensureCurrent(auth.user)
+          } catch { /* */ }
+        }
+        return false
       }
+
+      // Cookie ni qayta majburan yozish
+      writeAuthCookie(acc.token)
+      token.value = acc.token
+      try { auth.token = acc.token } catch { /* */ }
 
       ensureCurrent(auth.user)
       reconnectSocket()
       await navigateTo(homeForUser(auth.user))
+      return true
     } catch (e) {
       console.warn('[account] switch failed', e)
-      // Oldingi hisobga qaytarish
       if (prevToken && prevId) {
         applyToken(prevToken, String(prevId))
         try {
-          await auth.getMe()
+          await auth.getMe({ authToken: prevToken })
           if (auth.user) ensureCurrent(auth.user)
         } catch { /* */ }
       }
+      return false
     } finally {
       switching.value = false
     }

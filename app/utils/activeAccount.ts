@@ -1,10 +1,24 @@
-/** Multi-account: localStorage — asosiy manba (mobil cookie ishonchsiz) */
+/** Multi-account: localStorage + xotira token (switch paytida cookie poygasiga qarshi) */
 
 export const ACCOUNTS_KEY = 'zt_accounts'
 export const ACTIVE_USER_KEY = 'zt_active_user'
 export const ACTIVE_TOKEN_KEY = 'zt_active_token'
 
+/** Soft switch paytida eng ustuvor — cookie/localStorage kechiksa ham */
+let memoryToken: string | null = null
+let memoryUserId: string | null = null
+
+export function setMemorySession(userId: string | null, token: string | null) {
+  memoryUserId = userId ? String(userId) : null
+  memoryToken = token || null
+}
+
+export function getMemoryUserId(): string | null {
+  return memoryUserId
+}
+
 export function readActiveUserId(): string | null {
+  if (memoryUserId) return memoryUserId
   if (!import.meta.client) return null
   try {
     return localStorage.getItem(ACTIVE_USER_KEY)
@@ -14,6 +28,7 @@ export function readActiveUserId(): string | null {
 }
 
 export function readActiveToken(): string | null {
+  if (memoryToken) return memoryToken
   if (!import.meta.client) return null
   try {
     const direct = localStorage.getItem(ACTIVE_TOKEN_KEY)
@@ -32,6 +47,7 @@ export function readActiveToken(): string | null {
 }
 
 export function writeActiveSession(userId: string | null, token: string | null) {
+  setMemorySession(userId, token)
   if (!import.meta.client) return
   try {
     if (userId && token) {
@@ -61,8 +77,9 @@ export function writeAuthCookie(token: string | null) {
   document.cookie = `auth_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${secure}`
 }
 
-/** API / socket uchun eng ishonchli token */
+/** API / socket: xotira → localStorage → cookie */
 export function resolveAuthToken(cookieToken?: string | null): string | null {
+  if (memoryToken) return memoryToken
   const stored = readActiveToken()
   if (stored) return stored
   return cookieToken || null

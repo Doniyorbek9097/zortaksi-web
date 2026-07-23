@@ -46,6 +46,12 @@
           @delete="requestDeleteAccount(acc)"
         />
       </div>
+      <p
+        v-if="switchError"
+        class="mx-3 mb-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-bold text-center"
+      >
+        {{ switchError }}
+      </p>
       <div class="p-3">
         <button
           type="button"
@@ -166,17 +172,27 @@ const onBonus = () => navigateTo('/driver/bonus')
 const onTopup = () => navigateTo('/driver/payment')
 const onBuyTariff = () => navigateTo('/driver/payment')
 
+const switchError = ref('')
+
 // Accountni almashtirish
 const onSelectAccount = async (acc: ILocalAccount) => {
   if (accountStore.switching) return
+  switchError.value = ''
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
   if (target === active && String(authStore.user?.userId || '') === target) {
-    // Allaqachon shu hisob — admin bo'lsa panelga
     if (authStore.user?.role === 'admin') await navigateTo('/admin/dashboard')
     return
   }
-  await accountStore.switchAccount(target)
+  if (!acc.token) {
+    switchError.value = 'Bu hisob sessiyasi eskirgan. Qayta login qiling (hisob qo\'shish).'
+    return
+  }
+  const ok = await accountStore.switchAccount(target)
+  if (!ok) {
+    switchError.value =
+      'Hisobga o\'tib bo\'lmadi. Admin uchun qayta login qiling — «Yangi hisob qo\'shish» orqali.'
+  }
 }
 
 const requestDeleteAccount = (acc: ILocalAccount) => {
