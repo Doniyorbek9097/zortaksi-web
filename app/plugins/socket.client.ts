@@ -33,6 +33,7 @@ export default defineNuxtPlugin(() => {
     socket.on('chat:update', (chat) => chatStore.onChatUpdate(chat))
     socket.on('messages:read', (data) => chatStore.onMessagesRead(data))
     socket.on('peer:presence', (data) => chatStore.onPeerPresence(data))
+    socket.on('peer:typing', (data) => chatStore.onPeerTyping(data))
     socket.on('order:new', (order) => {
       const list = orderStore.orders
       const isNew = !list.some((o) => o._id === order._id)

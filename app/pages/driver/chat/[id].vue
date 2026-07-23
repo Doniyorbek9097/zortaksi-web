@@ -76,6 +76,26 @@
           :duration="msg.duration"
           :highlight="focusId === msg._id"
         />
+
+        <!-- Admin yozmoqda... -->
+        <div
+          v-if="chatStore.isPeerTyping"
+          class="flex justify-start"
+        >
+          <div
+            class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
+            :class="isSupport
+              ? 'bg-white dark:bg-slate-800 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800'
+              : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
+          >
+            <span class="inline-flex items-center gap-1">
+              yozmoqda
+              <span class="typing-dots" aria-hidden="true">
+                <i /><i /><i />
+              </span>
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -185,6 +205,7 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
+  if (chatStore.isPeerTyping) return 'yozmoqda...'
   if (isSupport.value) return 'To\'lov'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   return '...'
@@ -284,6 +305,7 @@ const onCall = () => {
 
 // Yangi xabar kelganda pastga surish
 watch(() => chatStore.messages.length, scrollToBottom)
+watch(() => chatStore.isPeerTyping, (v) => { if (v) scrollToBottom() })
 
 let presenceTimer: ReturnType<typeof setInterval> | null = null
 let prevBodyOverflow = ''
@@ -334,3 +356,26 @@ onBeforeUnmount(() => {
   chatStore.resetConnection()
 })
 </script>
+
+<style scoped>
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+}
+.typing-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.35;
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+.typing-dots i:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots i:nth-child(3) { animation-delay: 0.3s; }
+@keyframes typing-bounce {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-2px); }
+}
+</style>

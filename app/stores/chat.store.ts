@@ -40,6 +40,10 @@ export const useChatStore = defineStore('chat', () => {
         kind?: string
     } | null>(null)
 
+    /** Suhbatdosh yozmoqda (chatId → timeout) */
+    const peerTypingChatId = ref<string | null>(null)
+    let typingClearTimer: ReturnType<typeof setTimeout> | null = null
+
     // --- Senderga ulanishni tekshirish (xabar yubormasdan) ---
     // silent: true — UI loading ko'rsatilmaydi (allaqachon bog'langan chat)
     // Transient timeout/network: bir necha marta qayta urinadi, UI connecting da qoladi
@@ -108,7 +112,16 @@ export const useChatStore = defineStore('chat', () => {
         connectionStatus.value = 'idle'
         connectionReason.value = ''
         peerPresence.value = null
+        peerTypingChatId.value = null
+        if (typingClearTimer) {
+            clearTimeout(typingClearTimer)
+            typingClearTimer = null
+        }
     }
+
+    const isPeerTyping = computed(() =>
+        !!peerTypingChatId.value && peerTypingChatId.value === currentChat.value?._id
+    )
 
     // --- Chatlar ro'yxati ---
     const fetchChats = async (params: FetchChatsParams = {}) => {
@@ -433,6 +446,27 @@ export const useChatStore = defineStore('chat', () => {
         peerPresence.value = data.presence
     }
 
+    // Socket: yozmoqda...
+    const onPeerTyping = (data: { chatId: string; typing: boolean }) => {
+        if (!data?.chatId) return
+        if (!data.typing) {
+            if (peerTypingChatId.value === data.chatId) peerTypingChatId.value = null
+            return
+        }
+        peerTypingChatId.value = data.chatId
+        if (typingClearTimer) clearTimeout(typingClearTimer)
+        // Signal kelmasa ham 6s dan keyin o'chadi
+        typingClearTimer = setTimeout(() => {
+            if (peerTypingChatId.value === data.chatId) peerTypingChatId.value = null
+        }, 6000)
+    }
+
+    // Yangi xabar kelganda typing o'chadi
+    const onNewMessageWithTyping = (msg: IChatMessage) => {
+        if (peerTypingChatId.value === msg.chatId) peerTypingChatId.value = null
+        onNewMessage(msg)
+    }
+
     return {
         chats,
         currentChat,
@@ -445,6 +479,8 @@ export const useChatStore = defineStore('chat', () => {
         connectionStatus,
         connectionReason,
         peerPresence,
+        peerTypingChatId,
+        isPeerTyping,
         connect,
         fetchPresence,
         resetConnection,
@@ -457,9 +493,10 @@ export const useChatStore = defineStore('chat', () => {
         startChatWithOrderOwner,
         markRead,
         deleteChats,
-        onNewMessage,
+        onNewMessage: onNewMessageWithTyping,
         onChatUpdate,
         onMessagesRead,
         onPeerPresence,
+        onPeerTyping,
     }
 })
