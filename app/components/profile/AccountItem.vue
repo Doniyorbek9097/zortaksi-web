@@ -6,7 +6,8 @@
     <!-- Butun qator — hisobga almashish (mobil touch uchun katta zona) -->
     <button
       type="button"
-      class="flex items-center gap-3 flex-1 min-w-0 text-left touch-manipulation py-0.5"
+      class="flex items-center gap-3 flex-1 min-w-0 text-left touch-manipulation py-0.5 disabled:opacity-50"
+      :disabled="disabled"
       @click.stop="$emit('select')"
     >
       <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="sm" />
@@ -43,8 +44,11 @@ interface Props {
   avatar?: string
   userId?: string
   active?: boolean
+  disabled?: boolean
 }
 
-defineProps<Props>()
+withDefaults(defineProps<Props>(), {
+  disabled: false,
+})
 defineEmits<{ select: []; delete: [] }>()
 </script>

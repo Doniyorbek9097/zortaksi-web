@@ -5,7 +5,7 @@
     <div class="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-violet-500/10 blur-2xl pointer-events-none" />
 
     <p class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500 dark:text-slate-400">
-      Balans
+      Sizning balansingiz
     </p>
     <div class="mt-1 flex items-baseline gap-1.5">
       <span class="text-3xl font-black text-slate-900 dark:text-white">{{ formattedBalance }}</span>

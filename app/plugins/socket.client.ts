@@ -2,32 +2,40 @@ import { io, type Socket } from 'socket.io-client'
 import { useChatStore } from '~/stores/chat.store'
 import { useOrderStore } from '~/stores/order.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
+import { resolveAuthToken } from '~/utils/activeAccount'
+import { authCookieOptions } from '~/utils/authCookie'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
-  const token = useCookie('auth_token')
+  const cookie = useCookie('auth_token', { ...authCookieOptions })
   const chatStore = useChatStore()
   const orderStore = useOrderStore()
 
   let socket: Socket | null = null
 
-  // Brauzer autoplay — birinchi click/tap dan keyin ovoz ochiladi
   if (import.meta.client) {
     const unlock = () => unlockNotifySound()
     window.addEventListener('pointerdown', unlock, { once: true, passive: true })
     window.addEventListener('keydown', unlock, { once: true })
   }
 
+  const currentToken = () => resolveAuthToken(cookie.value)
+
   const connect = () => {
-    if (socket || !token.value) return
+    const t = currentToken()
+    if (!t) return
+    // Account switch: eski socketni yopib qayta ulash
+    if (socket) {
+      socket.disconnect()
+      socket = null
+    }
     socket = io(config.public.socketUrl as string, {
-      auth: { token: token.value },
+      auth: { token: t },
       transports: ['websocket', 'polling'],
     })
 
     socket.on('message:new', (msg) => {
       chatStore.onNewMessage(msg)
-      // Faqat kiruvchi xabar — ovoz
       if (msg?.direction === 'in') playChatSound()
     })
     socket.on('chat:update', (chat) => chatStore.onChatUpdate(chat))
@@ -53,11 +61,15 @@ export default defineNuxtPlugin(() => {
   }
 
   connect()
-  watch(token, (val) => (val ? connect() : disconnect()))
+  watch(cookie, (val) => {
+    if (val) connect()
+    else disconnect()
+  })
 
   return {
     provide: {
       socket: () => socket,
+      reconnectSocket: () => connect(),
     },
   }
 })

@@ -1,12 +1,22 @@
 import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
+import { resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const user = ref<IUser | null>(null)
-    const isAuthenticated = computed(() => !!token.value)
+    const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)
+
+    const persistSession = (authToken: string, nextUser: any) => {
+        token.value = authToken
+        user.value = nextUser
+        writeAuthCookie(authToken)
+        if (nextUser?.userId) {
+            writeActiveSession(String(nextUser.userId), authToken)
+        }
+    }
 
     const getMe = async () => {
         try {
@@ -14,6 +24,15 @@ export const useAuthStore = defineStore('auth', () => {
             const response = await useApi('/me')
             if (response.success) {
                 user.value = response.data
+                const t = resolveAuthToken(token.value)
+                if (t && response.data?.userId) {
+                    writeActiveSession(String(response.data.userId), t)
+                    // Cookie ham sync
+                    if (token.value !== t) {
+                        token.value = t
+                        writeAuthCookie(t)
+                    }
+                }
             }
             return response
         } catch (error) {
@@ -48,8 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
                 body: { phone, code, referrerId: referrerId || undefined }
             })
             if (response.success && response.data?.authToken) {
-                token.value = response.data.authToken
-                user.value = response.data.user
+                persistSession(response.data.authToken, response.data.user)
             }
             return response
         } catch (error) {
@@ -68,8 +86,7 @@ export const useAuthStore = defineStore('auth', () => {
                 body: { phone, password, referrerId: referrerId || undefined }
             })
             if (response.success && response.data?.authToken) {
-                token.value = response.data.authToken
-                user.value = response.data.user
+                persistSession(response.data.authToken, response.data.user)
             }
             return response
         } catch (error) {
@@ -88,6 +105,8 @@ export const useAuthStore = defineStore('auth', () => {
             })
             token.value = null
             user.value = null
+            writeActiveSession(null, null)
+            writeAuthCookie(null)
             return response
         } catch (error) {
             console.error('Logout error:', error)
@@ -109,4 +128,3 @@ export const useAuthStore = defineStore('auth', () => {
         logout,
     }
 })
-

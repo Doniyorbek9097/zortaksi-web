@@ -22,7 +22,7 @@
       class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-3"
     >
       <div>
-        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500">Balans</p>
+        <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500">Sizning balansingiz</p>
         <p class="text-2xl font-black text-sky-500 mt-0.5">
           {{ formatMoney(balance) }}
           <span class="text-base font-bold text-sky-500/80">so'm</span>

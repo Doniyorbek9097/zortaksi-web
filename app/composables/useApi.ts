@@ -1,6 +1,7 @@
 import type { AxiosProgressEvent, Method } from "axios"
 import { api } from "~/config/axios"
 import { authCookieOptions } from "~/utils/authCookie"
+import { resolveAuthToken } from "~/utils/activeAccount"
 
 interface IOptions {
   method?: Method
@@ -13,14 +14,15 @@ interface IOptions {
 
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
   const config = useRuntimeConfig()
-  const token = useCookie('auth_token', { ...authCookieOptions })
+  const cookie = useCookie('auth_token', { ...authCookieOptions })
+  const token = resolveAuthToken(cookie.value)
 
   // Merge headers
   const headers = { ...options.headers }
 
-  // Tokenni Authorization header orqali yuborish (ishonchli usul)
-  if (token.value) {
-    headers.authorization = `Bearer ${token.value}`
+  // localStorage token ustuvor (mobil account switch)
+  if (token) {
+    headers.authorization = `Bearer ${token}`
   }
 
   // SSR vaqtida brauzer cookie va authorization ma'lumotlarini backendga yuborish

@@ -41,6 +41,7 @@
           :avatar="acc.avatar"
           :user-id="acc.userId"
           :active="String(acc.userId) === String(accountStore.activeUserId || '')"
+          :disabled="accountStore.switching"
           @select="onSelectAccount(acc)"
           @delete="requestDeleteAccount(acc)"
         />
@@ -165,15 +166,13 @@ const onBonus = () => navigateTo('/driver/bonus')
 const onTopup = () => navigateTo('/driver/payment')
 const onBuyTariff = () => navigateTo('/driver/payment')
 
-// Accountni almashtirish — ustiga bosilganda o'sha accountga o'tadi
-const switching = ref(false)
-const onSelectAccount = (acc: ILocalAccount) => {
-  if (switching.value) return
+// Accountni almashtirish — soft switch (reload yo'q)
+const onSelectAccount = async (acc: ILocalAccount) => {
+  if (accountStore.switching) return
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
-  if (target === active) return
-  switching.value = true
-  accountStore.switchAccount(target)
+  if (target === active && String(authStore.user?.userId || '') === target) return
+  await accountStore.switchAccount(target)
 }
 
 const requestDeleteAccount = (acc: ILocalAccount) => {
@@ -181,11 +180,10 @@ const requestDeleteAccount = (acc: ILocalAccount) => {
   showDeleteAccount.value = true
 }
 
-const confirmDeleteAccount = () => {
+const confirmDeleteAccount = async () => {
   if (!accountToDelete.value) return
   deletingAccount.value = true
-  // Faol account o'chirilsa — store 0-indexga o'tib, ilovani qayta yuklaydi
-  accountStore.removeAccount(accountToDelete.value.userId)
+  await accountStore.removeAccount(accountToDelete.value.userId)
   showDeleteAccount.value = false
   accountToDelete.value = null
   deletingAccount.value = false
@@ -195,7 +193,11 @@ const onAddAccount = () => navigateTo('/driver/accounts/add')
 
 onMounted(async () => {
   accountStore.load()
-  if (!authStore.user) await authStore.getMe()
+  // Cookie/SSR noto'g'ri hisobni yuklagan bo'lsa — localStorage dan tuzatish
+  await accountStore.syncFromStorage()
+  if (!authStore.user) {
+    try { await authStore.getMe() } catch { /* */ }
+  }
   accountStore.ensureCurrent(authStore.user)
 })
 
