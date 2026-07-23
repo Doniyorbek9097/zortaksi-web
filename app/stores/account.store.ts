@@ -11,36 +11,26 @@ import {
 } from '~/utils/activeAccount'
 
 /**
- * Accountlar localStorage'da. Almashtirish localStorage token orqali
- * (mobil Safari cookie ga tayanmaydi).
+ * Accountlar localStorage'da. Faol hisob — reactive ref + localStorage.
+ * Switch: localStorage yoziladi, keyin hard reload (mobil uchun ishonchli).
  */
 export const useAccountStore = defineStore('account', () => {
   const accounts = ref<ILocalAccount[]>([])
   const isLoading = ref(false)
   const switching = ref(false)
+  /** Reactive faol userId (localStorage o'zi Vue ni trigger qilmaydi) */
+  const activeId = ref<string | null>(null)
 
   const token = useCookie<string | null>('auth_token', { ...authCookieOptions })
 
   const activeUserId = computed(() => {
+    if (activeId.value) return activeId.value
     const saved = readActiveUserId()
-    if (saved && accounts.value.some((a) => String(a.userId) === saved)) {
-      return saved
-    }
-
-    const t = resolveAuthToken(token.value)
-    if (t) {
-      const byToken = accounts.value.find((a) => a.token === t)
-      if (byToken) return String(byToken.userId)
-    }
-
+    if (saved) return saved
     try {
       const auth = useAuthStore()
-      const uid = auth.user?.userId
-      if (uid && accounts.value.some((a) => String(a.userId) === String(uid))) {
-        return String(uid)
-      }
+      if (auth.user?.userId) return String(auth.user.userId)
     } catch { /* */ }
-
     return null
   })
 
@@ -63,6 +53,9 @@ export const useAccountStore = defineStore('account', () => {
     } catch {
       accounts.value = []
     }
+    if (!activeId.value) {
+      activeId.value = readActiveUserId()
+    }
   }
 
   const upsert = (acc: ILocalAccount) => {
@@ -75,24 +68,15 @@ export const useAccountStore = defineStore('account', () => {
   }
 
   const applyToken = (authToken: string | null, userId?: string | null) => {
-    writeActiveSession(userId ? String(userId) : null, authToken)
+    const uid = userId ? String(userId) : null
+    activeId.value = uid
+    writeActiveSession(uid, authToken)
     writeAuthCookie(authToken)
 
     const auth = useAuthStore()
     auth.user = null
     auth.token = authToken
     token.value = authToken
-  }
-
-  const reconnectSocket = () => {
-    if (!import.meta.client) return
-    try {
-      const nuxt = useNuxtApp() as any
-      if (typeof nuxt.$reconnectSocket === 'function') {
-        nuxt.$reconnectSocket()
-        return
-      }
-    } catch { /* */ }
   }
 
   const ensureCurrent = (user: any) => {
@@ -102,39 +86,44 @@ export const useAccountStore = defineStore('account', () => {
     if (!accounts.value.length) load()
 
     const userId = String(user.userId)
+    // Faqat shu user tokenini yangilash — boshqa hisoblarga tegilmasin
+    const existing = accounts.value.find((a) => String(a.userId) === userId)
     upsert({
       userId,
       token: authToken,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
-      phoneNumber: user.phoneNumber,
-      avatar: user.avatar,
+      firstName: user.firstName ?? existing?.firstName,
+      lastName: user.lastName ?? existing?.lastName,
+      username: user.username ?? existing?.username,
+      phoneNumber: user.phoneNumber ?? existing?.phoneNumber,
+      avatar: user.avatar ?? existing?.avatar,
     })
+    activeId.value = userId
     writeActiveSession(userId, authToken)
   }
 
-  /**
-   * Cookie/SSR noto'g'ri user yuklagan bo'lsa — localStorage dagi
-   * faol hisobga qaytaradi.
-   */
   const syncFromStorage = async (): Promise<boolean> => {
     if (!import.meta.client) return false
     load()
-    const activeId = readActiveUserId()
+    const wantId = readActiveUserId()
     const storedToken = readActiveToken()
-    if (!activeId || !storedToken) return false
+    if (!wantId || !storedToken) return false
 
+    activeId.value = wantId
     const auth = useAuthStore()
-    if (auth.user && String(auth.user.userId) === activeId && token.value === storedToken) {
+    if (auth.user && String(auth.user.userId) === wantId) {
+      if (token.value !== storedToken) {
+        token.value = storedToken
+        writeAuthCookie(storedToken)
+      }
       return false
     }
 
-    applyToken(storedToken, activeId)
+    applyToken(storedToken, wantId)
     try {
       await auth.getMe()
-      ensureCurrent(auth.user)
-      reconnectSocket()
+      if (auth.user && String(auth.user.userId) === wantId) {
+        ensureCurrent(auth.user)
+      }
       return true
     } catch {
       return false
@@ -174,9 +163,7 @@ export const useAccountStore = defineStore('account', () => {
     const res = await useApi('/verify-code', { method: 'POST', body: { phone, code } })
     if (res.success && res.data?.authToken) {
       const activated = activateNew(res.data.user, res.data.authToken)
-      if (!activated.ok) {
-        return { success: false, message: activated.message }
-      }
+      if (!activated.ok) return { success: false, message: activated.message }
     }
     return res
   }
@@ -191,9 +178,7 @@ export const useAccountStore = defineStore('account', () => {
     const res = await useApi('/verify-password', { method: 'POST', body: { phone, password } })
     if (res.success && res.data?.authToken) {
       const activated = activateNew(res.data.user, res.data.authToken)
-      if (!activated.ok) {
-        return { success: false, message: activated.message }
-      }
+      if (!activated.ok) return { success: false, message: activated.message }
     }
     return res
   }
@@ -220,34 +205,30 @@ export const useAccountStore = defineStore('account', () => {
     return { ok: true }
   }
 
-  /** Soft switch — reload yo'q (mobil uchun ishonchli) */
-  const switchAccount = async (userId: string) => {
+  const switchAccount = (userId: string) => {
     if (!import.meta.client || switching.value) return
     load()
     const target = String(userId)
     const acc = accounts.value.find((a) => String(a.userId) === target)
-    if (!acc?.token) return
+    if (!acc?.token) {
+      console.warn('[account] switch: token yo\'q', target)
+      return
+    }
 
     if (String(activeUserId.value) === target) {
-      const auth = useAuthStore()
-      if (auth.user && String(auth.user.userId) === target) return
+      try {
+        const auth = useAuthStore()
+        if (auth.user && String(auth.user.userId) === target) return
+      } catch { /* */ }
     }
 
     switching.value = true
-    try {
-      applyToken(acc.token, target)
-      const auth = useAuthStore()
-      await auth.getMe()
-      ensureCurrent(auth.user)
-      reconnectSocket()
-    } catch (e) {
-      console.warn('[account] switch failed', e)
-    } finally {
-      switching.value = false
-    }
+    // Avval localStorage — reload dan keyin shu token ishlatiladi
+    applyToken(acc.token, target)
+    window.location.assign('/driver/profile')
   }
 
-  const removeAccount = async (userId: string) => {
+  const removeAccount = (userId: string) => {
     load()
     const target = String(userId)
     const wasActive = String(activeUserId.value || '') === target
@@ -257,11 +238,13 @@ export const useAccountStore = defineStore('account', () => {
     if (!wasActive) return
 
     const next = accounts.value[0]
-    if (next) {
-      await switchAccount(String(next.userId))
+    if (next?.token) {
+      switching.value = true
+      applyToken(next.token, String(next.userId))
+      window.location.assign('/driver/profile')
     } else {
       applyToken(null)
-      if (import.meta.client) await navigateTo('/')
+      window.location.assign('/')
     }
   }
 

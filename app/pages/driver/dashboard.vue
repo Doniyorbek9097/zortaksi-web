@@ -12,7 +12,6 @@
       />
       <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200 min-w-0 truncate">
         {{ greeting }}, {{ firstName }}!
-        <span class="text-slate-400 dark:text-slate-500 font-semibold"> · {{ today }}</span>
       </p>
     </div>
 
@@ -74,15 +73,6 @@ const greeting = computed(() => {
   if (h < 12) return 'Xayrli tong'
   if (h < 18) return 'Xayrli kun'
   return 'Xayrli kech'
-})
-
-const today = computed(() => {
-  const d = new Date()
-  const days = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan']
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}, ${days[d.getDay()]}`
 })
 
 const isNight = computed(() => /tun|kech/i.test(greeting.value))

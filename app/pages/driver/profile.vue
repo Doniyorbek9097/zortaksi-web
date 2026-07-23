@@ -166,13 +166,13 @@ const onBonus = () => navigateTo('/driver/bonus')
 const onTopup = () => navigateTo('/driver/payment')
 const onBuyTariff = () => navigateTo('/driver/payment')
 
-// Accountni almashtirish — soft switch (reload yo'q)
-const onSelectAccount = async (acc: ILocalAccount) => {
+// Accountni almashtirish
+const onSelectAccount = (acc: ILocalAccount) => {
   if (accountStore.switching) return
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
   if (target === active && String(authStore.user?.userId || '') === target) return
-  await accountStore.switchAccount(target)
+  accountStore.switchAccount(target)
 }
 
 const requestDeleteAccount = (acc: ILocalAccount) => {
@@ -180,10 +180,10 @@ const requestDeleteAccount = (acc: ILocalAccount) => {
   showDeleteAccount.value = true
 }
 
-const confirmDeleteAccount = async () => {
+const confirmDeleteAccount = () => {
   if (!accountToDelete.value) return
   deletingAccount.value = true
-  await accountStore.removeAccount(accountToDelete.value.userId)
+  accountStore.removeAccount(accountToDelete.value.userId)
   showDeleteAccount.value = false
   accountToDelete.value = null
   deletingAccount.value = false
@@ -193,12 +193,12 @@ const onAddAccount = () => navigateTo('/driver/accounts/add')
 
 onMounted(async () => {
   accountStore.load()
-  // Cookie/SSR noto'g'ri hisobni yuklagan bo'lsa — localStorage dan tuzatish
   await accountStore.syncFromStorage()
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* */ }
   }
-  accountStore.ensureCurrent(authStore.user)
+  // Faqat joriy user — boshqa hisob tokenlarini buzmasin
+  if (authStore.user) accountStore.ensureCurrent(authStore.user)
 })
 
 const onContactAdmin = () => {
