@@ -1,14 +1,9 @@
 import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
+import { authCookieOptions } from '~/utils/authCookie'
 
 export const useAuthStore = defineStore('auth', () => {
-    const token = useCookie('auth_token', {
-        maxAge: 30 * 24 * 60 * 60,
-        path: '/',
-        watch: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-    })
+    const token = useCookie('auth_token', { ...authCookieOptions })
     const user = ref<IUser | null>(null)
     const isAuthenticated = computed(() => !!token.value)
     const isLoading = ref(false)

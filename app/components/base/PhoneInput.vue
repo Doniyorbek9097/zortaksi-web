@@ -85,12 +85,6 @@
         icon="fa-solid fa-spinner"
         class="animate-spin text-sky-500 shrink-0"
       />
-      <span
-        v-else-if="isComplete"
-        class="w-6 h-6 rounded-full bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0"
-      >
-        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
-      </span>
     </div>
   </div>
 </template>

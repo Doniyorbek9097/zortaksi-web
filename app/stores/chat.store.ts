@@ -18,6 +18,11 @@ export const useChatStore = defineStore('chat', () => {
 
     const total = ref(0)
 
+    /** Tab badge — barcha chatlardagi o'qilmagan xabarlar yig'indisi */
+    const unreadTotal = computed(() =>
+        chats.value.reduce((sum, c) => sum + (Number(c.unreadCount) || 0), 0)
+    )
+
     // Ulanish holati (senderga yozish mumkinmi):
     //  connecting -> tekshirilmoqda (loading)
     //  ready      -> 100% yozish mumkin
@@ -37,34 +42,68 @@ export const useChatStore = defineStore('chat', () => {
 
     // --- Senderga ulanishni tekshirish (xabar yubormasdan) ---
     // silent: true — UI loading ko'rsatilmaydi (allaqachon bog'langan chat)
+    // Transient timeout/network: bir necha marta qayta urinadi, UI connecting da qoladi
     const connect = async (chatId: string, opts: { silent?: boolean } = {}) => {
-        try {
-            if (!opts.silent) {
-                connectionStatus.value = 'connecting'
-                connectionReason.value = ''
-            }
-            const res = await useApi(`/chats/${chatId}/connect`, { method: 'POST' })
-            if (res.success) {
-                const next = res.data?.status ?? 'unreachable'
-                // Silent: faqat ready/restricted yangilanadi — transient fail UI ni yopmasin
-                if (!opts.silent || next === 'ready' || next === 'restricted') {
-                    connectionStatus.value = next
-                    connectionReason.value = res.data?.reason ?? ''
-                }
-            } else if (!opts.silent) {
-                connectionStatus.value = 'unreachable'
-                connectionReason.value = res.message ?? ''
-            }
-            // Ulanishdan keyin presence'ni ham yangilaymiz
-            fetchPresence(chatId)
-            return res
-        } catch (error: any) {
-            if (!opts.silent) {
-                connectionStatus.value = 'unreachable'
-                connectionReason.value = error?.response?.data?.message ?? ''
-            }
-            console.error('connect error:', error)
+        const maxAttempts = opts.silent ? 1 : 3
+        if (!opts.silent) {
+            connectionStatus.value = 'connecting'
+            connectionReason.value = ''
         }
+
+        let lastError: any = null
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                // #region agent log
+                fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect attempt',data:{chatId,attempt,maxAttempts,silent:!!opts.silent},timestamp:Date.now()})}).catch(()=>{})
+                try { const base = useRuntimeConfig().public.baseUrl as string; if (base) fetch(`${base}/_debug/log`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'1179ab',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect attempt',data:{chatId,attempt,maxAttempts},timestamp:Date.now()})}).catch(()=>{}) } catch { /* */ }
+                // #endregion
+
+                const res = await useApi(`/chats/${chatId}/connect`, {
+                    method: 'POST',
+                    // Telegram resolve uzoqroq olishi mumkin — 8s yetmaydi
+                    timeout: 45000,
+                })
+                if (res.success) {
+                    const next = res.data?.status ?? 'unreachable'
+                    // #region agent log
+                    fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect result',data:{chatId,attempt,next,reason:res.data?.reason||''},timestamp:Date.now()})}).catch(()=>{})
+                    // #endregion
+
+                    // Transient unreachable — yana urinish (UI connecting da qoladi)
+                    if (next === 'unreachable' && attempt < maxAttempts && !opts.silent) {
+                        continue
+                    }
+
+                    // Silent: faqat ready/restricted yangilanadi — transient fail UI ni yopmasin
+                    if (!opts.silent || next === 'ready' || next === 'restricted') {
+                        connectionStatus.value = next
+                        connectionReason.value = res.data?.reason ?? ''
+                    }
+                    fetchPresence(chatId)
+                    return res
+                }
+
+                if (!opts.silent && attempt >= maxAttempts) {
+                    connectionStatus.value = 'unreachable'
+                    connectionReason.value = res.message ?? ''
+                } else if (!opts.silent) {
+                    continue
+                }
+                return res
+            } catch (error: any) {
+                lastError = error
+                // #region agent log
+                fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'1179ab'},body:JSON.stringify({sessionId:'1179ab',runId:'chat-conn',hypothesisId:'H1',location:'chat.store.ts:connect',message:'connect error',data:{chatId,attempt,status:error?.response?.status||null,code:error?.code||null,msg:String(error?.message||'').slice(0,120)},timestamp:Date.now()})}).catch(()=>{})
+                // #endregion
+                console.error('connect error:', error)
+                if (attempt < maxAttempts && !opts.silent) continue
+                if (!opts.silent) {
+                    connectionStatus.value = 'unreachable'
+                    connectionReason.value = error?.response?.data?.message ?? ''
+                }
+            }
+        }
+        return lastError
     }
 
     const fetchPresence = async (chatId: string) => {
@@ -413,6 +452,7 @@ export const useChatStore = defineStore('chat', () => {
         isLoadingMessages,
         isSending,
         total,
+        unreadTotal,
         connectionStatus,
         connectionReason,
         peerPresence,

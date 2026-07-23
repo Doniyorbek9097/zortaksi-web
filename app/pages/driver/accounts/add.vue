@@ -338,9 +338,23 @@ const handleVerifyPassword = async () => {
 }
 
 const finish = async () => {
+  // #region agent log
+  const finPayload = { sessionId: '1179ab', runId: 'post-fix', hypothesisId: 'H1', location: 'accounts/add.vue:finish', message: 'finish redirect to profile', data: { memCount: accountStore.accounts.length, memIds: accountStore.accounts.map((a) => a.userId), storageRawLen: typeof localStorage !== 'undefined' ? (localStorage.getItem('zt_accounts') || '').length : -1 }, timestamp: Date.now() }
+  fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1179ab' }, body: JSON.stringify(finPayload) }).catch(() => {})
+  fetch('/api/_debug/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(finPayload) }).catch(() => {})
+  // #endregion
   if (import.meta.client) window.location.href = '/driver/profile'
   else await navigateTo('/driver/profile')
 }
+
+onMounted(() => {
+  accountStore.load()
+  // #region agent log
+  const mPayload = { sessionId: '1179ab', runId: 'post-fix', hypothesisId: 'H1', location: 'accounts/add.vue:onMounted', message: 'add page mounted after load()', data: { memCount: accountStore.accounts.length, memIds: accountStore.accounts.map((a) => a.userId), storageRawLen: typeof localStorage !== 'undefined' ? (localStorage.getItem('zt_accounts') || '').length : -1 }, timestamp: Date.now() }
+  fetch('http://127.0.0.1:7750/ingest/fe00ea7a-4a26-4abf-929d-8d61a735465e', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '1179ab' }, body: JSON.stringify(mPayload) }).catch(() => {})
+  fetch('/api/_debug/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(mPayload) }).catch(() => {})
+  // #endregion
+})
 
 const handleBack = () => {
   if (step.value === 'password') step.value = 'code'

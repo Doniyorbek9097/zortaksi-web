@@ -18,7 +18,7 @@
                 v-if="item.badge"
                 class="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center"
               >
-                {{ item.badge }}
+                {{ formatBadge(item.badge) }}
               </span>
             </span>
             <span class="text-[10px] font-bold tracking-wide">{{ item.label }}</span>
@@ -31,26 +31,44 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
+import { useOrderStore } from '~/stores/order.store'
+import { useChatStore } from '~/stores/chat.store'
 
 interface NavItem {
   to: string
   label: string
   icon: string
-  badge?: number | string
+  badge?: number
 }
 
 const authStore = useAuthStore()
+const orderStore = useOrderStore()
+const chatStore = useChatStore()
 const isAdmin = computed(() => authStore.user?.role === 'admin')
 
+const formatBadge = (n: number) => (n > 99 ? '99+' : n)
+
 const items = computed<NavItem[]>(() => {
+  const ordersBadge = orderStore.newOrdersCount
+  const chatsBadge = chatStore.unreadTotal
+
   const base: NavItem[] = [
-    { to: '/driver/orders', label: 'Buyurtmalar', icon: 'fa-solid fa-clipboard-list' },
-    { to: '/driver/chats', label: 'Chatlar', icon: 'fa-solid fa-comments' },
+    {
+      to: '/driver/orders',
+      label: 'Buyurtmalar',
+      icon: 'fa-solid fa-clipboard-list',
+      badge: ordersBadge > 0 ? ordersBadge : undefined,
+    },
+    {
+      to: '/driver/chats',
+      label: 'Chatlar',
+      icon: 'fa-solid fa-comments',
+      badge: chatsBadge > 0 ? chatsBadge : undefined,
+    },
     { to: '/driver/post', label: "E'lon joylash", icon: 'fa-solid fa-bullhorn' },
     { to: '/driver/profile', label: 'Profil', icon: 'fa-solid fa-user' },
   ]
 
-  // Admin — Home (Asosiy) yo'q; o'rniga Admin
   if (isAdmin.value) {
     return [
       { to: '/admin/dashboard', label: 'Admin', icon: 'fa-solid fa-shield-alt' },

@@ -18,8 +18,28 @@ export const useOrderStore = defineStore('order', () => {
     const total = ref(0)
     const page = ref(1)
     const totalPages = ref(1)
+    /** Tab badge — status=new buyurtmalar soni */
+    const newOrdersCount = ref(0)
 
     const hasMore = computed(() => page.value < totalPages.value)
+
+    const refreshNewCount = async () => {
+        try {
+            const response = await useApi('/orders', {
+                method: 'GET',
+                params: { status: 'new', page: 1, limit: 1 },
+            })
+            if (response.success) {
+                newOrdersCount.value = Number(response.data.pagination?.total ?? 0)
+            }
+        } catch {
+            /* badge uchun jim */
+        }
+    }
+
+    const bumpNewCount = (delta = 1) => {
+        newOrdersCount.value = Math.max(0, newOrdersCount.value + delta)
+    }
 
     const fetchOrders = async (
         params: FetchOrdersParams = {},
@@ -82,9 +102,13 @@ export const useOrderStore = defineStore('order', () => {
         try {
             const response = await useApi(`/orders/${orderId}/book`, { method: 'POST' })
             if (response.success) {
+                const prev = orders.value.find((o) => o._id === orderId)
                 const idx = orders.value.findIndex((o) => o._id === orderId)
                 if (idx !== -1 && response.data?.order) {
                     orders.value[idx] = { ...orders.value[idx], ...response.data.order }
+                }
+                if (prev?.status === 'new' || response.data?.order?.status === 'booked') {
+                    bumpNewCount(-1)
                 }
             }
             return response
@@ -101,6 +125,7 @@ export const useOrderStore = defineStore('order', () => {
             if (idx !== -1 && response.data?.order) {
                 orders.value[idx] = { ...orders.value[idx], ...response.data.order }
             }
+            if (response.data?.order?.status === 'new') bumpNewCount(1)
         }
         return response
     }
@@ -139,6 +164,7 @@ export const useOrderStore = defineStore('order', () => {
         total,
         page,
         totalPages,
+        newOrdersCount,
         hasMore,
         fetchOrders,
         loadMore,
@@ -147,5 +173,7 @@ export const useOrderStore = defineStore('order', () => {
         unbookOrder,
         blockGroup,
         blockSender,
+        refreshNewCount,
+        bumpNewCount,
     }
 })

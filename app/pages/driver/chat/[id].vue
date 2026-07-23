@@ -12,7 +12,7 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!!callPhone"
-      @back="goBack"
+      @back="goChats"
       @call="onCall"
     />
 
@@ -63,17 +63,34 @@
     </div>
 
     <!-- Ulanish holati banneri -->
-    <div v-if="conn === 'connecting'" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <div v-if="conn === 'connecting' || conn === 'idle'" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         Yo'lovchiga ulanmoqda... Iltimos kuting
       </div>
     </div>
 
-    <div v-else-if="conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-1">
-      <div class="flex items-start gap-2 py-2.5 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold">
-        <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mt-0.5 shrink-0" />
-        <span>{{ connReason || 'Hozircha bu yo\'lovchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}</span>
+    <div v-else-if="conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+      <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
+        <p>
+          <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
+          {{ connReason || 'Hozircha bu yo\'lovchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
+        </p>
+        <a
+          v-if="callPhone"
+          :href="normalizeTelHref(callPhone)"
+          class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+        >
+          <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilishingiz mumkin
+        </a>
+        <button
+          v-else
+          type="button"
+          class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-amber-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+          @click="goOrders"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+        </button>
       </div>
     </div>
 
@@ -81,21 +98,31 @@
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
-          Bu yo'lovchi bilan bog'lanish imkoni yo'q. Boshqa yo'lovchi toping.
+          {{ callPhone
+            ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
+            : 'Bu yo\'lovchi bilan bog\'lanish imkoni yo\'q. Buyurtmalarga o\'ting.' }}
         </p>
+        <a
+          v-if="callPhone"
+          :href="normalizeTelHref(callPhone)"
+          class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+        >
+          <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilish
+        </a>
         <button
+          v-else
           type="button"
           class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-red-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          @click="goBack"
+          @click="goOrders"
         >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga qaytish
+          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
         </button>
       </div>
     </div>
 
-    <!-- Composer — faqat ulanish tayyor bo'lganda faol -->
+    <!-- Composer — ulanish yakunlanmaguncha kutadi; yozib bo'lmasa yashiriladi -->
     <ChatComposer
-      v-if="conn !== 'unreachable'"
+      v-if="conn === 'ready' || conn === 'connecting' || conn === 'idle'"
       v-model="draft"
       :disabled="conn !== 'ready'"
       @send="onSend"
@@ -212,7 +239,8 @@ const onPhoto = async (file: File) => {
   scrollToBottom()
 }
 
-const goBack = () => navigateTo('/driver/chats')
+const goChats = () => navigateTo('/driver/chats')
+const goOrders = () => navigateTo('/driver/orders')
 
 const callPhone = computed(() =>
   resolveChatPhone({

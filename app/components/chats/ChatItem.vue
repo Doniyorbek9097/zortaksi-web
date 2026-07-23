@@ -64,7 +64,7 @@
 
           <span
             v-if="unread > 0 && !selectionMode"
-            class="shrink-0 min-w-[18px] h-[18px] px-1.5 rounded-full bg-indigo-500 text-white text-[10px] font-black flex items-center justify-center"
+            class="shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm"
           >
             {{ unread > 99 ? '99+' : unread }}
           </span>

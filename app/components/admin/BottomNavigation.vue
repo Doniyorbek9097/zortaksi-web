@@ -18,7 +18,7 @@
                 v-if="item.badge"
                 class="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-black flex items-center justify-center"
               >
-                {{ item.badge }}
+                {{ typeof item.badge === 'number' && item.badge > 99 ? '99+' : item.badge }}
               </span>
             </span>
             <span class="text-[10px] font-bold tracking-wide">{{ item.label }}</span>

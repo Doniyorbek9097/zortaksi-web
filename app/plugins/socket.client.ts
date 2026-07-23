@@ -39,6 +39,7 @@ export default defineNuxtPlugin(() => {
       if (isNew) {
         orderStore.orders = [order, ...list]
         orderStore.total = (orderStore.total || 0) + 1
+        if ((order?.status || 'new') === 'new') orderStore.bumpNewCount(1)
         playOrderSound()
       }
     })
