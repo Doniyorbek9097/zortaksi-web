@@ -66,8 +66,11 @@
 
       <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
       <div v-else class="mt-4 space-y-2" data-no-swipe @pointerdown.stop>
-        <!-- Xabar yozish / Telefon -->
-        <div :class="callPhone ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'">
+        <!-- Xabar / Telefon — band bo'lsa faqat band qilgan yoki admin uchun -->
+        <div
+          v-if="showContactActions"
+          :class="callPhone ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'"
+        >
           <button type="button"
             class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('message')">
@@ -83,7 +86,7 @@
         </div>
 
         <div class="grid grid-cols-1 gap-2">
-          <!-- Band qilish / Band bekor qilish -->
+          <!-- Band qilish -->
           <button
             v-if="!isBooked"
             type="button"
@@ -93,8 +96,24 @@
             <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm" />
             Band qilish
           </button>
+
+          <!-- Boshqalar: band qilgan haydovchi → chat -->
           <button
-            v-else-if="canUnbook"
+            v-else-if="!isBookedByMe"
+            type="button"
+            class="w-full min-h-[46px] inline-flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-[12px] font-black text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
+            @click.stop="$emit('booked-chat')"
+          >
+            <span class="inline-flex items-center gap-2 min-w-0">
+              <font-awesome-icon icon="fa-solid fa-user" class="text-sm text-emerald-500 shrink-0" />
+              <span class="truncate">{{ bookedByName }}</span>
+            </span>
+            <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-sm text-slate-400 shrink-0" />
+          </button>
+
+          <!-- Band qilgan / admin: bekor -->
+          <button
+            v-if="canUnbook"
             type="button"
             class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('unbook')"
@@ -102,13 +121,6 @@
             <font-awesome-icon icon="fa-solid fa-rotate" class="text-sm" />
             Band bekor qilish
           </button>
-          <div
-            v-else
-            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800"
-          >
-            <font-awesome-icon icon="fa-solid fa-lock" class="text-sm" />
-            Band qilingan
-          </div>
         </div>
         <!-- Admin amallari -->
         <div v-if="isAdmin" class="grid grid-cols-3 gap-2">
@@ -159,6 +171,7 @@ const emit = defineEmits<{
   book: []
   unbook: []
   message: []
+  'booked-chat': []
   agent: []
   'stop-group': []
   'stop-user': []
@@ -172,11 +185,25 @@ const canAct = computed(() => isAdmin.value || props.active)
 // Aktiv emas va admin emas — qulflangan (telefonlar server tomonda yashirilgan)
 const locked = computed(() => !canAct.value)
 const isBooked = computed(() => props.order.status === 'booked')
-const canUnbook = computed(() => {
+const isBookedByMe = computed(() => {
   if (!isBooked.value) return false
-  if (isAdmin.value) return true
   const bookedBy = String(props.order.bookedBy || '')
   return !!props.currentUserId && bookedBy === props.currentUserId
+})
+const canUnbook = computed(() => {
+  if (!isBooked.value) return false
+  return isAdmin.value || isBookedByMe.value
+})
+/** Band bo'lganda boshqa haydovchilarga Xabar/Telefon yopiladi */
+const showContactActions = computed(() => !isBooked.value || isBookedByMe.value || isAdmin.value)
+
+const bookedByName = computed(() => {
+  const u = props.order.bookedByUser
+  const full = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim()
+  if (full) return full
+  if (u?.username) return u.username
+  if (props.order.bookedBy) return `Haydovchi ${props.order.bookedBy}`
+  return 'Band qilingan'
 })
 
 const group = computed(() => props.order.group)

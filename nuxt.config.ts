@@ -24,7 +24,9 @@ export default defineNuxtConfig({
     head: {
       title: "Zo'r Taksi",
       meta: [
-        { name: 'theme-color', content: '#0f172a' },
+        // Runtime theme syncs these via useTheme / app.vue (light: slate-50, dark: slate-950)
+        { name: 'theme-color', content: '#020617' },
+        { name: 'color-scheme', content: 'dark' },
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
@@ -53,8 +55,8 @@ export default defineNuxtConfig({
       name: "Zo'r Taksi",
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish va bildirishnomalar',
-      theme_color: '#0f172a',
-      background_color: '#0f172a',
+      theme_color: '#020617',
+      background_color: '#020617',
       display: 'standalone',
       orientation: 'portrait',
       start_url: '/',

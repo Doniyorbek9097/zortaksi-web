@@ -29,16 +29,18 @@
       :expire-days="tariff.expireDays"
       :start-date="tariff.startDate"
       :end-date="tariff.endDate"
+      :started-at="tariff.startedAt"
+      :expire-at="tariff.expireAt"
       :active="tariffActive"
       @buy="onBuyTariff"
     />
 
     <!-- Platform statistics -->
     <section class="space-y-3">
-      <h3 class="text-[11px] font-black uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
+      <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
         Platforma statistikasi
       </h3>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
         <DashboardStatCard
           v-for="stat in stats"
           :key="stat.label"
@@ -82,7 +84,10 @@ const formatDate = (value?: string | Date) => {
   if (!value) return '—'
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const dd = String(d.getDate()).padStart(2, '0')
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const yyyy = d.getFullYear()
+  return `${dd}/${mm}/${yyyy}`
 }
 
 const tariff = computed(() => ({
@@ -92,6 +97,8 @@ const tariff = computed(() => ({
   expireDays: authStore.user?.tariff?.expireDays ?? 1,
   startDate: formatDate(authStore.user?.startedAt),
   endDate: formatDate(authStore.user?.tariffExpireAt),
+  startedAt: authStore.user?.startedAt ?? null,
+  expireAt: authStore.user?.tariffExpireAt ?? null,
 }))
 
 // --- Platform statistics ---
@@ -104,7 +111,7 @@ interface Stat {
 }
 
 const stats = ref<Stat[]>([
-  { value: 205, label: 'Bugungi buyurtmalar', icon: 'fa-solid fa-calendar-day', color: 'blue' },
+  { value: 205, label: 'Bugungi buyurtmalar', icon: 'fa-solid fa-clipboard-list', color: 'blue' },
   { value: 71, label: "So'nggi 1 soat", icon: 'fa-solid fa-bolt', color: 'amber' },
   { value: 1787, label: 'Jami buyurtmalar', icon: 'fa-solid fa-chart-line', color: 'green' },
   { value: 50, label: 'Jami Haydovchilar', icon: 'fa-solid fa-users', color: 'violet' },

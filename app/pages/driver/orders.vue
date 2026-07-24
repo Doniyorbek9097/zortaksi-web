@@ -32,6 +32,7 @@
           @book="onBook(order)"
           @unbook="onUnbook(order)"
           @message="onMessage(order)"
+          @booked-chat="onBookedChat(order)"
           @agent="onAgent(order)"
           @stop-group="onStopGroup(order)"
           @stop-user="onStopUser(order)"
@@ -335,6 +336,24 @@ const onMessage = async (order: IOrder) => {
   // Fallback — Telegram profiliga o'tish
   const username = order.sender?.username
   if (username) openLink(`https://t.me/${username}`)
+}
+
+const onBookedChat = async (order: IOrder) => {
+  if (!order._id) return
+  try {
+    const res = await chatStore.startChatWithBookedDriver(order._id)
+    if (res?.success && res.data?._id) {
+      const phone = res.data?.peer?.phone
+      return navigateTo({
+        path: `/driver/chat/${res.data._id}`,
+        query: phone ? { phone: String(phone) } : undefined,
+      })
+    }
+    showError(res?.message || 'Haydovchi bilan chat ochilmadi')
+  } catch (err: any) {
+    console.error('startChatWithBookedDriver error:', err)
+    showError(err?.response?.data?.message || 'Haydovchi bilan chat ochilmadi')
+  }
 }
 
 const senderLabel = (order: IOrder) => {

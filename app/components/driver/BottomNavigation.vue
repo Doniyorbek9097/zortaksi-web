@@ -30,7 +30,6 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 
 interface NavItem {
@@ -40,16 +39,19 @@ interface NavItem {
   badge?: number
 }
 
-const authStore = useAuthStore()
 const chatStore = useChatStore()
-const isAdmin = computed(() => authStore.user?.role === 'admin')
 
 const formatBadge = (n: number) => (n > 99 ? '99+' : n)
 
 const items = computed<NavItem[]>(() => {
   const chatsBadge = chatStore.unreadTotal
 
-  const base: NavItem[] = [
+  return [
+    {
+      to: '/driver/dashboard',
+      label: 'Asosiy',
+      icon: 'fa-solid fa-house',
+    },
     {
       to: '/driver/orders',
       label: 'Buyurtmalar',
@@ -63,18 +65,6 @@ const items = computed<NavItem[]>(() => {
     },
     { to: '/driver/post', label: "E'lon joylash", icon: 'fa-solid fa-bullhorn' },
     { to: '/driver/profile', label: 'Profil', icon: 'fa-solid fa-user' },
-  ]
-
-  if (isAdmin.value) {
-    return [
-      { to: '/admin/dashboard', label: 'Admin', icon: 'fa-solid fa-shield-alt' },
-      ...base,
-    ]
-  }
-
-  return [
-    { to: '/driver/dashboard', label: 'Asosiy', icon: 'fa-solid fa-house' },
-    ...base,
   ]
 })
 

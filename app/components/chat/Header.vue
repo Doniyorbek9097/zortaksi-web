@@ -40,9 +40,12 @@
       </div>
 
       <button
-        v-if="!support && canCall"
+        v-if="canCall"
         type="button"
-        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 active:scale-95 transition-all shrink-0"
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black shrink-0 active:scale-95 transition-all"
+        :class="support
+          ? 'text-white bg-white/15 hover:bg-white/25'
+          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'"
         @click="$emit('call')"
       >
         <font-awesome-icon icon="fa-solid fa-phone" />

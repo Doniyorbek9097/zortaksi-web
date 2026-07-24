@@ -11,7 +11,7 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :can-call="!isSupport && !!callPhone"
+      :can-call="!!callPhone"
       @back="goChats"
       @call="onCall"
     />

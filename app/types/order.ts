@@ -40,6 +40,13 @@ export interface IMessage {
     rawEntities?: any[];
 }
 
+export interface IBookedByUser {
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+}
+
 export interface IOrder {
     _id?: string;
     owner: IOwner;
@@ -49,6 +56,7 @@ export interface IOrder {
     status: 'new' | 'booked' | 'processing' | 'confirmed' | 'cancelled' | 'completed';
     bookedBy?: string | null;
     bookedAt?: string | Date | null;
+    bookedByUser?: IBookedByUser | null;
     bookPrice?: number;
     createdAt: string | Date;
     updatedAt: string | Date;
