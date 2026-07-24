@@ -2,12 +2,54 @@ import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
 import { readActiveUserId, resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
+import { isTariffActive } from '~/utils/tariffActive'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const user = ref<IUser | null>(null)
     const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)
+    const tariffActive = computed(() => isTariffActive(user.value))
+
+    let expireTimer: ReturnType<typeof setTimeout> | null = null
+    const MAX_TIMEOUT_MS = 24 * 60 * 60 * 1000
+
+    const clearExpireTimer = () => {
+        if (expireTimer) {
+            clearTimeout(expireTimer)
+            expireTimer = null
+        }
+    }
+
+    const markTariffExpired = () => {
+        if (!user.value?.active) return
+        user.value = { ...user.value, active: false }
+    }
+
+    /** Muddat tugashi bilan UI darhol inactive; keyin getMe DB ni sync qiladi */
+    const scheduleTariffExpiry = () => {
+        if (!import.meta.client) return
+        clearExpireTimer()
+        const u = user.value
+        if (!u?.active || !u.tariff || !u.tariffExpireAt) return
+        const end = new Date(u.tariffExpireAt).getTime()
+        if (Number.isNaN(end)) return
+        const delay = end - Date.now()
+        if (delay <= 0) {
+            const wasActive = !!u.active
+            markTariffExpired()
+            // DB sync — faqat hali active bo'lganida (loop oldini olish)
+            if (wasActive) void getMe().catch(() => {})
+            return
+        }
+        expireTimer = setTimeout(() => {
+            scheduleTariffExpiry()
+        }, Math.min(delay + 50, MAX_TIMEOUT_MS))
+    }
+
+    if (import.meta.client) {
+        watch(user, () => scheduleTariffExpiry(), { deep: true })
+    }
 
     const persistSession = (authToken: string, nextUser: any) => {
         token.value = authToken
@@ -101,6 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
     const logout = async () => {
         try {
             isLoading.value = true
+            clearExpireTimer()
             const response = await useApi('/logout', {
                 method: 'POST'
             })
@@ -122,6 +165,8 @@ export const useAuthStore = defineStore('auth', () => {
         user,
         isAuthenticated,
         isLoading,
+        tariffActive,
+        markTariffExpired,
         getMe,
         sendCode,
         verifyCode,

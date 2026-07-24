@@ -164,7 +164,7 @@ const error = ref('')
 const historyList = ref<{ load: () => Promise<void> } | null>(null)
 
 const balance = computed(() => authStore.user?.balance ?? 0)
-const tariffActive = computed(() => !!authStore.user?.active && !!authStore.user?.tariff)
+const tariffActive = computed(() => authStore.tariffActive)
 
 const selected = computed(() =>
   tariffStore.tariffs.find(t => t.id === selectedId.value) || null

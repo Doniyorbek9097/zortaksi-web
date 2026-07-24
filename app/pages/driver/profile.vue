@@ -169,7 +169,7 @@ const user = computed(() => ({
   phone: authStore.user?.phoneNumber || '',
   avatar: authStore.user?.avatar,
   userId: authStore.user?.userId,
-  active: !!authStore.user?.active,
+  active: authStore.tariffActive,
   balance: authStore.user?.balance ?? 0,
   tariffName: authStore.user?.tariff?.name || 'Kunlik sinov',
 }))

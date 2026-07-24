@@ -73,7 +73,7 @@ const authStore = useAuthStore()
 // --- User derived data ---
 const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
 const balance = computed(() => authStore.user?.balance ?? 0)
-const tariffActive = computed(() => !!authStore.user?.tariff && !!authStore.user?.active)
+const tariffActive = computed(() => authStore.tariffActive)
 
 // --- Greeting based on hour ---
 const greeting = computed(() => {

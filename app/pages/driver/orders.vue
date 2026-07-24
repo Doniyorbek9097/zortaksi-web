@@ -7,8 +7,8 @@
     <OrdersFilterPanel v-if="showFilter" v-model:keyword="keyword" v-model:text="text" />
 
     <!-- Loading (birinchi yuklash) -->
-    <div v-if="orderStore.isLoading && !orderStore.orders.length" class="space-y-4 pt-2">
-      <div v-for="n in 3" :key="n" class="h-40 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+    <div v-if="orderStore.isLoading && !orderStore.orders.length" class="pt-2">
+      <OrdersOrderCardSkeleton />
     </div>
 
     <!-- Empty -->
@@ -43,10 +43,8 @@
       <!-- Infinite scroll sentinel -->
       <div ref="sentinel" class="h-1" />
 
-      <!-- Yuklanmoqda (keyingi sahifa) -->
-      <div v-if="orderStore.isLoadingMore" class="space-y-4">
-        <div v-for="n in 2" :key="n" class="h-40 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      </div>
+      <!-- Yuklanmoqda (keyingi sahifa) — bitta OrderCard skeleton -->
+      <OrdersOrderCardSkeleton v-if="orderStore.isLoadingMore" />
 
       <!-- Oxiri -->
       <p
@@ -162,7 +160,7 @@ const chatStore = useChatStore()
 
 // Rol va aktivlik — tugmalarni ko'rsatishni boshqaradi
 const role = computed(() => authStore.user?.role)
-const active = computed(() => !!authStore.user?.active)
+const active = computed(() => authStore.tariffActive)
 
 // --- Filtr holati ---
 const showFilter = ref(false)

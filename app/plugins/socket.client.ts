@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client'
 import { useChatStore } from '~/stores/chat.store'
 import { useOrderStore } from '~/stores/order.store'
+import { useAuthStore } from '~/stores/auth.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { authCookieOptions } from '~/utils/authCookie'
@@ -44,6 +45,11 @@ export default defineNuxtPlugin(() => {
     socket.on('messages:read', (data) => chatStore.onMessagesRead(data))
     socket.on('peer:presence', (data) => chatStore.onPeerPresence(data))
     socket.on('peer:typing', (data) => chatStore.onPeerTyping(data))
+    socket.on('tariff:expired', () => {
+      const authStore = useAuthStore()
+      authStore.markTariffExpired()
+      void authStore.getMe().catch(() => {})
+    })
     socket.on('order:new', (order) => {
       const list = orderStore.orders
       const incomingKey = orderContentKey(order)
