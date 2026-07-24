@@ -119,15 +119,6 @@
           clickable
           @click="navigateTo('/privacy')"
         />
-
-        <ProfileSettingRow
-          icon="fa-solid fa-trash"
-          title="Hisobni butunlay o'chirish"
-          subtitle="Barcha ma'lumotlar o'chiriladi"
-          color="red"
-          clickable
-          @click="navigateTo('/delete-account')"
-        />
       </div>
     </ProfileSectionCard>
 

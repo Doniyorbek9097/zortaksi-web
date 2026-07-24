@@ -19,16 +19,24 @@
     <!-- Xabarlar -->
     <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
-        <!-- Order e'lon matni -->
+        <!-- Order e'lon / haydovchi konteksti -->
         <div
           v-if="orderText"
-          class="rounded-2xl px-3.5 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200/70 dark:border-amber-800/50"
+          class="rounded-2xl px-3.5 py-3 border"
+          :class="isDirect
+            ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-200/70 dark:border-sky-800/50'
+            : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50'"
         >
-          <p class="text-[10px] font-black uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400 mb-1.5">
-            Buyurtma e'loni
+          <p
+            class="text-[10px] font-black uppercase tracking-[0.16em] mb-1.5"
+            :class="isDirect
+              ? 'text-sky-600 dark:text-sky-400'
+              : 'text-amber-600 dark:text-amber-400'"
+          >
+            {{ orderBannerLabel }}
           </p>
           <p class="text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
-            <ChatLinkifiedText :text="orderText" />
+            <ChatLinkifiedText :text="displayOrderText" />
           </p>
         </div>
 
@@ -80,19 +88,19 @@
       </div>
     </div>
 
-    <!-- Ulanish holati banneri (support chatda kerak emas) -->
-    <div v-if="!isSupport && (conn === 'connecting' || conn === 'idle')" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <!-- Ulanish holati banneri (support / direct — Telegram ulanish kerak emas) -->
+    <div v-if="needsTelegramConnect && (conn === 'connecting' || conn === 'idle')" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
-        Yo'lovchiga ulanmoqda... Iltimos kuting
+        Foydalanuvchiga ulanmoqda... Iltimos kuting
       </div>
     </div>
 
-    <div v-else-if="!isSupport && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
-          {{ connReason || 'Hozircha bu yo\'lovchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
+          {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
         </p>
         <a
           v-if="callPhone"
@@ -112,13 +120,13 @@
       </div>
     </div>
 
-    <div v-else-if="!isSupport && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
           {{ callPhone
             ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
-            : 'Bu yo\'lovchi bilan bog\'lanish imkoni yo\'q. Buyurtmalarga o\'ting.' }}
+            : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q. Buyurtmalarga o\'ting.' }}
         </p>
         <a
           v-if="callPhone"
@@ -138,11 +146,11 @@
       </div>
     </div>
 
-    <!-- Composer — support doim ochiq; oddiy chatda ulanish kutadi -->
+    <!-- Composer — support/direct doim ochiq; Telegram chatda ulanish kutadi -->
     <ChatComposer
-      v-if="isSupport || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
+      v-if="isInAppChat || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
       v-model="draft"
-      :disabled="!isSupport && conn !== 'ready'"
+      :disabled="!isInAppChat && conn !== 'ready'"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -167,6 +175,13 @@ const isSupport = computed(() =>
   chatStore.currentChat?.kind === 'support' || route.query.support === '1'
 )
 
+/** Ro'yxatdan o'tgan haydovchi ↔ haydovchi (qiziqqanlar va h.k.) */
+const isDirect = computed(() => chatStore.currentChat?.kind === 'direct')
+
+/** Telegram ulanishi shart emas — ilova ichidagi chat */
+const isInAppChat = computed(() => isSupport.value || isDirect.value)
+const needsTelegramConnect = computed(() => !isInAppChat.value)
+
 /** Peer ismi — haydovchi ham oddiy foydalanuvchi kabi (haqiqiy ism) */
 const name = computed(() => {
   const p = chatStore.currentChat?.peer
@@ -178,7 +193,9 @@ const name = computed(() => {
   }
   const qName = (route.query.name as string) || ''
   if (qName) return qName
-  return isSupport.value ? 'Admin' : 'Buyurtmachi'
+  if (isSupport.value) return 'Admin'
+  if (isDirect.value) return 'Haydovchi'
+  return 'Buyurtmachi'
 })
 
 const peerAvatar = computed(() => chatStore.currentChat?.peer?.avatar)
@@ -188,11 +205,20 @@ const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
   if (chatStore.isPeerTyping) return 'yozmoqda...'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
+  if (isDirect.value) return 'Haydovchi'
   return '...'
 })
 
 const orderText = computed(() =>
   String(chatStore.currentChat?.orderText || '').trim()
+)
+
+const orderBannerLabel = computed(() =>
+  isDirect.value ? 'Haydovchi' : "Buyurtma e'loni"
+)
+
+const displayOrderText = computed(() =>
+  orderText.value.replace(/^\[Buyurtma\]\s*/i, '').trim() || orderText.value
 )
 
 const draft = ref('')
@@ -250,19 +276,19 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
+  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendMessage(chatId.value, text)
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
+  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendVoice(chatId.value, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  if (!isSupport.value && chatStore.connectionStatus !== 'ready') return
+  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
 }
@@ -305,7 +331,7 @@ onMounted(async () => {
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
 
-  if (isSupport.value || chatStore.currentChat?.kind === 'support') {
+  if (isInAppChat.value) {
     chatStore.connectionStatus = 'ready'
     void chatStore.fetchPresence(chatId.value)
     presenceTimer = setInterval(() => {

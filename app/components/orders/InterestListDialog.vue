@@ -15,7 +15,9 @@
           >
             <div class="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
               <div class="min-w-0">
-                <h3 class="text-lg font-black text-slate-900 dark:text-white">Qiziqqanlar</h3>
+                <h3 class="text-lg font-black text-slate-900 dark:text-white leading-snug">
+                  Buyurtmaga qiziqgan shafyorlar
+                </h3>
                 <p class="mt-0.5 text-[12px] font-medium text-slate-400 dark:text-slate-500">
                   {{ count }} kishi · bosib chat oching
                 </p>
