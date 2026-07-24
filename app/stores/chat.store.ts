@@ -343,6 +343,14 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     // --- Band qilgan haydovchi bilan chat ---
+    const startChatWithUser = async (userId: string, orderId?: string) => {
+        const res = await useApi('/chats/with-user', {
+            method: 'POST',
+            body: { userId, orderId: orderId || undefined },
+        })
+        return res
+    }
+
     const startChatWithBookedDriver = async (orderId: string) => {
         const res = await useApi(`/chats/from-order/${orderId}/booked-driver`, { method: 'POST' })
         return res
@@ -510,6 +518,7 @@ export const useChatStore = defineStore('chat', () => {
         sendPhoto,
         startChatFromOrder,
         startChatWithOrderOwner,
+        startChatWithUser,
         startChatWithBookedDriver,
         markRead,
         deleteChats,

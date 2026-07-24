@@ -47,6 +47,15 @@ export interface IBookedByUser {
     username?: string;
 }
 
+export interface IInterestedUser {
+    userId: string;
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    avatar?: string;
+    name?: string;
+}
+
 export interface IOrder {
     _id?: string;
     owner: IOwner;
@@ -60,6 +69,7 @@ export interface IOrder {
     bookPrice?: number;
     /** Xabar/Telefon bosganlar soni */
     interestCount?: number;
+    interestedUsers?: IInterestedUser[];
     dedupeKey?: string | null;
     createdAt: string | Date;
     updatedAt: string | Date;

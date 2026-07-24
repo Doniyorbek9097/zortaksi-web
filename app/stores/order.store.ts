@@ -167,20 +167,43 @@ export const useOrderStore = defineStore('order', () => {
         return response
     }
 
+    const patchInterest = (orderId: string, data: { interestCount?: number; interestedUsers?: any[] }) => {
+        const idx = orders.value.findIndex((o) => o._id === orderId)
+        if (idx === -1) return
+        const count = Number(data.interestCount)
+        orders.value[idx] = {
+            ...orders.value[idx]!,
+            interestCount: Number.isFinite(count) ? count : orders.value[idx]!.interestCount,
+            interestedUsers: Array.isArray(data.interestedUsers)
+                ? data.interestedUsers
+                : orders.value[idx]!.interestedUsers,
+        }
+    }
+
     /** Xabar yozish / Telefon — qiziqish yozish */
     const markInterest = async (orderId: string) => {
         try {
             const response = await useApi(`/orders/${orderId}/interest`, { method: 'POST' })
-            if (response.success) {
-                const count = Number(response.data?.interestCount)
-                const idx = orders.value.findIndex((o) => o._id === orderId)
-                if (idx !== -1 && Number.isFinite(count)) {
-                    orders.value[idx] = { ...orders.value[idx]!, interestCount: count }
-                }
+            if (response.success && response.data) {
+                patchInterest(orderId, response.data)
             }
             return response
         } catch (error) {
             console.warn('markInterest error:', error)
+            return null
+        }
+    }
+
+    /** Qiziqqanlar ro'yxatini yuklash */
+    const fetchInterest = async (orderId: string) => {
+        try {
+            const response = await useApi(`/orders/${orderId}/interest`)
+            if (response.success && response.data) {
+                patchInterest(orderId, response.data)
+            }
+            return response
+        } catch (error) {
+            console.warn('fetchInterest error:', error)
             return null
         }
     }
@@ -204,6 +227,7 @@ export const useOrderStore = defineStore('order', () => {
         blockGroup,
         blockSender,
         markInterest,
+        fetchInterest,
         refreshNewCount,
         bumpNewCount,
     }

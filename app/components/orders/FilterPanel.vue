@@ -23,21 +23,30 @@
       Hudud nomlarini vergul bilan ajrating. Buyurtma guruh nomi, username va matndan qidiriladi.
     </p>
 
-    <button
-      type="button"
-      class="w-full py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
-      @click="onSave"
-    >
-      <font-awesome-icon icon="fa-solid fa-floppy-disk" />
-      Saqlash
-    </button>
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        class="flex-1 py-3 rounded-xl text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
+        @click="emit('cancel')"
+      >
+        Bekor qilish
+      </button>
+      <button
+        type="button"
+        class="flex-1 py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
+        @click="onSave"
+      >
+        <font-awesome-icon icon="fa-solid fa-floppy-disk" />
+        Saqlash
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 const keywords = defineModel<string>({ default: '' })
 
-const emit = defineEmits<{ save: [value: string] }>()
+const emit = defineEmits<{ save: [value: string]; cancel: [] }>()
 
 const onSave = () => {
   emit('save', keywords.value)

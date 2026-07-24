@@ -48,14 +48,18 @@
           <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
           <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
         </div>
-        <span
+        <button
           v-if="interestCount > 0"
-          class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-400/30 dark:border-amber-500/25"
+          type="button"
+          data-no-swipe
+          class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-400/30 dark:border-amber-500/25 active:scale-95 transition-transform"
           :title="`${interestCount} kishi qiziqmoqda`"
+          @pointerdown.stop
+          @click.stop="$emit('interest')"
         >
           <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
           {{ interestCount }}
-        </span>
+        </button>
       </div>
 
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
@@ -186,6 +190,7 @@ const emit = defineEmits<{
   unbook: []
   message: []
   call: []
+  interest: []
   'booked-chat': []
   agent: []
   'stop-group': []

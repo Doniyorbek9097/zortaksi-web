@@ -18,6 +18,7 @@
       v-if="showFilter"
       v-model="draftKeywords"
       @save="onSaveFilter"
+      @cancel="onCancelFilter"
     />
 
     <!-- Loading (birinchi yuklash) -->
@@ -47,6 +48,7 @@
           @unbook="onUnbook(order)"
           @message="onMessage(order)"
           @call="onCall(order)"
+          @interest="onInterest(order)"
           @booked-chat="onBookedChat(order)"
           @agent="onAgent(order)"
           @stop-group="onStopGroup(order)"
@@ -156,11 +158,22 @@
       variant="warning"
       @confirm="showActionError = false"
     />
+
+    <!-- Qiziqqanlar ro'yxati -->
+    <OrdersInterestListDialog
+      ref="interestDialog"
+      v-model="showInterestDialog"
+      :users="interestUsers"
+      :count="interestCount"
+      :loading="interestLoading"
+      :current-user-id="authStore.user?.userId"
+      @select="onInterestSelect"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { IOrder } from '~/types'
+import type { IInterestedUser, IOrder } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
@@ -214,6 +227,11 @@ const onSaveFilter = (value: string) => {
   saveOrderFilterKeywords(value)
   showFilter.value = false
   load()
+}
+
+const onCancelFilter = () => {
+  draftKeywords.value = appliedKeywords.value
+  showFilter.value = false
 }
 
 const onRemoveRegion = (chip: string) => {
@@ -387,6 +405,59 @@ const onMessage = async (order: IOrder) => {
 
 const onCall = (order: IOrder) => {
   markOrderInterest(order)
+}
+
+const showInterestDialog = ref(false)
+const interestLoading = ref(false)
+const interestUsers = ref<IInterestedUser[]>([])
+const interestCount = ref(0)
+const interestOrderId = ref<string | null>(null)
+const interestDialog = ref<{ resetOpening: (err?: string) => void; close: () => void } | null>(null)
+
+const onInterest = async (order: IOrder) => {
+  if (!order._id) return
+  interestOrderId.value = order._id
+  showInterestDialog.value = true
+  interestUsers.value = order.interestedUsers || []
+  interestCount.value = Number(order.interestCount || interestUsers.value.length || 0)
+  interestLoading.value = !interestUsers.value.length
+
+  try {
+    const res = await orderStore.fetchInterest(order._id)
+    if (res?.success && res.data) {
+      interestUsers.value = res.data.interestedUsers || []
+      interestCount.value = Number(res.data.interestCount || interestUsers.value.length || 0)
+    }
+  } finally {
+    interestLoading.value = false
+  }
+}
+
+const onInterestSelect = async (user: IInterestedUser) => {
+  try {
+    const res = await chatStore.startChatWithUser(
+      user.userId,
+      interestOrderId.value || undefined,
+    )
+    if (res?.success && res.data?._id) {
+      const name =
+        user.name ||
+        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+        user.username ||
+        'Haydovchi'
+      interestDialog.value?.close()
+      await navigateTo({
+        path: `/driver/chat/${res.data._id}`,
+        query: { name },
+      })
+      return
+    }
+    interestDialog.value?.resetOpening(res?.message || 'Chat ochilmadi')
+  } catch (err: any) {
+    interestDialog.value?.resetOpening(
+      err?.response?.data?.message || err?.message || 'Chat ochilmadi',
+    )
+  }
 }
 
 const onBookedChat = async (order: IOrder) => {

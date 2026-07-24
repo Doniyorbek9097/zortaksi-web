@@ -43,6 +43,7 @@
       v-if="showFilter"
       v-model="draftKeywords"
       @save="onSaveFilter"
+      @cancel="onCancelFilter"
     />
 
     <!-- Tabs: Meniki / Reklama -->
@@ -223,6 +224,11 @@ const onSaveFilter = (value: string) => {
   draftKeywords.value = value
   appliedKeywords.value = value
   saveOrderFilterKeywords(value)
+  showFilter.value = false
+}
+
+const onCancelFilter = () => {
+  draftKeywords.value = appliedKeywords.value
   showFilter.value = false
 }
 
