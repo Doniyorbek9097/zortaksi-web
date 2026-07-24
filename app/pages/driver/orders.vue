@@ -46,6 +46,7 @@
           @book="onBook(order)"
           @unbook="onUnbook(order)"
           @message="onMessage(order)"
+          @call="onCall(order)"
           @booked-chat="onBookedChat(order)"
           @agent="onAgent(order)"
           @stop-group="onStopGroup(order)"
@@ -363,8 +364,14 @@ const onNoMoneyConfirm = () => {
   else showNoMoneyDialog.value = false
 }
 
+const markOrderInterest = (order: IOrder) => {
+  if (!order._id) return
+  void orderStore.markInterest(order._id)
+}
+
 const onMessage = async (order: IOrder) => {
   if (!order._id) return
+  markOrderInterest(order)
   try {
     const res = await chatStore.startChatFromOrder(order._id)
     if (res?.success && res.data?._id) {
@@ -376,6 +383,10 @@ const onMessage = async (order: IOrder) => {
   // Fallback — Telegram profiliga o'tish
   const username = order.sender?.username
   if (username) openLink(`https://t.me/${username}`)
+}
+
+const onCall = (order: IOrder) => {
+  markOrderInterest(order)
 }
 
 const onBookedChat = async (order: IOrder) => {

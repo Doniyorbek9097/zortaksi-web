@@ -44,10 +44,18 @@
       <!-- Sender -->
       <div class="flex items-center gap-3">
         <ProfileAvatar :name="senderName" :src="order.sender?.avatar" :user-id="order.sender?.userId" size="sm" />
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
           <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
         </div>
+        <span
+          v-if="interestCount > 0"
+          class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-400/30 dark:border-amber-500/25"
+          :title="`${interestCount} kishi qiziqmoqda`"
+        >
+          <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
+          {{ interestCount }}
+        </span>
       </div>
 
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
@@ -77,9 +85,12 @@
             <font-awesome-icon icon="fa-solid fa-comments" class="text-sm" />
             Xabar yozish
           </button>
-          <a v-if="callPhone" :href="normalizeTelHref(callPhone)"
+          <a
+            v-if="callPhone"
+            :href="normalizeTelHref(callPhone)"
             class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
-            @click.stop>
+            @click.stop="$emit('call')"
+          >
             <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
             Telefon qilish
           </a>
@@ -174,6 +185,7 @@ const emit = defineEmits<{
   book: []
   unbook: []
   message: []
+  call: []
   'booked-chat': []
   agent: []
   'stop-group': []
@@ -210,6 +222,8 @@ const bookedByName = computed(() => {
 })
 
 const group = computed(() => props.order.group)
+
+const interestCount = computed(() => Math.max(0, Number(props.order.interestCount || 0)))
 
 /** 1) message.text → 2) sender.phone; ikkalasi yo'q → tugma chiqmaydi */
 const callPhone = computed(() => resolveOrderPhone(props.order))

@@ -167,6 +167,24 @@ export const useOrderStore = defineStore('order', () => {
         return response
     }
 
+    /** Xabar yozish / Telefon — qiziqish yozish */
+    const markInterest = async (orderId: string) => {
+        try {
+            const response = await useApi(`/orders/${orderId}/interest`, { method: 'POST' })
+            if (response.success) {
+                const count = Number(response.data?.interestCount)
+                const idx = orders.value.findIndex((o) => o._id === orderId)
+                if (idx !== -1 && Number.isFinite(count)) {
+                    orders.value[idx] = { ...orders.value[idx]!, interestCount: count }
+                }
+            }
+            return response
+        } catch (error) {
+            console.warn('markInterest error:', error)
+            return null
+        }
+    }
+
     return {
         orders,
         currentOrder,
@@ -185,6 +203,7 @@ export const useOrderStore = defineStore('order', () => {
         deleteOrder,
         blockGroup,
         blockSender,
+        markInterest,
         refreshNewCount,
         bumpNewCount,
     }
