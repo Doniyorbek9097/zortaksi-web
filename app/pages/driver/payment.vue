@@ -9,12 +9,19 @@
       >
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
-      <div class="leading-none">
-        <h1 class="text-base font-black text-slate-900 dark:text-white">To'lov</h1>
+      <div class="leading-none flex-1 min-w-0">
+        <h1 class="text-base font-black text-slate-900 dark:text-white">Tarifga ulanish</h1>
         <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
-          Hisobni to'ldiring, keyin tarifni ulang
+          Balansingizdan tarifni faollashtiring
         </p>
       </div>
+      <button
+        type="button"
+        class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95"
+        @click="navigateTo('/driver/topup')"
+      >
+        To'ldirish
+      </button>
     </header>
 
     <!-- Balans -->
@@ -38,77 +45,12 @@
       </span>
     </section>
 
-    <!-- Qadamlar -->
-    <section
-      class="rounded-2xl px-4 py-3.5 bg-sky-50 dark:bg-sky-950/30 border border-sky-200/70 dark:border-sky-800/50 space-y-2"
-    >
-      <p class="text-[11px] font-black uppercase tracking-wider text-sky-600 dark:text-sky-400">
-        Qanday ishlaydi?
-      </p>
-      <ol class="space-y-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-200">
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">1.</span> Kerakli summani yozing va so'rov yuboring</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">2.</span> Admin karta yuboradi — to'lab, chekni yuboring</li>
-        <li class="flex gap-2"><span class="text-sky-500 shrink-0">3.</span> Balans to'ldirilgach, tarifni o'zingiz ulang</li>
-      </ol>
-    </section>
-
-    <!-- Hisobni to'ldirish -->
-    <section
-      ref="topupSection"
-      class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
-    >
-      <div>
-        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-          Hisobni to'ldirish
-        </p>
-        <p class="mt-1 text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          Istagan summani yozing. So'rov faqat adminga ketadi — tarifni keyin o'zingiz ulaysiz.
-        </p>
-      </div>
-
-      <div class="space-y-1">
-        <label class="px-1 text-[11px] font-bold text-slate-400">Summa (so'm)</label>
-        <input
-          v-model="topupText"
-          type="text"
-          inputmode="numeric"
-          placeholder="Masalan: 150000"
-          class="w-full px-3.5 py-3 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-        >
-      </div>
-
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="preset in amountPresets"
-          :key="preset"
-          type="button"
-          class="px-3 py-1.5 rounded-lg text-[12px] font-bold border transition-all"
-          :class="topupAmount === preset
-            ? 'border-sky-500 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
-            : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'"
-          @click="topupText = formatMoney(preset)"
-        >
-          {{ formatMoney(preset) }}
-        </button>
-      </div>
-
-      <button
-        type="button"
-        :disabled="savingTopup || topupAmount <= 0"
-        class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-        @click="sendTopupRequest"
-      >
-        <font-awesome-icon v-if="savingTopup" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
-        Hisobni to'ldirish so'rovi — {{ formatMoney(topupAmount) }} so'm
-      </button>
-    </section>
-
-    <!-- Tarifga ulanish (o'z balansidan) -->
+    <!-- Tariflar -->
     <section class="space-y-3">
       <div class="px-0.5">
-        <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifga ulanish</h2>
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
         <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-          Balansingizdan o'zingiz faollashtirasiz
+          Balans yetarli bo'lsa darhol ulanadi
         </p>
       </div>
 
@@ -170,7 +112,7 @@
         v-if="shortage > 0"
         class="text-center text-[13px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-xl py-2"
       >
-        Balansda yetishmaydi: {{ formatMoney(shortage) }} so'm — avval hisobni to'ldiring
+        Balansda yetishmaydi: {{ formatMoney(shortage) }} so'm
       </p>
       <p
         v-else
@@ -180,8 +122,9 @@
       </p>
 
       <button
+        v-if="shortage <= 0"
         type="button"
-        :disabled="savingBuy || !selectedId || shortage > 0"
+        :disabled="savingBuy || !selectedId"
         class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
         @click="buyTariff"
       >
@@ -190,18 +133,17 @@
       </button>
 
       <button
-        v-if="shortage > 0"
+        v-else
         type="button"
-        class="w-full py-3 rounded-xl text-sm font-black text-sky-600 dark:text-sky-400 border-2 border-sky-400/50 bg-sky-50/50 dark:bg-sky-950/20 active:scale-[0.98] transition-all"
-        @click="fillShortageAndFocus"
+        class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
+        @click="goTopup"
       >
-        {{ formatMoney(shortage) }} so'm to'ldirish so'rovi
+        To'lov qilish so'rovi — {{ formatMoney(shortage) }} so'm
       </button>
     </section>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
 
-    <!-- To'lovlar tarixi -->
     <DriverPaymentHistoryList ref="historyList" :max-items="30" />
   </div>
 </template>
@@ -213,22 +155,13 @@ import { useAuthStore } from '~/stores/auth.store'
 
 definePageMeta({ layout: 'driver' })
 
-const config = useRuntimeConfig()
-const route = useRoute()
 const authStore = useAuthStore()
 const tariffStore = useTariffStore()
 
 const selectedId = ref<string | null>(null)
-const topupText = ref('')
-const savingTopup = ref(false)
 const savingBuy = ref(false)
 const error = ref('')
-const topupSection = ref<HTMLElement | null>(null)
 const historyList = ref<{ load: () => Promise<void> } | null>(null)
-
-const amountPresets = [50000, 100000, 150000, 200000]
-
-const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => !!authStore.user?.active && !!authStore.user?.tariff)
@@ -244,87 +177,23 @@ const shortage = computed(() => {
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
-const parseAmount = (raw: string) => {
-  const n = Number(String(raw).replace(/\s/g, '').replace(/,/g, ''))
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0
-}
-
-const topupAmount = computed(() => parseAmount(topupText.value))
-
 const tariffMeta = (t: TariffRow) => {
   const days = `${t.expireDays} kun`
   if (t.info) return `${days} • ${t.info}`
   return `${days} • ${t.expireDays * 24} soat faol`
 }
 
-const payUserId = computed(() => {
-  const u = authStore.user
-  return String(u?.userId || u?._id || '')
-})
-
-const buildTopupMessage = (amount: number) => {
-  const u = authStore.user
-  const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || 'Haydovchi'
-  const phone = u?.phoneNumber || '—'
-  const sum = formatMoney(amount)
-  const payUrl = `${appURL.value}/admin/pay/${payUserId.value}?amount=${amount}`
-
-  const payload = JSON.stringify({
-    type: 'topup',
-    name,
-    phone,
-    amount: sum,
-    amountRaw: amount,
-    payUrl,
-    userId: payUserId.value,
-    paymentStatus: 'unpaid',
+const goTopup = () => {
+  navigateTo({
+    path: '/driver/topup',
+    query: shortage.value > 0 ? { amount: String(shortage.value) } : undefined,
   })
-
-  return `[[ZT_PAYMENT_REQUEST]]\n${payload}\n[[/ZT_PAYMENT_REQUEST]]`
-}
-
-const sendTopupRequest = async () => {
-  const amount = topupAmount.value
-  if (amount <= 0) {
-    error.value = 'Summani kiriting'
-    return
-  }
-
-  savingTopup.value = true
-  error.value = ''
-  try {
-    const res = await useApi('/me/tariff/request-payment', {
-      method: 'POST',
-      body: { text: buildTopupMessage(amount) },
-      timeout: 30000,
-    })
-    if (res.success && res.data?.chatId) {
-      await navigateTo({
-        path: `/driver/chat/${res.data.chatId}`,
-        query: { name: 'Admin', support: '1' },
-      })
-      return
-    }
-    error.value = res.message || 'To\'ldirish so\'rovi yuborilmadi'
-  } catch (e: any) {
-    error.value = e?.response?.data?.message || e?.message || 'To\'ldirish so\'rovi yuborilmadi'
-  } finally {
-    savingTopup.value = false
-  }
-}
-
-const fillShortageAndFocus = () => {
-  if (shortage.value > 0) {
-    topupText.value = formatMoney(shortage.value)
-  }
-  topupSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 const buyTariff = async () => {
   if (!selected.value) return
   if (shortage.value > 0) {
-    fillShortageAndFocus()
-    error.value = 'Avval hisobni to\'ldiring'
+    goTopup()
     return
   }
 
@@ -347,9 +216,11 @@ const buyTariff = async () => {
     const msg = e?.response?.data?.message
     if (status === 402) {
       const need = Number(e?.response?.data?.data?.shortage || shortage.value || 0)
-      if (need > 0) topupText.value = formatMoney(need)
-      fillShortageAndFocus()
       error.value = msg || 'Balans yetarli emas — hisobni to\'ldiring'
+      await navigateTo({
+        path: '/driver/topup',
+        query: need > 0 ? { amount: String(need) } : undefined,
+      })
     } else {
       error.value = msg || e?.message || 'Tarif ulanmadi'
     }
@@ -369,16 +240,6 @@ onMounted(async () => {
     }
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
-  }
-
-  const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
-  if (Number.isFinite(qAmount) && qAmount > 0) {
-    topupText.value = formatMoney(qAmount)
-  }
-
-  if (String(route.query.mode || '') === 'topup') {
-    await nextTick()
-    topupSection.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 })
 </script>

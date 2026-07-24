@@ -58,6 +58,7 @@ export interface IOrder {
     bookedAt?: string | Date | null;
     bookedByUser?: IBookedByUser | null;
     bookPrice?: number;
+    dedupeKey?: string | null;
     createdAt: string | Date;
     updatedAt: string | Date;
 }

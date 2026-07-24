@@ -4,6 +4,7 @@ import { useOrderStore } from '~/stores/order.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { authCookieOptions } from '~/utils/authCookie'
+import { orderContentKey } from '~/utils/orderDedupe'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
@@ -45,8 +46,13 @@ export default defineNuxtPlugin(() => {
     socket.on('peer:typing', (data) => chatStore.onPeerTyping(data))
     socket.on('order:new', (order) => {
       const list = orderStore.orders
-      const isNew = !list.some((o) => o._id === order._id)
-      if (isNew) {
+      const incomingKey = orderContentKey(order)
+      const isDup = list.some((o) => {
+        if (o._id && order?._id && String(o._id) === String(order._id)) return true
+        const existingKey = orderContentKey(o)
+        return !!incomingKey && !!existingKey && incomingKey === existingKey
+      })
+      if (!isDup) {
         orderStore.orders = [order, ...list]
         orderStore.total = (orderStore.total || 0) + 1
         if ((order?.status || 'new') === 'new') orderStore.bumpNewCount(1)

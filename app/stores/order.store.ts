@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
+import { uniqueOrdersByContent } from '~/utils/orderDedupe'
 
 export interface FetchOrdersParams {
     page?: number
@@ -54,11 +55,10 @@ export const useOrderStore = defineStore('order', () => {
                 params,
             })
             if (response.success) {
-                const list: IOrder[] = response.data.orders ?? []
+                const list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
                 if (opts.append) {
-                    // Yangi orderlar tepaga qo'shilib ketishi mumkin — _id bo'yicha dublikatlarni oldini olamiz
-                    const seen = new Set(orders.value.map((o) => o._id))
-                    orders.value = [...orders.value, ...list.filter((o) => !seen.has(o._id))]
+                    const merged = uniqueOrdersByContent([...orders.value, ...list])
+                    orders.value = merged
                 } else {
                     orders.value = list
                 }

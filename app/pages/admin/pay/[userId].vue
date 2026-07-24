@@ -11,14 +11,17 @@
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
       <div class="leading-none">
-        <h1 class="text-base font-black text-slate-900 dark:text-white">Hisobni to'ldirish</h1>
-        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">Haydovchi balansiga qo'shish</p>
+        <h1 class="text-base font-black text-slate-900 dark:text-white">To'lov qilish</h1>
+        <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
+          Balans + tarif faollashtirish
+        </p>
       </div>
     </header>
 
     <div v-if="loading" class="space-y-3">
       <div class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       <div class="h-40 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+      <div class="h-48 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     </div>
 
     <template v-else-if="driver">
@@ -68,7 +71,7 @@
           Balansga qo'shish
         </p>
         <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          Haydovchi so'ragan summani kiriting. Tarifni haydovchi o'zi balansidan ulaydi.
+          Haydovchi so'ragan summani kiriting (ixtiyoriy — faqat tarif ulash ham mumkin).
         </p>
 
         <div class="space-y-1">
@@ -93,14 +96,102 @@
           @click="addBalanceOnly"
         >
           <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'" :class="saving ? 'animate-spin' : ''" />
-          Balansga qo'shish — {{ formatMoney(creditAmount) }} so'm
+          Faqat balansga qo'shish — {{ formatMoney(creditAmount) }} so'm
         </button>
       </section>
 
-      <p class="text-center text-[11px] font-medium text-slate-400 leading-relaxed px-2">
-        Tarif ulash kerak bo'lsa — Haydovchilar sahifasidagi tarif dialogidan foydalaning.
-        Oddiy holatda haydovchi o'zi ulaydi.
-      </p>
+      <!-- Tarif faollashtirish -->
+      <section
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+      >
+        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          Tarif faollashtirish
+        </p>
+        <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+          Kerakli tarifni tanlang. Istasangiz balansdan narxini yechib, yoki yuqoridagi summa bilan birga ulang.
+        </p>
+
+        <div class="space-y-2">
+          <button
+            v-for="t in tariffs"
+            :key="t.id"
+            type="button"
+            class="w-full flex items-center gap-3 px-3 py-3 rounded-xl border text-left transition-colors"
+            :class="selectedTariffId === t.id
+              ? 'border-violet-500 bg-violet-50 dark:bg-violet-950/30'
+              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'"
+            @click="selectedTariffId = t.id"
+          >
+            <span
+              class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+              :class="selectedTariffId === t.id ? 'border-violet-500' : 'border-slate-300 dark:border-slate-600'"
+            >
+              <span
+                v-if="selectedTariffId === t.id"
+                class="w-2.5 h-2.5 rounded-full bg-violet-500"
+              />
+            </span>
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-black text-slate-900 dark:text-white">{{ t.name }}</span>
+              <span class="text-[11px] font-medium text-slate-400">
+                {{ t.info || `${t.expireDays} kun` }}
+                <template v-if="t.info"> · {{ t.expireDays }} kun</template>
+              </span>
+            </span>
+            <span class="text-sm font-black text-sky-500 shrink-0">
+              {{ formatMoney(t.price) }}
+            </span>
+          </button>
+
+          <p v-if="!tariffs.length" class="py-3 text-center text-[12px] text-slate-400">
+            Avval tarif yarating (Admin → Tariflar)
+          </p>
+        </div>
+
+        <label class="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            v-model="deductTariff"
+            type="checkbox"
+            class="mt-1 w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500"
+          >
+          <span>
+            <span class="block text-sm font-black text-slate-900 dark:text-white">
+              Balansdan tarif narxini yechish
+            </span>
+            <span class="text-[11px] font-medium text-slate-400">
+              Yetarli bo'lmasa ham minusga tushadi
+            </span>
+          </span>
+        </label>
+
+        <div class="grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            :disabled="saving || !selectedTariffId"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
+            @click="attachTariffOnly"
+          >
+            <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-key'" :class="saving ? 'animate-spin' : ''" />
+            Faqat tarifni ulash
+            <template v-if="selectedTariff">
+              — {{ selectedTariff.name }}
+            </template>
+          </button>
+
+          <button
+            type="button"
+            :disabled="saving || !selectedTariffId || creditAmount <= 0"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
+            @click="creditAndAttachTariff"
+          >
+            <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-circle-check'" :class="saving ? 'animate-spin' : ''" />
+            To'lov + tarif ulash
+            <template v-if="creditAmount > 0">
+              ({{ formatMoney(creditAmount) }})
+            </template>
+          </button>
+        </div>
+      </section>
 
       <DriverPaymentHistoryList
         v-if="paymentsApiPath"
@@ -124,10 +215,12 @@
 
 <script setup lang="ts">
 import type { DriverRow } from '~/stores/driver.store'
+import { useTariffStore } from '~/stores/tariff.store'
 
 definePageMeta({ layout: 'admin' })
 
 const route = useRoute()
+const tariffStore = useTariffStore()
 
 const userId = computed(() => decodeURIComponent(String(route.params.userId || '')).trim())
 
@@ -143,6 +236,8 @@ const historyList = ref<{ load: () => Promise<void> } | null>(null)
 
 const driver = ref<(DriverRow & { _id?: string }) | null>(null)
 const amountText = ref('')
+const selectedTariffId = ref<string | null>(null)
+const deductTariff = ref(true)
 const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
@@ -157,6 +252,11 @@ const payAvatarSrc = computed(() =>
     : avatarUrl(driver.value?.avatar, driver.value?.id || userId.value)
 )
 
+const tariffs = computed(() => tariffStore.tariffs)
+const selectedTariff = computed(() =>
+  tariffs.value.find((t) => t.id === selectedTariffId.value) || null
+)
+
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
 const parseAmount = (raw: string) => {
@@ -168,6 +268,8 @@ const creditAmount = computed(() => parseAmount(amountText.value))
 
 const balanceAfterCredit = computed(() => (driver.value?.balance ?? 0) + creditAmount.value)
 
+const requestMessageId = computed(() => String(route.query.messageId || '').trim())
+
 const load = async () => {
   loading.value = true
   error.value = ''
@@ -178,17 +280,27 @@ const load = async () => {
     return
   }
   try {
-    const driverRes = await useApi(payApiPath.value)
+    const [driverRes] = await Promise.all([
+      useApi(payApiPath.value),
+      tariffStore.fetchTariffs().catch(() => null),
+    ])
     if (driverRes?.success) {
       driver.value = driverRes.data
     } else {
       error.value = driverRes?.message || 'Haydovchi topilmadi'
     }
 
+    if (!selectedTariffId.value && tariffs.value.length) {
+      selectedTariffId.value = tariffs.value[0].id
+    }
+
     const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
     if (Number.isFinite(qAmount) && qAmount > 0) {
       amountText.value = formatMoney(qAmount)
     }
+
+    const qTariff = String(route.query.tariffId || '').trim()
+    if (qTariff) selectedTariffId.value = qTariff
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ma\'lumot yuklanmadi'
   } finally {
@@ -202,28 +314,20 @@ const refreshDriver = async () => {
   if (res.success) driver.value = res.data
 }
 
-const requestMessageId = computed(() => String(route.query.messageId || '').trim())
-
-const addBalanceOnly = async () => {
-  if (creditAmount.value <= 0 || !payApiPath.value) return
+const postPay = async (body: Record<string, unknown>, okMessage: string) => {
+  if (!payApiPath.value) return
   saving.value = true
   error.value = ''
   success.value = ''
   try {
-    const body: Record<string, unknown> = {
-      creditAmount: creditAmount.value,
-      attachTariff: false,
+    if (requestMessageId.value && Number(body.creditAmount || 0) > 0) {
+      body.messageId = requestMessageId.value
     }
-    if (requestMessageId.value) body.messageId = requestMessageId.value
-
-    const res = await useApi(payApiPath.value, {
-      method: 'POST',
-      body,
-    })
+    const res = await useApi(payApiPath.value, { method: 'POST', body })
     if (res.success) {
       driver.value = res.data
-      success.value = `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi — To'lov muvaffaqiyatli`
-      amountText.value = ''
+      success.value = okMessage
+      if (Number(body.creditAmount || 0) > 0) amountText.value = ''
       await refreshDriver()
       await historyList.value?.load()
     } else {
@@ -234,6 +338,41 @@ const addBalanceOnly = async () => {
   } finally {
     saving.value = false
   }
+}
+
+const addBalanceOnly = async () => {
+  if (creditAmount.value <= 0) return
+  await postPay(
+    { creditAmount: creditAmount.value, attachTariff: false },
+    `Balansga ${formatMoney(creditAmount.value)} so'm qo'shildi — To'lov muvaffaqiyatli`
+  )
+}
+
+const attachTariffOnly = async () => {
+  if (!selectedTariffId.value) return
+  const name = selectedTariff.value?.name || 'Tarif'
+  await postPay(
+    {
+      attachTariff: true,
+      tariffId: selectedTariffId.value,
+      deductTariff: deductTariff.value,
+    },
+    `${name} faollashtirildi`
+  )
+}
+
+const creditAndAttachTariff = async () => {
+  if (!selectedTariffId.value || creditAmount.value <= 0) return
+  const name = selectedTariff.value?.name || 'Tarif'
+  await postPay(
+    {
+      creditAmount: creditAmount.value,
+      attachTariff: true,
+      tariffId: selectedTariffId.value,
+      deductTariff: deductTariff.value,
+    },
+    `${formatMoney(creditAmount.value)} so'm qo'shildi va ${name} ulandi`
+  )
 }
 
 onMounted(load)
