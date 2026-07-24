@@ -97,8 +97,10 @@
       to="/driver/payment"
       class="block text-center text-[13px] font-bold text-violet-600 dark:text-violet-400 py-2"
     >
-      Tarifga ulanish →
+      ← Tarifga ulanish
     </NuxtLink>
+
+    <DriverPaymentHistoryList ref="historyList" :max-items="30" />
   </div>
 </template>
 

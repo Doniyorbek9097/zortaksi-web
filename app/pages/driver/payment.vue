@@ -12,16 +12,9 @@
       <div class="leading-none flex-1 min-w-0">
         <h1 class="text-base font-black text-slate-900 dark:text-white">Tarifga ulanish</h1>
         <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5">
-          Balansingizdan tarifni faollashtiring
+          Avval tarifni tanlang — balansdan ulanadi
         </p>
       </div>
-      <button
-        type="button"
-        class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95"
-        @click="navigateTo('/driver/topup')"
-      >
-        To'ldirish
-      </button>
     </header>
 
     <!-- Balans -->
@@ -108,43 +101,42 @@
         <p class="text-lg font-black text-sky-500">{{ formatMoney(selected.price) }} <span class="text-sm">so'm</span></p>
       </div>
 
-      <p
-        v-if="shortage > 0"
-        class="text-center text-[13px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-xl py-2"
-      >
-        Balansda yetishmaydi: {{ formatMoney(shortage) }} so'm
-      </p>
-      <p
-        v-else
-        class="text-center text-[13px] font-black text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl py-2"
-      >
-        Balans yetarli — darhol ulash mumkin
-      </p>
+      <!-- Balans yetarli — tarifga ulash -->
+      <template v-if="shortage <= 0">
+        <p class="text-center text-[13px] font-black text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 rounded-xl py-2">
+          Balans yetarli — darhol ulash mumkin
+        </p>
+        <button
+          type="button"
+          :disabled="savingBuy || !selectedId"
+          class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
+          @click="buyTariff"
+        >
+          <font-awesome-icon v-if="savingBuy" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
+          Tarifga ulanish — {{ formatMoney(selected.price) }} so'm
+        </button>
+      </template>
 
-      <button
-        v-if="shortage <= 0"
-        type="button"
-        :disabled="savingBuy || !selectedId"
-        class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-        @click="buyTariff"
-      >
-        <font-awesome-icon v-if="savingBuy" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
-        Tarifga ulanish — {{ formatMoney(selected.price) }} so'm
-      </button>
-
-      <button
-        v-else
-        type="button"
-        class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
-        @click="goTopup"
-      >
-        To'lov qilish so'rovi — {{ formatMoney(shortage) }} so'm
-      </button>
+      <!-- Balans yetmasa — to'lov sahifasiga o'tish -->
+      <template v-else>
+        <p class="text-center text-[13px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-xl py-2">
+          Balansda yetishmaydi: {{ formatMoney(shortage) }} so'm
+        </p>
+        <button
+          type="button"
+          class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
+          @click="goTopup"
+        >
+          To'lov qilish sahifasiga o'tish
+          <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-xs" />
+        </button>
+        <p class="text-center text-[11px] font-medium text-slate-400 dark:text-slate-500">
+          {{ formatMoney(shortage) }} so'm to'ldirish so'rovi yuboriladi
+        </p>
+      </template>
     </section>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
-
-    <DriverPaymentHistoryList ref="historyList" :max-items="30" />
   </div>
 </template>
 
@@ -161,7 +153,6 @@ const tariffStore = useTariffStore()
 const selectedId = ref<string | null>(null)
 const savingBuy = ref(false)
 const error = ref('')
-const historyList = ref<{ load: () => Promise<void> } | null>(null)
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
@@ -206,7 +197,6 @@ const buyTariff = async () => {
     })
     if (res.success) {
       await authStore.getMe()
-      await historyList.value?.load()
       await navigateTo('/driver/dashboard')
     } else {
       error.value = res.message || 'Tarif ulanmadi'
