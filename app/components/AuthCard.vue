@@ -276,8 +276,6 @@ const clearReferral = () => {
   referralRef.value = null
 }
 
-const route = useRoute()
-
 const homeForUser = () => {
   const next = typeof route.query.next === 'string' ? route.query.next : ''
   if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth')) {
