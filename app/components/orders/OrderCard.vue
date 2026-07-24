@@ -53,7 +53,7 @@
           type="button"
           data-no-swipe
           class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-400/30 dark:border-amber-500/25 active:scale-95 transition-transform"
-          :title="`${interestCount} kishi qiziqmoqda`"
+          :title="`${interestCount} kishi mijozga bog'lanishdi`"
           @pointerdown.stop
           @click.stop="$emit('interest')"
         >

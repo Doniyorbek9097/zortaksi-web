@@ -21,7 +21,7 @@
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
-          v-if="orderText"
+          v-if="showOrderBanner"
           class="rounded-2xl px-3.5 py-3 border"
           :class="isDirect
             ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-200/70 dark:border-sky-800/50'
@@ -213,13 +213,17 @@ const orderText = computed(() =>
   String(chatStore.currentChat?.orderText || '').trim()
 )
 
+/** Direct chatda buyurtma matni o'rniga fixed kontekst xabari */
+const showOrderBanner = computed(() => isDirect.value || !!orderText.value)
+
 const orderBannerLabel = computed(() =>
   isDirect.value ? 'Haydovchi' : "Buyurtma e'loni"
 )
 
-const displayOrderText = computed(() =>
-  orderText.value.replace(/^\[Buyurtma\]\s*/i, '').trim() || orderText.value
-)
+const displayOrderText = computed(() => {
+  if (isDirect.value) return "Bu Haydovchi bilan suhbat qurishingiz mumkin"
+  return orderText.value.replace(/^\[Buyurtma\]\s*/i, '').trim() || orderText.value
+})
 
 const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)

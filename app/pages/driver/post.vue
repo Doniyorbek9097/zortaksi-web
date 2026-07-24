@@ -86,10 +86,6 @@
         >
           {{ allFilteredSelected ? 'Bekor' : 'Hammasi' }}
         </button>
-        <span class="text-[11px] font-black text-amber-500">
-          {{ store.tab === 'mine' || store.isAdmin ? 'Bepul' : `${store.pricePerGroup.toLocaleString('ru-RU')} so'm` }}
-          · {{ store.tab === 'mine' ? 'Meniki' : 'Reklama berish' }}
-        </span>
       </div>
     </div>
 
@@ -132,10 +128,18 @@
         </span>
 
         <span class="flex-1 min-w-0">
-          <span class="block text-[13px] font-black text-slate-900 dark:text-white truncate">
-            {{ g.title }}
+          <span class="flex items-center gap-1.5 min-w-0">
+            <span class="text-[13px] font-black text-slate-900 dark:text-white truncate">
+              {{ g.title }}
+            </span>
+            <span
+              v-if="g.isAdmin"
+              class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/35 dark:border-sky-500/35"
+            >
+              Admin
+            </span>
           </span>
-          <span class="text-[11px] font-medium text-slate-400 truncate">
+          <span class="block text-[11px] font-medium text-slate-400 truncate">
             @{{ g.username || '—' }} · {{ g.connections }} ulangan
           </span>
         </span>
@@ -268,8 +272,8 @@ const onSend = async (text: string) => {
     composeOpen.value = false
     const sent = res.data?.sent ?? 0
     const failed = res.data?.failed ?? 0
-    if (failed) success.value = `${sent} ta yuborildi, ${failed} ta xato`
-    else success.value = `${sent} ta guruhga yuborildi`
+    if (failed) success.value = `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
+    else success.value = `${sent} ta guruhga tushdi`
   } catch {
     /* error in store */
   }
