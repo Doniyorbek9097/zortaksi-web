@@ -29,26 +29,37 @@ const chromeColor = computed(() =>
 useHead({
   htmlAttrs: {
     class: computed(() => (theme.value === 'dark' ? 'dark' : '')),
-    style: computed(() => `color-scheme: ${theme.value === 'light' ? 'light' : 'dark'}; background-color: ${chromeColor.value}`),
+    // `only` — OS dark bo'lsa ham app light da pastki system nav bar ochiq qoladi
+    style: computed(() => {
+      const scheme = theme.value === 'light' ? 'only light' : 'only dark'
+      return `color-scheme: ${scheme}; background-color: ${chromeColor.value}`
+    }),
   },
-  meta: [
-    { name: 'theme-color', content: chromeColor },
-    { name: 'color-scheme', content: computed(() => (theme.value === 'light' ? 'light' : 'dark')) },
-    {
-      name: 'apple-mobile-web-app-status-bar-style',
-      content: computed(() => (theme.value === 'dark' ? 'black-translucent' : 'default')),
-    },
-  ],
   bodyAttrs: {
     style: computed(() => `background-color: ${chromeColor.value}`),
   },
 })
 
-watch(theme, (value) => {
-  applyBrowserChrome(value === 'light' ? 'light' : 'dark')
-})
+// theme-color meta faqat applyBrowserChrome orqali (media query + unconditional)
 
-onMounted(() => initTheme())
+watch(
+  theme,
+  (value) => {
+    applyBrowserChrome(value === 'light' ? 'light' : 'dark')
+  },
+  { flush: 'post' },
+)
+
+onMounted(() => {
+  initTheme()
+  // PWA standalone: Nuxt head / manifest dan keyin qayta sync
+  requestAnimationFrame(() => {
+    applyBrowserChrome(theme.value === 'light' ? 'light' : 'dark')
+  })
+  setTimeout(() => {
+    applyBrowserChrome(theme.value === 'light' ? 'light' : 'dark')
+  }, 100)
+})
 </script>
 
 <style>

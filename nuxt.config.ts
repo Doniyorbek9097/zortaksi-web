@@ -23,13 +23,12 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: "Zo'r Taksi",
+      viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
       meta: [
-        // Runtime theme syncs these via useTheme / app.vue (light: slate-50, dark: slate-950)
-        { name: 'theme-color', content: '#020617' },
-        { name: 'color-scheme', content: 'dark' },
+        // theme-color / color-scheme — runtime useTheme (OS dark + app light bottom nav)
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
-        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'ZorTaksi' },
         { name: 'description', content: "ZorTaksi — Telegram buyurtmalari va haydovchi paneli" },
       ],

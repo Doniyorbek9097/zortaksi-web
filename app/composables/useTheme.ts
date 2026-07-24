@@ -13,31 +13,48 @@ type TgWebApp = {
   setBottomBarColor?: (color: string) => void
 }
 
-function upsertMeta(name: string, content: string) {
+function removeMetaAll(name: string) {
   if (!import.meta.client) return
-  let el = document.querySelector(`meta[name="${name}"]`) as HTMLMetaElement | null
-  if (!el) {
-    el = document.createElement('meta')
-    el.setAttribute('name', name)
-    document.head.appendChild(el)
-  }
-  el.setAttribute('content', content)
+  document.querySelectorAll(`meta[name="${name}"]`).forEach((el) => el.remove())
 }
 
-/** Status bar, navigation bar, iOS / Telegram chrome */
+function appendMeta(name: string, content: string, media?: string) {
+  if (!import.meta.client) return
+  const el = document.createElement('meta')
+  el.setAttribute('name', name)
+  el.setAttribute('content', content)
+  if (media) el.setAttribute('media', media)
+  document.head.appendChild(el)
+}
+
+/**
+ * Status / bottom navigation bar (Android PWA).
+ * Telefon dark rejimda bo'lsa ham app light bo'lsa — pastki nav bar ochiq bo'lishi uchun
+ * theme-color ikkala prefers-color-scheme ga ham APP rangida yoziladi.
+ */
 export function applyBrowserChrome(value: ThemeName) {
   if (!import.meta.client) return
 
   const color = THEME_CHROME[value]
   const root = document.documentElement
 
-  root.style.colorScheme = value
+  // `only` — brauzer OS dark rejimiga qarab chrome ni majburan dark qilmasin
+  root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
-  upsertMeta('theme-color', color)
-  upsertMeta('color-scheme', value)
-  upsertMeta(
+  removeMetaAll('theme-color')
+  removeMetaAll('color-scheme')
+  removeMetaAll('apple-mobile-web-app-status-bar-style')
+
+  // OS light/dark qaysi bo'lsa ham — content = app theme (bottom nav shu rangga o'tadi)
+  appendMeta('theme-color', color, '(prefers-color-scheme: light)')
+  appendMeta('theme-color', color, '(prefers-color-scheme: dark)')
+  // Ba'zi WebView lar media'sizni oladi
+  appendMeta('theme-color', color)
+
+  appendMeta('color-scheme', value === 'light' ? 'light' : 'dark')
+  appendMeta(
     'apple-mobile-web-app-status-bar-style',
     value === 'dark' ? 'black-translucent' : 'default',
   )
@@ -54,8 +71,6 @@ export function applyBrowserChrome(value: ThemeName) {
 
 export const useTheme = () => {
   // Cookie orqali saqlaymiz — SSR ham, klient ham bir xil qiymatni ko'radi.
-  // Bu <html> ga `dark` klassini server tomonda ham qo'yish imkonini beradi
-  // (flash yo'q) va mavzu almashtirish har doim ishlaydi.
   const theme = useCookie<ThemeName>('zt-theme', {
     default: () => 'dark',
     maxAge: 60 * 60 * 24 * 365,
@@ -71,11 +86,6 @@ export const useTheme = () => {
 
   const toggleTheme = () => setTheme(theme.value === 'dark' ? 'light' : 'dark')
 
-  /**
-   * Faqat foydalanuvchi hali mavzuni tanlamagan bo'lsa (cookie yo'q) —
-   * Telegram WebApp yoki qurilma tizim sozlamasiga qarab boshlang'ich
-   * mavzuni aniqlaydi. Aks holda saqlangan tanlovga tegmaydi.
-   */
   const initTheme = () => {
     if (!import.meta.client) return
 

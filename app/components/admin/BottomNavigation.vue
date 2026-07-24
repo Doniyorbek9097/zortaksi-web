@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-950/90 backdrop-blur-lg"
+    class="fixed bottom-0 inset-x-0 z-40 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 pb-[env(safe-area-inset-bottom)]"
   >
     <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-2">
       <ul class="flex items-stretch justify-between">
