@@ -11,7 +11,11 @@
       <div class="flex items-center gap-1 shrink-0">
         <button
           type="button"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900"
+          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all active:scale-95 border"
+          :class="showFilter || filterActive
+            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-400/50 dark:border-indigo-500/50'
+            : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+          @click="showFilter = !showFilter"
         >
           <font-awesome-icon icon="fa-solid fa-filter" class="text-[10px]" />
           Filtrlash
@@ -29,6 +33,12 @@
         </button>
       </div>
     </header>
+
+    <OrdersFilterPanel
+      v-if="showFilter"
+      v-model="draftKeywords"
+      @save="onSaveFilter"
+    />
 
     <!-- Tabs: Meniki / Reklama -->
     <div class="flex gap-2">
@@ -184,6 +194,11 @@
 <script setup lang="ts">
 import { usePostStore } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
+import {
+  loadOrderFilterKeywords,
+  matchesKeywords,
+  saveOrderFilterKeywords,
+} from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
 
@@ -193,10 +208,25 @@ const authStore = useAuthStore()
 const composeOpen = ref(false)
 const success = ref('')
 const filterFreeOnly = ref(false)
+const showFilter = ref(false)
+const draftKeywords = ref('')
+const appliedKeywords = ref('')
+const filterActive = computed(() => !!appliedKeywords.value.trim())
+
+const onSaveFilter = (value: string) => {
+  draftKeywords.value = value
+  appliedKeywords.value = value
+  saveOrderFilterKeywords(value)
+}
 
 const filtered = computed(() => {
   let list = store.groups
   if (filterFreeOnly.value) list = list.filter(g => g.free)
+  if (appliedKeywords.value.trim()) {
+    list = list.filter(g =>
+      matchesKeywords([g.title, g.username], appliedKeywords.value),
+    )
+  }
   return list
 })
 
@@ -230,6 +260,10 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(async () => {
+  const saved = loadOrderFilterKeywords()
+  draftKeywords.value = saved
+  appliedKeywords.value = saved
+
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }
   }

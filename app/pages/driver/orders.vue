@@ -1,19 +1,27 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
     <!-- Header -->
-    <OrdersHeader :count="orderStore.total" :active="showFilter" @toggle="showFilter = !showFilter" />
+    <OrdersHeader
+      :count="orderStore.total"
+      :active="showFilter || filterActive"
+      @toggle="showFilter = !showFilter"
+    />
 
     <!-- Filter panel -->
-    <OrdersFilterPanel v-if="showFilter" v-model:keyword="keyword" v-model:text="text" />
+    <OrdersFilterPanel
+      v-if="showFilter"
+      v-model="draftKeywords"
+      @save="onSaveFilter"
+    />
 
     <!-- Loading (birinchi yuklash) -->
-    <div v-if="orderStore.isLoading && !orderStore.orders.length" class="pt-2">
+    <div v-if="orderStore.isLoading && !displayOrders.length" class="pt-2">
       <OrdersOrderCardSkeleton />
     </div>
 
     <!-- Empty -->
     <BaseEmptyState
-      v-else-if="!orderStore.orders.length"
+      v-else-if="!displayOrders.length"
       icon="fa-solid fa-clipboard-list"
       title="Buyurtma topilmadi"
     />
@@ -22,7 +30,7 @@
     <div v-else class="space-y-6 pt-2">
       <TransitionGroup name="order-drop" tag="div" class="space-y-6">
         <OrdersOrderCard
-          v-for="order in orderStore.orders"
+          v-for="order in displayOrders"
           :key="order._id"
           :order="order"
           :role="role"
@@ -48,7 +56,7 @@
 
       <!-- Oxiri -->
       <p
-        v-else-if="!orderStore.hasMore && orderStore.orders.length"
+        v-else-if="!orderStore.hasMore && displayOrders.length"
         class="py-4 text-center text-[12px] font-medium text-slate-400 dark:text-slate-600"
       >
         Barcha buyurtmalar ko'rsatildi
@@ -149,6 +157,11 @@ import type { IOrder } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
+import {
+  loadOrderFilterKeywords,
+  matchesKeywords,
+  saveOrderFilterKeywords,
+} from '~/utils/orderFilterKeywords'
 
 definePageMeta({
   layout: 'driver',
@@ -162,31 +175,43 @@ const chatStore = useChatStore()
 const role = computed(() => authStore.user?.role)
 const active = computed(() => authStore.tariffActive)
 
-// --- Filtr holati ---
+// --- Filtr holati (localStorage) ---
 const showFilter = ref(false)
-const keyword = ref('')
-const text = ref('')
+const draftKeywords = ref('')
+const appliedKeywords = ref('')
+const filterActive = computed(() => !!appliedKeywords.value.trim())
 
 const LIMIT = 10
 
 const queryParams = () => ({
   limit: LIMIT,
-  search: keyword.value.trim() || undefined,
-  text: text.value.trim() || undefined,
+  search: appliedKeywords.value.trim() || undefined,
 })
+
+// Socket orqali kelgan buyurtmalarni ham filter bo'yicha kesish
+const displayOrders = computed(() => {
+  const list = orderStore.orders
+  if (!appliedKeywords.value.trim()) return list
+  return list.filter((o: any) =>
+    matchesKeywords(
+      [o?.group?.title, o?.group?.username, o?.message?.text],
+      appliedKeywords.value,
+    ),
+  )
+})
+
+const onSaveFilter = (value: string) => {
+  draftKeywords.value = value
+  appliedKeywords.value = value
+  saveOrderFilterKeywords(value)
+  load()
+}
 
 // Birinchi sahifa (ro'yxatni almashtiradi)
 const load = () => orderStore.fetchOrders({ page: 1, ...queryParams() })
 
 // Keyingi sahifa (ro'yxatga qo'shadi)
 const loadMore = () => orderStore.loadMore(queryParams())
-
-// Filtrlar o'zgarsa — debounce bilan qayta yuklash (1-sahifadan)
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
-watch([keyword, text], () => {
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(load, 400)
-})
 
 // "LIVE" tuyg'usi uchun yengil polling — faqat 1-sahifada (pagination'ni buzmasligi uchun)
 let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -196,6 +221,9 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
+  const saved = loadOrderFilterKeywords()
+  draftKeywords.value = saved
+  appliedKeywords.value = saved
   load()
   pollTimer = setInterval(() => {
     // Foydalanuvchi keyingi sahifalarni yuklagan bo'lsa — avtomatik reset qilmaymiz
@@ -217,7 +245,6 @@ watch(sentinel, (el) => {
 })
 
 onBeforeUnmount(() => {
-  if (debounceTimer) clearTimeout(debounceTimer)
   if (pollTimer) clearInterval(pollTimer)
   if (observer) observer.disconnect()
 })
