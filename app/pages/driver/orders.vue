@@ -7,6 +7,12 @@
       @toggle="showFilter = !showFilter"
     />
 
+    <!-- Tanlangan hududlar -->
+    <OrdersRegionChips
+      :keywords="appliedKeywords"
+      @remove="onRemoveRegion"
+    />
+
     <!-- Filter panel -->
     <OrdersFilterPanel
       v-if="showFilter"
@@ -160,6 +166,7 @@ import { useChatStore } from '~/stores/chat.store'
 import {
   loadOrderFilterKeywords,
   matchesKeywords,
+  parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
 
@@ -204,7 +211,15 @@ const onSaveFilter = (value: string) => {
   draftKeywords.value = value
   appliedKeywords.value = value
   saveOrderFilterKeywords(value)
+  showFilter.value = false
   load()
+}
+
+const onRemoveRegion = (chip: string) => {
+  const next = parseKeywords(appliedKeywords.value)
+    .filter((k) => k !== chip)
+    .join(', ')
+  onSaveFilter(next)
 }
 
 // Birinchi sahifa (ro'yxatni almashtiradi)

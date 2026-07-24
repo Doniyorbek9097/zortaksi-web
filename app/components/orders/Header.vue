@@ -20,8 +20,8 @@
         : 'bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-800'"
       @click="$emit('toggle')"
     >
-      <font-awesome-icon icon="fa-solid fa-filter" />
-      Filtrlash
+      <font-awesome-icon icon="fa-solid fa-location-dot" />
+      Hudud belgilash
     </button>
   </header>
 </template>

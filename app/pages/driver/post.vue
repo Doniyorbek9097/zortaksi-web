@@ -5,7 +5,7 @@
       <div class="min-w-0 leading-none">
         <h1 class="text-base font-black text-slate-900 dark:text-white">E'lon joylash</h1>
         <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
-          Kalit so'zlar Buyurtmalar bilan umumiy
+          Hududlar Buyurtmalar bilan umumiy
         </p>
       </div>
       <div class="flex items-center gap-1 shrink-0">
@@ -17,8 +17,8 @@
             : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
           @click="showFilter = !showFilter"
         >
-          <font-awesome-icon icon="fa-solid fa-filter" class="text-[10px]" />
-          Filtrlash
+          <font-awesome-icon icon="fa-solid fa-location-dot" class="text-[10px]" />
+          Hudud belgilash
         </button>
         <button
           type="button"
@@ -33,6 +33,11 @@
         </button>
       </div>
     </header>
+
+    <OrdersRegionChips
+      :keywords="appliedKeywords"
+      @remove="onRemoveRegion"
+    />
 
     <OrdersFilterPanel
       v-if="showFilter"
@@ -197,6 +202,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
   matchesKeywords,
+  parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
 
@@ -217,6 +223,14 @@ const onSaveFilter = (value: string) => {
   draftKeywords.value = value
   appliedKeywords.value = value
   saveOrderFilterKeywords(value)
+  showFilter.value = false
+}
+
+const onRemoveRegion = (chip: string) => {
+  const next = parseKeywords(appliedKeywords.value)
+    .filter((k) => k !== chip)
+    .join(', ')
+  onSaveFilter(next)
 }
 
 const filtered = computed(() => {
