@@ -24,7 +24,7 @@
 </template>
 
 <script setup lang="ts">
-type Color = 'amber' | 'emerald' | 'sky' | 'violet' | 'slate'
+type Color = 'amber' | 'emerald' | 'sky' | 'violet' | 'slate' | 'red'
 
 interface Props {
   icon: string
@@ -47,6 +47,7 @@ const colorMap: Record<Color, string> = {
   sky: 'bg-sky-500/10 text-sky-500',
   violet: 'bg-violet-500/10 text-violet-500',
   slate: 'bg-slate-500/10 text-slate-500 dark:text-slate-400',
+  red: 'bg-red-500/10 text-red-500',
 }
 
 const iconClass = computed(() => colorMap[props.color])

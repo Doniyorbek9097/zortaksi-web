@@ -110,6 +110,24 @@
           clickable
           @click="onContactAdmin"
         />
+
+        <ProfileSettingRow
+          icon="fa-solid fa-shield-alt"
+          title="Maxfiylik siyosati"
+          subtitle="Ma'lumotlaringiz qanday ishlatiladi"
+          color="violet"
+          clickable
+          @click="navigateTo('/privacy')"
+        />
+
+        <ProfileSettingRow
+          icon="fa-solid fa-trash"
+          title="Hisobni butunlay o'chirish"
+          subtitle="Barcha ma'lumotlar o'chiriladi"
+          color="red"
+          clickable
+          @click="navigateTo('/delete-account')"
+        />
       </div>
     </ProfileSectionCard>
 

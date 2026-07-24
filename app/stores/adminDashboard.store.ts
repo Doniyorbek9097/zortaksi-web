@@ -26,6 +26,18 @@ export interface AdminDashboardData {
     visitsToday: number
     yearIncome: number
     activeDrivers: number
+    ordersToday?: number
+    ordersLastHour?: number
+    ordersTotal?: number
+    tariffsCount?: number
+  }
+  platform?: {
+    ordersToday: number
+    ordersLastHour: number
+    ordersTotal: number
+    totalDrivers: number
+    activeDrivers: number
+    tariffsCount: number
   }
   incomeDetails: DataRow[]
   tariffSplit: DataRow[]

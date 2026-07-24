@@ -105,8 +105,11 @@
             @click.stop="$emit('booked-chat')"
           >
             <span class="inline-flex items-center gap-2 min-w-0">
-              <font-awesome-icon icon="fa-solid fa-user" class="text-sm text-emerald-500 shrink-0" />
-              <span class="truncate">{{ bookedByName }}</span>
+              <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm text-emerald-500 shrink-0" />
+              <span class="truncate">
+                <span class="text-emerald-600 dark:text-emerald-400">Band qildi</span>
+                · {{ bookedByName }}
+              </span>
             </span>
             <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-sm text-slate-400 shrink-0" />
           </button>

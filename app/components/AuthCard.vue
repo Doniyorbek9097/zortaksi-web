@@ -276,8 +276,15 @@ const clearReferral = () => {
   referralRef.value = null
 }
 
-const homeForUser = () =>
-  authStore.user?.role === 'admin' ? '/admin/dashboard' : '/driver/dashboard'
+const route = useRoute()
+
+const homeForUser = () => {
+  const next = typeof route.query.next === 'string' ? route.query.next : ''
+  if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth')) {
+    return next
+  }
+  return authStore.user?.role === 'admin' ? '/admin/dashboard' : '/driver/dashboard'
+}
 
 const handleSendCode = async () => {
   if (authStore.isLoading || !isPhoneValid.value) return

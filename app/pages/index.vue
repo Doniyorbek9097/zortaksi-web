@@ -160,8 +160,16 @@
         </div>
       </section>
   
-      <footer class="py-8 text-center text-xs border-t text-neutral-400 border-neutral-200 dark:text-neutral-500 dark:border-neutral-800">
-        ZorTaksi © {{ new Date().getFullYear() }}
+      <footer class="py-8 text-center text-xs border-t text-neutral-400 border-neutral-200 dark:text-neutral-500 dark:border-neutral-800 space-y-2">
+        <div class="flex items-center justify-center gap-4">
+          <NuxtLink to="/privacy" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            Maxfiylik siyosati
+          </NuxtLink>
+          <NuxtLink to="/delete-account" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+            Hisobni o'chirish
+          </NuxtLink>
+        </div>
+        <p>ZorTaksi © {{ new Date().getFullYear() }}</p>
       </footer>
     </div>
   </template>

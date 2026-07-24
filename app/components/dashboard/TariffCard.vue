@@ -36,10 +36,15 @@
     <!-- Live remaining time (active only) -->
     <div v-if="active && hasDeadline" class="mt-4 space-y-3">
       <div class="flex items-center justify-between gap-2">
-        <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-          Qolgan vaqt
-        </p>
-        <p class="text-[11px] font-black text-slate-700 dark:text-slate-200">
+        <div class="min-w-0">
+          <p class="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+            Qolgan vaqt
+          </p>
+          <p v-if="startDate && startDate !== '—'" class="mt-0.5 text-[11px] font-semibold text-slate-400 dark:text-slate-500">
+            Ulangan: {{ startDate }}
+          </p>
+        </div>
+        <p class="text-[11px] font-black text-slate-700 dark:text-slate-200 shrink-0">
           {{ remainingLabel }}
         </p>
       </div>

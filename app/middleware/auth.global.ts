@@ -28,7 +28,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const homePath = isAdmin ? '/admin/dashboard' : '/driver/dashboard'
 
     // Login qilgan foydalanuvchini landing/auth'dan o'z dashboardiga yo'naltirish
+    // /auth?next=/delete-account — maxsus yo'nalish (Play Console hisob o'chirish)
     if (token.value && authStore.user && (to.path === '/' || to.path === '/auth' || to.path === '/login' || to.path === '/register')) {
+        if (to.path === '/auth') {
+            const next = typeof to.query.next === 'string' ? to.query.next : ''
+            if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth')) {
+                return navigateTo(next)
+            }
+        }
         return navigateTo(homePath)
     }
 

@@ -175,10 +175,28 @@ const keyStats = computed(() => {
   const s = store.data?.keyStats
   return [
     {
+      value: s?.ordersToday ?? 0,
+      label: 'Bugungi buyurtmalar',
+      icon: 'fa-solid fa-clipboard-list',
+      tone: 'blue' as const,
+    },
+    {
+      value: s?.ordersLastHour ?? 0,
+      label: "So'nggi 1 soat",
+      icon: 'fa-solid fa-bolt',
+      tone: 'amber' as const,
+    },
+    {
       value: s?.totalDrivers ?? 0,
       label: 'Jami haydovchilar',
       icon: 'fa-solid fa-users',
       tone: 'violet' as const,
+    },
+    {
+      value: s?.activeDrivers ?? 0,
+      label: 'Faol haydovchilar',
+      icon: 'fa-solid fa-user-check',
+      tone: 'green' as const,
     },
     {
       value: s?.newDrivers ?? 0,
@@ -191,6 +209,12 @@ const keyStats = computed(() => {
       label: 'Bugungi tashrif',
       icon: 'fa-solid fa-eye',
       tone: 'blue' as const,
+    },
+    {
+      value: s?.tariffsCount ?? 0,
+      label: 'Tariflar soni',
+      icon: 'fa-solid fa-tags',
+      tone: 'violet' as const,
     },
     {
       value: s?.yearIncome ?? 0,

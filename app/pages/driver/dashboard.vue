@@ -40,7 +40,14 @@
       <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
         Platforma statistikasi
       </h3>
-      <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+      <div v-if="statsLoading && !statsReady" class="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div
+          v-for="n in 6"
+          :key="n"
+          class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        />
+      </div>
+      <div v-else class="grid grid-cols-2 gap-2.5 sm:gap-3">
         <DashboardStatCard
           v-for="stat in stats"
           :key="stat.label"
@@ -90,18 +97,39 @@ const formatDate = (value?: string | Date) => {
   return `${dd}/${mm}/${yyyy}`
 }
 
-const tariff = computed(() => ({
-  name: authStore.user?.tariff?.name || 'Kunlik sinov',
-  info: authStore.user?.tariff?.info || '1 - martalik sinov tarifi',
-  price: authStore.user?.tariff?.price ?? 5000,
-  expireDays: authStore.user?.tariff?.expireDays ?? 1,
-  startDate: formatDate(authStore.user?.startedAt),
-  endDate: formatDate(authStore.user?.tariffExpireAt),
-  startedAt: authStore.user?.startedAt ?? null,
-  expireAt: authStore.user?.tariffExpireAt ?? null,
-}))
+const resolveStartedAt = () => {
+  const raw = authStore.user?.startedAt
+  if (raw) {
+    const d = new Date(raw)
+    if (!Number.isNaN(d.getTime())) return d
+  }
+  // Eski hisoblar: startedAt yo'q — tugash − expireDays
+  const end = authStore.user?.tariffExpireAt
+  const days = Number(authStore.user?.tariff?.expireDays || 0)
+  if (end && days > 0) {
+    const e = new Date(end)
+    if (!Number.isNaN(e.getTime())) {
+      return new Date(e.getTime() - days * 24 * 60 * 60 * 1000)
+    }
+  }
+  return null
+}
 
-// --- Platform statistics ---
+const tariff = computed(() => {
+  const startedAt = resolveStartedAt()
+  return {
+    name: authStore.user?.tariff?.name || 'Kunlik sinov',
+    info: authStore.user?.tariff?.info || '1 - martalik sinov tarifi',
+    price: authStore.user?.tariff?.price ?? 5000,
+    expireDays: authStore.user?.tariff?.expireDays ?? 1,
+    startDate: formatDate(startedAt ?? undefined),
+    endDate: formatDate(authStore.user?.tariffExpireAt),
+    startedAt,
+    expireAt: authStore.user?.tariffExpireAt ?? null,
+  }
+})
+
+// --- Platform statistics (backend) ---
 type StatColor = 'blue' | 'amber' | 'green' | 'violet' | 'emerald' | 'pink'
 interface Stat {
   value: number
@@ -110,14 +138,77 @@ interface Stat {
   color: StatColor
 }
 
-const stats = ref<Stat[]>([
-  { value: 205, label: 'Bugungi buyurtmalar', icon: 'fa-solid fa-clipboard-list', color: 'blue' },
-  { value: 71, label: "So'nggi 1 soat", icon: 'fa-solid fa-bolt', color: 'amber' },
-  { value: 1787, label: 'Jami buyurtmalar', icon: 'fa-solid fa-chart-line', color: 'green' },
-  { value: 50, label: 'Jami Haydovchilar', icon: 'fa-solid fa-users', color: 'violet' },
-  { value: 9, label: 'Faol Haydovchilar', icon: 'fa-solid fa-user-check', color: 'emerald' },
-  { value: 2, label: 'Tariflar soni', icon: 'fa-solid fa-tags', color: 'pink' },
+const platform = ref({
+  ordersToday: 0,
+  ordersLastHour: 0,
+  ordersTotal: 0,
+  totalDrivers: 0,
+  activeDrivers: 0,
+  tariffsCount: 0,
+})
+const statsLoading = ref(false)
+const statsReady = ref(false)
+
+const stats = computed<Stat[]>(() => [
+  {
+    value: platform.value.ordersToday,
+    label: 'Bugungi buyurtmalar',
+    icon: 'fa-solid fa-clipboard-list',
+    color: 'blue',
+  },
+  {
+    value: platform.value.ordersLastHour,
+    label: "So'nggi 1 soat",
+    icon: 'fa-solid fa-bolt',
+    color: 'amber',
+  },
+  {
+    value: platform.value.ordersTotal,
+    label: 'Jami buyurtmalar',
+    icon: 'fa-solid fa-chart-line',
+    color: 'green',
+  },
+  {
+    value: platform.value.totalDrivers,
+    label: 'Jami Haydovchilar',
+    icon: 'fa-solid fa-users',
+    color: 'violet',
+  },
+  {
+    value: platform.value.activeDrivers,
+    label: 'Faol Haydovchilar',
+    icon: 'fa-solid fa-user-check',
+    color: 'emerald',
+  },
+  {
+    value: platform.value.tariffsCount,
+    label: 'Tariflar soni',
+    icon: 'fa-solid fa-tags',
+    color: 'pink',
+  },
 ])
+
+const fetchPlatformStats = async () => {
+  try {
+    statsLoading.value = true
+    const res = await useApi('/dashboard/stats')
+    if (res?.success && res.data) {
+      platform.value = {
+        ordersToday: Number(res.data.ordersToday || 0),
+        ordersLastHour: Number(res.data.ordersLastHour || 0),
+        ordersTotal: Number(res.data.ordersTotal || 0),
+        totalDrivers: Number(res.data.totalDrivers || 0),
+        activeDrivers: Number(res.data.activeDrivers || 0),
+        tariffsCount: Number(res.data.tariffsCount || 0),
+      }
+      statsReady.value = true
+    }
+  } catch (e) {
+    console.warn('[Dashboard] stats:', e)
+  } finally {
+    statsLoading.value = false
+  }
+}
 
 // --- Actions ---
 const onBonus = () => {
@@ -127,4 +218,8 @@ const onBonus = () => {
 const onBuyTariff = () => {
   navigateTo('/driver/payment')
 }
+
+onMounted(() => {
+  fetchPlatformStats()
+})
 </script>
