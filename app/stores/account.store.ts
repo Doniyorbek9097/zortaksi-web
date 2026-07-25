@@ -300,7 +300,12 @@ export const useAccountStore = defineStore('account', () => {
       auth.sessionReady = true
       reconnectSocket()
 
+      // Hard navigation — cookie brauzerga yozilgach toza yuklash (refresh flash yo'q)
       const dest = homeForUser(auth.user)
+      if (import.meta.client) {
+        window.location.assign(dest)
+        return true
+      }
       await navigateTo(dest, { replace: true })
       return true
     } catch (e: any) {

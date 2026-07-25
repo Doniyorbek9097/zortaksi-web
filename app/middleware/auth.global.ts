@@ -5,6 +5,7 @@ import {
     readActiveUserId,
     resolveAuthToken,
     syncSelectedAccountToCookie,
+    writeActiveSession,
     writeAuthCookie,
 } from '~/utils/activeAccount'
 import {
@@ -38,8 +39,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const authStore = useAuthStore()
 
     /**
-     * SSR: user yuklanmaydi — cookie oxirgi hisob bo'lishi mumkin,
-     * LS dagi tanlangan hisobni server bilmaydi. Noto'g'ri profil flash bo'lmasin.
+     * SSR: user yo'q, sessionReady=false — SessionGate loading.
+     * Cookie dagi "oxirgi" hisob HTML ga tushmasin.
      */
     if (import.meta.server) {
         authStore.user = null
@@ -48,18 +49,18 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (!token.value && isProtectedPath(to.path)) {
             return navigateTo('/auth')
         }
-        // Token bor — shell ni client yuklaydi (to'g'ri hisob bilan)
         return
     }
 
     // ——— CLIENT ———
+    // Har navigatsiyada ready=false — redirect tugaguncha loading
+    authStore.sessionReady = false
 
-    // Tanlangan hisob (LS) → cookie (refresh uchun ham)
     syncSelectedAccountToCookie((t) => {
         token.value = t
     })
 
-    const resolved = resolveAuthToken(token.value)
+    let resolved = resolveAuthToken(token.value)
     if (resolved && token.value !== resolved) {
         writeAuthCookie(resolved)
         token.value = resolved
@@ -68,11 +69,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const authToken = () => resolveAuthToken(token.value)
     const hasToken = () => !!authToken()
 
+    const markReady = () => {
+        authStore.sessionReady = true
+    }
+
     const clearSession = () => {
         token.value = null
         authStore.user = null
         clearActiveAuth()
-        authStore.sessionReady = true
+        markReady()
     }
 
     if (to.path === '/auth' && (to.query.switch === '1' || to.query.switch === 'true')) {
@@ -84,7 +89,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     if (!hasToken()) {
         authStore.user = null
-        authStore.sessionReady = true
+        markReady()
         if (isProtectedPath(to.path)) {
             return navigateTo('/auth')
         }
@@ -120,29 +125,31 @@ export default defineNuxtRouteMiddleware(async (to) => {
                 return
             }
             if (isProtectedPath(to.path) && !authStore.user) {
-                authStore.sessionReady = true
+                markReady()
                 return navigateTo('/auth')
             }
         }
     }
-
-    authStore.sessionReady = true
 
     if (!authStore.user) {
         if (isProtectedPath(to.path)) {
             clearSession()
             return navigateTo('/auth')
         }
+        markReady()
         return
     }
 
-    // Cookie ni tanlangan hisob bilan qayta yozish (keyingi refresh SSR to'g'ri)
+    // Tanlangan hisobni cookie + LS ga qayta yozish (refresh barqaror)
     const t = authToken()
     if (t && authStore.user.userId) {
+        const uid = String(authStore.user.userId)
+        writeActiveSession(uid, t)
         writeAuthCookie(t)
         token.value = t
     }
 
+    // Redirectlar — sessionReady hali false (loading), keyin yangi sahifada true
     if (isAuthEntryPath(to.path)) {
         if (to.path === '/auth') {
             const next = resolveSafeNextPath(to.query.next, authStore.user)
@@ -155,7 +162,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo(resolveHomePath(authStore.user))
     }
 
+    // Admin tanlangan, lekin URL driver dashboard — avval admin home (flash yo'q)
     if (isAdminUser(authStore.user) && to.path === '/driver/dashboard') {
         return navigateTo('/admin/dashboard')
     }
+
+    // Driver tanlangan, lekin URL admin — driver home
+    if (!isAdminUser(authStore.user) && to.path.startsWith('/admin')) {
+        return navigateTo('/driver/dashboard')
+    }
+
+    // Shu sahifada qolamiz — endi UI ochilsin
+    markReady()
 })

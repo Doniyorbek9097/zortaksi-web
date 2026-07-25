@@ -1,5 +1,8 @@
 <template>
-  <div v-if="!ready" class="session-gate min-h-[100dvh] flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+  <div
+    v-if="!ready"
+    class="session-gate fixed inset-0 z-[100] flex items-center justify-center bg-slate-50 dark:bg-slate-950"
+  >
     <div class="flex flex-col items-center gap-3 text-slate-500 dark:text-slate-400">
       <font-awesome-icon icon="fa-solid fa-spinner" class="text-2xl animate-spin text-sky-500" />
       <span class="text-xs font-semibold tracking-wide">Yuklanmoqda…</span>
@@ -13,9 +16,6 @@ import { useAuthStore } from '~/stores/auth.store'
 
 const authStore = useAuthStore()
 
-/** SSR da ready=false — noto'g'ri hisob HTML ga tushmasin */
-const ready = computed(() => {
-  if (import.meta.server) return false
-  return authStore.sessionReady
-})
+/** Faqat client + sessionReady — SSR/noto'g'ri hisob hech qachon ko'rinmasin */
+const ready = computed(() => import.meta.client && authStore.sessionReady)
 </script>
