@@ -87,6 +87,7 @@
             alt="Rasm"
             class="max-w-[260px] max-h-[320px] w-full object-cover rounded-xl"
             loading="eager"
+            @error="onImageError"
           >
           <div
             v-else
@@ -231,7 +232,7 @@ const props = withDefaults(defineProps<Props>(), {
   highlight: false,
 })
 
-const { getUrl } = useChatMedia()
+const { getUrl, peekUrl } = useChatMedia()
 
 const pickLine = (raw: string, re: RegExp) => {
   const m = raw.match(re)
@@ -352,16 +353,40 @@ const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
 const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
 
-const ensureSrc = async () => {
-  if (src.value || !props.messageId) return
+const syncSrcFromCache = () => {
+  if (!props.messageId) return false
+  const cached = peekUrl(props.messageId)
+  if (cached && cached !== src.value) {
+    src.value = cached
+    return true
+  }
+  return !!cached
+}
+
+const ensureSrc = async (opts: { force?: boolean } = {}) => {
+  if (!props.messageId) return
+  if (!opts.force && syncSrcFromCache()) return
+  if (!opts.force && src.value) return
   loading.value = true
   try {
-    src.value = await getUrl(props.messageId, mediaKind.value)
+    const url = await getUrl(
+      props.messageId,
+      mediaKind.value,
+      opts.force ? { forceNetwork: true } : {},
+    )
+    if (url) src.value = url
   } catch (e) {
     console.error('media load', e)
+    if (syncSrcFromCache()) return
+    src.value = ''
   } finally {
     loading.value = false
   }
+}
+
+const retryMedia = async () => {
+  src.value = ''
+  await ensureSrc({ force: true })
 }
 
 const toggle = async () => {
@@ -402,8 +427,21 @@ const onEnded = () => {
   current.value = 0
 }
 
-const onAudioError = () => {
+const onAudioError = async () => {
   playing.value = false
+  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
+    syncSrcFromCache()
+    return
+  }
+  await retryMedia()
+}
+
+const onImageError = async () => {
+  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
+    syncSrcFromCache()
+    return
+  }
+  await retryMedia()
 }
 
 const seek = (e: MouseEvent) => {
@@ -418,12 +456,28 @@ const seek = (e: MouseEvent) => {
 
 watch(
   () => props.messageId,
-  async (id) => {
-    if ((props.type === 'voice' || props.type === 'photo') && id) {
+  async (id, prevId) => {
+    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!id) {
+      src.value = ''
+      return
+    }
+    if (id !== prevId) src.value = ''
+    await ensureSrc()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.status,
+  async (status, prev) => {
+    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!props.messageId) return
+    if (prev === 'sending' && status !== 'sending') {
+      src.value = ''
       await ensureSrc()
     }
   },
-  { immediate: true }
 )
 
 onBeforeUnmount(() => {

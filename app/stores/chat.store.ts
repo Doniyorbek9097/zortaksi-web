@@ -230,7 +230,7 @@ export const useChatStore = defineStore('chat', () => {
         } as unknown as IChatMessage
         messages.value.push(temp)
 
-        const { setLocalUrl, adoptLocalUrl } = useChatMedia()
+        const { setLocalUrl } = useChatMedia()
         if (import.meta.client) setLocalUrl(tempId, blob)
 
         try {
@@ -246,18 +246,7 @@ export const useChatStore = defineStore('chat', () => {
                 timeout: 120000,
             })
             if (res.success) {
-                const idx = messages.value.findIndex((m) => m._id === tempId)
-                const exists = messages.value.some((m) => m._id === res.data._id)
-                if (idx !== -1) {
-                    if (exists) messages.value.splice(idx, 1)
-                    else messages.value.splice(idx, 1, res.data)
-                } else if (!exists) {
-                    appendMessage(res.data)
-                }
-                if (import.meta.client && res.data._id) {
-                    adoptLocalUrl(tempId, res.data._id)
-                    useChatMedia().getUrl(res.data._id, 'voice').catch(() => {})
-                }
+                replaceOutgoingMediaTemp(tempId, res.data, 'voice')
                 patchChat(chatId, {
                     lastMessage: `🎤 Ovozli xabar (${res.data.duration || duration}s)`,
                     lastMessageAt: res.data.date,
@@ -291,7 +280,7 @@ export const useChatStore = defineStore('chat', () => {
         } as unknown as IChatMessage
         messages.value.push(temp)
 
-        const { setLocalUrl, adoptLocalUrl } = useChatMedia()
+        const { setLocalUrl } = useChatMedia()
         if (import.meta.client) setLocalUrl(tempId, file)
 
         try {
@@ -306,22 +295,11 @@ export const useChatStore = defineStore('chat', () => {
                 timeout: 120000,
             })
             if (res.success) {
-                const idx = messages.value.findIndex((m) => m._id === tempId)
-                const exists = messages.value.some((m) => m._id === res.data._id)
-                if (idx !== -1) {
-                    if (exists) messages.value.splice(idx, 1)
-                    else messages.value.splice(idx, 1, res.data)
-                } else if (!exists) {
-                    appendMessage(res.data)
-                }
+                replaceOutgoingMediaTemp(tempId, res.data, 'photo')
                 patchChat(chatId, {
                     lastMessage: caption || '📷 Rasm',
                     lastMessageAt: res.data.date,
                 })
-                if (import.meta.client && res.data._id) {
-                    adoptLocalUrl(tempId, res.data._id)
-                    useChatMedia().getUrl(res.data._id, 'photo').catch(() => {})
-                }
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
@@ -384,6 +362,48 @@ export const useChatStore = defineStore('chat', () => {
 
     // ==================== Yordamchilar / socket ====================
 
+    /** temp→real: mahalliy blob URL ni real id ga o'tkazish (splice dan oldin) */
+    const handoffMediaTemp = (tempId: string, realId: string, kind: 'voice' | 'photo') => {
+        if (!import.meta.client || !tempId || !realId) return
+        const media = useChatMedia()
+        media.adoptLocalUrl(tempId, realId)
+        media.upgradeFromServer(realId, kind)
+    }
+
+    /** Chiquvchi media xabarni temp dan real id ga almashtirish */
+    const replaceOutgoingMediaTemp = (
+        tempId: string,
+        real: IChatMessage,
+        kind: 'voice' | 'photo',
+    ) => {
+        handoffMediaTemp(tempId, real._id, kind)
+        const idx = messages.value.findIndex((m) => m._id === tempId)
+        const exists = messages.value.some((m) => m._id === real._id)
+        if (idx !== -1) {
+            if (exists) messages.value.splice(idx, 1)
+            else messages.value.splice(idx, 1, real)
+        } else if (!exists) {
+            appendMessage(real)
+        }
+    }
+
+    /** Socket/HTTP dan kelgan chiquvchi media — temp bilan birlashtirish */
+    const mergeOutgoingMediaFromSocket = (msg: IChatMessage): boolean => {
+        if (msg.direction !== 'out' || (msg.type !== 'voice' && msg.type !== 'photo')) return false
+        const tempIdx = messages.value.findIndex(
+            (m) =>
+                m._id.startsWith('temp-') &&
+                m.status === 'sending' &&
+                m.type === msg.type &&
+                m.chatId === msg.chatId,
+        )
+        if (tempIdx === -1) return false
+        const tempId = messages.value[tempIdx]._id
+        handoffMediaTemp(tempId, msg._id, msg.type === 'voice' ? 'voice' : 'photo')
+        messages.value.splice(tempIdx, 1, msg)
+        return true
+    }
+
     const patchChat = (chatId: string, patch: Partial<IChat>) => {
         const idx = chats.value.findIndex((c) => c._id === chatId)
         if (idx !== -1) chats.value[idx] = { ...chats.value[idx], ...patch } as IChat
@@ -409,7 +429,11 @@ export const useChatStore = defineStore('chat', () => {
 
     // Socket: yangi xabar keldi (kiruvchi yoki chiquvchi)
     const onNewMessage = (msg: IChatMessage) => {
-        appendMessage(msg)
+        if (mergeOutgoingMediaFromSocket(msg)) {
+            // temp bilan birlashtirildi — dublikat qo'shmaymiz
+        } else {
+            appendMessage(msg)
+        }
         if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
