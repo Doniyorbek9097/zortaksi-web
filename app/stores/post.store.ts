@@ -129,14 +129,22 @@ export const usePostStore = defineStore('post', () => {
     return res
   }
 
+  const friendlyErr = (raw: string) => {
+    if (/SESSION_LEASE_HELD|boshqa instance|AuthKeyDuplicated/i.test(raw)) {
+      return "Telegram sessiyasi band. Birozdan keyin yangilang."
+    }
+    return raw || 'Guruhlar yuklanmadi'
+  }
+
   /** Birinchi sahifa — Meniki darhol; Reklama fonda */
   const load = async (force = false) => {
     try {
       isLoading.value = true
       error.value = ''
-      await fetchMine({ page: 1, force, append: false })
+      const mineRes = await fetchMine({ page: 1, force, append: false })
+      if (mineRes?.data?.warning) error.value = String(mineRes.data.warning)
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Guruhlar yuklanmadi'
+      error.value = friendlyErr(e?.response?.data?.message || '')
     } finally {
       isLoading.value = false
     }
@@ -155,7 +163,7 @@ export const usePostStore = defineStore('post', () => {
         await fetchAds({ page: next, append: true })
       }
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Keyingi guruhlar yuklanmadi'
+      error.value = friendlyErr(e?.response?.data?.message || 'Keyingi guruhlar yuklanmadi')
     } finally {
       isLoadingMore.value = false
     }
@@ -167,9 +175,10 @@ export const usePostStore = defineStore('post', () => {
     if (t === 'ads' && !adsGroups.value.length) {
       try {
         isLoading.value = true
+        error.value = ''
         await fetchAds({ page: 1, append: false })
       } catch (e: any) {
-        error.value = e?.response?.data?.message || 'Guruhlar yuklanmadi'
+        error.value = friendlyErr(e?.response?.data?.message || 'Guruhlar yuklanmadi')
       } finally {
         isLoading.value = false
       }
@@ -212,7 +221,7 @@ export const usePostStore = defineStore('post', () => {
     selected.value = new Set()
   }
 
-  /** Admin: haydovchilarga ko'rsatish / yashirish */
+  /** Admin Meniki: admin guruhni haydovchilarga ko'rsatish / yashirish */
   const setVisibility = async (g: PostGroup, visible: boolean) => {
     if (!isAdmin.value) return
     try {
@@ -229,16 +238,19 @@ export const usePostStore = defineStore('post', () => {
         },
       })
       if (res.success) {
-        const idx = adsGroups.value.findIndex((x) => x.id === g.id)
-        if (idx !== -1) {
-          const copy = [...adsGroups.value]
+        const patch = (list: PostGroup[]) => {
+          const idx = list.findIndex((x) => x.id === g.id)
+          if (idx === -1) return list
+          const copy = [...list]
           copy[idx] = {
             ...copy[idx],
             visibleToDrivers: visible,
             joinUrl: res.data?.joinUrl || copy[idx].joinUrl,
           }
-          adsGroups.value = copy
+          return copy
         }
+        mineGroups.value = patch(mineGroups.value)
+        adsGroups.value = patch(adsGroups.value)
       }
       return res
     } catch (e: any) {

@@ -79,10 +79,10 @@
       Avval guruhga a'zo bo'ling, keyin belgilab o'z Telegram nomingizdan e'lon yuboring.
     </p>
     <p
-      v-else-if="store.tab === 'ads' && store.isAdmin"
+      v-else-if="store.tab === 'mine' && store.isAdmin"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Ko'z belgisini bosing — guruh haydovchilarga ko'rinadi (avto-join yo'q).
+      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Reklama tabida ko'rinadi.
     </p>
 
     <!-- Count + filters -->
@@ -162,7 +162,7 @@
                 A'zo
               </span>
               <span
-                v-if="store.tab === 'ads' && store.isAdmin && g.visibleToDrivers"
+                v-if="store.tab === 'mine' && store.isAdmin && g.visibleToDrivers"
                 class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-400/35"
               >
                 Haydovchiga
@@ -193,9 +193,9 @@
           A'zo bo'lish
         </a>
 
-        <!-- Admin: haydovchilarga ko'rsatish -->
+        <!-- Admin Meniki: faqat o'zi admin bo'lgan guruhlarni haydovchilarga ochish -->
         <button
-          v-if="store.tab === 'ads' && store.isAdmin"
+          v-if="store.tab === 'mine' && store.isAdmin && g.isAdmin"
           type="button"
           class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border active:scale-95"
           :class="g.visibleToDrivers
