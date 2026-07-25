@@ -15,7 +15,6 @@ export const useChatStore = defineStore('chat', () => {
 
     const isLoading = ref(false)
     const isLoadingMessages = ref(false)
-    const isSyncingHistory = ref(false)
     const isSending = ref(false)
 
     const total = ref(0)
@@ -425,44 +424,15 @@ export const useChatStore = defineStore('chat', () => {
         )
     }
 
-    /** Tarix sync javobidagi xabarlarni birlashtirish (socket bilan dublikat emas) */
-    const mergeHistoryMessages = (incoming: IChatMessage[]) => {
-        if (!incoming?.length) return
-        for (const msg of incoming) {
-            appendMessage(msg)
-        }
-        if (import.meta.client) {
-            useChatMedia().prefetch(incoming)
-        }
-    }
-
-    /** Telegram DM tarixini fon rejimida yuklash */
-    const syncHistory = async (chatId: string, opts: { force?: boolean } = {}) => {
-        try {
-            isSyncingHistory.value = true
-            const res = await useApi(`/chats/${chatId}/sync-history`, {
-                method: 'POST',
-                params: opts.force ? { force: '1' } : undefined,
-                timeout: 120000,
-            })
-            if (res.success && Array.isArray(res.data?.messages) && res.data.messages.length) {
-                mergeHistoryMessages(res.data.messages)
-            }
-            return res
-        } catch (error) {
-            console.error('syncHistory error:', error)
-            throw error
-        } finally {
-            isSyncingHistory.value = false
-        }
-    }
-
     /** Socket: mavjud xabar matni/status yangilandi (masalan to'lov holati) */
     const onMessageUpdate = (msg: IChatMessage) => {
         if (!msg?._id) return
         const idx = messages.value.findIndex((m) => m._id === msg._id)
         if (idx !== -1) {
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
+        }
+        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+            useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
     }
 
@@ -570,7 +540,6 @@ export const useChatStore = defineStore('chat', () => {
         messages,
         isLoading,
         isLoadingMessages,
-        isSyncingHistory,
         isSending,
         total,
         unreadTotal,
@@ -584,7 +553,6 @@ export const useChatStore = defineStore('chat', () => {
         resetConnection,
         fetchChats,
         fetchMessages,
-        syncHistory,
         sendMessage,
         sendVoice,
         sendPhoto,

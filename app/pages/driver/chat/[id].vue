@@ -45,15 +45,6 @@
           <div v-for="n in 6" :key="n" class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'" />
         </div>
 
-        <!-- Telegram tarix sync (DB xabarlari allaqachon ko'rsatilgan) -->
-        <div
-          v-else-if="chatStore.isSyncingHistory && needsTelegramConnect"
-          class="flex items-center justify-center gap-2 py-1 text-[11px] font-bold text-slate-400 dark:text-slate-500"
-        >
-          <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-[10px]" />
-          Telegram tarixi yuklanmoqda...
-        </div>
-
         <!-- Empty -->
         <BaseEmptyState
           v-else-if="!chatStore.messages.length"
@@ -343,11 +334,6 @@ onMounted(async () => {
 
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
-
-  // Telegram DM tarixi — DB xabarlari ko'rsatilgandan keyin fon sync
-  if (!isInAppChat.value) {
-    void chatStore.syncHistory(chatId.value).then(() => scrollToBottom())
-  }
 
   if (isInAppChat.value) {
     chatStore.connectionStatus = 'ready'
