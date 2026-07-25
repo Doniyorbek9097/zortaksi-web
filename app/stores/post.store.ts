@@ -14,6 +14,9 @@ export interface PostGroup {
   connections: number
   price: number
   free: boolean
+  visibleToDrivers?: boolean
+  joinUrl?: string
+  isMember?: boolean
 }
 
 export const AD_PRICE = 2000
@@ -106,13 +109,6 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const fetchAds = async (opts: { page?: number; force?: boolean; append?: boolean } = {}) => {
-    if (!isAdmin.value) {
-      adsGroups.value = []
-      adsTotal.value = 0
-      adsPage.value = 1
-      adsHasMore.value = false
-      return
-    }
     const pageNum = opts.page ?? 1
     const res = await useApi('/groups/ads', {
       params: {
@@ -120,7 +116,7 @@ export const usePostStore = defineStore('post', () => {
         limit: GROUPS_PAGE_SIZE,
         ...(opts.force ? { force: '1' } : {}),
       },
-      timeout: 180_000,
+      timeout: isAdmin.value ? 180_000 : 60_000,
     })
     if (res.success) {
       applyPageResult(
@@ -133,21 +129,20 @@ export const usePostStore = defineStore('post', () => {
     return res
   }
 
-  /** Birinchi sahifa (ro'yxatni almashtiradi) */
+  /** Birinchi sahifa — Meniki darhol; Reklama fonda */
   const load = async (force = false) => {
     try {
       isLoading.value = true
       error.value = ''
       await fetchMine({ page: 1, force, append: false })
-      if (isAdmin.value) await fetchAds({ page: 1, force, append: false })
     } catch (e: any) {
       error.value = e?.response?.data?.message || 'Guruhlar yuklanmadi'
     } finally {
       isLoading.value = false
     }
+    fetchAds({ page: 1, force, append: false }).catch(() => {})
   }
 
-  /** Keyingi 10 ta (infinite scroll) */
   const loadMore = async () => {
     if (isLoading.value || isLoadingMore.value || !hasMore.value) return
     try {
@@ -166,13 +161,18 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
-  const setTab = (t: PostTab) => {
-    if (t === 'ads' && !isAdmin.value) return
+  const setTab = async (t: PostTab) => {
     tab.value = t
     selected.value = new Set()
-    // Tabda hali yuklanmagan bo'lsa — 1-sahifa
-    if (t === 'ads' && !adsGroups.value.length && isAdmin.value) {
-      fetchAds({ page: 1, append: false }).catch(() => {})
+    if (t === 'ads' && !adsGroups.value.length) {
+      try {
+        isLoading.value = true
+        await fetchAds({ page: 1, append: false })
+      } catch (e: any) {
+        error.value = e?.response?.data?.message || 'Guruhlar yuklanmadi'
+      } finally {
+        isLoading.value = false
+      }
     }
   }
 
@@ -210,6 +210,41 @@ export const usePostStore = defineStore('post', () => {
 
   const clearSelection = () => {
     selected.value = new Set()
+  }
+
+  /** Admin: haydovchilarga ko'rsatish / yashirish */
+  const setVisibility = async (g: PostGroup, visible: boolean) => {
+    if (!isAdmin.value) return
+    try {
+      error.value = ''
+      const res = await useApi('/groups/ads/visibility', {
+        method: 'POST',
+        body: {
+          groupId: g.id,
+          title: g.title,
+          username: g.username,
+          accessHash: g.accessHash,
+          membersCount: g.membersCount,
+          visible,
+        },
+      })
+      if (res.success) {
+        const idx = adsGroups.value.findIndex((x) => x.id === g.id)
+        if (idx !== -1) {
+          const copy = [...adsGroups.value]
+          copy[idx] = {
+            ...copy[idx],
+            visibleToDrivers: visible,
+            joinUrl: res.data?.joinUrl || copy[idx].joinUrl,
+          }
+          adsGroups.value = copy
+        }
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Ko\'rsatish sozlamasi saqlanmadi'
+      throw e
+    }
   }
 
   const broadcast = async (text: string) => {
@@ -264,6 +299,7 @@ export const usePostStore = defineStore('post', () => {
     toggle,
     selectAllVisible,
     clearSelection,
+    setVisibility,
     broadcast,
   }
 })

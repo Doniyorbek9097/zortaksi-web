@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
-import { uniqueOrdersByContent } from '~/utils/orderDedupe'
+import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
 
 export interface FetchOrdersParams {
     page?: number
@@ -40,6 +40,56 @@ export const useOrderStore = defineStore('order', () => {
 
     const bumpNewCount = (delta = 1) => {
         newOrdersCount.value = Math.max(0, newOrdersCount.value + delta)
+    }
+
+    /** Socket order:new — race-safe prepend */
+    const prependOrder = (order: IOrder) => {
+        if (!order) return false
+        const incomingKey = orderContentKey(order)
+        const list = orders.value
+        const isDup = list.some((o) => {
+            if (o._id && order._id && String(o._id) === String(order._id)) return true
+            const existingKey = orderContentKey(o)
+            return !!incomingKey && !!existingKey && incomingKey === existingKey
+        })
+        if (isDup) return false
+        orders.value = [order, ...list]
+        total.value = (total.value || 0) + 1
+        if ((order.status || 'new') === 'new') bumpNewCount(1)
+        return true
+    }
+
+    /**
+     * Socket reconnect / visibility / poll catch-up.
+     * page===1: server ro'yxati bilan almashtiradi.
+     * page>1: yangilarini boshiga qo'shadi (scroll saqlanadi).
+     */
+    const syncLatest = async (params: FetchOrdersParams = {}) => {
+        try {
+            const response = await useApi('/orders', {
+                method: 'GET',
+                params: { ...params, limit: params.limit ?? 40, page: 1 },
+            })
+            if (!response.success) return response
+            const list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            if (page.value <= 1) {
+                orders.value = list
+                page.value = 1
+                totalPages.value = response.data.pagination?.totalPages ?? 1
+            } else {
+                const existingIds = new Set(orders.value.map((o) => String(o._id)))
+                const fresh = list.filter((o) => o._id && !existingIds.has(String(o._id)))
+                if (fresh.length) {
+                    orders.value = uniqueOrdersByContent([...fresh, ...orders.value])
+                }
+            }
+            total.value = response.data.pagination?.total ?? total.value
+            void refreshNewCount()
+            return response
+        } catch (error) {
+            console.warn('syncLatest error:', error)
+            return null
+        }
     }
 
     const fetchOrders = async (
@@ -220,6 +270,8 @@ export const useOrderStore = defineStore('order', () => {
         hasMore,
         fetchOrders,
         loadMore,
+        syncLatest,
+        prependOrder,
         fetchOrderById,
         bookOrder,
         unbookOrder,

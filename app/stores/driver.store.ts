@@ -20,32 +20,46 @@ export const useDriverStore = defineStore('driver', () => {
   const drivers = ref<DriverRow[]>([])
   const counts = ref({ all: 0, expiring: 0, debt: 0 })
   const isLoading = ref(false)
+  const isLoadingMore = ref(false)
   const isSaving = ref(false)
   const page = ref(1)
   const totalPages = ref(1)
   const total = ref(0)
 
-  const fetchDrivers = async (params: {
-    page?: number
-    limit?: number
-    search?: string
-    filter?: DriverFilter
-  } = {}) => {
+  const hasMore = computed(() => page.value < totalPages.value)
+
+  const fetchDrivers = async (
+    params: {
+      page?: number
+      limit?: number
+      search?: string
+      filter?: DriverFilter
+    } = {},
+    opts: { append?: boolean } = {}
+  ) => {
     try {
-      isLoading.value = true
+      if (opts.append) isLoadingMore.value = true
+      else isLoading.value = true
+
       const response = await useApi('/drivers', {
         method: 'GET',
         params: {
           page: params.page ?? 1,
-          limit: params.limit ?? 100,
+          limit: params.limit ?? 10,
           search: params.search || undefined,
           filter: params.filter || 'all',
         },
       })
       if (response.success) {
-        drivers.value = response.data.drivers ?? []
+        const list: DriverRow[] = response.data.drivers ?? []
+        if (opts.append) {
+          const seen = new Set(drivers.value.map(d => d.id))
+          drivers.value = [...drivers.value, ...list.filter(d => !seen.has(d.id))]
+        } else {
+          drivers.value = list
+        }
         counts.value = response.data.counts ?? { all: 0, expiring: 0, debt: 0 }
-        page.value = response.data.pagination?.page ?? 1
+        page.value = response.data.pagination?.page ?? params.page ?? 1
         totalPages.value = response.data.pagination?.totalPages ?? 1
         total.value = response.data.pagination?.total ?? drivers.value.length
       }
@@ -55,7 +69,18 @@ export const useDriverStore = defineStore('driver', () => {
       throw error
     } finally {
       isLoading.value = false
+      isLoadingMore.value = false
     }
+  }
+
+  /** Keyingi sahifani yuklab, mavjud ro'yxatga qo'shadi (infinite scroll) */
+  const loadMore = async (params: {
+    limit?: number
+    search?: string
+    filter?: DriverFilter
+  } = {}) => {
+    if (isLoading.value || isLoadingMore.value || !hasMore.value) return
+    return fetchDrivers({ ...params, page: page.value + 1 }, { append: true })
   }
 
   const patchLocal = (row: DriverRow) => {
@@ -174,11 +199,14 @@ export const useDriverStore = defineStore('driver', () => {
     drivers,
     counts,
     isLoading,
+    isLoadingMore,
     isSaving,
     page,
     totalPages,
     total,
+    hasMore,
     fetchDrivers,
+    loadMore,
     setActive,
     setBalance,
     adjustBalance,

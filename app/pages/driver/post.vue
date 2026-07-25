@@ -60,7 +60,6 @@
         Meniki {{ store.mineTotal }}
       </button>
       <button
-        v-if="store.isAdmin"
         type="button"
         class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
         :class="store.tab === 'ads'
@@ -69,9 +68,22 @@
         @click="store.setTab('ads')"
       >
         <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-[10px]" />
-        Reklama berish {{ store.adsTotal }}
+        Reklama {{ store.adsTotal }}
       </button>
     </div>
+
+    <p
+      v-if="store.tab === 'ads' && !store.isAdmin"
+      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
+    >
+      Avval guruhga a'zo bo'ling, keyin belgilab o'z Telegram nomingizdan e'lon yuboring.
+    </p>
+    <p
+      v-else-if="store.tab === 'ads' && store.isAdmin"
+      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
+    >
+      Ko'z belgisini bosing — guruh haydovchilarga ko'rinadi (avto-join yo'q).
+    </p>
 
     <!-- Count + filters -->
     <div class="flex items-center justify-between gap-2">
@@ -97,57 +109,107 @@
     <BaseEmptyState
       v-else-if="!filtered.length"
       icon="fa-solid fa-bullhorn"
-      :title="store.tab === 'mine' ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring' : 'Guruhlar topilmadi'"
+      :title="store.tab === 'mine'
+        ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring'
+        : (store.isAdmin ? 'Guruhlar topilmadi' : 'Hali ochiq guruhlar yo\'q')"
       tone="slate"
     />
 
     <div v-else class="space-y-1.5">
-      <button
+      <div
         v-for="(g, idx) in filtered"
         :key="g.id"
-        type="button"
         class="w-full flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-left transition-colors"
         :class="store.selected.has(g.id)
           ? 'border-amber-400/70 bg-amber-50 dark:bg-amber-950/30'
           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
-        @click="store.toggle(g.id)"
       >
-        <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0">{{ idx + 1 }}</span>
+        <button
+          type="button"
+          class="flex flex-1 items-center gap-2.5 min-w-0 text-left"
+          @click="store.toggle(g.id)"
+        >
+          <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0">{{ idx + 1 }}</span>
 
-        <span
-          class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
-          :class="store.selected.has(g.id)
-            ? 'border-amber-500 bg-amber-500 text-white'
-            : 'border-slate-300 dark:border-slate-600'"
+          <span
+            class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
+            :class="store.selected.has(g.id)
+              ? 'border-amber-500 bg-amber-500 text-white'
+              : 'border-slate-300 dark:border-slate-600'"
+          >
+            <font-awesome-icon
+              v-if="store.selected.has(g.id)"
+              icon="fa-solid fa-check"
+              class="text-[9px]"
+            />
+          </span>
+
+          <span class="flex-1 min-w-0">
+            <span class="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span class="text-[13px] font-black text-slate-900 dark:text-white truncate">
+                {{ g.title }}
+              </span>
+              <span
+                v-if="g.isAdmin && store.tab === 'mine'"
+                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/35 dark:border-sky-500/35"
+              >
+                Admin
+              </span>
+              <span
+                v-if="store.tab === 'ads' && g.isMember"
+                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/35"
+              >
+                A'zo
+              </span>
+              <span
+                v-if="store.tab === 'ads' && store.isAdmin && g.visibleToDrivers"
+                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-400/35"
+              >
+                Haydovchiga
+              </span>
+            </span>
+            <span class="block text-[11px] font-medium text-slate-400 truncate">
+              @{{ g.username || '—' }}
+              <template v-if="store.tab === 'mine' || store.isAdmin">
+                · {{ g.connections }} ulangan
+              </template>
+            </span>
+          </span>
+
+          <span class="text-[11px] font-black text-amber-500 shrink-0">
+            {{ g.free || store.tab === 'mine' || store.isAdmin ? 'Bepul' : `${g.price.toLocaleString('ru-RU')}` }}
+          </span>
+        </button>
+
+        <!-- Haydovchi: a'zo bo'lish (Telegram link) -->
+        <a
+          v-if="store.tab === 'ads' && !store.isAdmin && g.joinUrl && !g.isMember"
+          :href="g.joinUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="shrink-0 inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95"
+          @click.stop
+        >
+          A'zo bo'lish
+        </a>
+
+        <!-- Admin: haydovchilarga ko'rsatish -->
+        <button
+          v-if="store.tab === 'ads' && store.isAdmin"
+          type="button"
+          class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border active:scale-95"
+          :class="g.visibleToDrivers
+            ? 'border-violet-400/60 bg-violet-500/15 text-violet-600 dark:text-violet-400'
+            : 'border-slate-200 dark:border-slate-700 text-slate-400'"
+          :title="g.visibleToDrivers ? 'Haydovchilardan yashirish' : 'Haydovchilarga korsatish'"
+          @click.stop="onToggleVisibility(g)"
         >
           <font-awesome-icon
-            v-if="store.selected.has(g.id)"
-            icon="fa-solid fa-check"
-            class="text-[9px]"
+            :icon="g.visibleToDrivers ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"
+            class="text-[12px]"
           />
-        </span>
-
-        <span class="flex-1 min-w-0">
-          <span class="flex items-center gap-1.5 min-w-0">
-            <span class="text-[13px] font-black text-slate-900 dark:text-white truncate">
-              {{ g.title }}
-            </span>
-            <span
-              v-if="g.isAdmin"
-              class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/35 dark:border-sky-500/35"
-            >
-              Admin
-            </span>
-          </span>
-          <span class="block text-[11px] font-medium text-slate-400 truncate">
-            @{{ g.username || '—' }} · {{ g.connections }} ulangan
-          </span>
-        </span>
-
-        <span class="text-[11px] font-black text-amber-500 shrink-0">
-          {{ g.free || store.tab === 'mine' ? 'Bepul' : `${g.price.toLocaleString('ru-RU')}` }}
-        </span>
-      </button>
+        </button>
+      </div>
 
       <!-- Infinite scroll sentinel -->
       <div ref="sentinel" class="h-1" />
@@ -276,6 +338,14 @@ const onSend = async (text: string) => {
     else success.value = `${sent} ta guruhga tushdi`
   } catch {
     /* error in store */
+  }
+}
+
+const onToggleVisibility = async (g: any) => {
+  try {
+    await store.setVisibility(g, !g.visibleToDrivers)
+  } catch {
+    /* store error */
   }
 }
 

@@ -247,7 +247,7 @@ const load = () => orderStore.fetchOrders({ page: 1, ...queryParams() })
 // Keyingi sahifa (ro'yxatga qo'shadi)
 const loadMore = () => orderStore.loadMore(queryParams())
 
-// "LIVE" tuyg'usi uchun yengil polling — faqat 1-sahifada (pagination'ni buzmasligi uchun)
+// LIVE + catch-up: page>1 da ham yangilarni boshiga qo'shadi (scroll buzilmaydi)
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 // --- Infinite scroll (IntersectionObserver) ---
@@ -260,9 +260,8 @@ onMounted(() => {
   appliedKeywords.value = saved
   load()
   pollTimer = setInterval(() => {
-    // Foydalanuvchi keyingi sahifalarni yuklagan bo'lsa — avtomatik reset qilmaymiz
-    if (orderStore.page === 1) load()
-  }, 15000)
+    void orderStore.syncLatest(queryParams())
+  }, 10000)
 
   observer = new IntersectionObserver(
     (entries) => {

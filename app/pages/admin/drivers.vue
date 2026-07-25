@@ -9,14 +9,14 @@
     <AdminDriversSearchInput v-model="search" />
 
     <AdminDriversSelectBar
-      :count="list.length"
+      :count="store.total"
       :selected-count="selected.size"
       :all-selected="allSelected"
       @toggle-all="toggleAll"
       @message="openBulkMessage"
     />
 
-    <div v-if="store.isLoading" class="space-y-3">
+    <div v-if="store.isLoading && !list.length" class="space-y-3">
       <div
         v-for="n in 4"
         :key="n"
@@ -50,11 +50,25 @@
         @tariff="openTariff(d)"
         @block="onBlock(d)"
       />
-    </div>
 
-    <p class="py-3 text-center text-[12px] font-bold text-slate-400 dark:text-slate-500">
-      {{ store.isLoading ? 'Yuklanmoqda…' : '— Hammasi yuklandi —' }}
-    </p>
+      <!-- Infinite scroll sentinel -->
+      <div ref="sentinel" class="h-1" />
+
+      <div v-if="store.isLoadingMore" class="space-y-3">
+        <div
+          v-for="n in 2"
+          :key="n"
+          class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        />
+      </div>
+
+      <p
+        v-else-if="!store.hasMore && list.length"
+        class="py-3 text-center text-[12px] font-bold text-slate-400 dark:text-slate-500"
+      >
+        — Hammasi yuklandi —
+      </p>
+    </div>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
     <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500">{{ success }}</p>
@@ -187,18 +201,28 @@ const toggleAll = () => {
   selected.value = new Set(list.value.map(d => d.id))
 }
 
+const LIMIT = 10
+
+const queryParams = () => ({
+  limit: LIMIT,
+  filter: filter.value,
+  search: search.value.trim() || undefined,
+})
+
 const load = async () => {
   error.value = ''
   try {
-    await store.fetchDrivers({
-      filter: filter.value,
-      search: search.value.trim() || undefined,
-      limit: 100,
-    })
+    await store.fetchDrivers({ page: 1, ...queryParams() })
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Haydovchilar yuklanmadi'
   }
 }
+
+const loadMore = () => store.loadMore(queryParams())
+
+// --- Infinite scroll (IntersectionObserver) ---
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 watch(filter, () => {
@@ -207,7 +231,10 @@ watch(filter, () => {
 })
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => load(), 350)
+  searchTimer = setTimeout(() => {
+    selected.value = new Set()
+    load()
+  }, 350)
 })
 
 const onCall = (d: DriverRow) => {
@@ -341,5 +368,22 @@ const confirmBlock = async () => {
 onMounted(() => {
   load()
   tariffStore.fetchTariffs().catch(() => {})
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) loadMore()
+    },
+    { rootMargin: '200px' }
+  )
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+watch(sentinel, (el) => {
+  if (observer && el) observer.observe(el)
+})
+
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect()
+  if (searchTimer) clearTimeout(searchTimer)
 })
 </script>
