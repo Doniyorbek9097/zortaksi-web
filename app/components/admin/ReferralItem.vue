@@ -24,10 +24,14 @@
       </p>
     </div>
 
-    <!-- Stats -->
+    <!-- Stats — har user uchun taklif qilinganlar soni -->
     <div class="text-right shrink-0">
-      <p class="text-[12px] font-bold text-slate-500 dark:text-slate-400">{{ invites }} ta</p>
-      <p class="text-[12px] font-black text-emerald-500">+{{ formattedBonus }}</p>
+      <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 tabular-nums">
+        {{ invites }}
+        <span class="text-[11px] font-bold text-slate-400">ta</span>
+      </p>
+      <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500">taklif</p>
+      <p class="text-[12px] font-black text-emerald-500 mt-0.5">+{{ formattedBonus }}</p>
     </div>
   </div>
 </template>

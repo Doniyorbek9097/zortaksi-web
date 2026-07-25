@@ -1,22 +1,23 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-5">
     <AdminHeader @bonus="onBonus" />
 
-    <!-- Caption — header emas, sahifa ichida -->
-    <div class="-mt-0.5 px-0.5">
-      <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200">
-        Admin panel
-      </p>
-      <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-        Platforma boshqaruvi va statistika
+    <!-- Caption — driver dashboard uslubida -->
+    <div class="flex items-center gap-2 -mt-1 px-0.5">
+      <font-awesome-icon
+        :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'"
+        class="text-sm shrink-0"
+        :class="isNight ? 'text-indigo-400' : 'text-amber-400'"
+      />
+      <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200 min-w-0 truncate">
+        {{ greeting }}, {{ firstName }}!
       </p>
     </div>
 
     <div v-if="store.isLoading && !store.data" class="space-y-3">
       <div class="h-36 rounded-3xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      <div class="h-20 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      <div class="grid grid-cols-2 gap-3">
-        <div v-for="n in 4" :key="n" class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+      <div class="grid grid-cols-2 gap-2.5">
+        <div v-for="n in 6" :key="n" class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       </div>
     </div>
 
@@ -31,8 +32,29 @@
         {{ store.error }}
       </p>
 
+      <!-- Platforma statistikasi — driver kabi -->
+      <section class="space-y-3">
+        <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
+          Platforma statistikasi
+        </h3>
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <AdminStatCard
+            v-for="stat in keyStats"
+            :key="stat.label"
+            :value="stat.value"
+            :label="stat.label"
+            :icon="stat.icon"
+            :tone="stat.tone"
+            :compact="stat.compact"
+          />
+        </div>
+      </section>
+
       <!-- Tezkor bo'limlar -->
-      <div class="space-y-2.5">
+      <section class="space-y-2.5">
+        <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
+          Boshqaruv
+        </h3>
         <AdminNavItem
           v-for="nav in navItems"
           :key="nav.title"
@@ -42,20 +64,7 @@
           :tone="nav.tone"
           @click="navigateTo(nav.to)"
         />
-      </div>
-
-      <!-- Asosiy ko'rsatkichlar -->
-      <div class="grid grid-cols-2 gap-3">
-        <AdminStatCard
-          v-for="stat in keyStats"
-          :key="stat.label"
-          :value="stat.value"
-          :label="stat.label"
-          :icon="stat.icon"
-          :tone="stat.tone"
-          :compact="stat.compact"
-        />
-      </div>
+      </section>
 
       <!-- Daromad tafsiloti -->
       <AdminSectionCard title="Daromad tafsiloti">
@@ -93,8 +102,19 @@
         <AdminBarChart :items="chartItems" />
       </AdminSectionCard>
 
-      <!-- Top 10 referal -->
+      <!-- Top referal — har user uchun taklif soni -->
       <AdminSectionCard title="Top 10 referal" no-padding>
+        <div class="px-4 pt-1 pb-2 flex items-center gap-3 text-[11px] font-bold text-slate-400">
+          <span class="inline-flex items-center gap-1.5">
+            <font-awesome-icon icon="fa-solid fa-user-plus" class="text-pink-500" />
+            Jami taklif: {{ totalInvites.toLocaleString('ru-RU') }}
+          </span>
+          <span class="text-slate-300 dark:text-slate-600">·</span>
+          <span class="inline-flex items-center gap-1.5">
+            <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-violet-500" />
+            Taklifchilar: {{ totalReferrers.toLocaleString('ru-RU') }}
+          </span>
+        </div>
         <div class="px-4 pb-2">
           <AdminReferralItem
             v-for="ref in referrals"
@@ -134,6 +154,18 @@ const referralStore = useReferralStore()
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
 
+const firstName = computed(() => authStore.user?.firstName || 'Admin')
+
+const greeting = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6) return 'Xayrli tun'
+  if (h < 12) return 'Xayrli tong'
+  if (h < 18) return 'Xayrli kun'
+  return 'Xayrli kech'
+})
+
+const isNight = computed(() => /tun|kech/i.test(greeting.value))
+
 const monthIncome = computed(() => store.data?.monthIncome ?? {
   amount: 0,
   payments: 0,
@@ -171,15 +203,23 @@ const navItems = [
   },
 ]
 
+const num = (...vals: Array<number | undefined | null>) => {
+  for (const v of vals) {
+    if (v != null && Number.isFinite(Number(v))) return Number(v)
+  }
+  return 0
+}
+
+const totalInvites = computed(() =>
+  num(store.data?.keyStats?.totalInvites, store.data?.platform?.totalInvites)
+)
+const totalReferrers = computed(() =>
+  num(store.data?.keyStats?.totalReferrers, store.data?.platform?.totalReferrers)
+)
+
 const keyStats = computed(() => {
   const s = store.data?.keyStats
   const p = store.data?.platform
-  const num = (...vals: Array<number | undefined | null>) => {
-    for (const v of vals) {
-      if (v != null && Number.isFinite(Number(v))) return Number(v)
-    }
-    return 0
-  }
   return [
     {
       value: num(s?.newOrders, p?.newOrders),
@@ -216,6 +256,18 @@ const keyStats = computed(() => {
       label: 'Faol haydovchilar',
       icon: 'fa-solid fa-user-check',
       tone: 'green' as const,
+    },
+    {
+      value: num(s?.totalInvites, p?.totalInvites),
+      label: 'Takliflar soni',
+      icon: 'fa-solid fa-user-plus',
+      tone: 'pink' as const,
+    },
+    {
+      value: num(s?.totalReferrers, p?.totalReferrers),
+      label: 'Taklif qilganlar',
+      icon: 'fa-solid fa-share-nodes',
+      tone: 'emerald' as const,
     },
     {
       value: num(s?.newDrivers),
@@ -283,7 +335,6 @@ const onBonus = () => {
 onMounted(() => {
   store.fetchStats().catch(() => {})
   referralStore.fetchAll().catch(() => {})
-  // Admin hisobini local accountlar ro'yxatiga yozish (switch uchun)
   try {
     const accountStore = useAccountStore()
     accountStore.load()

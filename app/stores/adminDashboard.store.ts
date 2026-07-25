@@ -31,6 +31,10 @@ export interface AdminDashboardData {
     ordersTotal?: number
     newOrders?: number
     tariffsCount?: number
+    /** Taklif orqali kelgan userlar */
+    totalInvites?: number
+    /** Taklif qilgan unique userlar */
+    totalReferrers?: number
   }
   platform?: {
     ordersToday: number
@@ -40,6 +44,8 @@ export interface AdminDashboardData {
     totalDrivers: number
     activeDrivers: number
     tariffsCount: number
+    totalInvites?: number
+    totalReferrers?: number
   }
   incomeDetails: DataRow[]
   tariffSplit: DataRow[]
