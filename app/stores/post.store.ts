@@ -32,6 +32,7 @@ export const usePostStore = defineStore('post', () => {
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const isSending = ref(false)
+  const joiningId = ref<string | null>(null)
   const error = ref('')
 
   const minePage = ref(1)
@@ -51,11 +52,8 @@ export const usePostStore = defineStore('post', () => {
 
   const selectedList = computed(() => groups.value.filter(g => selected.value.has(g.id)))
 
-  const pricePerGroup = computed(() => {
-    if (tab.value === 'mine') return 0
-    if (isAdmin.value) return 0
-    return AD_PRICE
-  })
+  /** Meniki va admin ochgan Reklama guruhlari — bepul */
+  const pricePerGroup = computed(() => 0)
 
   const totalCost = computed(() => pricePerGroup.value * selected.value.size)
 
@@ -221,6 +219,34 @@ export const usePostStore = defineStore('post', () => {
     selected.value = new Set()
   }
 
+  /** Haydovchi: ilova ichida guruhga a'zo bo'lish (tashqi Telegram yo'q) */
+  const joinGroup = async (g: PostGroup) => {
+    if (!g?.id || joiningId.value) return null
+    try {
+      joiningId.value = g.id
+      error.value = ''
+      const res = await useApi('/groups/ads/join', {
+        method: 'POST',
+        body: { groupId: g.id },
+        timeout: 60_000,
+      })
+      if (res.success) {
+        const idx = adsGroups.value.findIndex((x) => x.id === g.id)
+        if (idx !== -1) {
+          const copy = [...adsGroups.value]
+          copy[idx] = { ...copy[idx], isMember: true }
+          adsGroups.value = copy
+        }
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || "Guruhga a'zo bo'lish amalga oshmadi"
+      throw e
+    } finally {
+      joiningId.value = null
+    }
+  }
+
   /** Admin Meniki: admin guruhni haydovchilarga ko'rsatish / yashirish */
   const setVisibility = async (g: PostGroup, visible: boolean) => {
     if (!isAdmin.value) return
@@ -294,6 +320,7 @@ export const usePostStore = defineStore('post', () => {
     isLoading,
     isLoadingMore,
     isSending,
+    joiningId,
     error,
     isAdmin,
     balance,
@@ -312,6 +339,7 @@ export const usePostStore = defineStore('post', () => {
     selectAllVisible,
     clearSelection,
     setVisibility,
+    joinGroup,
     broadcast,
   }
 })

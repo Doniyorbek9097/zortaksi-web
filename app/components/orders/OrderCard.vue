@@ -141,25 +141,38 @@
           </button>
         </div>
         <!-- Admin amallari -->
-        <div v-if="isAdmin" class="grid grid-cols-3 gap-2">
-          <button type="button"
-            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
-            @click.stop="$emit('agent')">
-            <font-awesome-icon icon="fa-solid fa-headset" class="text-sm" />
-            Agent
-          </button>
-          <button type="button"
-            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
-            @click.stop="$emit('stop-group')">
-            <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
-            Guruh
-          </button>
-          <button type="button"
-            class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
-            @click.stop="$emit('stop-user')">
-            <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
-            User
-          </button>
+        <div v-if="isAdmin" class="space-y-2">
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button"
+              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+              @click.stop="$emit('agent')">
+              <font-awesome-icon icon="fa-solid fa-headset" class="text-sm" />
+              Agent
+            </button>
+            <button type="button"
+              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+              @click.stop="$emit('stop-group')">
+              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
+              Guruh
+            </button>
+            <button type="button"
+              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+              @click.stop="$emit('stop-user')">
+              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
+              User
+            </button>
+          </div>
+          <a
+            v-if="groupViewUrl"
+            :href="groupViewUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-[#2AABEE] bg-[#2AABEE]/10 hover:bg-[#2AABEE]/15 active:scale-[0.98] transition-all"
+            @click.stop
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-sm" />
+            Guruhdan ko'rish
+          </a>
         </div>
       </div>
       </article>
@@ -227,6 +240,23 @@ const bookedByName = computed(() => {
 })
 
 const group = computed(() => props.order.group)
+
+/** Admin: Telegram guruhidagi xabarni ochish */
+const groupViewUrl = computed(() => {
+  const username = String(group.value?.username || '')
+    .trim()
+    .replace(/^@/, '')
+  if (username) return `https://t.me/${username}`
+
+  const gid = String(group.value?.groupId || '').trim()
+  const mid = Number(props.order.message?.messageId || 0)
+  if (!gid || !mid) return ''
+
+  // Private supergroup: t.me/c/<id>/<msgId> (−100 prefikssiz)
+  const channelId = gid.replace(/^-100/, '')
+  if (!/^\d+$/.test(channelId)) return ''
+  return `https://t.me/c/${channelId}/${mid}`
+})
 
 const interestCount = computed(() => Math.max(0, Number(props.order.interestCount || 0)))
 

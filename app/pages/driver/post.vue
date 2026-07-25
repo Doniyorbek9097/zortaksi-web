@@ -76,7 +76,7 @@
       v-if="store.tab === 'ads' && !store.isAdmin"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Avval guruhga a'zo bo'ling, keyin belgilab o'z Telegram nomingizdan e'lon yuboring.
+      Avval «A'zo bo'lish» — ilova ichida ulanasiz, keyin bepul o'z nomingizdan e'lon yuboring.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
@@ -181,17 +181,21 @@
           </span>
         </button>
 
-        <!-- Haydovchi: a'zo bo'lish (Telegram link) -->
-        <a
-          v-if="store.tab === 'ads' && !store.isAdmin && g.joinUrl && !g.isMember"
-          :href="g.joinUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="shrink-0 inline-flex items-center justify-center px-2 py-1.5 rounded-lg text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95"
-          @click.stop
+        <!-- Haydovchi: ilova ichida a'zo bo'lish -->
+        <button
+          v-if="store.tab === 'ads' && !store.isAdmin && !g.isMember"
+          type="button"
+          class="shrink-0 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60"
+          :disabled="store.joiningId === g.id"
+          @click.stop="onJoinGroup(g)"
         >
-          A'zo bo'lish
-        </a>
+          <font-awesome-icon
+            v-if="store.joiningId === g.id"
+            icon="fa-solid fa-spinner"
+            class="animate-spin text-[9px]"
+          />
+          {{ store.joiningId === g.id ? 'Ulanmoqda...' : "A'zo bo'lish" }}
+        </button>
 
         <!-- Admin Meniki: faqat o'zi admin bo'lgan guruhlarni haydovchilarga ochish -->
         <button
@@ -344,6 +348,14 @@ const onSend = async (text: string) => {
 const onToggleVisibility = async (g: any) => {
   try {
     await store.setVisibility(g, !g.visibleToDrivers)
+  } catch {
+    /* store error */
+  }
+}
+
+const onJoinGroup = async (g: any) => {
+  try {
+    await store.joinGroup(g)
   } catch {
     /* store error */
   }
