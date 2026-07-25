@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+  <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
     <slot />
     <DriverBottomNavigation />
   </div>
@@ -8,9 +8,11 @@
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
+import { useOrderStore } from '~/stores/order.store'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
+const orderStore = useOrderStore()
 
 /** Tab badge uchun unread chat sonini yuklash */
 const refreshBadges = async () => {
@@ -19,6 +21,7 @@ const refreshBadges = async () => {
 }
 
 onMounted(() => {
+  orderStore.startRecentMinuteTicker()
   void refreshBadges()
 })
 
@@ -29,3 +32,10 @@ watch(
   }
 )
 </script>
+
+<style scoped>
+/* Scrollbar paydo bo'lganda layout siljimasin */
+.driver-shell {
+  scrollbar-gutter: stable;
+}
+</style>

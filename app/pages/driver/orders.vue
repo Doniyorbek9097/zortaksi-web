@@ -33,9 +33,9 @@
       title="Buyurtma topilmadi"
     />
 
-    <!-- Orders list -->
-    <div v-else class="space-y-6 pt-2">
-      <TransitionGroup name="order-drop" tag="div" class="space-y-6">
+    <!-- Orders list — relative: leave animatsiya tabbar/scrollni siljitmasin -->
+    <div v-else class="relative space-y-6 pt-2">
+      <TransitionGroup name="order-drop" tag="div" class="relative space-y-6">
         <OrdersOrderCard
           v-for="order in displayOrders"
           :key="order._id"
@@ -571,28 +571,22 @@ const onDelete = async (order: IOrder) => {
 <style scoped>
 .order-drop-enter-active {
   transition:
-    opacity 0.45s ease,
-    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.35s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* absolute leave — sahifa balandligini o'zgartirib tabbarni siljitardi; faqat fade */
 .order-drop-leave-active {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
+  transition: opacity 0.2s ease;
   pointer-events: none;
 }
 .order-drop-enter-from {
   opacity: 0;
-  transform: translateY(-28px) scale(0.98);
+  transform: translateY(-16px);
 }
 .order-drop-leave-to {
   opacity: 0;
-  transform: translateY(-12px) scale(0.98);
 }
 .order-drop-move {
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 </style>

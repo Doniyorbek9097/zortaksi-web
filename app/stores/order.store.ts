@@ -22,6 +22,66 @@ export const useOrderStore = defineStore('order', () => {
     /** Tab badge — status=new buyurtmalar soni */
     const newOrdersCount = ref(0)
 
+    /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
+    const recentArrivals = ref<Record<string, number>>({})
+    const recentTick = ref(0)
+    let recentTicker: ReturnType<typeof setInterval> | null = null
+
+    const RECENT_WINDOW_MS = 60_000
+
+    const pruneRecentArrivals = () => {
+        const cutoff = Date.now() - RECENT_WINDOW_MS
+        const prev = recentArrivals.value
+        const next: Record<string, number> = {}
+        let changed = false
+        for (const [id, at] of Object.entries(prev)) {
+            if (at >= cutoff) next[id] = at
+            else changed = true
+        }
+        if (changed) recentArrivals.value = next
+        recentTick.value += 1
+    }
+
+    const noteRecentOrder = (order: IOrder, at = Date.now()) => {
+        const id = order?._id ? String(order._id) : ''
+        if (!id) return
+        if (recentArrivals.value[id]) return
+        recentArrivals.value = { ...recentArrivals.value, [id]: at }
+        recentTick.value += 1
+    }
+
+    /** Catch-up: createdAt oxirgi 1 daqiqada bo'lgan yangi idlar */
+    const noteRecentOrdersFromList = (list: IOrder[]) => {
+        const cutoff = Date.now() - RECENT_WINDOW_MS
+        const next = { ...recentArrivals.value }
+        let changed = false
+        for (const o of list) {
+            if (!o?._id) continue
+            const id = String(o._id)
+            if (next[id]) continue
+            const t = o.createdAt ? new Date(o.createdAt).getTime() : NaN
+            if (!Number.isFinite(t) || t < cutoff) continue
+            next[id] = t
+            changed = true
+        }
+        if (changed) {
+            recentArrivals.value = next
+            recentTick.value += 1
+        }
+    }
+
+    const recentMinuteCount = computed(() => {
+        void recentTick.value
+        const cutoff = Date.now() - RECENT_WINDOW_MS
+        return Object.values(recentArrivals.value).filter((t) => t >= cutoff).length
+    })
+
+    const startRecentMinuteTicker = () => {
+        if (!import.meta.client || recentTicker) return
+        pruneRecentArrivals()
+        recentTicker = setInterval(pruneRecentArrivals, 5000)
+    }
+
     const hasMore = computed(() => page.value < totalPages.value)
 
     const refreshNewCount = async () => {
@@ -56,6 +116,7 @@ export const useOrderStore = defineStore('order', () => {
         orders.value = [order, ...list]
         total.value = (total.value || 0) + 1
         if ((order.status || 'new') === 'new') bumpNewCount(1)
+        noteRecentOrder(order)
         return true
     }
 
@@ -72,17 +133,19 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (!response.success) return response
             const list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            const prevIds = new Set(orders.value.map((o) => String(o._id)))
             if (page.value <= 1) {
                 orders.value = list
                 page.value = 1
                 totalPages.value = response.data.pagination?.totalPages ?? 1
             } else {
-                const existingIds = new Set(orders.value.map((o) => String(o._id)))
-                const fresh = list.filter((o) => o._id && !existingIds.has(String(o._id)))
+                const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
                     orders.value = uniqueOrdersByContent([...fresh, ...orders.value])
                 }
             }
+            // Catch-up: faqat oxirgi 1 daqiqada yaratilgan yangilar
+            noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
             return response
@@ -111,6 +174,8 @@ export const useOrderStore = defineStore('order', () => {
                     orders.value = merged
                 } else {
                     orders.value = list
+                    // Birinchi yuklash: oxirgi 1 daqiqadagi buyurtmalar badge
+                    noteRecentOrdersFromList(list)
                 }
                 total.value = response.data.pagination?.total ?? orders.value.length
                 page.value = response.data.pagination?.page ?? params.page ?? 1
@@ -267,6 +332,7 @@ export const useOrderStore = defineStore('order', () => {
         page,
         totalPages,
         newOrdersCount,
+        recentMinuteCount,
         hasMore,
         fetchOrders,
         loadMore,
@@ -282,5 +348,7 @@ export const useOrderStore = defineStore('order', () => {
         fetchInterest,
         refreshNewCount,
         bumpNewCount,
+        noteRecentOrder,
+        startRecentMinuteTicker,
     }
 })
