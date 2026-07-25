@@ -250,7 +250,7 @@ export const useAccountStore = defineStore('account', () => {
       auth.user &&
       String(auth.user.userId) === target
     ) {
-      await navigateTo(homeForUser(auth.user))
+      await navigateTo(homeForUser(auth.user), { replace: true })
       return true
     }
 
@@ -258,8 +258,21 @@ export const useAccountStore = defineStore('account', () => {
     const prevToken = resolveAuthToken(token.value)
     const prevId = activeUserId.value
 
+    const restorePrev = async () => {
+      if (!prevToken || !prevId) return
+      applyToken(prevToken, String(prevId))
+      try {
+        await auth.getMe({ authToken: prevToken })
+        if (auth.user) ensureCurrent(auth.user)
+      } catch { /* */ }
+    }
+
     try {
       applyToken(acc.token, target)
+      // Cookie / xotira sinxroni — middleware eski token bilan ishlamasin
+      writeAuthCookie(acc.token)
+      token.value = acc.token
+      try { auth.token = acc.token } catch { /* */ }
 
       const res = await auth.getMe({ authToken: acc.token })
       const gotId =
@@ -267,43 +280,31 @@ export const useAccountStore = defineStore('account', () => {
           ? String(res.data.userId)
           : String(auth.user?.userId || '')
 
-      if (!auth.user || gotId !== target) {
-        console.warn('[account] switch mismatch', { target, gotId })
-        // Bu hisob tokeni eskirgan / noto'g'ri — ro'yxatdan tokenni tozalash
-        const idx = accounts.value.findIndex((a) => String(a.userId) === target)
-        if (idx !== -1) {
-          const row = accounts.value[idx]!
-          accounts.value[idx] = { ...row, token: '' }
-          persist()
+      if (!res?.success || !auth.user || gotId !== target) {
+        console.warn('[account] switch mismatch', { target, gotId, success: res?.success })
+        // JWT mutlaqo yaroqsiz bo'lsa tokenni olib tashlash; SESSION_EXPIRED da saqlash
+        const code = res?.code || res?.data?.code
+        if (code !== 'SESSION_EXPIRED') {
+          const idx = accounts.value.findIndex((a) => String(a.userId) === target)
+          if (idx !== -1 && !res?.success) {
+            /* tokenni saqlaymiz — qayta urinish mumkin */
+          }
         }
-        if (prevToken && prevId) {
-          applyToken(prevToken, String(prevId))
-          try {
-            await auth.getMe({ authToken: prevToken })
-            if (auth.user) ensureCurrent(auth.user)
-          } catch { /* */ }
-        }
+        await restorePrev()
         return false
       }
 
-      // Cookie ni qayta majburan yozish
+      ensureCurrent(auth.user)
       writeAuthCookie(acc.token)
       token.value = acc.token
-      try { auth.token = acc.token } catch { /* */ }
-
-      ensureCurrent(auth.user)
+      writeActiveSession(target, acc.token)
       reconnectSocket()
-      await navigateTo(homeForUser(auth.user))
+      await navigateTo(homeForUser(auth.user), { replace: true })
       return true
-    } catch (e) {
+    } catch (e: any) {
       console.warn('[account] switch failed', e)
-      if (prevToken && prevId) {
-        applyToken(prevToken, String(prevId))
-        try {
-          await auth.getMe({ authToken: prevToken })
-          if (auth.user) ensureCurrent(auth.user)
-        } catch { /* */ }
-      }
+      // SESSION_EXPIRED / 401 — account tokenini o'chirmaymiz (boshqa hisoblar ishlasin)
+      await restorePrev()
       return false
     } finally {
       switching.value = false

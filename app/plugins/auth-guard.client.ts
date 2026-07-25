@@ -1,10 +1,8 @@
 import { authCookieOptions } from '~/utils/authCookie'
-import { clearAllAuthStorage, resolveAuthToken } from '~/utils/activeAccount'
+import { clearActiveAuth, resolveAuthToken } from '~/utils/activeAccount'
 
 /**
- * Cookie yo'q bo'lsa — auth tozalash.
- * Cookie bor + SSR dan user kelgan bo'lsa — saqlanadi (SSR foydali).
- * CDN leak Cache-Control: private bilan oldini olingan.
+ * Cookie yo'q bo'lsa — joriy sessiyani tozalash (accountlar ro'yxati qoladi).
  */
 export default defineNuxtPlugin({
   name: 'auth-guard',
@@ -16,7 +14,8 @@ export default defineNuxtPlugin({
     if (!resolved) {
       auth.user = null
       token.value = null
-      clearAllAuthStorage()
+      clearActiveAuth()
     }
   },
 })
+

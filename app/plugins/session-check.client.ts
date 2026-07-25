@@ -1,9 +1,9 @@
 import { authCookieOptions } from '~/utils/authCookie'
-import { clearAllAuthStorage, resolveAuthToken } from '~/utils/activeAccount'
+import { clearActiveAuth, resolveAuthToken } from '~/utils/activeAccount'
 
 /**
  * Ilova ochilganda Telegram session tekshiriladi.
- * Eskirgan / yaroqsiz bo'lsa barcha lokal auth tozalanadi.
+ * Eskirgan bo'lsa joriy sessiya tozalanadi — boshqa accountlar saqlanadi.
  */
 export default defineNuxtPlugin(async () => {
   const authStore = useAuthStore()
@@ -20,8 +20,9 @@ export default defineNuxtPlugin(async () => {
     if (status === 401 || status === 403 || code === 'SESSION_EXPIRED') {
       token.value = null
       authStore.user = null
-      clearAllAuthStorage()
+      clearActiveAuth()
       await navigateTo('/auth')
     }
   }
 })
+

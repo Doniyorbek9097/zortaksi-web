@@ -1,7 +1,7 @@
 import { setResponseHeader } from 'h3'
 import { authCookieOptions } from '~/utils/authCookie'
 import {
-    clearAllAuthStorage,
+    clearActiveAuth,
     readActiveUserId,
     resolveAuthToken,
     writeAuthCookie,
@@ -37,13 +37,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const authStore = useAuthStore()
 
-    // Client: switch xotirasi cookie dan ustun (faqat shu tab)
+    // Client: switch xotirasi cookie dan ustun — user ni keraksiz tozalamaslik
     if (import.meta.client) {
         const resolved = resolveAuthToken(token.value)
         if (resolved && token.value !== resolved) {
             writeAuthCookie(resolved)
             token.value = resolved
-            authStore.user = null
+            const active = readActiveUserId()
+            if (
+                !authStore.user ||
+                !active ||
+                String(authStore.user.userId) !== String(active)
+            ) {
+                authStore.user = null
+            }
         }
     }
 
@@ -54,7 +61,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const clearSession = () => {
         token.value = null
         authStore.user = null
-        if (import.meta.client) clearAllAuthStorage()
+        // Multi-account ro'yxatini o'chirmaymiz — faqat joriy sessiya
+        if (import.meta.client) clearActiveAuth()
     }
 
     if (to.path === '/auth' && (to.query.switch === '1' || to.query.switch === 'true')) {

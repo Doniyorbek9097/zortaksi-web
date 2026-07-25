@@ -52,7 +52,6 @@ export function readActiveToken(): string | null {
 }
 
 export function writeActiveSession(userId: string | null, token: string | null) {
-  // Serverda hech narsa yozilmaydi (cross-request leak yo'q)
   if (!import.meta.client) return
   setMemorySession(userId, token)
   try {
@@ -85,7 +84,7 @@ export function writeAuthCookie(token: string | null) {
 
 /**
  * Token manbai:
- * - Server (SSR): FAQAT shu so'rovdagi cookie — xotira ishlatilmaydi
+ * - Server: FAQAT shu so'rov cookie
  * - Client: xotira (switch) → cookie
  */
 export function resolveAuthToken(cookieToken?: string | null): string | null {
@@ -96,8 +95,11 @@ export function resolveAuthToken(cookieToken?: string | null): string | null {
   return cookieToken || null
 }
 
-/** To'liq chiqish — cookie, xotira, active keys, account tokenlari */
-export function clearAllAuthStorage() {
+/**
+ * Joriy sessiya (cookie/xotira/active keys) — multi-account ro'yxati SAQLANADI.
+ * Middleware / 401 da shu ishlatiladi (switch buzilmasin).
+ */
+export function clearActiveAuth() {
   if (import.meta.client) {
     memoryToken = null
     memoryUserId = null
@@ -107,6 +109,29 @@ export function clearAllAuthStorage() {
   try {
     localStorage.removeItem(ACTIVE_USER_KEY)
     localStorage.removeItem(ACTIVE_TOKEN_KEY)
+  } catch { /* */ }
+}
+
+/** To'liq chiqish — accountlar ro'yxati ham o'chadi (faqat logout) */
+export function clearAllAuthStorage() {
+  clearActiveAuth()
+  if (!import.meta.client) return
+  try {
     localStorage.removeItem(ACCOUNTS_KEY)
   } catch { /* */ }
+}
+
+/** Cookie dagi token bo'yicha active userId ni zt_accounts dan topish */
+export function findUserIdByToken(token: string | null | undefined): string | null {
+  if (!import.meta.client || !token) return null
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_KEY)
+    if (!raw) return null
+    const list = JSON.parse(raw)
+    if (!Array.isArray(list)) return null
+    const acc = list.find((a: any) => a?.token && a.token === token)
+    return acc?.userId != null ? String(acc.userId) : null
+  } catch {
+    return null
+  }
 }

@@ -1,12 +1,15 @@
 import {
+  findUserIdByToken,
   readActiveToken,
   writeActiveSession,
 } from '~/utils/activeAccount'
 import { authCookieOptions } from '~/utils/authCookie'
 
 /**
- * Cookie yo'q bo'lsa localStorage faol sessiyasini tozalash.
- * LS → cookie "tiriltirish" YO'Q (boshqa user admin bo'lib kirib ketmasin).
+ * Cookie — sessiya manbai.
+ * LS dagi active token cookie dan farq qilsa: LS ni cookie ga moslashtirish
+ * (tozalash emas — aks holda account switch buziladi).
+ * Cookie bo'sh bo'lsa active keys ni tozalash; zt_accounts saqlanadi.
  */
 export default defineNuxtPlugin({
   name: 'active-account-sync',
@@ -19,10 +22,13 @@ export default defineNuxtPlugin({
       return
     }
 
-    // Cookie ustun — LS dagi boshqa tokenni active qilib yozmaymiz
     const stored = readActiveToken()
-    if (stored && stored !== cookie.value) {
-      writeActiveSession(null, null)
+    if (stored && stored === cookie.value) return
+
+    // Cookie ustun — active session ni cookie tokeniga bog'lash
+    const uid = findUserIdByToken(cookie.value)
+    if (uid) {
+      writeActiveSession(uid, cookie.value)
     }
   },
 })

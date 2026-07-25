@@ -183,7 +183,6 @@ import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
 import { isValidIntlPhone } from '~/utils/phone'
-import { ACCOUNTS_KEY } from '~/utils/activeAccount'
 import { resolvePostAuthPath } from '~/utils/userRole'
 
 const authStore = useAuthStore()
@@ -282,12 +281,9 @@ const goHomeAfterAuth = async (user?: { role?: string | null } | null) => {
   await navigateTo(resolvePostAuthPath(user ?? authStore.user, route.query.next))
 }
 
-/** Asosiy login — eski multi-account (admin) tokenlarini olib tashlab faqat yangi hisobni yozadi */
+/** Login — joriy hisobni multi-account ro'yxatiga yozadi (boshqa hisoblarni o'chirmaydi) */
 const adoptFreshSession = (user: any) => {
   try {
-    if (import.meta.client) {
-      localStorage.removeItem(ACCOUNTS_KEY)
-    }
     const accountStore = useAccountStore()
     accountStore.load()
     if (user) accountStore.ensureCurrent(user)
