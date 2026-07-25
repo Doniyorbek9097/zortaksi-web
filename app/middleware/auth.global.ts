@@ -105,7 +105,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
         } catch (e: any) {
             const statusCode = e?.response?.status
             const code = e?.response?.data?.code
-            if (statusCode === 401 || statusCode === 403 || code === 'SESSION_EXPIRED') {
+            // Faqat JWT yaroqsiz — Telegram session yo'qligi endi 401 emas
+            if (statusCode === 401 || statusCode === 403) {
                 clearSession()
                 if (isProtectedPath(to.path) || to.path === '/auth') {
                     return navigateTo('/auth')

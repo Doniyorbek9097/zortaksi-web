@@ -244,11 +244,12 @@ export const useAccountStore = defineStore('account', () => {
     }
 
     const auth = useAuthStore()
+    const sameId = (a: unknown, b: unknown) => String(a ?? '') === String(b ?? '')
 
     if (
-      String(activeUserId.value) === target &&
+      sameId(activeUserId.value, target) &&
       auth.user &&
-      String(auth.user.userId) === target
+      sameId(auth.user.userId, target)
     ) {
       await navigateTo(homeForUser(auth.user), { replace: true })
       return true
@@ -268,42 +269,40 @@ export const useAccountStore = defineStore('account', () => {
     }
 
     try {
+      // 1) Yangi hisob tokenini majburan o'rnatish
       applyToken(acc.token, target)
-      // Cookie / xotira sinxroni — middleware eski token bilan ishlamasin
       writeAuthCookie(acc.token)
       token.value = acc.token
       try { auth.token = acc.token } catch { /* */ }
 
+      // 2) Profil — Bearer = yangi token (Telegram live check endi /me ni to'smaydi)
       const res = await auth.getMe({ authToken: acc.token })
       const gotId =
         res?.data?.userId != null
           ? String(res.data.userId)
           : String(auth.user?.userId || '')
 
-      if (!res?.success || !auth.user || gotId !== target) {
+      if (!res?.success || !auth.user || !sameId(gotId, target)) {
         console.warn('[account] switch mismatch', { target, gotId, success: res?.success })
-        // JWT mutlaqo yaroqsiz bo'lsa tokenni olib tashlash; SESSION_EXPIRED da saqlash
-        const code = res?.code || res?.data?.code
-        if (code !== 'SESSION_EXPIRED') {
-          const idx = accounts.value.findIndex((a) => String(a.userId) === target)
-          if (idx !== -1 && !res?.success) {
-            /* tokenni saqlaymiz — qayta urinish mumkin */
-          }
-        }
         await restorePrev()
         return false
       }
 
+      // 3) Sinxron saqlash
       ensureCurrent(auth.user)
       writeAuthCookie(acc.token)
       token.value = acc.token
-      writeActiveSession(target, acc.token)
+      writeActiveSession(String(auth.user.userId), acc.token)
+      activeId.value = String(auth.user.userId)
       reconnectSocket()
-      await navigateTo(homeForUser(auth.user), { replace: true })
+
+      const dest = homeForUser(auth.user)
+      await navigateTo(dest, { replace: true })
       return true
     } catch (e: any) {
-      console.warn('[account] switch failed', e)
-      // SESSION_EXPIRED / 401 — account tokenini o'chirmaymiz (boshqa hisoblar ishlasin)
+      const status = e?.response?.status
+      const msg = e?.response?.data?.message || e?.message
+      console.warn('[account] switch failed', status, msg)
       await restorePrev()
       return false
     } finally {

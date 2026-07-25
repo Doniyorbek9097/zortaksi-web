@@ -210,7 +210,7 @@ const onSelectAccount = async (acc: ILocalAccount) => {
   const ok = await accountStore.switchAccount(target)
   if (!ok) {
     switchError.value =
-      'Hisobga o\'tib bo\'lmadi. Admin uchun qayta login qiling — «Yangi hisob qo\'shish» orqali.'
+      'Hisobga o\'tib bo\'lmadi. Token eskirgan bo\'lishi mumkin — «Yangi hisob qo\'shish» orqali qayta kiring.'
   }
 }
 
