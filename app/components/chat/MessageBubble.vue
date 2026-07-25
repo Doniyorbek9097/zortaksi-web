@@ -167,11 +167,13 @@
         v-if="type === 'voice' && src"
         ref="audioEl"
         :src="src"
-        preload="auto"
+        preload="metadata"
+        playsinline
         class="hidden"
         @timeupdate="onTime"
         @ended="onEnded"
         @loadedmetadata="onMeta"
+        @error="onAudioError"
       />
     </div>
 
@@ -348,11 +350,13 @@ const fmt = (s: number) => {
 const currentLabel = computed(() => fmt(current.value))
 const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
+const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
+
 const ensureSrc = async () => {
   if (src.value || !props.messageId) return
   loading.value = true
   try {
-    src.value = await getUrl(props.messageId)
+    src.value = await getUrl(props.messageId, mediaKind.value)
   } catch (e) {
     console.error('media load', e)
   } finally {
@@ -398,6 +402,10 @@ const onEnded = () => {
   current.value = 0
 }
 
+const onAudioError = () => {
+  playing.value = false
+}
+
 const seek = (e: MouseEvent) => {
   const a = audioEl.value
   if (!a || !total.value) return
@@ -411,7 +419,7 @@ const seek = (e: MouseEvent) => {
 watch(
   () => props.messageId,
   async (id) => {
-    if ((props.type === 'voice' || props.type === 'photo') && id && !id.startsWith('temp-')) {
+    if ((props.type === 'voice' || props.type === 'photo') && id) {
       await ensureSrc()
     }
   },

@@ -1,8 +1,8 @@
 /** Chat rasmlari: katta fayllarni qayta o'lchamlash/siqish (yuborish va ko'rish uchun). */
-const MAX_EDGE = 2040
-const TARGET_MAX_BYTES = 3 * 1024 * 1024
-const SKIP_COMPRESS_BELOW = 600 * 1024
-const PREPARE_TIMEOUT_MS = 45_000
+const MAX_EDGE = 1920
+const TARGET_MAX_BYTES = 2.5 * 1024 * 1024
+const SKIP_COMPRESS_BELOW = 800 * 1024
+const PREPARE_TIMEOUT_MS = 30_000
 
 export const CHAT_PHOTO_MAX_INPUT = 20 * 1024 * 1024
 /** Backend multipart limiti bilan mos (siqishdan keyin ham cheklov). */
@@ -141,13 +141,13 @@ export async function prepareChatPhoto(file: File): Promise<File> {
 
     decoded.paint(ctx)
 
-    let quality = 0.88
+    let quality = 0.84
     let blob: Blob | null = null
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
       blob = await canvasToBlob(canvas, 'image/jpeg', quality)
       if (!blob) break
       if (blob.size <= TARGET_MAX_BYTES) break
-      quality = Math.max(0.4, quality - 0.08)
+      quality = Math.max(0.45, quality - 0.1)
     }
 
     if (!blob) {

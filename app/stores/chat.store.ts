@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { IChat, IChatMessage } from '~/types'
+import { voiceBlobExtension } from '~/utils/voiceRecording'
 
 export interface FetchChatsParams {
     page?: number
@@ -229,10 +230,13 @@ export const useChatStore = defineStore('chat', () => {
         } as unknown as IChatMessage
         messages.value.push(temp)
 
+        const { setLocalUrl, adoptLocalUrl } = useChatMedia()
+        if (import.meta.client) setLocalUrl(tempId, blob)
+
         try {
             isSending.value = true
             const form = new FormData()
-            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm'
+            const ext = voiceBlobExtension(blob.type)
             form.append('file', blob, `voice.${ext}`)
             form.append('duration', String(Math.max(1, Math.round(duration))))
 
@@ -250,13 +254,14 @@ export const useChatStore = defineStore('chat', () => {
                 } else if (!exists) {
                     appendMessage(res.data)
                 }
+                if (import.meta.client && res.data._id) {
+                    adoptLocalUrl(tempId, res.data._id)
+                    useChatMedia().getUrl(res.data._id, 'voice').catch(() => {})
+                }
                 patchChat(chatId, {
                     lastMessage: `🎤 Ovozli xabar (${res.data.duration || duration}s)`,
                     lastMessageAt: res.data.date,
                 })
-                if (import.meta.client && res.data._id) {
-                    useChatMedia().getUrl(res.data._id).catch(() => {})
-                }
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) messages.value[idx] = { ...temp, status: 'failed' } as IChatMessage
@@ -275,7 +280,6 @@ export const useChatStore = defineStore('chat', () => {
     // --- Rasm yuborish ---
     const sendPhoto = async (chatId: string, file: File, caption = '') => {
         const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
-        const localUrl = URL.createObjectURL(file)
         const temp = {
             _id: tempId,
             chatId,
@@ -286,6 +290,9 @@ export const useChatStore = defineStore('chat', () => {
             date: new Date().toISOString(),
         } as unknown as IChatMessage
         messages.value.push(temp)
+
+        const { setLocalUrl, adoptLocalUrl } = useChatMedia()
+        if (import.meta.client) setLocalUrl(tempId, file)
 
         try {
             isSending.value = true
@@ -312,7 +319,8 @@ export const useChatStore = defineStore('chat', () => {
                     lastMessageAt: res.data.date,
                 })
                 if (import.meta.client && res.data._id) {
-                    useChatMedia().getUrl(res.data._id).catch(() => {})
+                    adoptLocalUrl(tempId, res.data._id)
+                    useChatMedia().getUrl(res.data._id, 'photo').catch(() => {})
                 }
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
@@ -325,7 +333,6 @@ export const useChatStore = defineStore('chat', () => {
             console.error('sendPhoto error:', error)
             throw error
         } finally {
-            URL.revokeObjectURL(localUrl)
             isSending.value = false
         }
     }
@@ -404,7 +411,7 @@ export const useChatStore = defineStore('chat', () => {
     const onNewMessage = (msg: IChatMessage) => {
         appendMessage(msg)
         if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
-            useChatMedia().getUrl(msg._id).catch(() => {})
+            useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
 
         // Ro'yxatda oxirgi xabar + tartibni yangilaymiz

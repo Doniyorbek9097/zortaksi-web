@@ -114,6 +114,12 @@
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
 import { CHAT_PHOTO_MAX_INPUT, isChatPhotoFile, prepareChatPhoto } from '~/utils/prepareChatPhoto'
+import {
+  buildVoiceRecorderOptions,
+  getVoiceAudioConstraints,
+  normalizeVoiceBlob,
+  pickVoiceMimeType,
+} from '~/utils/voiceRecording'
 
 const text = defineModel<string>({ default: '' })
 
@@ -173,21 +179,13 @@ let timer: ReturnType<typeof setInterval> | null = null
 let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
 let chunks: BlobPart[] = []
-let mimeType = 'audio/webm'
+let mimeType = ''
 
 const formattedTime = computed(() => {
   const m = Math.floor(seconds.value / 60)
   const s = seconds.value % 60
   return `${m}:${String(s).padStart(2, '0')}`
 })
-
-const pickMime = () => {
-  if (typeof MediaRecorder === 'undefined') return ''
-  if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return 'audio/webm;codecs=opus'
-  if (MediaRecorder.isTypeSupported('audio/webm')) return 'audio/webm'
-  if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')) return 'audio/ogg;codecs=opus'
-  return ''
-}
 
 const clearTimer = () => {
   if (timer) {
@@ -203,26 +201,6 @@ const stopTracks = () => {
   chunks = []
 }
 
-/** requestData() dan keyin dataavailable kelishini kutadi (asosiy handler chunk qo'shadi). */
-const flushRecorderData = (recorder: MediaRecorder): Promise<void> =>
-  new Promise((resolve) => {
-    if (recorder.state !== 'recording') {
-      resolve()
-      return
-    }
-    const finish = () => {
-      recorder.removeEventListener('dataavailable', onData)
-      resolve()
-    }
-    const onData = () => finish()
-    recorder.addEventListener('dataavailable', onData)
-    try {
-      recorder.requestData()
-    } catch {
-      finish()
-    }
-  })
-
 const waitForRecorderStop = (recorder: MediaRecorder): Promise<void> =>
   new Promise((resolve) => {
     if (recorder.state === 'inactive') {
@@ -236,18 +214,21 @@ const startRecording = async () => {
   if (props.disabled) return
   micError.value = ''
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mimeType = pickMime() || 'audio/webm'
+    mediaStream = await navigator.mediaDevices.getUserMedia(getVoiceAudioConstraints())
+    mimeType = pickVoiceMimeType()
     chunks = []
+    const opts = buildVoiceRecorderOptions(mimeType)
     mediaRecorder = mimeType
-      ? new MediaRecorder(mediaStream, { mimeType })
+      ? new MediaRecorder(mediaStream, opts)
       : new MediaRecorder(mediaStream)
+    if (!mimeType && mediaRecorder.mimeType) mimeType = mediaRecorder.mimeType
 
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) chunks.push(e.data)
     }
 
-    mediaRecorder.start(250)
+    // Timeslicesiz — stop paytida bitta to'liq chunk (buzilgan webm dan qochish)
+    mediaRecorder.start()
     recording.value = true
     seconds.value = 0
     timer = setInterval(() => (seconds.value += 1), 1000)
@@ -281,18 +262,17 @@ const stopAndSend = async () => {
   }
 
   try {
-    await flushRecorderData(recorder)
     const stopped = waitForRecorderStop(recorder)
     recorder.stop()
     await stopped
-    // Ba'zi brauzerlarda oxirgi chunk stop'dan keyin keladi
-    await new Promise<void>((r) => queueMicrotask(r))
+    await new Promise<void>((r) => requestAnimationFrame(() => r()))
   } catch {
     cancelRecording()
     return
   }
 
-  const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
+  const raw = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/webm' })
+  const blob = normalizeVoiceBlob(raw, mimeType || recorder.mimeType || '')
   stopTracks()
   recording.value = false
   seconds.value = 0
