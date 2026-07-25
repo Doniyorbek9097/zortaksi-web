@@ -1,4 +1,4 @@
-import { defineStore, skipHydrate } from 'pinia'
+import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
 import {
@@ -13,8 +13,7 @@ import { normalizeUserRole } from '~/utils/userRole'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...authCookieOptions })
-    // SSR payload orqali boshqa userning profili kelmasin
-    const user = skipHydrate(ref<IUser | null>(null))
+    const user = ref<IUser | null>(null)
     const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)
     const tariffActive = computed(() => isTariffActive(user.value))

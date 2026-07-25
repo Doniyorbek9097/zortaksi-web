@@ -18,58 +18,43 @@ const isProtectedPath = (path: string) =>
 const isAuthEntryPath = (path: string) =>
     path === '/' || path === '/auth' || path === '/login' || path === '/register'
 
-const clearSession = (authStore: ReturnType<typeof useAuthStore>, clearToken: () => void) => {
-    clearToken()
-    clearAllAuthStorage()
-    authStore.user = null
-}
-
-const noStoreHeaders = (path: string) => {
-    if (!import.meta.server) return
-    if (!isProtectedPath(path) && !isAuthEntryPath(path) && path !== '/auth') return
-    const event = useRequestEvent()
-    if (!event) return
-    setResponseHeader(event, 'Cache-Control', 'private, no-store, no-cache, must-revalidate')
-    setResponseHeader(event, 'Vary', 'Cookie')
-    setResponseHeader(event, 'Pragma', 'no-cache')
-}
-
 export default defineNuxtRouteMiddleware(async (to) => {
-    noStoreHeaders(to.path)
-
-    const token = useCookie('auth_token', { ...authCookieOptions })
-    const authStore = useAuthStore()
-
-    /**
-     * SSR da hech qachon getMe / user yozilmasin.
-     * Aks holda HTML payload ichida boshqa userning profili/tokeni
-     * CDN orqali begona telefonga ketishi mumkin.
-     */
+    // Kesh: auth HTML begonalarga ketmasin
     if (import.meta.server) {
-        const cookieToken = token.value || null
+        try {
+            const event = useRequestEvent()
+            if (event && (isProtectedPath(to.path) || isAuthEntryPath(to.path))) {
+                setResponseHeader(event, 'Cache-Control', 'private, no-store, no-cache, must-revalidate')
+                setResponseHeader(event, 'Vary', 'Cookie')
+            }
+        } catch { /* */ }
 
-        // SSR payload dan qolgan user — bekor
-        authStore.user = null
-
-        if (!cookieToken && isProtectedPath(to.path)) {
+        /**
+         * SSR: Pinia store'ga tegilmaydi (_s xatosi / payload leak yo'q).
+         * Faqat cookie bor-yo'qligi — himoyalangan yo'lga token siz kirmaslik.
+         */
+        const token = useCookie('auth_token', { ...authCookieOptions })
+        if (!token.value && isProtectedPath(to.path)) {
             return navigateTo('/auth')
         }
-
-        // Cookie bor yoki yo'q — SSR da identity redirect qilmaymiz (faqat client)
         return
     }
 
-    // ——— CLIENT ———
+    // ——— CLIENT (haqiqiy auth) ———
+    const token = useCookie('auth_token', { ...authCookieOptions })
+    const authStore = useAuthStore()
 
     const authToken = () => resolveAuthToken(token.value)
     const hasToken = () => !!authToken()
-    const wipeToken = () => {
+
+    const clearSession = () => {
         token.value = null
+        clearAllAuthStorage()
+        authStore.user = null
     }
 
-    // Cookie yo'q — hydrated/eski user qolmasin
     if (!hasToken()) {
-        if (authStore.user) authStore.user = null
+        authStore.user = null
         if (isProtectedPath(to.path)) {
             clearAllAuthStorage()
             return navigateTo('/auth')
@@ -77,7 +62,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return
     }
 
-    // Cookie bor — switch xotirasi
     const resolved = resolveAuthToken(token.value)
     if (resolved && token.value !== resolved) {
         writeAuthCookie(resolved)
@@ -85,15 +69,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
         authStore.user = null
     }
 
-    // /auth?switch=1
     if (to.path === '/auth' && (to.query.switch === '1' || to.query.switch === 'true')) {
-        clearSession(authStore, wipeToken)
+        clearSession()
         const q = { ...to.query }
         delete q.switch
         return navigateTo({ path: '/auth', query: q }, { replace: true })
     }
 
-    // Har doim /me bilan tasdiqlash — SSR dan kelgan user ishonchsiz
     const storeUserId = () =>
         authStore.user?.userId != null ? String(authStore.user.userId) : ''
     const activeUserId = () => {
@@ -108,21 +90,19 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return !!(wanted && got && wanted !== got)
     }
 
-    // User yo'q yoki hisob almashgan — /me majburiy (har navigatsiyada emas)
     if (needsUserRefresh()) {
         try {
             await authStore.getMe({ authToken: authToken() || undefined })
         } catch (e: any) {
-            const statusCode = e.response?.status
-            const code = e.response?.data?.code
+            const statusCode = e?.response?.status
+            const code = e?.response?.data?.code
             if (statusCode === 401 || statusCode === 403 || code === 'SESSION_EXPIRED') {
-                clearSession(authStore, wipeToken)
-                if (isProtectedPath(to.path) || isAuthEntryPath(to.path)) {
+                clearSession()
+                if (isProtectedPath(to.path) || to.path === '/auth') {
                     return navigateTo('/auth')
                 }
                 return
             }
-            console.warn('[Middleware] getMe xato:', e?.message)
             if (isProtectedPath(to.path) && !authStore.user) {
                 return navigateTo('/auth')
             }
@@ -131,13 +111,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     if (!authStore.user) {
         if (isProtectedPath(to.path)) {
-            clearSession(authStore, wipeToken)
+            clearSession()
             return navigateTo('/auth')
         }
         return
     }
 
-    // Login qilgan — auth/landing → home
     if (isAuthEntryPath(to.path)) {
         if (to.path === '/auth') {
             const next = resolveSafeNextPath(to.query.next, authStore.user)
@@ -146,7 +125,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return navigateTo(resolveHomePath(authStore.user))
     }
 
-    // /admin — faqat admin
     if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {
         return navigateTo(resolveHomePath(authStore.user))
     }

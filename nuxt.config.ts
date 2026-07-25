@@ -25,6 +25,12 @@ export default defineNuxtConfig({
    * cookie/profili CDN orqali begonalarga ketmasin.
    */
   routeRules: {
+    '/': {
+      headers: {
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+        Vary: 'Cookie',
+      },
+    },
     '/driver/**': {
       ssr: false,
       headers: {
