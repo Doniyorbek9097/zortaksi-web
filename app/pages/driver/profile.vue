@@ -112,6 +112,15 @@
           clickable
           @click="navigateTo('/privacy')"
         />
+
+        <ProfileSettingRow
+          icon="fa-solid fa-right-from-bracket"
+          title="Chiqish"
+          subtitle="Boshqa hisob bilan kirish uchun"
+          color="rose"
+          clickable
+          @click="onLogout"
+        />
       </div>
     </ProfileSectionCard>
 
@@ -220,6 +229,13 @@ const confirmDeleteAccount = async () => {
 }
 
 const onAddAccount = () => navigateTo('/driver/accounts/add')
+
+const onLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch { /* lokal tozalash logout ichida */ }
+  await navigateTo('/auth', { replace: true })
+}
 
 onMounted(async () => {
   accountStore.load()

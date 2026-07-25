@@ -1,7 +1,13 @@
 import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
-import { readActiveUserId, resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
+import {
+    clearAllAuthStorage,
+    readActiveUserId,
+    resolveAuthToken,
+    writeActiveSession,
+    writeAuthCookie,
+} from '~/utils/activeAccount'
 import { isTariffActive } from '~/utils/tariffActive'
 import { normalizeUserRole } from '~/utils/userRole'
 
@@ -153,16 +159,21 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             isLoading.value = true
             clearExpireTimer()
-            const response = await useApi('/logout', {
-                method: 'POST'
-            })
+            let response: any = { success: true }
+            try {
+                response = await useApi('/logout', { method: 'POST' })
+            } catch {
+                /* tarmoq xatosida ham lokal sessiyani tozalash */
+            }
             token.value = null
             user.value = null
-            writeActiveSession(null, null)
-            writeAuthCookie(null)
+            clearAllAuthStorage()
             return response
         } catch (error) {
             console.error('Logout error:', error)
+            token.value = null
+            user.value = null
+            clearAllAuthStorage()
             throw error
         } finally {
             isLoading.value = false

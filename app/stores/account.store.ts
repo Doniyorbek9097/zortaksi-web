@@ -103,33 +103,30 @@ export const useAccountStore = defineStore('account', () => {
     writeActiveSession(userId, authToken)
   }
 
+  /**
+   * Cookie dagi joriy sessiyani user bilan moslashtirish.
+   * Cookie yo'q bo'lsa localStorage dan login qilmaydi (admin "tirilishi" yo'q).
+   */
   const syncFromStorage = async (): Promise<boolean> => {
     if (!import.meta.client) return false
     load()
-    const wantId = readActiveUserId()
-    const storedToken = readActiveToken()
-    if (!wantId || !storedToken) return false
+    const cookieToken = token.value
+    if (!cookieToken) return false
 
-    activeId.value = wantId
     const auth = useAuthStore()
-    if (auth.user && String(auth.user.userId) === wantId) {
-      if (token.value !== storedToken) {
-        token.value = storedToken
-        writeAuthCookie(storedToken)
-      }
+    if (auth.user) {
+      ensureCurrent(auth.user)
       return false
     }
 
-    applyToken(storedToken, wantId)
     try {
-      await auth.getMe()
-      if (auth.user && String(auth.user.userId) === wantId) {
+      await auth.getMe({ authToken: cookieToken })
+      if (auth.user) {
         ensureCurrent(auth.user)
+        return true
       }
-      return true
-    } catch {
-      return false
-    }
+    } catch { /* */ }
+    return false
   }
 
   const digitsPhone = (phone?: string | null) => String(phone || '').replace(/\D/g, '')

@@ -1,9 +1,14 @@
-import { readActiveToken, writeAuthCookie } from '~/utils/activeAccount'
+import {
+  readActiveToken,
+  writeActiveSession,
+  writeAuthCookie,
+} from '~/utils/activeAccount'
 import { authCookieOptions } from '~/utils/authCookie'
 
 /**
- * Sahifa ochilishi bilan localStorage dagi faol hisob tokenini
- * cookie + auth.store ga sinxronlaydi.
+ * Sessiya manbai — cookie.
+ * localStorage dagi eski admin tokenini cookie ga yozib
+ * boshqa userni admin qilib yubormaslik.
  */
 export default defineNuxtPlugin({
   name: 'active-account-sync',
@@ -11,20 +16,30 @@ export default defineNuxtPlugin({
   setup() {
     if (!import.meta.client) return
 
-    const stored = readActiveToken()
-    if (!stored) return
-
     const cookie = useCookie<string | null>('auth_token', { ...authCookieOptions })
-    if (cookie.value === stored) return
 
-    writeAuthCookie(stored)
-    cookie.value = stored
+    // Cookie yo'q — faol localStorage sessiyasini ham o'chirish (tiriltirmaslik)
+    if (!cookie.value) {
+      const orphan = readActiveToken()
+      if (orphan) {
+        writeActiveSession(null, null)
+      }
+      return
+    }
 
-    try {
-      const auth = useAuthStore()
-      // Boshqa hisob tokeni — eski user (masalan admin) bilan aralashmasin
-      auth.user = null
-      auth.token = stored
-    } catch { /* */ }
+    // Cookie bor — localStorage ni cookie bilan moslashtirish (aksincha emas)
+    const stored = readActiveToken()
+    if (stored && stored !== cookie.value) {
+      // Eski LS token cookie dan farq qilsa — cookie ustun, LS ni yangilash
+      // (userId keyin getMe/ensureCurrent da to'ldiriladi)
+      writeAuthCookie(cookie.value)
+      try {
+        const auth = useAuthStore()
+        if (auth.token !== cookie.value) {
+          auth.user = null
+          auth.token = cookie.value
+        }
+      } catch { /* */ }
+    }
   },
 })

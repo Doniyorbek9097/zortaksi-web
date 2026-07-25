@@ -183,6 +183,7 @@ import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
 import { isValidIntlPhone } from '~/utils/phone'
+import { ACCOUNTS_KEY } from '~/utils/activeAccount'
 import { resolvePostAuthPath } from '~/utils/userRole'
 
 const authStore = useAuthStore()
@@ -281,6 +282,18 @@ const goHomeAfterAuth = async (user?: { role?: string | null } | null) => {
   await navigateTo(resolvePostAuthPath(user ?? authStore.user, route.query.next))
 }
 
+/** Asosiy login — eski multi-account (admin) tokenlarini olib tashlab faqat yangi hisobni yozadi */
+const adoptFreshSession = (user: any) => {
+  try {
+    if (import.meta.client) {
+      localStorage.removeItem(ACCOUNTS_KEY)
+    }
+    const accountStore = useAccountStore()
+    accountStore.load()
+    if (user) accountStore.ensureCurrent(user)
+  } catch { /* */ }
+}
+
 const handleSendCode = async () => {
   if (authStore.isLoading || !isPhoneValid.value) return
   form.error = ''
@@ -309,11 +322,7 @@ const handleVerifyCode = async () => {
       } else {
         clearReferral()
         const user = response.data?.user ?? authStore.user
-        try {
-          const accountStore = useAccountStore()
-          accountStore.load()
-          accountStore.ensureCurrent(user)
-        } catch { /* */ }
+        adoptFreshSession(user)
         await goHomeAfterAuth(user)
       }
     } else if (response.needPassword || response.data?.needPassword) {
@@ -338,11 +347,7 @@ const handleVerifyPassword = async () => {
     if (response.success) {
       clearReferral()
       const user = response.data?.user ?? authStore.user
-      try {
-        const accountStore = useAccountStore()
-        accountStore.load()
-        accountStore.ensureCurrent(user)
-      } catch { /* */ }
+      adoptFreshSession(user)
       await goHomeAfterAuth(user)
     } else {
       form.error = response.message || 'Parol noto\'g\'ri'

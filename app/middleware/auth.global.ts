@@ -1,8 +1,8 @@
 import { authCookieOptions } from '~/utils/authCookie'
 import {
+    clearAllAuthStorage,
     readActiveUserId,
     resolveAuthToken,
-    writeActiveSession,
     writeAuthCookie,
 } from '~/utils/activeAccount'
 import {
@@ -16,8 +16,7 @@ const isProtectedPath = (path: string) =>
 
 const clearSession = (authStore: ReturnType<typeof useAuthStore>, clearToken: () => void) => {
     clearToken()
-    writeAuthCookie(null)
-    writeActiveSession(null, null)
+    clearAllAuthStorage()
     authStore.user = null
 }
 
@@ -25,11 +24,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const authStore = useAuthStore()
 
-    // Client: localStorage / xotira tokenini cookie bilan sinxronlash
-    // Token manbai o'zgarsa — eski user ishonchsiz (stale admin role oldini olish)
+    // Client: faqat xotira (switch) cookie dan ustun; LS dan cookie ga yozilmaydi
     if (import.meta.client) {
         const resolved = resolveAuthToken(token.value)
         if (resolved && token.value !== resolved) {
+            // memoryToken switch — cookie ni yangilash
             writeAuthCookie(resolved)
             token.value = resolved
             authStore.user = null
@@ -72,6 +71,16 @@ export default defineNuxtRouteMiddleware(async (to) => {
             } else {
                 console.warn('[Middleware] Tarmoq yoki server xatosi, lekin cookie saqlab qolindi:', e.message)
             }
+        }
+    }
+
+    // /auth?switch=1 — boshqa hisob: eski sessiyani to'liq tozalash
+    if (to.path === '/auth' && (to.query.switch === '1' || to.query.switch === 'true')) {
+        clearSession(authStore, wipeToken)
+        if (to.query.switch) {
+            const q = { ...to.query }
+            delete q.switch
+            return navigateTo({ path: '/auth', query: q }, { replace: true })
         }
     }
 

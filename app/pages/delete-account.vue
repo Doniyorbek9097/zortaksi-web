@@ -111,7 +111,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import { writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
+import { clearAllAuthStorage } from '~/utils/activeAccount'
 
 definePageMeta({ layout: 'default' })
 
@@ -159,10 +159,9 @@ const onDelete = async () => {
     }
     const uid = String(authStore.user?.userId || '')
     if (uid) await accountStore.removeAccount(uid)
-    writeActiveSession(null, null)
-    writeAuthCookie(null)
     token.value = null
     authStore.user = null
+    clearAllAuthStorage()
     showConfirm.value = false
     success.value = "Hisob o'chirildi. Ilovadan foydalanish uchun qayta ro'yxatdan o'ting."
   } catch (e: any) {

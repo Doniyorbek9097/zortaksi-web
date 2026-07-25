@@ -77,10 +77,25 @@ export function writeAuthCookie(token: string | null) {
   document.cookie = `auth_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${secure}`
 }
 
-/** API / socket: xotira → localStorage → cookie */
+/**
+ * API / middleware token manbai.
+ * Ustunlik: xotira (switch paytida) → cookie (haqiqiy sessiya).
+ * localStorage ga fallback YO'Q — cookie yo'q bo'lsa eski admin
+ * hisobi avtomatik tiklanmasin (boshqa user o'sha qurilmada ochganda).
+ */
 export function resolveAuthToken(cookieToken?: string | null): string | null {
   if (memoryToken) return memoryToken
-  const stored = readActiveToken()
-  if (stored) return stored
   return cookieToken || null
+}
+
+/** To'liq chiqish — cookie, xotira, active keys, account tokenlari */
+export function clearAllAuthStorage() {
+  setMemorySession(null, null)
+  writeAuthCookie(null)
+  if (!import.meta.client) return
+  try {
+    localStorage.removeItem(ACTIVE_USER_KEY)
+    localStorage.removeItem(ACTIVE_TOKEN_KEY)
+    localStorage.removeItem(ACCOUNTS_KEY)
+  } catch { /* */ }
 }
