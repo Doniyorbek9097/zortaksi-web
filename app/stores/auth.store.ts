@@ -82,14 +82,16 @@ export const useAuthStore = defineStore('auth', () => {
             const response = await useApi('/me', forced ? { authToken: forced } : {})
             if (response.success) {
                 user.value = normalizeUser(response.data)
-                const t = forced || resolveAuthToken(token.value)
-                const wanted = readActiveUserId()
-                const gotId = response.data?.userId != null ? String(response.data.userId) : ''
-                // Kutilgan hisob bilan mos bo'lsa — session sync
-                if (t && gotId && (!wanted || wanted === gotId)) {
-                    writeActiveSession(gotId, t)
-                    token.value = t
-                    writeAuthCookie(t)
+                // Session sync faqat client — SSR da writeActiveSession/memory leak bo'lmasin
+                if (import.meta.client) {
+                    const t = forced || resolveAuthToken(token.value)
+                    const wanted = readActiveUserId()
+                    const gotId = response.data?.userId != null ? String(response.data.userId) : ''
+                    if (t && gotId && (!wanted || wanted === gotId)) {
+                        writeActiveSession(gotId, t)
+                        token.value = t
+                        writeAuthCookie(t)
+                    }
                 }
             }
             return response

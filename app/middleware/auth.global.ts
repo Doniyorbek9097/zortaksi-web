@@ -24,6 +24,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const authStore = useAuthStore()
 
+    // Auth sahifalar CDN/proxy da keshlanmasin — boshqa user HTML olmasin
+    if (import.meta.server && isProtectedPath(to.path)) {
+        const event = useRequestEvent()
+        if (event) {
+            setResponseHeader(event, 'Cache-Control', 'private, no-store, no-cache, must-revalidate')
+        }
+    }
+
     // Client: faqat xotira (switch) cookie dan ustun; LS dan cookie ga yozilmaydi
     if (import.meta.client) {
         const resolved = resolveAuthToken(token.value)

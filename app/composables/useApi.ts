@@ -17,6 +17,7 @@ interface IOptions {
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
   const config = useRuntimeConfig()
   const cookie = useCookie('auth_token', { ...authCookieOptions })
+  // SSR: faqat shu request cookie / explicit authToken (global memory yo'q)
   const token = options.authToken || resolveAuthToken(cookie.value)
 
   const headers = { ...options.headers }
@@ -25,15 +26,14 @@ export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
     headers.authorization = `Bearer ${token}`
   }
 
-  // Cookie orqali eski token ketmasin — faqat Bearer
-  // (withCredentials: true bo'lsa ham backend Bearer ni birinchi o'qiydi)
-
   if (import.meta.server) {
     const reqHeaders = useRequestHeaders(['cookie', 'authorization'])
+    // Bearer allaqachon shu so'rov cookie sidan — boshqa request auth headerini qo'shma
     if (reqHeaders.cookie) {
       headers.cookie = reqHeaders.cookie
     }
-    if (reqHeaders.authorization && !headers.authorization) {
+    // Faqat o'zimizda Bearer bo'lmasa — va bu so'rovning authorization i
+    if (!headers.authorization && reqHeaders.authorization) {
       headers.authorization = reqHeaders.authorization
     }
   }
