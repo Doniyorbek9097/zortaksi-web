@@ -20,6 +20,36 @@ export default defineNuxtConfig({
     // Vercel deployda avtomatik `vercel` preset; lokal preview uchun node-server
     preset: process.env.VERCEL || process.env.NITRO_PRESET === 'vercel' ? 'vercel' : undefined,
   },
+  /**
+   * Auth sahifalar SSR qilinmasin — HTML/payload ichida boshqa userning
+   * cookie/profili CDN orqali begonalarga ketmasin.
+   */
+  routeRules: {
+    '/driver/**': {
+      ssr: false,
+      headers: {
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+        Vary: 'Cookie',
+      },
+    },
+    '/admin/**': {
+      ssr: false,
+      headers: {
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+        Vary: 'Cookie',
+      },
+    },
+    '/auth': {
+      ssr: false,
+      headers: {
+        'Cache-Control': 'private, no-store, no-cache, must-revalidate',
+        Vary: 'Cookie',
+      },
+    },
+    '/login': { ssr: false, headers: { 'Cache-Control': 'private, no-store' } },
+    '/register': { ssr: false, headers: { 'Cache-Control': 'private, no-store' } },
+  },
+
   app: {
     head: {
       title: "Zo'r Taksi",
