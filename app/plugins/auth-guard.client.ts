@@ -2,8 +2,9 @@ import { authCookieOptions } from '~/utils/authCookie'
 import { clearAllAuthStorage, resolveAuthToken } from '~/utils/activeAccount'
 
 /**
- * Pinia tayyor bo'lgach: cookie yo'q bo'lsa auth holatini tozalash.
- * enforce: 'pre' ishlatilmaydi — aks holda pinia._s xatosi.
+ * Cookie yo'q bo'lsa — auth tozalash.
+ * Cookie bor + SSR dan user kelgan bo'lsa — saqlanadi (SSR foydali).
+ * CDN leak Cache-Control: private bilan oldini olingan.
  */
 export default defineNuxtPlugin({
   name: 'auth-guard',
@@ -16,10 +17,6 @@ export default defineNuxtPlugin({
       auth.user = null
       token.value = null
       clearAllAuthStorage()
-      return
     }
-
-    // Cookie bor — eski hydrated user ishonchsiz
-    auth.user = null
   },
 })

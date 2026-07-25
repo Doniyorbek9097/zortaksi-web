@@ -21,40 +21,48 @@ export default defineNuxtConfig({
     preset: process.env.VERCEL || process.env.NITRO_PRESET === 'vercel' ? 'vercel' : undefined,
   },
   /**
-   * Auth sahifalar SSR qilinmasin — HTML/payload ichida boshqa userning
-   * cookie/profili CDN orqali begonalarga ketmasin.
+   * SSR yoqilgan. Xavfsizlik: shaxsiy sahifalar CDN da keshlanmaydi (Vary: Cookie).
+   * Token faqat shu so'rov cookie sidan — global memory SSR da ishlatilmaydi.
    */
   routeRules: {
     '/': {
+      ssr: true,
       headers: {
         'Cache-Control': 'private, no-store, no-cache, must-revalidate',
         Vary: 'Cookie',
       },
     },
     '/driver/**': {
-      ssr: false,
+      ssr: true,
       headers: {
         'Cache-Control': 'private, no-store, no-cache, must-revalidate',
         Vary: 'Cookie',
       },
     },
     '/admin/**': {
-      ssr: false,
+      ssr: true,
       headers: {
         'Cache-Control': 'private, no-store, no-cache, must-revalidate',
         Vary: 'Cookie',
       },
     },
     '/auth': {
-      ssr: false,
+      ssr: true,
       headers: {
         'Cache-Control': 'private, no-store, no-cache, must-revalidate',
         Vary: 'Cookie',
       },
     },
-    '/login': { ssr: false, headers: { 'Cache-Control': 'private, no-store' } },
-    '/register': { ssr: false, headers: { 'Cache-Control': 'private, no-store' } },
+    '/login': {
+      ssr: true,
+      headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+    },
+    '/register': {
+      ssr: true,
+      headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+    },
   },
+
 
   app: {
     head: {
