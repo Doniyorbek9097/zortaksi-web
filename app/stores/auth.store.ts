@@ -3,6 +3,7 @@ import type { IUser } from '~/types'
 import { authCookieOptions } from '~/utils/authCookie'
 import { readActiveUserId, resolveAuthToken, writeActiveSession, writeAuthCookie } from '~/utils/activeAccount'
 import { isTariffActive } from '~/utils/tariffActive'
+import { normalizeUserRole } from '~/utils/userRole'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...authCookieOptions })
@@ -51,9 +52,17 @@ export const useAuthStore = defineStore('auth', () => {
         watch(user, () => scheduleTariffExpiry(), { deep: true })
     }
 
+    const normalizeUser = (raw: any): IUser | null => {
+        if (!raw || typeof raw !== 'object') return null
+        return {
+            ...raw,
+            role: normalizeUserRole(raw.role),
+        } as IUser
+    }
+
     const persistSession = (authToken: string, nextUser: any) => {
         token.value = authToken
-        user.value = nextUser
+        user.value = normalizeUser(nextUser)
         writeAuthCookie(authToken)
         if (nextUser?.userId) {
             writeActiveSession(String(nextUser.userId), authToken)
@@ -66,7 +75,7 @@ export const useAuthStore = defineStore('auth', () => {
             const forced = opts?.authToken
             const response = await useApi('/me', forced ? { authToken: forced } : {})
             if (response.success) {
-                user.value = response.data
+                user.value = normalizeUser(response.data)
                 const t = forced || resolveAuthToken(token.value)
                 const wanted = readActiveUserId()
                 const gotId = response.data?.userId != null ? String(response.data.userId) : ''

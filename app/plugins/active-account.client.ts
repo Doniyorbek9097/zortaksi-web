@@ -22,6 +22,8 @@ export default defineNuxtPlugin({
 
     try {
       const auth = useAuthStore()
+      // Boshqa hisob tokeni — eski user (masalan admin) bilan aralashmasin
+      auth.user = null
       auth.token = stored
     } catch { /* */ }
   },

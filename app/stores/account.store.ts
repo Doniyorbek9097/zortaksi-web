@@ -9,6 +9,7 @@ import {
   writeActiveSession,
   writeAuthCookie,
 } from '~/utils/activeAccount'
+import { normalizeUserRole, resolveHomePath } from '~/utils/userRole'
 
 /**
  * Accountlar localStorage'da. Faol hisob — reactive ref + localStorage.
@@ -95,7 +96,8 @@ export const useAccountStore = defineStore('account', () => {
       username: user.username ?? existing?.username,
       phoneNumber: user.phoneNumber ?? existing?.phoneNumber,
       avatar: user.avatar ?? existing?.avatar,
-      role: user.role ?? existing?.role,
+      // API role ustun — eski local admin role qolib ketmasin
+      role: user.role != null ? normalizeUserRole(user.role) : (existing?.role || 'driver'),
     })
     activeId.value = userId
     writeActiveSession(userId, authToken)
@@ -212,16 +214,15 @@ export const useAccountStore = defineStore('account', () => {
       username: user.username,
       phoneNumber: user.phoneNumber,
       avatar: user.avatar,
-      role: user.role,
+      role: user.role != null ? normalizeUserRole(user.role) : 'driver',
     })
     applyToken(authToken, userId)
+    // Token qo'yildi — user hali null; getMe/finish sahifada yuklaydi
     return { ok: true }
   }
 
-  const homeForUser = (user: { role?: string } | null | undefined) => {
-    if (user?.role === 'admin') return '/admin/dashboard'
-    return '/driver/profile'
-  }
+  const homeForUser = (user: { role?: string } | null | undefined) =>
+    resolveHomePath(user)
 
   const reconnectSocket = () => {
     if (!import.meta.client) return

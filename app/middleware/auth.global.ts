@@ -1,41 +1,72 @@
 import { authCookieOptions } from '~/utils/authCookie'
 import {
+    readActiveUserId,
     resolveAuthToken,
     writeActiveSession,
     writeAuthCookie,
 } from '~/utils/activeAccount'
+import {
+    isAdminUser,
+    resolveHomePath,
+    resolveSafeNextPath,
+} from '~/utils/userRole'
 
-export default defineNuxtRouteMiddleware(async (to, from) => {
+const isProtectedPath = (path: string) =>
+    path.startsWith('/driver') || path.startsWith('/admin')
+
+const clearSession = (authStore: ReturnType<typeof useAuthStore>, clearToken: () => void) => {
+    clearToken()
+    writeAuthCookie(null)
+    writeActiveSession(null, null)
+    authStore.user = null
+}
+
+export default defineNuxtRouteMiddleware(async (to) => {
     const token = useCookie('auth_token', { ...authCookieOptions })
     const authStore = useAuthStore()
 
     // Client: localStorage / xotira tokenini cookie bilan sinxronlash
-    // (refreshda cookie bo'sh, localStorage to'liq bo'lsa — /auth flash oldini oladi)
+    // Token manbai o'zgarsa — eski user ishonchsiz (stale admin role oldini olish)
     if (import.meta.client) {
         const resolved = resolveAuthToken(token.value)
         if (resolved && token.value !== resolved) {
             writeAuthCookie(resolved)
             token.value = resolved
+            authStore.user = null
         }
     }
 
     const authToken = () => resolveAuthToken(token.value)
     const hasToken = () => !!authToken()
+    const wipeToken = () => {
+        token.value = null
+    }
 
-    // Token bor — /me orqali user + Telegram session tekshiriladi
-    if (hasToken() && !authStore.user) {
+    const storeUserId = () =>
+        authStore.user?.userId != null ? String(authStore.user.userId) : ''
+    const activeUserId = () => {
+        const fromStorage = readActiveUserId()
+        return fromStorage ? String(fromStorage) : ''
+    }
+
+    // Token bor — /me orqali user yuklash
+    const needsUserRefresh = () => {
+        if (!hasToken()) return false
+        if (!authStore.user) return true
+        const wanted = activeUserId()
+        const got = storeUserId()
+        return !!(wanted && got && wanted !== got)
+    }
+
+    if (needsUserRefresh()) {
         try {
             await authStore.getMe({ authToken: authToken() || undefined })
         } catch (e: any) {
             const statusCode = e.response?.status
             const code = e.response?.data?.code
-            // Token yoki Telegram session yaroqsiz
             if (statusCode === 401 || statusCode === 403 || code === 'SESSION_EXPIRED') {
-                token.value = null
-                writeAuthCookie(null)
-                writeActiveSession(null, null)
-                authStore.user = null
-                if (to.path.startsWith('/driver') || to.path.startsWith('/admin')) {
+                clearSession(authStore, wipeToken)
+                if (isProtectedPath(to.path)) {
                     return navigateTo('/auth')
                 }
             } else {
@@ -44,48 +75,58 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         }
     }
 
-    const isAdmin = authStore.user?.role === 'admin'
-    const homePath = isAdmin ? '/admin/dashboard' : '/driver/dashboard'
-
-    // Login qilgan foydalanuvchini landing/auth'dan o'z dashboardiga yo'naltirish
-    // /auth?next=/delete-account — maxsus yo'nalish (Play Console hisob o'chirish)
+    // Login qilgan — landing/auth'dan o'z dashboardiga
     if (hasToken() && authStore.user && (to.path === '/' || to.path === '/auth' || to.path === '/login' || to.path === '/register')) {
         if (to.path === '/auth') {
-            const next = typeof to.query.next === 'string' ? to.query.next : ''
-            if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth')) {
-                return navigateTo(next)
-            }
+            const next = resolveSafeNextPath(to.query.next, authStore.user)
+            if (next) return navigateTo(next)
         }
-        return navigateTo(homePath)
+        return navigateTo(resolveHomePath(authStore.user))
     }
 
-    // Login qilmagan — himoyalangan sahifalarga kira olmasin
-    if (!hasToken() && (to.path.startsWith('/driver') || to.path.startsWith('/admin'))) {
-        // SSR da localStorage yo'q — cookie bo'sh bo'lsa ham /auth ga otkazmaslik
-        // (client middleware localStorage ni sinxronlab qayta tekshiradi)
-        if (import.meta.server) return
+    // Login yo'q — /driver va /admin yopiq (SSR + client, fail-closed)
+    if (!hasToken() && isProtectedPath(to.path)) {
         return navigateTo('/auth')
     }
 
-    // Admin bo'lmagan /admin ga kirmasin
-    // Muhim: clientda authStore.user allaqachon yangilangan bo'lsa (account switch) — shunga ishonamiz
-    if (hasToken() && to.path.startsWith('/admin') && !isAdmin) {
-        // Client navigatsiyada user hali yuklanmagan bo'lishi mumkin — qayta /me
-        if (import.meta.client && !authStore.user) {
+    // /admin — faqat tasdiqlangan admin
+    if (to.path.startsWith('/admin')) {
+        if (!hasToken()) {
+            return navigateTo('/auth')
+        }
+
+        if (!authStore.user) {
             try {
                 await authStore.getMe({ authToken: authToken() || undefined })
-            } catch { /* */ }
+            } catch {
+                clearSession(authStore, wipeToken)
+                return navigateTo('/auth')
+            }
         }
-        if (authStore.user?.role !== 'admin') {
-            return navigateTo('/driver/dashboard')
+
+        if (!authStore.user || !isAdminUser(authStore.user)) {
+            return navigateTo(resolveHomePath(authStore.user))
+        }
+    }
+
+    // Token bor, user yo'q, himoyalangan sahifa — qayta urinish yoki /auth
+    if (hasToken() && !authStore.user && isProtectedPath(to.path)) {
+        try {
+            await authStore.getMe({ authToken: authToken() || undefined })
+        } catch {
+            clearSession(authStore, wipeToken)
+            return navigateTo('/auth')
+        }
+        if (!authStore.user) {
+            return navigateTo('/auth')
+        }
+        if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {
+            return navigateTo(resolveHomePath(authStore.user))
         }
     }
 
     // Admin asosiy sahifaga kelsa — admin dashboard
-    if (hasToken() && isAdmin && to.path === '/driver/dashboard') {
+    if (hasToken() && isAdminUser(authStore.user) && to.path === '/driver/dashboard') {
         return navigateTo('/admin/dashboard')
     }
-
-    // Admin /driver/profile orqali kirsa ham — OK (hisob switch)
-    // Boshqa /driver sahifalarida admin qolishi mumkin (buyurtmalar va h.k.)
 })

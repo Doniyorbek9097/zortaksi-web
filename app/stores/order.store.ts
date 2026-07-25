@@ -24,10 +24,38 @@ export const useOrderStore = defineStore('order', () => {
 
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
     const recentArrivals = ref<Record<string, number>>({})
+    /** Ko'rilgan (badge dan chiqarilgan) buyurtmalar — session */
+    const seenOrderIds = ref<Record<string, true>>({})
     const recentTick = ref(0)
     let recentTicker: ReturnType<typeof setInterval> | null = null
 
     const RECENT_WINDOW_MS = 60_000
+    const SEEN_STORAGE_KEY = 'zortaksi:seen-order-ids'
+
+    const loadSeenFromStorage = () => {
+        if (!import.meta.client) return
+        try {
+            const raw = sessionStorage.getItem(SEEN_STORAGE_KEY)
+            if (!raw) return
+            const parsed = JSON.parse(raw) as string[]
+            if (!Array.isArray(parsed)) return
+            const next: Record<string, true> = { ...seenOrderIds.value }
+            for (const id of parsed) {
+                if (id) next[String(id)] = true
+            }
+            seenOrderIds.value = next
+        } catch { /* ignore */ }
+    }
+
+    const persistSeen = () => {
+        if (!import.meta.client) return
+        try {
+            sessionStorage.setItem(
+                SEEN_STORAGE_KEY,
+                JSON.stringify(Object.keys(seenOrderIds.value)),
+            )
+        } catch { /* ignore */ }
+    }
 
     const pruneRecentArrivals = () => {
         const cutoff = Date.now() - RECENT_WINDOW_MS
@@ -45,6 +73,7 @@ export const useOrderStore = defineStore('order', () => {
     const noteRecentOrder = (order: IOrder, at = Date.now()) => {
         const id = order?._id ? String(order._id) : ''
         if (!id) return
+        if (seenOrderIds.value[id]) return
         if (recentArrivals.value[id]) return
         recentArrivals.value = { ...recentArrivals.value, [id]: at }
         recentTick.value += 1
@@ -58,7 +87,7 @@ export const useOrderStore = defineStore('order', () => {
         for (const o of list) {
             if (!o?._id) continue
             const id = String(o._id)
-            if (next[id]) continue
+            if (next[id] || seenOrderIds.value[id]) continue
             const t = o.createdAt ? new Date(o.createdAt).getTime() : NaN
             if (!Number.isFinite(t) || t < cutoff) continue
             next[id] = t
@@ -70,14 +99,52 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    /** Buyurtma ko'rildi — badge dan chiqarish */
+    const markOrderSeen = (orderId?: string | null) => {
+        const id = orderId ? String(orderId) : ''
+        if (!id || seenOrderIds.value[id]) return
+        seenOrderIds.value = { ...seenOrderIds.value, [id]: true }
+        if (recentArrivals.value[id]) {
+            const next = { ...recentArrivals.value }
+            delete next[id]
+            recentArrivals.value = next
+        }
+        recentTick.value += 1
+        persistSeen()
+    }
+
+    const markOrdersSeen = (ids: Array<string | undefined | null>) => {
+        let changed = false
+        const seenNext = { ...seenOrderIds.value }
+        const recentNext = { ...recentArrivals.value }
+        for (const raw of ids) {
+            const id = raw ? String(raw) : ''
+            if (!id || seenNext[id]) continue
+            seenNext[id] = true
+            if (recentNext[id]) delete recentNext[id]
+            changed = true
+        }
+        if (!changed) return
+        seenOrderIds.value = seenNext
+        recentArrivals.value = recentNext
+        recentTick.value += 1
+        persistSeen()
+    }
+
+    /** Badge = oxirgi 1 daqiqada kelgan va hali ko'rilmagan */
     const recentMinuteCount = computed(() => {
         void recentTick.value
         const cutoff = Date.now() - RECENT_WINDOW_MS
-        return Object.values(recentArrivals.value).filter((t) => t >= cutoff).length
+        let n = 0
+        for (const [id, t] of Object.entries(recentArrivals.value)) {
+            if (t >= cutoff && !seenOrderIds.value[id]) n += 1
+        }
+        return n
     })
 
     const startRecentMinuteTicker = () => {
         if (!import.meta.client || recentTicker) return
+        loadSeenFromStorage()
         pruneRecentArrivals()
         recentTicker = setInterval(pruneRecentArrivals, 5000)
     }
@@ -203,6 +270,7 @@ export const useOrderStore = defineStore('order', () => {
             const response = await useApi(`/orders/${orderId}`)
             if (response.success) {
                 currentOrder.value = response.data
+                markOrderSeen(orderId)
             }
             return response
         } catch (error) {
@@ -349,6 +417,8 @@ export const useOrderStore = defineStore('order', () => {
         refreshNewCount,
         bumpNewCount,
         noteRecentOrder,
+        markOrderSeen,
+        markOrdersSeen,
         startRecentMinuteTicker,
     }
 })

@@ -183,6 +183,7 @@ import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
 import { isValidIntlPhone } from '~/utils/phone'
+import { resolvePostAuthPath } from '~/utils/userRole'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -276,12 +277,8 @@ const clearReferral = () => {
   referralRef.value = null
 }
 
-const homeForUser = () => {
-  const next = typeof route.query.next === 'string' ? route.query.next : ''
-  if (next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/auth')) {
-    return next
-  }
-  return authStore.user?.role === 'admin' ? '/admin/dashboard' : '/driver/dashboard'
+const goHomeAfterAuth = async (user?: { role?: string | null } | null) => {
+  await navigateTo(resolvePostAuthPath(user ?? authStore.user, route.query.next))
 }
 
 const handleSendCode = async () => {
@@ -311,12 +308,13 @@ const handleVerifyCode = async () => {
         currentStep.value = 'password'
       } else {
         clearReferral()
+        const user = response.data?.user ?? authStore.user
         try {
           const accountStore = useAccountStore()
           accountStore.load()
-          accountStore.ensureCurrent(authStore.user)
+          accountStore.ensureCurrent(user)
         } catch { /* */ }
-        await navigateTo(homeForUser())
+        await goHomeAfterAuth(user)
       }
     } else if (response.needPassword || response.data?.needPassword) {
       currentStep.value = 'password'
@@ -339,12 +337,13 @@ const handleVerifyPassword = async () => {
     )
     if (response.success) {
       clearReferral()
+      const user = response.data?.user ?? authStore.user
       try {
         const accountStore = useAccountStore()
         accountStore.load()
-        accountStore.ensureCurrent(authStore.user)
+        accountStore.ensureCurrent(user)
       } catch { /* */ }
-      await navigateTo(homeForUser())
+      await goHomeAfterAuth(user)
     } else {
       form.error = response.message || 'Parol noto\'g\'ri'
     }

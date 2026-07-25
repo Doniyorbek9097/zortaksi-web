@@ -16,13 +16,6 @@
       @buy="onBuyTariff"
     />
 
-    <!-- To'lovlar tarixi -->
-    <DriverPaymentHistoryList
-      :max-items="8"
-      :refreshable="false"
-      more-to="/driver/payment"
-    />
-
     <!-- Accounts -->
     <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/10`" no-padding>
       <!-- Loading -->
@@ -143,6 +136,7 @@ import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
 import type { ScriptType } from '~/components/profile/ScriptToggle.vue'
+import { resolveHomePath } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'driver',
@@ -197,7 +191,7 @@ const onSelectAccount = async (acc: ILocalAccount) => {
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
   if (target === active && String(authStore.user?.userId || '') === target) {
-    if (authStore.user?.role === 'admin') await navigateTo('/admin/dashboard')
+    await navigateTo(resolveHomePath(authStore.user))
     return
   }
   if (!acc.token) {

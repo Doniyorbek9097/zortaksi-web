@@ -29,12 +29,14 @@ export interface AdminDashboardData {
     ordersToday?: number
     ordersLastHour?: number
     ordersTotal?: number
+    newOrders?: number
     tariffsCount?: number
   }
   platform?: {
     ordersToday: number
     ordersLastHour: number
     ordersTotal: number
+    newOrders: number
     totalDrivers: number
     activeDrivers: number
     tariffsCount: number

@@ -173,51 +173,70 @@ const navItems = [
 
 const keyStats = computed(() => {
   const s = store.data?.keyStats
+  const p = store.data?.platform
+  const num = (...vals: Array<number | undefined | null>) => {
+    for (const v of vals) {
+      if (v != null && Number.isFinite(Number(v))) return Number(v)
+    }
+    return 0
+  }
   return [
     {
-      value: s?.ordersToday ?? 0,
+      value: num(s?.newOrders, p?.newOrders),
+      label: 'Yangi buyurtmalar',
+      icon: 'fa-solid fa-bell',
+      tone: 'rose' as const,
+    },
+    {
+      value: num(s?.ordersToday, p?.ordersToday),
       label: 'Bugungi buyurtmalar',
       icon: 'fa-solid fa-clipboard-list',
       tone: 'blue' as const,
     },
     {
-      value: s?.ordersLastHour ?? 0,
+      value: num(s?.ordersLastHour, p?.ordersLastHour),
       label: "So'nggi 1 soat",
       icon: 'fa-solid fa-bolt',
       tone: 'amber' as const,
     },
     {
-      value: s?.totalDrivers ?? 0,
+      value: num(s?.ordersTotal, p?.ordersTotal),
+      label: 'Jami buyurtmalar',
+      icon: 'fa-solid fa-chart-line',
+      tone: 'sky' as const,
+    },
+    {
+      value: num(s?.totalDrivers, p?.totalDrivers),
       label: 'Jami haydovchilar',
       icon: 'fa-solid fa-users',
       tone: 'violet' as const,
     },
     {
-      value: s?.activeDrivers ?? 0,
+      value: num(s?.activeDrivers, p?.activeDrivers),
       label: 'Faol haydovchilar',
       icon: 'fa-solid fa-user-check',
       tone: 'green' as const,
     },
     {
-      value: s?.newDrivers ?? 0,
+      value: num(s?.newDrivers),
       label: 'Yangi haydovchilar',
       icon: 'fa-solid fa-user-plus',
       tone: 'green' as const,
     },
     {
-      value: s?.visitsToday ?? 0,
+      value: num(s?.visitsToday),
       label: 'Bugungi tashrif',
       icon: 'fa-solid fa-eye',
       tone: 'blue' as const,
     },
     {
-      value: s?.tariffsCount ?? 0,
+      value: num(s?.tariffsCount, p?.tariffsCount),
       label: 'Tariflar soni',
       icon: 'fa-solid fa-tags',
       tone: 'violet' as const,
     },
     {
-      value: s?.yearIncome ?? 0,
+      value: num(s?.yearIncome),
       label: 'Yillik daromad',
       icon: 'fa-solid fa-chart-line',
       tone: 'amber' as const,

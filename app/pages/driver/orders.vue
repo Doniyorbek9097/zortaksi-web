@@ -34,27 +34,32 @@
     />
 
     <!-- Orders list — relative: leave animatsiya tabbar/scrollni siljitmasin -->
-    <div v-else class="relative space-y-6 pt-2">
+    <div v-else ref="listRoot" class="relative space-y-6 pt-2">
       <TransitionGroup name="order-drop" tag="div" class="relative space-y-6">
-        <OrdersOrderCard
+        <div
           v-for="order in displayOrders"
           :key="order._id"
-          :order="order"
-          :role="role"
-          :active="active"
-          :current-user-id="authStore.user?.userId"
-          @unlock="onUnlock"
-          @book="onBook(order)"
-          @unbook="onUnbook(order)"
-          @message="onMessage(order)"
-          @call="onCall(order)"
-          @interest="onInterest(order)"
-          @booked-chat="onBookedChat(order)"
-          @agent="onAgent(order)"
-          @stop-group="onStopGroup(order)"
-          @stop-user="onStopUser(order)"
-          @delete="onDelete(order)"
-        />
+          class="order-seen-anchor"
+          :data-order-id="order._id"
+        >
+          <OrdersOrderCard
+            :order="order"
+            :role="role"
+            :active="active"
+            :current-user-id="authStore.user?.userId"
+            @unlock="onUnlock"
+            @book="onBook(order)"
+            @unbook="onUnbook(order)"
+            @message="onMessage(order)"
+            @call="onCall(order)"
+            @interest="onInterest(order)"
+            @booked-chat="onBookedChat(order)"
+            @agent="onAgent(order)"
+            @stop-group="onStopGroup(order)"
+            @stop-user="onStopUser(order)"
+            @delete="onDelete(order)"
+          />
+        </div>
       </TransitionGroup>
 
       <!-- Infinite scroll sentinel -->
@@ -254,7 +259,41 @@ let pollTimer: ReturnType<typeof setInterval> | null = null
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
+/** Ro'yxatda ko'rinadigan buyurtmalar — badge dan chiqarish */
+const listRoot = ref<HTMLElement | null>(null)
+let seenObserver: IntersectionObserver | null = null
+const observedSeenEls = new WeakSet<Element>()
+
+const bindSeenObserver = () => {
+  if (!import.meta.client) return
+  if (!seenObserver) {
+    seenObserver = new IntersectionObserver(
+      (entries) => {
+        const ids: string[] = []
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const id = (entry.target as HTMLElement).dataset.orderId
+          if (id) ids.push(id)
+          seenObserver?.unobserve(entry.target)
+        }
+        if (ids.length) orderStore.markOrdersSeen(ids)
+      },
+      { threshold: 0.35, rootMargin: '0px 0px -8% 0px' },
+    )
+  }
+  nextTick(() => {
+    const root = listRoot.value
+    if (!root) return
+    root.querySelectorAll('.order-seen-anchor[data-order-id]').forEach((el) => {
+      if (observedSeenEls.has(el)) return
+      observedSeenEls.add(el)
+      seenObserver?.observe(el)
+    })
+  })
+}
+
 onMounted(() => {
+  orderStore.startRecentMinuteTicker()
   const saved = loadOrderFilterKeywords()
   draftKeywords.value = saved
   appliedKeywords.value = saved
@@ -270,6 +309,7 @@ onMounted(() => {
     { rootMargin: '200px' }
   )
   if (sentinel.value) observer.observe(sentinel.value)
+  bindSeenObserver()
 })
 
 // Sentinel v-if bilan paydo bo'lsa/yo'qolsa — qayta kuzatamiz
@@ -277,9 +317,15 @@ watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
 })
 
+watch(
+  () => displayOrders.value.map((o) => o._id).join(','),
+  () => bindSeenObserver(),
+)
+
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer)
   if (observer) observer.disconnect()
+  if (seenObserver) seenObserver.disconnect()
 })
 
 const onUnlock = () => navigateTo('/driver/payment')
