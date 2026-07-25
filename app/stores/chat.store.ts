@@ -239,7 +239,7 @@ export const useChatStore = defineStore('chat', () => {
             const res = await useApi(`/chats/${chatId}/messages/voice`, {
                 method: 'POST',
                 body: form,
-                timeout: 90000,
+                timeout: 120000,
             })
             if (res.success) {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
@@ -296,7 +296,7 @@ export const useChatStore = defineStore('chat', () => {
             const res = await useApi(`/chats/${chatId}/messages/photo`, {
                 method: 'POST',
                 body: form,
-                timeout: 90000,
+                timeout: 120000,
             })
             if (res.success) {
                 const idx = messages.value.findIndex((m) => m._id === tempId)

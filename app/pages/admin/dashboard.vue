@@ -17,7 +17,7 @@
     <div v-if="store.isLoading && !store.data" class="space-y-3">
       <div class="h-36 rounded-3xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       <div class="grid grid-cols-2 gap-2.5">
-        <div v-for="n in 6" :key="n" class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+        <div v-for="n in 4" :key="n" class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       </div>
     </div>
 
@@ -31,24 +31,6 @@
       <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
         {{ store.error }}
       </p>
-
-      <!-- Platforma statistikasi — driver kabi -->
-      <section class="space-y-3">
-        <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
-          Platforma statistikasi
-        </h3>
-        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
-          <AdminStatCard
-            v-for="stat in keyStats"
-            :key="stat.label"
-            :value="stat.value"
-            :label="stat.label"
-            :icon="stat.icon"
-            :tone="stat.tone"
-            :compact="stat.compact"
-          />
-        </div>
-      </section>
 
       <!-- Tezkor bo'limlar -->
       <section class="space-y-2.5">
@@ -64,6 +46,23 @@
           :tone="nav.tone"
           @click="navigateTo(nav.to)"
         />
+      </section>
+
+      <!-- Platforma statistikasi -->
+      <section class="space-y-3">
+        <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
+          Platforma statistikasi
+        </h3>
+        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <AdminStatCard
+            v-for="stat in keyStats"
+            :key="stat.label"
+            :value="stat.value"
+            :label="stat.label"
+            :icon="stat.icon"
+            :tone="stat.tone"
+          />
+        </div>
       </section>
 
       <!-- Daromad tafsiloti -->
@@ -222,77 +221,28 @@ const keyStats = computed(() => {
   const p = store.data?.platform
   return [
     {
-      value: num(s?.newOrders, p?.newOrders),
-      label: 'Yangi buyurtmalar',
-      icon: 'fa-solid fa-bell',
-      tone: 'rose' as const,
-    },
-    {
       value: num(s?.ordersToday, p?.ordersToday),
       label: 'Bugungi buyurtmalar',
       icon: 'fa-solid fa-clipboard-list',
       tone: 'blue' as const,
     },
     {
-      value: num(s?.ordersLastHour, p?.ordersLastHour),
-      label: "So'nggi 1 soat",
-      icon: 'fa-solid fa-bolt',
-      tone: 'amber' as const,
-    },
-    {
-      value: num(s?.ordersTotal, p?.ordersTotal),
-      label: 'Jami buyurtmalar',
-      icon: 'fa-solid fa-chart-line',
-      tone: 'sky' as const,
-    },
-    {
-      value: num(s?.totalDrivers, p?.totalDrivers),
-      label: 'Jami haydovchilar',
-      icon: 'fa-solid fa-users',
-      tone: 'violet' as const,
+      value: num(s?.newDriversToday),
+      label: "Bugungi qo'shilgan shafyorlar",
+      icon: 'fa-solid fa-user-plus',
+      tone: 'green' as const,
     },
     {
       value: num(s?.activeDrivers, p?.activeDrivers),
-      label: 'Faol haydovchilar',
+      label: 'Faol shafyorlar',
       icon: 'fa-solid fa-user-check',
-      tone: 'green' as const,
-    },
-    {
-      value: num(s?.totalInvites, p?.totalInvites),
-      label: 'Takliflar soni',
-      icon: 'fa-solid fa-user-plus',
-      tone: 'pink' as const,
-    },
-    {
-      value: num(s?.totalReferrers, p?.totalReferrers),
-      label: 'Taklif qilganlar',
-      icon: 'fa-solid fa-share-nodes',
       tone: 'emerald' as const,
     },
     {
-      value: num(s?.newDrivers),
-      label: 'Yangi haydovchilar',
-      icon: 'fa-solid fa-user-plus',
-      tone: 'green' as const,
-    },
-    {
-      value: num(s?.visitsToday),
-      label: 'Bugungi tashrif',
-      icon: 'fa-solid fa-eye',
-      tone: 'blue' as const,
-    },
-    {
-      value: num(s?.tariffsCount, p?.tariffsCount),
-      label: 'Tariflar soni',
-      icon: 'fa-solid fa-tags',
-      tone: 'violet' as const,
-    },
-    {
-      value: num(s?.yearIncome),
-      label: 'Yillik daromad',
-      icon: 'fa-solid fa-chart-line',
-      tone: 'amber' as const,
-      compact: true,
+      value: num(s?.debtorDrivers),
+      label: 'Qarzdor shafyorlar',
+      icon: 'fa-solid fa-circle-exclamation',
+      tone: 'rose' as const,
     },
   ]
 })

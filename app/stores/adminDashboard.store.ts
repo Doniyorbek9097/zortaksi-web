@@ -21,12 +21,14 @@ export interface ChartMonth {
 export interface AdminDashboardData {
   monthIncome: IncomeBlock
   keyStats: {
-    totalDrivers: number
-    newDrivers: number
-    visitsToday: number
-    yearIncome: number
+    ordersToday: number
+    newDriversToday: number
     activeDrivers: number
-    ordersToday?: number
+    debtorDrivers: number
+    totalDrivers?: number
+    newDrivers?: number
+    visitsToday?: number
+    yearIncome?: number
     ordersLastHour?: number
     ordersTotal?: number
     newOrders?: number

@@ -55,7 +55,7 @@
         <input
           ref="fileInput"
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
+          accept="image/*"
           class="hidden"
           tabindex="-1"
           @change="onFileChange"
@@ -113,6 +113,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
+import { CHAT_PHOTO_MAX_INPUT, isChatPhotoFile, prepareChatPhoto } from '~/utils/prepareChatPhoto'
 
 const text = defineModel<string>({ default: '' })
 
@@ -138,17 +139,22 @@ const pickImage = () => {
   fileInput.value?.click()
 }
 
-const onFileChange = (e: Event) => {
+const onFileChange = async (e: Event) => {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (!file || !file.type.startsWith('image/')) return
-  if (file.size > 10 * 1024 * 1024) {
-    micError.value = 'Rasm 10 MB dan katta bo\'lmasligi kerak'
+  if (!file || !isChatPhotoFile(file)) return
+  if (file.size > CHAT_PHOTO_MAX_INPUT) {
+    micError.value = 'Rasm 20 MB dan katta bo\'lmasligi kerak'
     return
   }
   micError.value = ''
-  emit('photo', file)
+  try {
+    const prepared = await prepareChatPhoto(file)
+    emit('photo', prepared)
+  } catch (err: any) {
+    micError.value = err?.message || 'Rasmni tayyorlab bo\'lmadi'
+  }
 }
 
 const send = () => {
@@ -197,6 +203,35 @@ const stopTracks = () => {
   chunks = []
 }
 
+/** requestData() dan keyin dataavailable kelishini kutadi (asosiy handler chunk qo'shadi). */
+const flushRecorderData = (recorder: MediaRecorder): Promise<void> =>
+  new Promise((resolve) => {
+    if (recorder.state !== 'recording') {
+      resolve()
+      return
+    }
+    const finish = () => {
+      recorder.removeEventListener('dataavailable', onData)
+      resolve()
+    }
+    const onData = () => finish()
+    recorder.addEventListener('dataavailable', onData)
+    try {
+      recorder.requestData()
+    } catch {
+      finish()
+    }
+  })
+
+const waitForRecorderStop = (recorder: MediaRecorder): Promise<void> =>
+  new Promise((resolve) => {
+    if (recorder.state === 'inactive') {
+      resolve()
+      return
+    }
+    recorder.addEventListener('stop', () => resolve(), { once: true })
+  })
+
 const startRecording = async () => {
   if (props.disabled) return
   micError.value = ''
@@ -236,22 +271,32 @@ const cancelRecording = () => {
   seconds.value = 0
 }
 
-const stopAndSend = () => {
+const stopAndSend = async () => {
   const dur = seconds.value
   clearTimer()
-  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+  const recorder = mediaRecorder
+  if (!recorder || recorder.state === 'inactive') {
     cancelRecording()
     return
   }
 
-  mediaRecorder.onstop = () => {
-    const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
-    stopTracks()
-    recording.value = false
-    seconds.value = 0
-    if (dur >= 1 && blob.size > 0) emit('voice', blob, dur)
+  try {
+    await flushRecorderData(recorder)
+    const stopped = waitForRecorderStop(recorder)
+    recorder.stop()
+    await stopped
+    // Ba'zi brauzerlarda oxirgi chunk stop'dan keyin keladi
+    await new Promise<void>((r) => queueMicrotask(r))
+  } catch {
+    cancelRecording()
+    return
   }
-  mediaRecorder.stop()
+
+  const blob = new Blob(chunks, { type: mimeType || 'audio/webm' })
+  stopTracks()
+  recording.value = false
+  seconds.value = 0
+  if (dur >= 1 && blob.size > 0) emit('voice', blob, dur)
 }
 
 onBeforeUnmount(() => {
