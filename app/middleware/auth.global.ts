@@ -1,3 +1,4 @@
+import { setResponseHeader } from 'h3'
 import { authCookieOptions } from '~/utils/authCookie'
 import {
     clearAllAuthStorage,
