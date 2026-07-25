@@ -1,34 +1,45 @@
 import {
   findUserIdByToken,
   readActiveToken,
+  syncSelectedAccountToCookie,
   writeActiveSession,
 } from '~/utils/activeAccount'
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 
 /**
- * Cookie — sessiya manbai.
- * LS dagi active token cookie dan farq qilsa: LS ni cookie ga moslashtirish
- * (tozalash emas — aks holda account switch buziladi).
- * Cookie bo'sh bo'lsa active keys ni tozalash; zt_accounts saqlanadi.
+ * Tanlangan hisob (zt_active_*) — refreshdan keyin ham saqlansin.
+ * Cookie bo'sh bo'lsa LS dan login qilinmaydi (xavfsizlik).
+ * Cookie eski/oxirgi hisobda qolgan bo'lsa — LS dagi tanlov cookie ga yoziladi.
  */
 export default defineNuxtPlugin({
   name: 'active-account-sync',
   setup() {
-    const cookie = useCookie<string | null>('auth_token', { ...authCookieOptions })
+    const cookie = useCookie<string | null>('auth_token', { ...getAuthCookieOptions() })
 
-    if (!cookie.value) {
-      const orphan = readActiveToken()
-      if (orphan) writeActiveSession(null, null)
+    // 1) Tanlangan hisob LS da bor — cookie ni shunga moslashtir (oxirgi hisobga qaytmasin)
+    if (cookie.value) {
+      const selected = syncSelectedAccountToCookie((t) => {
+        cookie.value = t
+      })
+      if (selected) {
+        try {
+          const auth = useAuthStore()
+          auth.token = selected.token
+          if (auth.user && String(auth.user.userId) !== selected.userId) {
+            auth.user = null
+          }
+        } catch { /* pinia hali tayyor emas bo'lishi mumkin */ }
+        return
+      }
+
+      // LS active yo'q — cookie dan active ni to'ldirish
+      const uid = findUserIdByToken(cookie.value)
+      if (uid) writeActiveSession(uid, cookie.value)
       return
     }
 
-    const stored = readActiveToken()
-    if (stored && stored === cookie.value) return
-
-    // Cookie ustun — active session ni cookie tokeniga bog'lash
-    const uid = findUserIdByToken(cookie.value)
-    if (uid) {
-      writeActiveSession(uid, cookie.value)
-    }
+    // 2) Cookie yo'q — active keys ni tozalash (tiriltirmaslik)
+    const orphan = readActiveToken()
+    if (orphan) writeActiveSession(null, null)
   },
 })

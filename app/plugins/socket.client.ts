@@ -4,11 +4,11 @@ import { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
-  const cookie = useCookie('auth_token', { ...authCookieOptions })
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
   const chatStore = useChatStore()
   const orderStore = useOrderStore()
 

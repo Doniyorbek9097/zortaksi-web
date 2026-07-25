@@ -22,9 +22,8 @@ export function getMemoryUserId(): string | null {
   return memoryUserId
 }
 
-export function readActiveUserId(): string | null {
+function readLsActiveUserId(): string | null {
   if (!import.meta.client) return null
-  if (memoryUserId) return memoryUserId
   try {
     return localStorage.getItem(ACTIVE_USER_KEY)
   } catch {
@@ -32,9 +31,8 @@ export function readActiveUserId(): string | null {
   }
 }
 
-export function readActiveToken(): string | null {
+function readLsActiveToken(): string | null {
   if (!import.meta.client) return null
-  if (memoryToken) return memoryToken
   try {
     const direct = localStorage.getItem(ACTIVE_TOKEN_KEY)
     if (direct) return direct
@@ -49,6 +47,32 @@ export function readActiveToken(): string | null {
   } catch {
     return null
   }
+}
+
+/** Tanlangan hisob tokeni zt_accounts da bormi */
+export function isStoredAccountToken(token: string | null | undefined): boolean {
+  if (!import.meta.client || !token) return false
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_KEY)
+    if (!raw) return false
+    const list = JSON.parse(raw)
+    if (!Array.isArray(list)) return false
+    return list.some((a: any) => a?.token && a.token === token)
+  } catch {
+    return false
+  }
+}
+
+export function readActiveUserId(): string | null {
+  if (!import.meta.client) return null
+  if (memoryUserId) return memoryUserId
+  return readLsActiveUserId()
+}
+
+export function readActiveToken(): string | null {
+  if (!import.meta.client) return null
+  if (memoryToken) return memoryToken
+  return readLsActiveToken()
 }
 
 export function writeActiveSession(userId: string | null, token: string | null) {
@@ -85,20 +109,48 @@ export function writeAuthCookie(token: string | null) {
 /**
  * Token manbai:
  * - Server: FAQAT shu so'rov cookie
- * - Client: xotira (switch) → cookie
+ * - Client: xotira → LS dagi TANLANGAN hisob → cookie
+ * Cookie bo'sh bo'lsa LS dan tiriltirmaydi (begona qurilma xavfsizligi).
  */
 export function resolveAuthToken(cookieToken?: string | null): string | null {
   if (!import.meta.client) {
     return cookieToken || null
   }
   if (memoryToken) return memoryToken
-  return cookieToken || null
+
+  // Cookie bor — tanlangan hisob (LS) ustun (refreshdan keyin switch saqlansin)
+  if (cookieToken) {
+    const lsToken = readLsActiveToken()
+    if (lsToken && lsToken !== cookieToken && isStoredAccountToken(lsToken)) {
+      return lsToken
+    }
+    return cookieToken
+  }
+
+  return null
 }
 
 /**
- * Joriy sessiya (cookie/xotira/active keys) — multi-account ro'yxati SAQLANADI.
- * Middleware / 401 da shu ishlatiladi (switch buzilmasin).
+ * Refresh / boot: LS dagi tanlangan hisobni cookie ga yozish.
+ * Cookie bo'sh bo'lsa — tiriltirmaydi.
  */
+export function syncSelectedAccountToCookie(
+  setCookie: (token: string | null) => void
+): { userId: string; token: string } | null {
+  if (!import.meta.client) return null
+
+  const lsToken = readLsActiveToken()
+  const lsUserId = readLsActiveUserId()
+  if (!lsToken || !lsUserId || !isStoredAccountToken(lsToken)) {
+    return null
+  }
+
+  setMemorySession(lsUserId, lsToken)
+  writeAuthCookie(lsToken)
+  setCookie(lsToken)
+  return { userId: lsUserId, token: lsToken }
+}
+
 export function clearActiveAuth() {
   if (import.meta.client) {
     memoryToken = null
@@ -112,7 +164,6 @@ export function clearActiveAuth() {
   } catch { /* */ }
 }
 
-/** To'liq chiqish — accountlar ro'yxati ham o'chadi (faqat logout) */
 export function clearAllAuthStorage() {
   clearActiveAuth()
   if (!import.meta.client) return
@@ -121,7 +172,6 @@ export function clearAllAuthStorage() {
   } catch { /* */ }
 }
 
-/** Cookie dagi token bo'yicha active userId ni zt_accounts dan topish */
 export function findUserIdByToken(token: string | null | undefined): string | null {
   if (!import.meta.client || !token) return null
   try {

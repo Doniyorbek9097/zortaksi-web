@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { IUser } from '~/types'
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
     clearAllAuthStorage,
     readActiveUserId,
@@ -12,7 +12,7 @@ import { isTariffActive } from '~/utils/tariffActive'
 import { normalizeUserRole } from '~/utils/userRole'
 
 export const useAuthStore = defineStore('auth', () => {
-    const token = useCookie('auth_token', { ...authCookieOptions })
+    const token = useCookie('auth_token', { ...getAuthCookieOptions() })
     const user = ref<IUser | null>(null)
     const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)

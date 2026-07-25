@@ -1,6 +1,6 @@
 import type { AxiosProgressEvent, Method } from "axios"
 import { api } from "~/config/axios"
-import { authCookieOptions } from "~/utils/authCookie"
+import { getAuthCookieOptions } from "~/utils/authCookie"
 import { resolveAuthToken } from "~/utils/activeAccount"
 
 interface IOptions {
@@ -16,7 +16,7 @@ interface IOptions {
 
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
   const config = useRuntimeConfig()
-  const cookie = useCookie('auth_token', { ...authCookieOptions })
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
   // SSR: faqat shu request cookie / explicit authToken (global memory yo'q)
   const token = options.authToken || resolveAuthToken(cookie.value)
 

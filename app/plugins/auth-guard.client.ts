@@ -1,4 +1,4 @@
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 import { clearActiveAuth, resolveAuthToken } from '~/utils/activeAccount'
 
 /**
@@ -7,7 +7,7 @@ import { clearActiveAuth, resolveAuthToken } from '~/utils/activeAccount'
 export default defineNuxtPlugin({
   name: 'auth-guard',
   setup() {
-    const token = useCookie<string | null>('auth_token', { ...authCookieOptions })
+    const token = useCookie<string | null>('auth_token', { ...getAuthCookieOptions() })
     const auth = useAuthStore()
     const resolved = resolveAuthToken(token.value)
 

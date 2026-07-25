@@ -1,9 +1,10 @@
 import { setResponseHeader } from 'h3'
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
     clearActiveAuth,
     readActiveUserId,
     resolveAuthToken,
+    syncSelectedAccountToCookie,
     writeAuthCookie,
 } from '~/utils/activeAccount'
 import {
@@ -34,23 +35,27 @@ function applyPrivateCacheHeaders(path: string) {
 export default defineNuxtRouteMiddleware(async (to) => {
     applyPrivateCacheHeaders(to.path)
 
-    const token = useCookie('auth_token', { ...authCookieOptions })
+    const token = useCookie('auth_token', { ...getAuthCookieOptions() })
     const authStore = useAuthStore()
 
-    // Client: switch xotirasi cookie dan ustun — user ni keraksiz tozalamaslik
+    // Client: tanlangan hisob (LS) cookie dan ustun — refreshda oxirgi hisobga qaytmasin
     if (import.meta.client) {
+        syncSelectedAccountToCookie((t) => {
+            token.value = t
+        })
         const resolved = resolveAuthToken(token.value)
         if (resolved && token.value !== resolved) {
             writeAuthCookie(resolved)
             token.value = resolved
-            const active = readActiveUserId()
-            if (
-                !authStore.user ||
-                !active ||
-                String(authStore.user.userId) !== String(active)
-            ) {
-                authStore.user = null
-            }
+        }
+        const active = readActiveUserId()
+        if (
+            resolved &&
+            authStore.user &&
+            active &&
+            String(authStore.user.userId) !== String(active)
+        ) {
+            authStore.user = null
         }
     }
 

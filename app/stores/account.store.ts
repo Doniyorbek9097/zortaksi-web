@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { ILocalAccount } from '~/types'
-import { authCookieOptions } from '~/utils/authCookie'
+import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   ACCOUNTS_KEY,
   readActiveToken,
@@ -22,7 +22,7 @@ export const useAccountStore = defineStore('account', () => {
   /** Reactive faol userId (localStorage o'zi Vue ni trigger qilmaydi) */
   const activeId = ref<string | null>(null)
 
-  const token = useCookie<string | null>('auth_token', { ...authCookieOptions })
+  const token = useCookie<string | null>('auth_token', { ...getAuthCookieOptions() })
 
   const activeUserId = computed(() => {
     if (activeId.value) return activeId.value
@@ -71,13 +71,14 @@ export const useAccountStore = defineStore('account', () => {
   const applyToken = (authToken: string | null, userId?: string | null) => {
     const uid = userId ? String(userId) : null
     activeId.value = uid
+    // Avval LS (refresh manbai), keyin cookie — tartib muhim
     writeActiveSession(uid, authToken)
+    token.value = authToken
     writeAuthCookie(authToken)
 
     const auth = useAuthStore()
     auth.user = null
     auth.token = authToken
-    token.value = authToken
   }
 
   const ensureCurrent = (user: any) => {
