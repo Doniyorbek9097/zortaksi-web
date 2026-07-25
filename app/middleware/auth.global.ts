@@ -19,7 +19,6 @@ const isProtectedPath = (path: string) =>
 const isAuthEntryPath = (path: string) =>
     path === '/' || path === '/auth' || path === '/login' || path === '/register'
 
-/** CDN/shared cache — shaxsiy HTML begonalarga ketmasin */
 function applyPrivateCacheHeaders(path: string) {
     if (!import.meta.server) return
     if (!isProtectedPath(path) && !isAuthEntryPath(path)) return
@@ -38,69 +37,73 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const token = useCookie('auth_token', { ...getAuthCookieOptions() })
     const authStore = useAuthStore()
 
-    // Client: tanlangan hisob (LS) cookie dan ustun — refreshda oxirgi hisobga qaytmasin
-    if (import.meta.client) {
-        syncSelectedAccountToCookie((t) => {
-            token.value = t
-        })
-        const resolved = resolveAuthToken(token.value)
-        if (resolved && token.value !== resolved) {
-            writeAuthCookie(resolved)
-            token.value = resolved
+    /**
+     * SSR: user yuklanmaydi — cookie oxirgi hisob bo'lishi mumkin,
+     * LS dagi tanlangan hisobni server bilmaydi. Noto'g'ri profil flash bo'lmasin.
+     */
+    if (import.meta.server) {
+        authStore.user = null
+        authStore.sessionReady = false
+
+        if (!token.value && isProtectedPath(to.path)) {
+            return navigateTo('/auth')
         }
-        const active = readActiveUserId()
-        if (
-            resolved &&
-            authStore.user &&
-            active &&
-            String(authStore.user.userId) !== String(active)
-        ) {
-            authStore.user = null
-        }
+        // Token bor — shell ni client yuklaydi (to'g'ri hisob bilan)
+        return
     }
 
-    /** SSR: faqat shu request cookie; client: cookie + memory */
+    // ——— CLIENT ———
+
+    // Tanlangan hisob (LS) → cookie (refresh uchun ham)
+    syncSelectedAccountToCookie((t) => {
+        token.value = t
+    })
+
+    const resolved = resolveAuthToken(token.value)
+    if (resolved && token.value !== resolved) {
+        writeAuthCookie(resolved)
+        token.value = resolved
+    }
+
     const authToken = () => resolveAuthToken(token.value)
     const hasToken = () => !!authToken()
 
     const clearSession = () => {
         token.value = null
         authStore.user = null
-        // Multi-account ro'yxatini o'chirmaymiz — faqat joriy sessiya
-        if (import.meta.client) clearActiveAuth()
+        clearActiveAuth()
+        authStore.sessionReady = true
     }
 
     if (to.path === '/auth' && (to.query.switch === '1' || to.query.switch === 'true')) {
         clearSession()
-        if (import.meta.client) {
-            const q = { ...to.query }
-            delete q.switch
-            return navigateTo({ path: '/auth', query: q }, { replace: true })
-        }
-        return navigateTo('/auth')
+        const q = { ...to.query }
+        delete q.switch
+        return navigateTo({ path: '/auth', query: q }, { replace: true })
     }
 
     if (!hasToken()) {
         authStore.user = null
+        authStore.sessionReady = true
         if (isProtectedPath(to.path)) {
             return navigateTo('/auth')
         }
         return
     }
 
-    const storeUserId = () =>
-        authStore.user?.userId != null ? String(authStore.user.userId) : ''
-    const activeUserId = () => {
-        // SSR da localStorage yo'q — faqat store
-        if (!import.meta.client) return ''
-        const fromStorage = readActiveUserId()
-        return fromStorage ? String(fromStorage) : ''
+    const active = readActiveUserId()
+    if (
+        authStore.user &&
+        active &&
+        String(authStore.user.userId) !== String(active)
+    ) {
+        authStore.user = null
     }
 
     const needsUserRefresh = () => {
         if (!authStore.user) return true
-        const wanted = activeUserId()
-        const got = storeUserId()
+        const wanted = active ? String(active) : ''
+        const got = authStore.user?.userId != null ? String(authStore.user.userId) : ''
         return !!(wanted && got && wanted !== got)
     }
 
@@ -109,8 +112,6 @@ export default defineNuxtRouteMiddleware(async (to) => {
             await authStore.getMe({ authToken: authToken() || undefined })
         } catch (e: any) {
             const statusCode = e?.response?.status
-            const code = e?.response?.data?.code
-            // Faqat JWT yaroqsiz — Telegram session yo'qligi endi 401 emas
             if (statusCode === 401 || statusCode === 403) {
                 clearSession()
                 if (isProtectedPath(to.path) || to.path === '/auth') {
@@ -118,18 +119,28 @@ export default defineNuxtRouteMiddleware(async (to) => {
                 }
                 return
             }
-            // SSR tarmoq xatosi — himoyalangan sahifaga user siz kiritmaymiz
             if (isProtectedPath(to.path) && !authStore.user) {
+                authStore.sessionReady = true
                 return navigateTo('/auth')
             }
         }
     }
 
+    authStore.sessionReady = true
+
     if (!authStore.user) {
         if (isProtectedPath(to.path)) {
+            clearSession()
             return navigateTo('/auth')
         }
         return
+    }
+
+    // Cookie ni tanlangan hisob bilan qayta yozish (keyingi refresh SSR to'g'ri)
+    const t = authToken()
+    if (t && authStore.user.userId) {
+        writeAuthCookie(t)
+        token.value = t
     }
 
     if (isAuthEntryPath(to.path)) {

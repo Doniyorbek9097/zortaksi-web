@@ -289,12 +289,15 @@ export const useAccountStore = defineStore('account', () => {
         return false
       }
 
-      // 3) Sinxron saqlash
+      // 3) Sinxron saqlash — LS + cookie bir xil (refresh SSR ham to'g'ri)
+      const uid = String(auth.user.userId)
       ensureCurrent(auth.user)
-      writeAuthCookie(acc.token)
+      writeActiveSession(uid, acc.token)
       token.value = acc.token
-      writeActiveSession(String(auth.user.userId), acc.token)
-      activeId.value = String(auth.user.userId)
+      writeAuthCookie(acc.token)
+      try { auth.token = acc.token } catch { /* */ }
+      activeId.value = uid
+      auth.sessionReady = true
       reconnectSocket()
 
       const dest = homeForUser(auth.user)

@@ -1,8 +1,10 @@
 <template>
-  <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-    <slot />
-    <DriverBottomNavigation />
-  </div>
+  <AuthSessionGate>
+    <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <slot />
+      <DriverBottomNavigation />
+    </div>
+  </AuthSessionGate>
 </template>
 
 <script setup lang="ts">
@@ -14,9 +16,8 @@ const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
 
-/** Tab badge uchun unread chat sonini yuklash */
 const refreshBadges = async () => {
-  if (!authStore.token && !authStore.user) return
+  if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
   if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 50 })
 }
 
@@ -26,15 +27,14 @@ onMounted(() => {
 })
 
 watch(
-  () => authStore.user?.userId,
-  (id) => {
-    if (id) void refreshBadges()
+  () => [authStore.sessionReady, authStore.user?.userId] as const,
+  ([ready, id]) => {
+    if (ready && id) void refreshBadges()
   }
 )
 </script>
 
 <style scoped>
-/* Scrollbar paydo bo'lganda layout siljimasin */
 .driver-shell {
   scrollbar-gutter: stable;
 }

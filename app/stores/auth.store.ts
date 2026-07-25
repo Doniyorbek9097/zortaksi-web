@@ -14,6 +14,8 @@ import { normalizeUserRole } from '~/utils/userRole'
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...getAuthCookieOptions() })
     const user = ref<IUser | null>(null)
+    /** Client tanlangan hisobni yuklamaguncha UI kutadi (noto'g'ri account flash yo'q) */
+    const sessionReady = ref(false)
     const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)
     const tariffActive = computed(() => isTariffActive(user.value))
@@ -185,6 +187,7 @@ export const useAuthStore = defineStore('auth', () => {
     return {
         token,
         user,
+        sessionReady,
         isAuthenticated,
         isLoading,
         tariffActive,
