@@ -34,605 +34,136 @@
     />
 
     <!-- Orders list — relative: leave animatsiya tabbar/scrollni siljitmasin -->
-    <div v-else ref="listRoot" class="relative space-y-6 pt-2">
-      <TransitionGroup name="order-drop" tag="div" class="relative space-y-6">
-        <div
-          v-for="order in displayOrders"
-          :key="order._id"
-          class="order-seen-anchor"
-          :data-order-id="order._id"
-        >
-          <OrdersOrderCard
-            :order="order"
-            :role="role"
-            :active="active"
-            :current-user-id="authStore.user?.userId"
-            @unlock="onUnlock"
-            @book="onBook(order)"
-            @unbook="onUnbook(order)"
-            @message="onMessage(order)"
-            @call="onCall(order)"
-            @interest="onInterest(order)"
-            @booked-chat="onBookedChat(order)"
-            @agent="onAgent(order)"
-            @stop-group="onStopGroup(order)"
-            @stop-user="onStopUser(order)"
-            @delete="onDelete(order)"
-          />
-        </div>
-      </TransitionGroup>
-
-      <!-- Infinite scroll sentinel -->
-      <div ref="sentinel" class="h-1" />
-
-      <!-- Yuklanmoqda (keyingi sahifa) — bitta OrderCard skeleton -->
-      <OrdersOrderCardSkeleton v-if="orderStore.isLoadingMore" />
-
-      <!-- Oxiri -->
-      <p
-        v-else-if="!orderStore.hasMore && displayOrders.length"
-        class="py-4 text-center text-[12px] font-medium text-slate-400 dark:text-slate-600"
-      >
-        Barcha buyurtmalar ko'rsatildi
-      </p>
-    </div>
-
-    <!-- Band qilish tasdiqlash -->
-    <BaseConfirmDialog
-      v-model="showBookDialog"
-      title="Band qilish"
-      :description="isAdmin ? 'Admin uchun bepul' : 'Hisobdan pul yechiladi'"
-      :message="bookConfirmMessage"
-      confirm-text="Band qilish"
-      cancel-text="Bekor"
-      variant="success"
-      :loading="booking"
-      :close-on-confirm="false"
-      @confirm="confirmBook"
-      @cancel="bookTarget = null"
+    <DriverOrdersList
+      v-else
+      v-model:list-root="listRoot"
+      v-model:sentinel="sentinel"
+      :orders="displayOrders"
+      :role="role"
+      :active="active"
+      :current-user-id="authStore.user?.userId"
+      :loading-more="orderStore.isLoadingMore"
+      :has-more="orderStore.hasMore"
+      @unlock="onUnlock"
+      @book="onBook"
+      @unbook="onUnbook"
+      @message="onMessage"
+      @call="onCall"
+      @interest="onInterest"
+      @booked-chat="onBookedChat"
+      @agent="onAgent"
+      @stop-group="onStopGroup"
+      @stop-user="onStopUser"
+      @delete="onDelete"
     />
 
-    <!-- Band bekor qilish (pul qaytarilmaydi) -->
-    <BaseConfirmDialog
-      v-model="showUnbookDialog"
-      title="Band bekor qilish"
-      description="Yechilgan pul qaytarilmaydi"
-      message="Bandni bekor qilasizmi? Buyurtma yana ochiladi, lekin hisobdan olingan pul qaytmaydi."
-      confirm-text="Bekor qilish"
-      cancel-text="Yo'q"
-      variant="warning"
-      :loading="unbooking"
-      :close-on-confirm="false"
-      @confirm="confirmUnbook"
-      @cancel="unbookTarget = null"
-    />
-
-    <!-- Pul yo'q / xato -->
-    <BaseConfirmDialog
-      v-model="showNoMoneyDialog"
-      :title="noMoneyIsBalance ? 'Pul yo\'q' : 'Xatolik'"
-      :description="noMoneyIsBalance ? 'Balans yetarli emas' : undefined"
-      :message="noMoneyMessage"
-      :confirm-text="noMoneyIsBalance ? 'Hisob to\'ldirish' : 'OK'"
-      :cancel-text="noMoneyIsBalance ? 'Yopish' : 'Yopish'"
-      variant="warning"
-      @confirm="onNoMoneyConfirm"
-    />
-
-    <!-- Guruhni bloklash -->
-    <BaseConfirmDialog
-      v-model="showBlockGroupDialog"
-      title="Guruhni bloklash"
-      description="Bu guruhdan boshqa buyurtma olinmaydi"
-      :message="blockGroupTarget
+    <DriverOrdersDialogs
+      v-model:show-book-dialog="showBookDialog"
+      v-model:show-unbook-dialog="showUnbookDialog"
+      v-model:show-no-money-dialog="showNoMoneyDialog"
+      v-model:show-block-group-dialog="showBlockGroupDialog"
+      v-model:show-block-user-dialog="showBlockUserDialog"
+      v-model:show-action-error="showActionError"
+      v-model:show-interest-dialog="showInterestDialog"
+      v-model:interest-dialog="interestDialog"
+      :is-admin="isAdmin"
+      :book-confirm-message="bookConfirmMessage"
+      :booking="booking"
+      :unbooking="unbooking"
+      :no-money-is-balance="noMoneyIsBalance"
+      :no-money-message="noMoneyMessage"
+      :block-group-message="blockGroupTarget
         ? `«${blockGroupTarget.group?.title || 'Guruh'}» bloklansinmi?`
         : ''"
-      confirm-text="Bloklash"
-      cancel-text="Bekor"
-      variant="danger"
-      :loading="blocking"
-      :close-on-confirm="false"
-      @confirm="confirmBlockGroup"
-      @cancel="blockGroupTarget = null"
-    />
-
-    <!-- Senderni bloklash -->
-    <BaseConfirmDialog
-      v-model="showBlockUserDialog"
-      title="Foydalanuvchini bloklash"
-      description="Bu userdan boshqa buyurtma olinmaydi"
-      :message="blockUserTarget
+      :block-user-message="blockUserTarget
         ? `«${senderLabel(blockUserTarget)}» bloklansinmi?`
         : ''"
-      confirm-text="Bloklash"
-      cancel-text="Bekor"
-      variant="danger"
-      :loading="blocking"
-      :close-on-confirm="false"
-      @confirm="confirmBlockUser"
-      @cancel="blockUserTarget = null"
-    />
-
-    <!-- Amal xatosi -->
-    <BaseConfirmDialog
-      v-model="showActionError"
-      title="Xatolik"
-      :message="actionError"
-      confirm-text="OK"
-      cancel-text="Yopish"
-      variant="warning"
-      @confirm="showActionError = false"
-    />
-
-    <!-- Qiziqqanlar ro'yxati -->
-    <OrdersInterestListDialog
-      ref="interestDialog"
-      v-model="showInterestDialog"
-      :users="interestUsers"
-      :count="interestCount"
-      :loading="interestLoading"
+      :blocking="blocking"
+      :action-error="actionError"
+      :interest-users="interestUsers"
+      :interest-count="interestCount"
+      :interest-loading="interestLoading"
       :current-user-id="authStore.user?.userId"
-      @select="onInterestSelect"
+      @confirm-book="confirmBook"
+      @cancel-book="bookTarget = null"
+      @confirm-unbook="confirmUnbook"
+      @cancel-unbook="unbookTarget = null"
+      @no-money-confirm="onNoMoneyConfirm"
+      @confirm-block-group="confirmBlockGroup"
+      @cancel-block-group="blockGroupTarget = null"
+      @confirm-block-user="confirmBlockUser"
+      @cancel-block-user="blockUserTarget = null"
+      @interest-select="onInterestSelect"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { IInterestedUser, IOrder } from '~/types'
-import { useAuthStore } from '~/stores/auth.store'
-import { useOrderStore } from '~/stores/order.store'
-import { useChatStore } from '~/stores/chat.store'
-import {
-  loadOrderFilterKeywords,
-  matchesKeywords,
-  parseKeywords,
-  saveOrderFilterKeywords,
-} from '~/utils/orderFilterKeywords'
+/**
+ * Haydovchi buyurtmalar sahifasi.
+ * Mantiq: composables/orders/* — UI bo'laklari: components/driver/orders/*
+ */
+import { useDriverOrdersPage } from '~/composables/orders/useDriverOrdersPage'
 
 definePageMeta({
   layout: 'driver',
 })
 
-const authStore = useAuthStore()
-const orderStore = useOrderStore()
-const chatStore = useChatStore()
-
-// Rol va aktivlik — tugmalarni ko'rsatishni boshqaradi
-const role = computed(() => authStore.user?.role)
-const active = computed(() => authStore.tariffActive)
-
-// --- Filtr holati (localStorage) ---
-const showFilter = ref(false)
-const draftKeywords = ref('')
-const appliedKeywords = ref('')
-const filterActive = computed(() => !!appliedKeywords.value.trim())
-
-const LIMIT = 10
-
-const queryParams = () => ({
-  limit: LIMIT,
-  search: appliedKeywords.value.trim() || undefined,
-})
-
-// Socket orqali kelgan buyurtmalarni ham filter bo'yicha kesish
-const displayOrders = computed(() => {
-  const list = orderStore.orders
-  if (!appliedKeywords.value.trim()) return list
-  return list.filter((o: any) =>
-    matchesKeywords(
-      [o?.group?.title, o?.group?.username, o?.message?.text],
-      appliedKeywords.value,
-    ),
-  )
-})
-
-const onSaveFilter = (value: string) => {
-  draftKeywords.value = value
-  appliedKeywords.value = value
-  saveOrderFilterKeywords(value)
-  showFilter.value = false
-  load()
-}
-
-const onCancelFilter = () => {
-  draftKeywords.value = appliedKeywords.value
-  showFilter.value = false
-}
-
-const onRemoveRegion = (chip: string) => {
-  const next = parseKeywords(appliedKeywords.value)
-    .filter((k) => k !== chip)
-    .join(', ')
-  onSaveFilter(next)
-}
-
-// Birinchi sahifa (ro'yxatni almashtiradi)
-const load = () => orderStore.fetchOrders({ page: 1, ...queryParams() })
-
-// Keyingi sahifa (ro'yxatga qo'shadi)
-const loadMore = () => orderStore.loadMore(queryParams())
-
-// LIVE + catch-up: page>1 da ham yangilarni boshiga qo'shadi (scroll buzilmaydi)
-let pollTimer: ReturnType<typeof setInterval> | null = null
-
-// --- Infinite scroll (IntersectionObserver) ---
-const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
-/** Ro'yxatda ko'rinadigan buyurtmalar — badge dan chiqarish */
-const listRoot = ref<HTMLElement | null>(null)
-let seenObserver: IntersectionObserver | null = null
-const observedSeenEls = new WeakSet<Element>()
-
-const bindSeenObserver = () => {
-  if (!import.meta.client) return
-  if (!seenObserver) {
-    seenObserver = new IntersectionObserver(
-      (entries) => {
-        const ids: string[] = []
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue
-          const id = (entry.target as HTMLElement).dataset.orderId
-          if (id) ids.push(id)
-          seenObserver?.unobserve(entry.target)
-        }
-        if (ids.length) orderStore.markOrdersSeen(ids)
-      },
-      { threshold: 0.35, rootMargin: '0px 0px -8% 0px' },
-    )
-  }
-  nextTick(() => {
-    const root = listRoot.value
-    if (!root) return
-    root.querySelectorAll('.order-seen-anchor[data-order-id]').forEach((el) => {
-      if (observedSeenEls.has(el)) return
-      observedSeenEls.add(el)
-      seenObserver?.observe(el)
-    })
-  })
-}
-
-onMounted(() => {
-  orderStore.startRecentMinuteTicker()
-  const saved = loadOrderFilterKeywords()
-  draftKeywords.value = saved
-  appliedKeywords.value = saved
-  load()
-  pollTimer = setInterval(() => {
-    void orderStore.syncLatest(queryParams())
-  }, 10000)
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting) loadMore()
-    },
-    { rootMargin: '200px' }
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
-  bindSeenObserver()
-})
-
-// Sentinel v-if bilan paydo bo'lsa/yo'qolsa — qayta kuzatamiz
-watch(sentinel, (el) => {
-  if (observer && el) observer.observe(el)
-})
-
-watch(
-  () => displayOrders.value.map((o) => o._id).join(','),
-  () => bindSeenObserver(),
-)
-
-onBeforeUnmount(() => {
-  if (pollTimer) clearInterval(pollTimer)
-  if (observer) observer.disconnect()
-  if (seenObserver) seenObserver.disconnect()
-})
-
-const onUnlock = () => navigateTo('/driver/payment')
-
-// --- Karta amallari ---
-const openLink = (url: string) => {
-  if (import.meta.client) window.open(url, '_blank')
-}
-
-const BOOK_PRICE = 1000
-const isAdmin = computed(() => role.value === 'admin')
-const showBookDialog = ref(false)
-const showUnbookDialog = ref(false)
-const showNoMoneyDialog = ref(false)
-const booking = ref(false)
-const unbooking = ref(false)
-const bookTarget = ref<IOrder | null>(null)
-const unbookTarget = ref<IOrder | null>(null)
-const noMoneyMessage = ref('')
-const noMoneyIsBalance = ref(true)
-
-const bookConfirmMessage = computed(() => {
-  if (isAdmin.value) {
-    return "Bu buyurtmani band qilasizmi? Admin uchun bepul."
-  }
-  return `Bu buyurtmani band qilasizmi? Hisobingizdan ${BOOK_PRICE.toLocaleString('ru-RU')} so'm yechiladi.`
-})
-
-const onBook = (order: IOrder) => {
-  if (!order._id || order.status === 'booked') return
-  bookTarget.value = order
-  showBookDialog.value = true
-}
-
-const onUnbook = (order: IOrder) => {
-  if (!order._id || order.status !== 'booked') return
-  unbookTarget.value = order
-  showUnbookDialog.value = true
-}
-
-const confirmBook = async () => {
-  const order = bookTarget.value
-  if (!order?._id || booking.value) return
-  booking.value = true
-  try {
-    await orderStore.bookOrder(order._id)
-    showBookDialog.value = false
-    bookTarget.value = null
-    try { await authStore.getMe() } catch { /* ignore */ }
-  } catch (e: any) {
-    const status = e?.response?.status
-    const data = e?.response?.data
-    showBookDialog.value = false
-    if (status === 402 || data?.data?.shortage != null) {
-      const price = Number(data?.data?.price || BOOK_PRICE)
-      const balance = Number(data?.data?.balance ?? authStore.user?.balance ?? 0)
-      const shortage = Number(data?.data?.shortage || Math.max(0, price - balance))
-      noMoneyIsBalance.value = true
-      noMoneyMessage.value =
-        data?.message ||
-        `Pul yo'q. Balansingiz: ${balance.toLocaleString('ru-RU')} so'm. Yetishmaydi: ${shortage.toLocaleString('ru-RU')} so'm.`
-      showNoMoneyDialog.value = true
-      return
-    }
-    noMoneyIsBalance.value = false
-    noMoneyMessage.value = data?.message || e?.message || 'Band qilish amalga oshmadi'
-    showNoMoneyDialog.value = true
-  } finally {
-    booking.value = false
-  }
-}
-
-const confirmUnbook = async () => {
-  const order = unbookTarget.value
-  if (!order?._id || unbooking.value) return
-  unbooking.value = true
-  try {
-    await orderStore.unbookOrder(order._id)
-    showUnbookDialog.value = false
-    unbookTarget.value = null
-  } catch (e: any) {
-    showUnbookDialog.value = false
-    noMoneyIsBalance.value = false
-    noMoneyMessage.value =
-      e?.response?.data?.message || e?.message || 'Bandni bekor qilib bo\'lmadi'
-    showNoMoneyDialog.value = true
-  } finally {
-    unbooking.value = false
-  }
-}
-
-const goPayment = () => {
-  showNoMoneyDialog.value = false
-  navigateTo('/driver/payment')
-}
-
-const onNoMoneyConfirm = () => {
-  if (noMoneyIsBalance.value) goPayment()
-  else showNoMoneyDialog.value = false
-}
-
-const markOrderInterest = (order: IOrder) => {
-  if (!order._id) return
-  void orderStore.markInterest(order._id)
-}
-
-const onMessage = async (order: IOrder) => {
-  if (!order._id) return
-  markOrderInterest(order)
-  try {
-    const res = await chatStore.startChatFromOrder(order._id)
-    if (res?.success && res.data?._id) {
-      return navigateTo(`/driver/chat/${res.data._id}`)
-    }
-  } catch (err) {
-    console.error('startChatFromOrder error:', err)
-  }
-  // Fallback — Telegram profiliga o'tish
-  const username = order.sender?.username
-  if (username) openLink(`https://t.me/${username}`)
-}
-
-const onCall = (order: IOrder) => {
-  markOrderInterest(order)
-}
-
-const showInterestDialog = ref(false)
-const interestLoading = ref(false)
-const interestUsers = ref<IInterestedUser[]>([])
-const interestCount = ref(0)
-const interestOrderId = ref<string | null>(null)
-const interestDialog = ref<{ resetOpening: (err?: string) => void; close: () => void } | null>(null)
-
-const onInterest = async (order: IOrder) => {
-  if (!order._id) return
-  interestOrderId.value = order._id
-  showInterestDialog.value = true
-  interestUsers.value = order.interestedUsers || []
-  interestCount.value = Number(order.interestCount || interestUsers.value.length || 0)
-  interestLoading.value = !interestUsers.value.length
-
-  try {
-    const res = await orderStore.fetchInterest(order._id)
-    if (res?.success && res.data) {
-      interestUsers.value = res.data.interestedUsers || []
-      interestCount.value = Number(res.data.interestCount || interestUsers.value.length || 0)
-    }
-  } finally {
-    interestLoading.value = false
-  }
-}
-
-const onInterestSelect = async (user: IInterestedUser) => {
-  try {
-    const res = await chatStore.startChatWithUser(
-      user.userId,
-      interestOrderId.value || undefined,
-    )
-    if (res?.success && res.data?._id) {
-      const name =
-        user.name ||
-        [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
-        user.username ||
-        'Haydovchi'
-      interestDialog.value?.close()
-      await navigateTo({
-        path: `/driver/chat/${res.data._id}`,
-        query: { name },
-      })
-      return
-    }
-    interestDialog.value?.resetOpening(res?.message || 'Chat ochilmadi')
-  } catch (err: any) {
-    interestDialog.value?.resetOpening(
-      err?.response?.data?.message || err?.message || 'Chat ochilmadi',
-    )
-  }
-}
-
-const onBookedChat = async (order: IOrder) => {
-  if (!order._id) return
-  try {
-    const res = await chatStore.startChatWithBookedDriver(order._id)
-    if (res?.success && res.data?._id) {
-      const phone = res.data?.peer?.phone
-      return navigateTo({
-        path: `/driver/chat/${res.data._id}`,
-        query: phone ? { phone: String(phone) } : undefined,
-      })
-    }
-    showError(res?.message || 'Haydovchi bilan chat ochilmadi')
-  } catch (err: any) {
-    console.error('startChatWithBookedDriver error:', err)
-    showError(err?.response?.data?.message || 'Haydovchi bilan chat ochilmadi')
-  }
-}
-
-const senderLabel = (order: IOrder) => {
-  const s = order.sender
-  const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
-  return full || s?.username || s?.userId || 'Foydalanuvchi'
-}
-
-const onAgent = async (order: IOrder) => {
-  // Agent — order egasi (owner) bilan chat
-  if (!order._id) return
-  try {
-    const res = await chatStore.startChatWithOrderOwner(order._id)
-    if (res?.success && res.data?._id) {
-      return navigateTo(`/driver/chat/${res.data._id}`)
-    }
-    showError(res?.message || 'Agent chat ochilmadi')
-  } catch (err: any) {
-    console.error('startChatWithOrderOwner error:', err)
-    showError(err?.response?.data?.message || 'Agent chat ochilmadi')
-  }
-  // Fallback — owner Telegram profili
-  const username = order.owner?.username
-  if (username) openLink(`https://t.me/${username}`)
-}
-
-const showBlockGroupDialog = ref(false)
-const showBlockUserDialog = ref(false)
-const blockGroupTarget = ref<IOrder | null>(null)
-const blockUserTarget = ref<IOrder | null>(null)
-const blocking = ref(false)
-const actionError = ref('')
-const showActionError = ref(false)
-
-const showError = (msg: string) => {
-  actionError.value = msg
-  showActionError.value = true
-}
-
-const onStopGroup = (order: IOrder) => {
-  if (!order._id) return
-  blockGroupTarget.value = order
-  showBlockGroupDialog.value = true
-}
-
-const onStopUser = (order: IOrder) => {
-  if (!order._id) return
-  blockUserTarget.value = order
-  showBlockUserDialog.value = true
-}
-
-const confirmBlockGroup = async () => {
-  const order = blockGroupTarget.value
-  if (!order?._id || blocking.value) return
-  blocking.value = true
-  try {
-    await orderStore.blockGroup(order._id)
-    showBlockGroupDialog.value = false
-    blockGroupTarget.value = null
-  } catch (err: any) {
-    showBlockGroupDialog.value = false
-    showError(err?.response?.data?.message || 'Guruhni bloklash amalga oshmadi')
-  } finally {
-    blocking.value = false
-  }
-}
-
-const confirmBlockUser = async () => {
-  const order = blockUserTarget.value
-  if (!order?._id || blocking.value) return
-  blocking.value = true
-  try {
-    await orderStore.blockSender(order._id)
-    showBlockUserDialog.value = false
-    blockUserTarget.value = null
-  } catch (err: any) {
-    showBlockUserDialog.value = false
-    showError(err?.response?.data?.message || 'Foydalanuvchini bloklash amalga oshmadi')
-  } finally {
-    blocking.value = false
-  }
-}
-
-const onDelete = async (order: IOrder) => {
-  if (!order._id) return
-  try {
-    await orderStore.deleteOrder(order._id)
-  } catch (err: any) {
-    showError(err?.response?.data?.message || "Buyurtmani o'chirib bo'lmadi")
-  }
-}
+const {
+  authStore,
+  orderStore,
+  role,
+  active,
+  isAdmin,
+  showFilter,
+  draftKeywords,
+  appliedKeywords,
+  filterActive,
+  displayOrders,
+  onSaveFilter,
+  onCancelFilter,
+  onRemoveRegion,
+  sentinel,
+  listRoot,
+  showBookDialog,
+  showUnbookDialog,
+  showNoMoneyDialog,
+  booking,
+  unbooking,
+  bookTarget,
+  unbookTarget,
+  noMoneyMessage,
+  noMoneyIsBalance,
+  bookConfirmMessage,
+  onBook,
+  onUnbook,
+  confirmBook,
+  confirmUnbook,
+  onNoMoneyConfirm,
+  showInterestDialog,
+  interestLoading,
+  interestUsers,
+  interestCount,
+  interestDialog,
+  onMessage,
+  onCall,
+  onInterest,
+  onInterestSelect,
+  onBookedChat,
+  onAgent,
+  showBlockGroupDialog,
+  showBlockUserDialog,
+  blockGroupTarget,
+  blockUserTarget,
+  blocking,
+  actionError,
+  showActionError,
+  senderLabel,
+  onStopGroup,
+  onStopUser,
+  confirmBlockGroup,
+  confirmBlockUser,
+  onDelete,
+  onUnlock,
+} = useDriverOrdersPage()
 </script>
-
-<style scoped>
-.order-drop-enter-active {
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-/* absolute leave — sahifa balandligini o'zgartirib tabbarni siljitardi; faqat fade */
-.order-drop-leave-active {
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-.order-drop-enter-from {
-  opacity: 0;
-  transform: translateY(-16px);
-}
-.order-drop-leave-to {
-  opacity: 0;
-}
-.order-drop-move {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-</style>
