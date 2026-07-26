@@ -116,6 +116,7 @@ import { onBeforeUnmount } from 'vue'
 import { CHAT_PHOTO_MAX_INPUT, isChatPhotoFile, prepareChatPhoto } from '~/utils/prepareChatPhoto'
 import {
   buildVoiceRecorderOptions,
+  canRecordVoice,
   getVoiceAudioConstraints,
   normalizeVoiceBlob,
   pickVoiceMimeType,
@@ -213,8 +214,13 @@ const waitForRecorderStop = (recorder: MediaRecorder): Promise<void> =>
 const startRecording = async () => {
   if (props.disabled) return
   micError.value = ''
+  if (!canRecordVoice()) {
+    micError.value = 'Bu brauzer ovoz yozishni qo\'llab-quvvatlamaydi'
+    return
+  }
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia(getVoiceAudioConstraints())
+    // Avvalo OGG; bo'lmasa webm — server baribir OGG ga o'tkazadi
     mimeType = pickVoiceMimeType()
     chunks = []
     const opts = buildVoiceRecorderOptions(mimeType)
@@ -227,7 +233,7 @@ const startRecording = async () => {
       if (e.data.size > 0) chunks.push(e.data)
     }
 
-    // Timeslicesiz — stop paytida bitta to'liq chunk (buzilgan webm dan qochish)
+    // Timeslicesiz — stop paytida bitta to'liq chunk
     mediaRecorder.start()
     recording.value = true
     seconds.value = 0
@@ -271,8 +277,8 @@ const stopAndSend = async () => {
     return
   }
 
-  const raw = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/webm' })
-  const blob = normalizeVoiceBlob(raw, mimeType || recorder.mimeType || '')
+  const raw = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/ogg' })
+  const blob = normalizeVoiceBlob(raw, mimeType || recorder.mimeType || 'audio/ogg')
   stopTracks()
   recording.value = false
   seconds.value = 0

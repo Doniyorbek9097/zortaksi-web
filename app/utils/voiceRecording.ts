@@ -1,39 +1,43 @@
-/** Brauzer/Telegram WebView uchun ovoz yozish — MIME va audio constraintlar. */
+/**
+ * Ovoz yozish — imkon qadar OGG/Opus.
+ * Brauzer OGG ni qo'llab-quvvatlamasa webm yoziladi, server OGG ga o'tkazadi.
+ * Ijro har doim audio/ogg.
+ */
 
 export const VOICE_RECORD_BITRATE = 96_000
 
-const IOS_UA = /iPad|iPhone|iPod/i
+const OGG_CANDIDATES = [
+  'audio/ogg;codecs=opus',
+  'audio/ogg; codecs=opus',
+  'audio/ogg',
+]
 
-export function isIosLike(): boolean {
-  if (typeof navigator === 'undefined') return false
-  return IOS_UA.test(navigator.userAgent)
-    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-}
+const FALLBACK_CANDIDATES = [
+  'audio/webm;codecs=opus',
+  'audio/webm',
+]
 
-/** MediaRecorder uchun eng yaxshi MIME (iOS → mp4, Android → webm/opus). */
+/** MediaRecorder MIME — avvalo OGG. */
 export function pickVoiceMimeType(): string {
   if (typeof MediaRecorder === 'undefined') return ''
-  const candidates = isIosLike()
-    ? [
-        'audio/mp4',
-        'audio/mp4;codecs=mp4a',
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg;codecs=opus',
-      ]
-    : [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/mp4',
-        'audio/ogg;codecs=opus',
-      ]
-  for (const mime of candidates) {
+  for (const mime of OGG_CANDIDATES) {
+    if (MediaRecorder.isTypeSupported(mime)) return mime
+  }
+  for (const mime of FALLBACK_CANDIDATES) {
     if (MediaRecorder.isTypeSupported(mime)) return mime
   }
   return ''
 }
 
-/** Aniq ovoz: ortiqcha noise suppression o'chirilgan, mono 48 kHz. */
+export function canRecordVoice(): boolean {
+  return !!pickVoiceMimeType() || typeof MediaRecorder !== 'undefined'
+}
+
+export function isOggMime(mime: string): boolean {
+  return /ogg|opus/i.test(mime || '')
+}
+
+/** Aniq ovoz: mono 48 kHz. */
 export function getVoiceAudioConstraints(): MediaStreamConstraints {
   return {
     audio: {
@@ -46,18 +50,14 @@ export function getVoiceAudioConstraints(): MediaStreamConstraints {
   }
 }
 
-export function voiceBlobExtension(mime: string): string {
-  const m = (mime || '').toLowerCase()
-  if (m.includes('ogg')) return 'ogg'
-  if (m.includes('mp4') || m.includes('m4a') || m.includes('aac')) return 'm4a'
-  if (m.includes('mpeg') || m.includes('mp3')) return 'mp3'
-  if (m.includes('wav')) return 'wav'
-  return 'webm'
+/** Fayl nomi — har doim .ogg (server Telegram OGG ga keltiradi). */
+export function voiceBlobExtension(_mime: string): string {
+  return 'ogg'
 }
 
-/** Blob MIME brauzer defaultlari bilan moslashtirish. */
+/** Blob MIME — OGG bo'lsa saqlaymiz, aks holda asl (server convert). */
 export function normalizeVoiceBlob(blob: Blob, recordedMime: string): Blob {
-  const mime = recordedMime || blob.type || pickVoiceMimeType() || 'audio/webm'
+  const mime = recordedMime || blob.type || 'audio/ogg'
   if (blob.type === mime) return blob
   return new Blob([blob], { type: mime })
 }
@@ -65,8 +65,6 @@ export function normalizeVoiceBlob(blob: Blob, recordedMime: string): Blob {
 export function buildVoiceRecorderOptions(mimeType: string): MediaRecorderOptions {
   const opts: MediaRecorderOptions = {}
   if (mimeType) opts.mimeType = mimeType
-  if (mimeType && !mimeType.includes('mp4')) {
-    opts.audioBitsPerSecond = VOICE_RECORD_BITRATE
-  }
+  opts.audioBitsPerSecond = VOICE_RECORD_BITRATE
   return opts
 }

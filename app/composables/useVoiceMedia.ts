@@ -36,6 +36,7 @@ async function fetchMediaBlobFromNetwork(
   messageId: string,
   kind: 'voice' | 'photo',
 ): Promise<Blob> {
+  // Kelgan voice serverdan M4A (audio/mp4) keladi — brauzer/WebView ijro qiladi
   const fallbackMime = kind === 'voice' ? 'audio/mp4' : 'image/jpeg'
   const config = useRuntimeConfig()
   const token = useCookie('auth_token')
@@ -152,12 +153,17 @@ export function useChatMedia() {
       // 1) IndexedDB — tez lokal ijro
       if (!opts.forceNetwork) {
         const idbBlob = await idbGetMedia(id)
-        if (idbBlob?.size) {
+        // Eski OGG kesh (ijro bo'lmagan) — M4A uchun serverdan qayta olish
+        const staleOgg =
+          kind === 'voice' &&
+          idbBlob &&
+          /ogg|opus/i.test(idbBlob.type || '')
+        if (idbBlob?.size && !staleOgg) {
           return blobToObjectUrl(id, idbBlob, kind, false)
         }
       }
 
-      // 2) Server → Telegram
+      // 2) Server → Telegram (voice M4A)
       const blob = await fetchMediaBlobFromNetwork(id, kind)
       return blobToObjectUrl(id, blob, kind, true)
     })()
