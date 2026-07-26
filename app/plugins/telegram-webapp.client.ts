@@ -57,8 +57,21 @@ function isInsideTelegram(tg: TgWebApp): boolean {
   return !!p && p !== 'unknown'
 }
 
-/** Vue Router history.state — orqaga qaytish mumkinmi */
+/** Overlay / BottomSheet history qatlami (pushState) */
+function hasOverlayHistoryLayer(): boolean {
+  try {
+    const state = window.history.state as Record<string, unknown> | null
+    if (!state || typeof state !== 'object') return false
+    if (state.sheet) return true
+    return Object.keys(state).some((k) => k.startsWith('zt'))
+  } catch {
+    return false
+  }
+}
+
+/** Vue Router yoki overlay — orqaga qaytish mumkinmi */
 function canGoBackInApp(): boolean {
+  if (hasOverlayHistoryLayer()) return true
   try {
     const state = window.history.state as { back?: unknown; position?: number } | null
     if (state && state.back != null) return true
@@ -97,6 +110,11 @@ export default defineNuxtPlugin(() => {
     }
 
     const onTgBack = () => {
+      // Dialog/overlay ochiq bo'lsa — faqat uni yopish (sahifa emas)
+      if (hasOverlayHistoryLayer()) {
+        history.back()
+        return
+      }
       if (canGoBackInApp()) {
         router.back()
         return
@@ -118,6 +136,11 @@ export default defineNuxtPlugin(() => {
 
     // Brauzer/OS back (Telegram uni BackButton ga ulaydi)
     window.addEventListener('popstate', () => {
+      setTimeout(syncBackButton, 0)
+    })
+
+    // Overlay pushState dan keyin BackButton ni ko'rsatish
+    window.addEventListener('zt-history-layer', () => {
       setTimeout(syncBackButton, 0)
     })
 

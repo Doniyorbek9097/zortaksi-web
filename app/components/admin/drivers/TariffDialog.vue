@@ -145,6 +145,8 @@ const onConfirm = () => {
     deductFromBalance: deduct.value,
   })
 }
+
+useHistoryBackClose(() => props.modelValue, close, { key: 'ztAdminTariff' })
 </script>
 
 <style scoped>

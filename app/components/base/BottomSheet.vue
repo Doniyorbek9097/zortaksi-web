@@ -112,6 +112,7 @@ onMounted(() => {
 
       myIndex = sheetOpened()
       history.pushState({ sheet: true }, '')
+      window.dispatchEvent(new Event('zt-history-layer'))
     } else {
       // $lenis?.start()
       document.body.style.overflow = ''

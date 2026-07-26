@@ -126,6 +126,8 @@ const close = () => {
   openingId.value = null
 }
 
+useHistoryBackClose(modelValue, close, { key: 'ztInterestList' })
+
 const displayName = (u: IInterestedUser) => {
   if (u.name) return u.name
   const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim()

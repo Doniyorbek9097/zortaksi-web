@@ -84,6 +84,8 @@ const onSend = () => {
   if (!text.value.trim()) return
   emit('confirm', text.value.trim())
 }
+
+useHistoryBackClose(() => props.modelValue, close, { key: 'ztCompose' })
 </script>
 
 <style scoped>

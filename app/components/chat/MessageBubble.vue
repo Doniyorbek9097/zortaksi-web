@@ -213,7 +213,7 @@
       <Transition name="fade">
         <div
           v-if="lightbox"
-          class="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4"
+          class="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
           @click.self="lightbox = false"
         >
           <button
@@ -383,6 +383,7 @@ const src = ref('')
 const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
+useHistoryBackClose(lightbox, () => { lightbox.value = false }, { key: 'ztLightbox' })
 const current = ref(0)
 const total = ref(props.duration || 0)
 

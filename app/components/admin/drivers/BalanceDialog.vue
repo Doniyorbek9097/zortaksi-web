@@ -111,6 +111,8 @@ const onConfirm = () => {
   if (parsedAmount.value == null) return
   emit('confirm', parsedAmount.value)
 }
+
+useHistoryBackClose(() => props.modelValue, close, { key: 'ztAdminBalance' })
 </script>
 
 <style scoped>

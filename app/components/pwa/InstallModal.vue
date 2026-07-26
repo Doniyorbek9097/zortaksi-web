@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   open: boolean
   iosHint?: boolean
   manualHint?: boolean
@@ -122,6 +122,15 @@ const remindLater = () => {
 const onInstall = () => {
   emit('install')
 }
+
+useHistoryBackClose(
+  () => props.open,
+  () => {
+    emit('later')
+    emit('update:open', false)
+  },
+  { key: 'ztPwaInstall' },
+)
 </script>
 
 <style scoped>

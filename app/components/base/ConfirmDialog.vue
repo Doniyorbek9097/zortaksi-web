@@ -114,6 +114,15 @@ const onConfirm = () => {
   emit('confirm')
   if (props.closeOnConfirm) emit('update:modelValue', false)
 }
+
+useHistoryBackClose(
+  () => props.modelValue,
+  () => {
+    emit('cancel')
+    emit('update:modelValue', false)
+  },
+  { key: 'ztConfirm' },
+)
 </script>
 
 <style scoped>
