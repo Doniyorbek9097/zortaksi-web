@@ -65,7 +65,6 @@
           :status="msg.status"
           :type="msg.type"
           :message-id="msg._id"
-          :media-path="msg.mediaPath"
           :duration="msg.duration"
           :highlight="focusId === msg._id"
         />

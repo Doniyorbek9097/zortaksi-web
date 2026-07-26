@@ -31,7 +31,7 @@
           class="w-9 h-9 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all"
           :class="out ? 'bg-white/20 text-white' : 'bg-sky-500/15 text-sky-500'"
           :aria-label="playing ? 'To\'xtatish' : 'Tinglash'"
-          :disabled="loading"
+          :disabled="loading || !src"
           @click="toggle"
         >
           <font-awesome-icon
@@ -87,7 +87,6 @@
             alt="Rasm"
             class="max-w-[260px] max-h-[320px] w-full object-cover rounded-xl"
             loading="eager"
-            @error="onImageError"
           >
           <div
             v-else
@@ -168,13 +167,11 @@
         v-if="type === 'voice' && src"
         ref="audioEl"
         :src="src"
-        preload="metadata"
-        playsinline
+        preload="auto"
         class="hidden"
         @timeupdate="onTime"
         @ended="onEnded"
         @loadedmetadata="onMeta"
-        @error="onAudioError"
       />
     </div>
 
@@ -216,8 +213,6 @@ interface Props {
   status?: 'sending' | 'sent' | 'failed' | 'read'
   type?: 'text' | 'photo' | 'video' | 'voice' | 'document'
   messageId?: string
-  /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
-  mediaPath?: string
   duration?: number
   highlight?: boolean
 }
@@ -230,12 +225,11 @@ const props = withDefaults(defineProps<Props>(), {
   read: false,
   status: 'sent',
   type: 'text',
-  mediaPath: '',
   duration: 0,
   highlight: false,
 })
 
-const { getUrl, peekUrl } = useChatMedia()
+const { getUrl } = useChatMedia()
 
 const pickLine = (raw: string, re: RegExp) => {
   const m = raw.match(re)
@@ -354,47 +348,20 @@ const fmt = (s: number) => {
 const currentLabel = computed(() => fmt(current.value))
 const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
-const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
-
-const syncSrcFromCache = () => {
-  if (!props.messageId) return false
-  const cached = peekUrl(props.messageId)
-  if (cached && cached !== src.value) {
-    src.value = cached
-    return true
-  }
-  return !!cached
-}
-
-const ensureSrc = async (opts: { force?: boolean } = {}) => {
-  if (!props.messageId) return
-  if (!opts.force && syncSrcFromCache()) return
-  if (!opts.force && src.value) return
+const ensureSrc = async () => {
+  if (src.value || !props.messageId) return
   loading.value = true
   try {
-    const url = await getUrl(
-      props.messageId,
-      mediaKind.value,
-      opts.force ? { forceNetwork: true } : {},
-    )
-    if (url) src.value = url
+    src.value = await getUrl(props.messageId)
   } catch (e) {
     console.error('media load', e)
-    if (syncSrcFromCache()) return
-    src.value = ''
   } finally {
     loading.value = false
   }
 }
 
-const retryMedia = async () => {
-  src.value = ''
-  await ensureSrc({ force: true })
-}
-
 const toggle = async () => {
-  // src yo'q bo'lsa (Telegram voice hali fonda) — qayta yuklashga urinadi
-  await ensureSrc({ force: !src.value })
+  await ensureSrc()
   await nextTick()
   const a = audioEl.value
   if (!a || !src.value) return
@@ -407,15 +374,6 @@ const toggle = async () => {
       playing.value = true
     } catch (e) {
       console.error('play', e)
-      // Blob buzilgan bo'lishi mumkin — serverdan qayta olish
-      await ensureSrc({ force: true })
-      await nextTick()
-      try {
-        await audioEl.value?.play()
-        playing.value = true
-      } catch (e2) {
-        console.error('play retry', e2)
-      }
     }
   }
 }
@@ -440,23 +398,6 @@ const onEnded = () => {
   current.value = 0
 }
 
-const onAudioError = async () => {
-  playing.value = false
-  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
-    syncSrcFromCache()
-    return
-  }
-  await retryMedia()
-}
-
-const onImageError = async () => {
-  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
-    syncSrcFromCache()
-    return
-  }
-  await retryMedia()
-}
-
 const seek = (e: MouseEvent) => {
   const a = audioEl.value
   if (!a || !total.value) return
@@ -469,77 +410,16 @@ const seek = (e: MouseEvent) => {
 
 watch(
   () => props.messageId,
-  async (id, prevId) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!id) {
-      src.value = ''
-      return
-    }
-    if (id !== prevId) src.value = ''
-    await ensureSrc()
-  },
-  { immediate: true },
-)
-
-// Telegram media avval 'remote', fonda yuklangach haqiqiy path — qayta yuklash
-watch(
-  () => props.mediaPath,
-  async (path, prev) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId || !path || path === prev) return
-    // remote → hali diskda yo'q, lekin lazy API ishlashi mumkin
-    if (path === 'remote') {
-      await ensureSrc({ force: true })
-      return
-    }
-    // Endi diskda — majburiy qayta olish
-    src.value = ''
-    await ensureSrc({ force: true })
-  },
-)
-
-// remote bo'lganda fonda saqlanishini kutib qayta urinish
-let remotePoll: ReturnType<typeof setInterval> | null = null
-watch(
-  () => [props.mediaPath, props.messageId, props.type] as const,
-  ([path, id, type]) => {
-    if (remotePoll) {
-      clearInterval(remotePoll)
-      remotePoll = null
-    }
-    if ((type !== 'voice' && type !== 'photo') || !id || path !== 'remote') return
-    let tries = 0
-    remotePoll = setInterval(() => {
-      tries += 1
-      if (tries > 12 || src.value) {
-        if (remotePoll) clearInterval(remotePoll)
-        remotePoll = null
-        return
-      }
-      void ensureSrc({ force: true })
-    }, 2500)
-  },
-  { immediate: true },
-)
-
-watch(
-  () => props.status,
-  async (status, prev) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId) return
-    if (prev === 'sending' && status !== 'sending') {
-      src.value = ''
+  async (id) => {
+    if ((props.type === 'voice' || props.type === 'photo') && id && !id.startsWith('temp-')) {
       await ensureSrc()
     }
   },
+  { immediate: true }
 )
 
 onBeforeUnmount(() => {
   audioEl.value?.pause()
-  if (remotePoll) {
-    clearInterval(remotePoll)
-    remotePoll = null
-  }
 })
 </script>
 

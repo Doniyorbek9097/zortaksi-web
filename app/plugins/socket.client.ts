@@ -4,16 +4,16 @@ import { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
-import { getAuthCookieOptions } from '~/utils/authCookie'
+import { authCookieOptions } from '~/utils/authCookie'
+import { orderContentKey } from '~/utils/orderDedupe'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
-  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
+  const cookie = useCookie('auth_token', { ...authCookieOptions })
   const chatStore = useChatStore()
   const orderStore = useOrderStore()
 
   let socket: Socket | null = null
-  let visibilityBound = false
 
   if (import.meta.client) {
     const unlock = () => unlockNotifySound()
@@ -22,27 +22,6 @@ export default defineNuxtPlugin(() => {
   }
 
   const currentToken = () => resolveAuthToken(cookie.value)
-
-  /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
-  const catchUpOrders = () => {
-    if (!currentToken()) return
-    void orderStore.syncLatest()
-  }
-
-  /** Chat: o'tkazib yuborilgan message:new / message:update */
-  const catchUpChats = () => {
-    if (!currentToken()) return
-    void chatStore.fetchChats().catch(() => {})
-    const openId = chatStore.currentChat?._id
-    if (openId) {
-      void chatStore.fetchMessages(openId).catch(() => {})
-    }
-  }
-
-  const catchUpAll = () => {
-    catchUpOrders()
-    catchUpChats()
-  }
 
   const connect = () => {
     const t = currentToken()
@@ -55,10 +34,6 @@ export default defineNuxtPlugin(() => {
     socket = io(config.public.socketUrl as string, {
       auth: { token: t },
       transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 8000,
     })
 
     socket.on('message:new', (msg) => {
@@ -76,21 +51,21 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
-      const added = orderStore.prependOrder(order)
-      if (added) playOrderSound()
-    })
-    socket.on('connect', () => {
-      // Reconnect — order + chat (Telegram javoblari yo'qolmasin)
-      catchUpAll()
+      const list = orderStore.orders
+      const incomingKey = orderContentKey(order)
+      const isDup = list.some((o) => {
+        if (o._id && order?._id && String(o._id) === String(order._id)) return true
+        const existingKey = orderContentKey(o)
+        return !!incomingKey && !!existingKey && incomingKey === existingKey
+      })
+      if (!isDup) {
+        orderStore.orders = [order, ...list]
+        orderStore.total = (orderStore.total || 0) + 1
+        if ((order?.status || 'new') === 'new') orderStore.bumpNewCount(1)
+        playOrderSound()
+      }
     })
     socket.on('connect_error', (err) => console.warn('[socket] connect_error:', err.message))
-
-    if (import.meta.client && !visibilityBound) {
-      visibilityBound = true
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') catchUpAll()
-      })
-    }
   }
 
   const disconnect = () => {
