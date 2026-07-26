@@ -237,6 +237,8 @@
 </template>
 
 <script setup lang="ts">
+import { agentDebugLog } from '~/utils/agentDebugLog'
+
 interface Props {
   text?: string
   time?: string
@@ -399,6 +401,21 @@ const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
 const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
 
+// #region agent log
+if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
+  agentDebugLog({
+    hypothesisId: 'D',
+    location: 'MessageBubble.vue:setup',
+    message: 'media_bubble_mounted',
+    data: {
+      messageId: props.messageId || null,
+      type: props.type,
+      mediaPath: props.mediaPath || null,
+    },
+  })
+}
+// #endregion
+
 const syncSrcFromCache = () => {
   if (!props.messageId) return false
   const cached = peekUrl(props.messageId)
@@ -423,6 +440,20 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
     if (url) src.value = url
   } catch (e) {
     console.error('media load', e)
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: 'D',
+      location: 'MessageBubble.vue:ensureSrc',
+      message: 'ensureSrc_fail',
+      data: {
+        messageId: props.messageId,
+        type: props.type,
+        mediaPath: props.mediaPath || null,
+        force: !!opts.force,
+        err: String((e as any)?.message || e),
+      },
+    })
+    // #endregion
     if (syncSrcFromCache()) return
     src.value = ''
   } finally {
@@ -500,6 +531,19 @@ const toggle = async () => {
       await playAudio()
     } catch (e2) {
       console.error('play retry', e2)
+      // #region agent log
+      agentDebugLog({
+        hypothesisId: 'E',
+        location: 'MessageBubble.vue:toggle',
+        message: 'voice_play_fail',
+        data: {
+          messageId: props.messageId,
+          mediaPath: props.mediaPath || null,
+          hasSrc: !!src.value,
+          err: String((e2 as any)?.message || e2),
+        },
+      })
+      // #endregion
       playing.value = false
     }
   }
@@ -509,6 +553,19 @@ const openLightbox = async () => {
   if (!src.value) await ensureSrc({ force: true })
   else await ensureSrc()
   if (!src.value) await ensureSrc({ force: true })
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: 'D',
+    location: 'MessageBubble.vue:openLightbox',
+    message: 'photo_open_result',
+    data: {
+      messageId: props.messageId,
+      mediaPath: props.mediaPath || null,
+      hasSrc: !!src.value,
+      opened: !!src.value,
+    },
+  })
+  // #endregion
   if (src.value) lightbox.value = true
 }
 

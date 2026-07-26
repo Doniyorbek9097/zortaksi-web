@@ -10,6 +10,7 @@ import {
   idbClearMedia,
   idbMediaStats,
 } from '~/utils/mediaIdb'
+import { agentDebugLog } from '~/utils/agentDebugLog'
 
 const cache = new Map<string, string>()
 const inflight = new Map<string, Promise<string>>()
@@ -44,11 +45,39 @@ async function fetchMediaBlobFromNetwork(
     typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
       ? AbortSignal.timeout(120_000)
       : undefined
-  const res = await fetch(`${config.public.baseUrl}/chats/messages/${messageId}/media`, {
+  const url = `${config.public.baseUrl}/chats/messages/${messageId}/media`
+  const res = await fetch(url, {
     headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
     credentials: 'include',
     signal,
   })
+  let errBody = ''
+  if (!res.ok) {
+    try {
+      errBody = (await res.clone().text()).slice(0, 120)
+    } catch {
+      /* */
+    }
+  }
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: 'B',
+    location: 'useVoiceMedia.ts:fetchMediaBlobFromNetwork',
+    message: 'media_http_response',
+    data: {
+      messageId,
+      kind,
+      status: res.status,
+      ok: res.ok,
+      contentType: res.headers.get('Content-Type'),
+      contentLength: res.headers.get('Content-Length'),
+      hasToken: !!token.value,
+      apiBase: String(config.public.baseUrl || ''),
+      errBody,
+      runId: 'post-fix',
+    },
+  })
+  // #endregion
   if (!res.ok) throw new Error('Media yuklanmadi')
   let mime = mimeFromResponse(res, fallbackMime)
   const raw = await res.blob()
@@ -59,6 +88,21 @@ async function fetchMediaBlobFromNetwork(
     mime = raw.type?.startsWith('audio/') ? raw.type.split(';')[0]! : fallbackMime
   }
   const blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: 'C',
+    location: 'useVoiceMedia.ts:fetchMediaBlobFromNetwork',
+    message: 'media_blob_ready',
+    data: {
+      messageId,
+      kind,
+      blobSize: blob.size,
+      blobType: blob.type,
+      headerMime: mime,
+      rawType: raw.type,
+    },
+  })
+  // #endregion
   if (!blob.size) throw new Error('Media bo\'sh')
   return blob
 }
