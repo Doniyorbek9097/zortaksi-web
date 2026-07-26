@@ -50,9 +50,19 @@ async function fetchMediaBlobFromNetwork(
     signal,
   })
   if (!res.ok) throw new Error('Media yuklanmadi')
-  const mime = mimeFromResponse(res, fallbackMime)
+  let mime = mimeFromResponse(res, fallbackMime)
   const raw = await res.blob()
-  return raw.type === mime ? raw : new Blob([raw], { type: mime })
+  // Server JSON xato yoki noto'g'ri MIME qaytarsa — fallback
+  if (kind === 'photo' && (!mime.startsWith('image/') || /json|text/i.test(mime))) {
+    mime = 'image/jpeg'
+  }
+  if (kind === 'voice' && (!mime.startsWith('audio/') || /json|ogg|opus/i.test(mime))) {
+    // ogg bo'lsa ham qaytaramiz — getUrl stale deb qayta urinishi mumkin
+    if (/json|text/i.test(mime)) mime = fallbackMime
+  }
+  const blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
+  if (!blob.size) throw new Error('Media bo\'sh')
+  return blob
 }
 
 async function blobToObjectUrl(
@@ -133,13 +143,17 @@ export function useChatMedia() {
     const id = normalizeMessageId(messageId)
     if (!id) return ''
 
+    // forceNetwork — keshni aylanib o'tadi (OGG/buzilgan blob qayta olinadi)
     const cached = cache.get(id)
-    if (cached && (!opts.forceNetwork || !localOnly.has(id))) return cached
+    if (cached && !opts.forceNetwork) return cached
+    if (opts.forceNetwork && cached && !localOnly.has(id)) {
+      revokeCachedUrl(id)
+    }
 
     if (id.startsWith('temp-')) return cache.get(id) || ''
 
     const pending = inflight.get(id)
-    if (pending) {
+    if (pending && !opts.forceNetwork) {
       try {
         await pending
       } catch {
@@ -153,17 +167,22 @@ export function useChatMedia() {
       // 1) IndexedDB — tez lokal ijro
       if (!opts.forceNetwork) {
         const idbBlob = await idbGetMedia(id)
-        // Eski OGG kesh (ijro bo'lmagan) — M4A uchun serverdan qayta olish
-        const staleOgg =
+        // Eski OGG / bo'sh MIME — brauzer play qilmaydi, serverdan M4A
+        const staleVoice =
           kind === 'voice' &&
-          idbBlob &&
-          /ogg|opus/i.test(idbBlob.type || '')
-        if (idbBlob?.size && !staleOgg) {
+          !!idbBlob &&
+          (!idbBlob.type || /ogg|opus|octet-stream/i.test(idbBlob.type))
+        // Buzilgan / non-image kesh — rasm ochilmaydi
+        const stalePhoto =
+          kind === 'photo' &&
+          !!idbBlob &&
+          (!idbBlob.type || !idbBlob.type.startsWith('image/'))
+        if (idbBlob?.size && !staleVoice && !stalePhoto) {
           return blobToObjectUrl(id, idbBlob, kind, false)
         }
       }
 
-      // 2) Server → Telegram (voice M4A)
+      // 2) Server → Telegram (voice M4A / audio/mp4)
       const blob = await fetchMediaBlobFromNetwork(id, kind)
       return blobToObjectUrl(id, blob, kind, true)
     })()

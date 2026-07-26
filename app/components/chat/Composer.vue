@@ -52,18 +52,6 @@
         >
           <font-awesome-icon icon="fa-solid fa-paperclip" />
         </button>
-        <button
-          type="button"
-          :disabled="disabled || locating"
-          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Joylashuv yuborish"
-          @click="shareLocation"
-        >
-          <font-awesome-icon
-            :icon="locating ? 'fa-solid fa-spinner' : 'fa-solid fa-location-dot'"
-            :class="locating ? 'animate-spin' : ''"
-          />
-        </button>
         <input
           ref="fileInput"
           type="file"
@@ -142,14 +130,12 @@ const emit = defineEmits<{
   send: [text: string]
   voice: [blob: Blob, duration: number]
   photo: [file: File]
-  location: [lat: number, lng: number]
   attach: []
 }>()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
-const locating = ref(false)
 
 const unlockDraft = () => {
   draftLocked.value = false
@@ -158,30 +144,6 @@ const unlockDraft = () => {
 const pickImage = () => {
   if (props.disabled) return
   fileInput.value?.click()
-}
-
-const shareLocation = () => {
-  if (props.disabled || locating.value) return
-  if (!import.meta.client || !navigator.geolocation) {
-    micError.value = 'Joylashuv qo\'llab-quvvatlanmaydi'
-    return
-  }
-  locating.value = true
-  micError.value = ''
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      locating.value = false
-      emit('location', pos.coords.latitude, pos.coords.longitude)
-    },
-    (err) => {
-      locating.value = false
-      micError.value =
-        err?.code === 1
-          ? 'Joylashuvga ruxsat berilmadi'
-          : 'Joylashuv olinmadi'
-    },
-    { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
-  )
 }
 
 const onFileChange = async (e: Event) => {

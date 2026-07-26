@@ -158,7 +158,6 @@
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
-      @location="onLocation"
     />
   </div>
 </template>
@@ -299,12 +298,6 @@ const onVoice = async (blob: Blob, seconds: number) => {
 const onPhoto = async (file: File) => {
   if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
   await chatStore.sendPhoto(chatId.value, file)
-  scrollToBottom()
-}
-
-const onLocation = async (lat: number, lng: number) => {
-  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
-  await chatStore.sendLocation(chatId.value, lat, lng)
   scrollToBottom()
 }
 

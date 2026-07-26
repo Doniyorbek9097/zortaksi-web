@@ -91,9 +91,11 @@
           >
           <div
             v-else
-            class="w-[220px] h-[120px] flex items-center justify-center text-xs opacity-60"
+            class="w-[220px] h-[120px] flex flex-col items-center justify-center gap-1 text-xs opacity-70"
+            @click.stop="retryMedia"
           >
-            Rasm yuklanmadi
+            <span>Rasm yuklanmadi</span>
+            <span class="underline">Qayta urinish</span>
           </div>
         </button>
         <p
@@ -193,9 +195,9 @@
       </div>
 
       <audio
-        v-if="type === 'voice' && src"
+        v-if="type === 'voice'"
         ref="audioEl"
-        :src="src"
+        :src="src || undefined"
         preload="metadata"
         playsinline
         class="hidden"
@@ -433,36 +435,80 @@ const retryMedia = async () => {
   await ensureSrc({ force: true })
 }
 
-const toggle = async () => {
-  // src yo'q bo'lsa (Telegram voice hali fonda) — qayta yuklashga urinadi
-  await ensureSrc({ force: !src.value })
+/** Audio element tayyor bo'lguncha kutadi */
+const waitCanPlay = (a: HTMLAudioElement, ms = 12_000) =>
+  new Promise<void>((resolve, reject) => {
+    if (a.readyState >= 2) {
+      resolve()
+      return
+    }
+    const t = setTimeout(() => {
+      cleanup()
+      reject(new Error('audio timeout'))
+    }, ms)
+    const onOk = () => {
+      cleanup()
+      resolve()
+    }
+    const onErr = () => {
+      cleanup()
+      reject(new Error('audio error'))
+    }
+    const cleanup = () => {
+      clearTimeout(t)
+      a.removeEventListener('canplay', onOk)
+      a.removeEventListener('loadeddata', onOk)
+      a.removeEventListener('error', onErr)
+    }
+    a.addEventListener('canplay', onOk, { once: true })
+    a.addEventListener('loadeddata', onOk, { once: true })
+    a.addEventListener('error', onErr, { once: true })
+    try {
+      a.load()
+    } catch {
+      /* */
+    }
+  })
+
+const playAudio = async () => {
   await nextTick()
   const a = audioEl.value
-  if (!a || !src.value) return
-  if (playing.value) {
+  if (!a || !src.value) throw new Error('audio yo\'q')
+  a.src = src.value
+  await waitCanPlay(a)
+  await a.play()
+  playing.value = true
+}
+
+const toggle = async () => {
+  const a = audioEl.value
+  if (playing.value && a) {
     a.pause()
     playing.value = false
-  } else {
+    return
+  }
+
+  // Avval kesh, keyin majburiy server (M4A)
+  await ensureSrc({ force: !src.value })
+  try {
+    await playAudio()
+  } catch (e) {
+    console.error('play', e)
+    src.value = ''
+    await ensureSrc({ force: true })
     try {
-      await a.play()
-      playing.value = true
-    } catch (e) {
-      console.error('play', e)
-      // Blob buzilgan bo'lishi mumkin — serverdan qayta olish
-      await ensureSrc({ force: true })
-      await nextTick()
-      try {
-        await audioEl.value?.play()
-        playing.value = true
-      } catch (e2) {
-        console.error('play retry', e2)
-      }
+      await playAudio()
+    } catch (e2) {
+      console.error('play retry', e2)
+      playing.value = false
     }
   }
 }
 
 const openLightbox = async () => {
-  await ensureSrc()
+  if (!src.value) await ensureSrc({ force: true })
+  else await ensureSrc()
+  if (!src.value) await ensureSrc({ force: true })
   if (src.value) lightbox.value = true
 }
 
@@ -517,7 +563,12 @@ watch(
       return
     }
     if (id !== prevId) src.value = ''
-    await ensureSrc()
+    // remote / Telegram — darhol tarmoqdan
+    const force =
+      !props.mediaPath ||
+      props.mediaPath === 'remote' ||
+      props.type === 'photo'
+    await ensureSrc({ force })
   },
   { immediate: true },
 )
