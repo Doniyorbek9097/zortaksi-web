@@ -92,8 +92,8 @@
       </div>
     </div>
 
-    <!-- Ulanish holati banneri (support / direct — Telegram ulanish kerak emas) -->
-    <div v-if="needsTelegramConnect && (conn === 'connecting' || conn === 'idle')" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <!-- Ulanish banneri — faqat BIRINCHI ulanishda (oldingi bog'langan chatda ko'rsatilmaydi) -->
+    <div v-if="needsTelegramConnect && conn === 'connecting' && !wasLinkedBefore" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         Foydalanuvchiga ulanmoqda... Iltimos kuting
@@ -152,9 +152,9 @@
 
     <!-- Composer — support/direct doim ochiq; Telegram chatda ulanish kutadi -->
     <ChatComposer
-      v-if="isInAppChat || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
+      v-if="isInAppChat || wasLinkedBefore || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
       v-model="draft"
-      :disabled="!isInAppChat && conn !== 'ready'"
+      :disabled="!isInAppChat && !wasLinkedBefore && conn !== 'ready'"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -256,6 +256,16 @@ const syncViewport = () => {
 const conn = computed(() => chatStore.connectionStatus)
 const connReason = computed(() => chatStore.connectionReason)
 
+/** Oldin muvaffaqiyatli bog'langan — "ulanmoqda" ko'rsatilmasin, yozish ochiq */
+const wasLinkedBefore = computed(() => {
+  const peer = chatStore.currentChat?.peer
+  return !!(peer?.viaUserbotId || peer?.accessHash)
+})
+
+const canSendTelegram = computed(
+  () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
+)
+
 const formatTime = (value: string | Date) => {
   const d = new Date(value)
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
@@ -284,19 +294,19 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
+  if (!canSendTelegram.value) return
   await chatStore.sendMessage(chatId.value, text)
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
+  if (!canSendTelegram.value) return
   await chatStore.sendVoice(chatId.value, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  if (!isInAppChat.value && chatStore.connectionStatus !== 'ready') return
+  if (!canSendTelegram.value) return
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
 }
@@ -336,6 +346,12 @@ onMounted(async () => {
   window.visualViewport?.addEventListener('scroll', syncViewport)
   window.addEventListener('resize', syncViewport)
 
+  // Ro'yxatdan peer ma'lum — banner chiqmasin
+  const listed = chatStore.chats.find((c) => c._id === chatId.value)
+  if (listed?.peer?.viaUserbotId || listed?.peer?.accessHash) {
+    chatStore.connectionStatus = 'ready'
+  }
+
   await chatStore.fetchMessages(chatId.value)
   scrollToFocus()
 
@@ -347,7 +363,8 @@ onMounted(async () => {
     }, 45000)
   } else {
     const peer = chatStore.currentChat?.peer
-    const alreadyLinked = !!(peer?.viaUserbotId && peer?.accessHash)
+    const alreadyLinked = !!(peer?.viaUserbotId || peer?.accessHash)
+    // Oldin ulangan — darhol ready, banner yo'q; fon tekshiruv
     if (alreadyLinked) {
       chatStore.connectionStatus = 'ready'
       void chatStore.connect(chatId.value, { silent: true })

@@ -620,9 +620,9 @@ watch(
       return
     }
     if (id !== prevId) src.value = ''
-    // remote — serverdan; diskdagi path — oddiy yuklash
-    const force = !props.mediaPath || props.mediaPath === 'remote'
-    await ensureSrc({ force })
+    // Avval IndexedDB/kesh — keyin kerak bo'lsa server
+    await ensureSrc()
+    if (!src.value) await ensureSrc({ force: true })
   },
   { immediate: true },
 )

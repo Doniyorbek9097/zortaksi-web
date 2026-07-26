@@ -212,21 +212,24 @@ export function useChatMedia() {
     }
 
     const job = (async () => {
-      // 1) IndexedDB — tez lokal ijro
-      if (!opts.forceNetwork) {
-        const idbBlob = await idbGetMedia(id)
-        // Faqat aniq buzilgan kesh — OGG ni rad etmaymiz (server shuni bersa play qilamiz)
-        const staleVoice =
-          kind === 'voice' &&
-          !!idbBlob &&
-          (!idbBlob.type || /octet-stream|json|text/i.test(idbBlob.type))
-        const stalePhoto =
-          kind === 'photo' &&
-          !!idbBlob &&
-          (!idbBlob.type || !idbBlob.type.startsWith('image/'))
-        if (idbBlob?.size && !staleVoice && !stalePhoto) {
-          return blobToObjectUrl(id, idbBlob, kind, false)
-        }
+      // 1) IndexedDB — doim avval (forceNetwork ham IDB ni o'tkazib yubormasin)
+      const idbBlob = await idbGetMedia(id)
+      const staleVoice =
+        kind === 'voice' &&
+        !!idbBlob &&
+        (!idbBlob.type || /octet-stream|json|text/i.test(idbBlob.type))
+      const stalePhoto =
+        kind === 'photo' &&
+        !!idbBlob &&
+        (!idbBlob.type || !idbBlob.type.startsWith('image/'))
+      if (idbBlob?.size && !staleVoice && !stalePhoto) {
+        const localUrl = await blobToObjectUrl(id, idbBlob, kind, false)
+        if (!opts.forceNetwork) return localUrl
+        // forceNetwork: IDB ko'rsatiladi, server fonda yangilanadi
+        void fetchMediaBlobFromNetwork(id, kind)
+          .then((blob) => blobToObjectUrl(id, blob, kind, true))
+          .catch(() => {})
+        return localUrl
       }
 
       // 2) Server → Telegram (voice M4A / audio/mp4)
@@ -285,15 +288,16 @@ export function useChatMedia() {
       if (!isVoice && !isPhoto) continue
       if (!m.mediaPath && !m.tgMessageId) continue
       const kind = isVoice ? 'voice' : 'photo'
-      // remote: darhol + biroz kechiktirib qayta (fonda saqlanishi uchun)
-      if (!m.mediaPath || m.mediaPath === 'remote') {
-        getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
-        setTimeout(() => {
+      // Avval IndexedDB — chat ochilganda darhol ko'rinsin
+      getUrl(m._id, kind)
+        .then(() => {
+          if (!m.mediaPath || m.mediaPath === 'remote') {
+            getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
+          }
+        })
+        .catch(() => {
           getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
-        }, 2500)
-        continue
-      }
-      getUrl(m._id, kind).catch(() => {})
+        })
     }
   }
 

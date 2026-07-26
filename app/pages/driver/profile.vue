@@ -94,16 +94,29 @@
           </template>
         </ProfileSettingRow>
 
-        <!-- Media kesh (IndexedDB) -->
+        <!-- Media kesh (IndexedDB) — icon orqali tozalash -->
         <ProfileSettingRow
-          icon="fa-solid fa-broom"
-          title="Media keshni tozalash"
+          icon="fa-solid fa-image"
+          title="Media kesh"
           :subtitle="cacheSubtitle"
           color="slate"
           clickable
           :disabled="clearingCache"
           @click="onClearMediaCache"
-        />
+        >
+          <template #action>
+            <span
+              class="w-9 h-9 rounded-xl flex items-center justify-center bg-rose-500/10 text-rose-500"
+              :class="clearingCache ? 'opacity-50' : ''"
+              title="Keshni tozalash"
+            >
+              <font-awesome-icon
+                :icon="clearingCache ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
+                :class="clearingCache ? 'animate-spin' : ''"
+              />
+            </span>
+          </template>
+        </ProfileSettingRow>
 
         <!-- Contact admin -->
         <ProfileSettingRow
@@ -122,15 +135,6 @@
           color="violet"
           clickable
           @click="navigateTo('/privacy')"
-        />
-
-        <ProfileSettingRow
-          icon="fa-solid fa-right-from-bracket"
-          title="Chiqish"
-          subtitle="Boshqa hisob bilan kirish uchun"
-          color="rose"
-          clickable
-          @click="onLogout"
         />
       </div>
     </ProfileSectionCard>
@@ -240,13 +244,6 @@ const confirmDeleteAccount = async () => {
 }
 
 const onAddAccount = () => navigateTo('/driver/accounts/add')
-
-const onLogout = async () => {
-  try {
-    await authStore.logout()
-  } catch { /* lokal tozalash logout ichida */ }
-  await navigateTo('/auth', { replace: true })
-}
 
 const onContactAdmin = () => {
   if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
