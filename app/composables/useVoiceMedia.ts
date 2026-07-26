@@ -148,15 +148,13 @@ export function useChatMedia() {
 
   /**
    * Voice va rasmlarni oldindan yuklaydi.
-   * Voice uchun mediaPath bo'lmasa ham urinadi — backend lazy download qiladi.
+   * mediaPath bo'lmasa ham voice uriniladi — backend Telegramdan lazy yuklashi mumkin.
    */
   const prefetch = (messages: { _id: string; type?: string; mediaPath?: string }[]) => {
     for (const m of messages) {
       if (m._id.startsWith('temp-')) continue
-      if (m.type === 'voice') {
-        getUrl(m._id, 'voice').catch(() => {})
-      } else if (m.type === 'photo' && m.mediaPath) {
-        getUrl(m._id, 'photo').catch(() => {})
+      if (m.type === 'voice' || (m.type === 'photo' && m.mediaPath)) {
+        getUrl(m._id, m.type === 'voice' ? 'voice' : 'photo').catch(() => {})
       }
     }
   }

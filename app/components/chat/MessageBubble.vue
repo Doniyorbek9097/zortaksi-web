@@ -216,6 +216,8 @@ interface Props {
   status?: 'sending' | 'sent' | 'failed' | 'read'
   type?: 'text' | 'photo' | 'video' | 'voice' | 'document'
   messageId?: string
+  /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
+  mediaPath?: string
   duration?: number
   highlight?: boolean
 }
@@ -228,6 +230,7 @@ const props = withDefaults(defineProps<Props>(), {
   read: false,
   status: 'sent',
   type: 'text',
+  mediaPath: '',
   duration: 0,
   highlight: false,
 })
@@ -390,7 +393,7 @@ const retryMedia = async () => {
 }
 
 const toggle = async () => {
-  // src bo'lmasa ham urinadi — kelgan Telegram voice lazy download bo'lishi mumkin
+  // src yo'q bo'lsa (Telegram voice hali fonda) — qayta yuklashga urinadi
   await ensureSrc({ force: !src.value })
   await nextTick()
   const a = audioEl.value
@@ -403,9 +406,9 @@ const toggle = async () => {
       await a.play()
       playing.value = true
     } catch (e) {
-      // Codec/blob xato — serverdan qayta yuklab urinish
       console.error('play', e)
-      await retryMedia()
+      // Blob buzilgan bo'lishi mumkin — serverdan qayta olish
+      await ensureSrc({ force: true })
       await nextTick()
       try {
         await audioEl.value?.play()
@@ -476,6 +479,17 @@ watch(
     await ensureSrc()
   },
   { immediate: true },
+)
+
+// Telegramdan kelgan voice/photo avval mediaPathsiz keladi — fonda yuklanganda qayta yuklash
+watch(
+  () => props.mediaPath,
+  async (path, prev) => {
+    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!props.messageId || !path || path === prev) return
+    if (syncSrcFromCache()) return
+    await ensureSrc({ force: true })
+  },
 )
 
 watch(
