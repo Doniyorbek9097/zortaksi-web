@@ -29,6 +29,21 @@ export default defineNuxtPlugin(() => {
     void orderStore.syncLatest()
   }
 
+  /** Chat: o'tkazib yuborilgan message:new / message:update */
+  const catchUpChats = () => {
+    if (!currentToken()) return
+    void chatStore.fetchChats().catch(() => {})
+    const openId = chatStore.currentChat?._id
+    if (openId) {
+      void chatStore.fetchMessages(openId).catch(() => {})
+    }
+  }
+
+  const catchUpAll = () => {
+    catchUpOrders()
+    catchUpChats()
+  }
+
   const connect = () => {
     const t = currentToken()
     if (!t) return
@@ -65,15 +80,15 @@ export default defineNuxtPlugin(() => {
       if (added) playOrderSound()
     })
     socket.on('connect', () => {
-      // Reconnect / birinchi ulanish — o'tkazib yuborilgan order:new larni olish
-      catchUpOrders()
+      // Reconnect — order + chat (Telegram javoblari yo'qolmasin)
+      catchUpAll()
     })
     socket.on('connect_error', (err) => console.warn('[socket] connect_error:', err.message))
 
     if (import.meta.client && !visibilityBound) {
       visibilityBound = true
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') catchUpOrders()
+        if (document.visibilityState === 'visible') catchUpAll()
       })
     }
   }
