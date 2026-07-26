@@ -487,12 +487,39 @@ watch(
   async (path, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!props.messageId || !path || path === prev) return
-    // remote → hali tayyor emas
-    if (path === 'remote') return
+    // remote → hali diskda yo'q, lekin lazy API ishlashi mumkin
+    if (path === 'remote') {
+      await ensureSrc({ force: true })
+      return
+    }
     // Endi diskda — majburiy qayta olish
     src.value = ''
     await ensureSrc({ force: true })
   },
+)
+
+// remote bo'lganda fonda saqlanishini kutib qayta urinish
+let remotePoll: ReturnType<typeof setInterval> | null = null
+watch(
+  () => [props.mediaPath, props.messageId, props.type] as const,
+  ([path, id, type]) => {
+    if (remotePoll) {
+      clearInterval(remotePoll)
+      remotePoll = null
+    }
+    if ((type !== 'voice' && type !== 'photo') || !id || path !== 'remote') return
+    let tries = 0
+    remotePoll = setInterval(() => {
+      tries += 1
+      if (tries > 12 || src.value) {
+        if (remotePoll) clearInterval(remotePoll)
+        remotePoll = null
+        return
+      }
+      void ensureSrc({ force: true })
+    }, 2500)
+  },
+  { immediate: true },
 )
 
 watch(
@@ -509,6 +536,10 @@ watch(
 
 onBeforeUnmount(() => {
   audioEl.value?.pause()
+  if (remotePoll) {
+    clearInterval(remotePoll)
+    remotePoll = null
+  }
 })
 </script>
 

@@ -207,7 +207,7 @@ export function useChatMedia() {
 
   /**
    * Voice/photo oldindan yuklash.
-   * mediaPath 'remote' yoki bo'sh bo'lsa ham — Telegramdan olinadi.
+   * 'remote' ham — server lazy Telegramdan yuklaydi (inbox).
    */
   const prefetch = (
     messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
@@ -217,9 +217,17 @@ export function useChatMedia() {
       const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
       if (!isVoice && !isPhoto) continue
-      // 'remote' — hali serverga yuklanmagan, kutamiz (socket update)
-      if (!m.mediaPath || m.mediaPath === 'remote') continue
-      getUrl(m._id, isVoice ? 'voice' : 'photo').catch(() => {})
+      if (!m.mediaPath && !m.tgMessageId) continue
+      const kind = isVoice ? 'voice' : 'photo'
+      // remote: darhol + biroz kechiktirib qayta (fonda saqlanishi uchun)
+      if (!m.mediaPath || m.mediaPath === 'remote') {
+        getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
+        setTimeout(() => {
+          getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
+        }, 2500)
+        continue
+      }
+      getUrl(m._id, kind).catch(() => {})
     }
   }
 
