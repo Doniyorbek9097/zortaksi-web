@@ -2,9 +2,13 @@
   <component
     :is="clickable ? 'button' : 'div'"
     :type="clickable ? 'button' : undefined"
+    :disabled="clickable ? disabled : undefined"
     class="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-    :class="clickable ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors' : ''"
-    @click="clickable && $emit('click')"
+    :class="[
+      clickable ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors' : '',
+      disabled ? 'opacity-60 pointer-events-none' : '',
+    ]"
+    @click="clickable && !disabled && $emit('click')"
   >
     <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" :class="iconClass">
       <font-awesome-icon :icon="icon" />
@@ -32,11 +36,13 @@ interface Props {
   subtitle?: string
   color?: Color
   clickable?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   color: 'slate',
   clickable: false,
+  disabled: false,
 })
 
 defineEmits<{ click: [] }>()

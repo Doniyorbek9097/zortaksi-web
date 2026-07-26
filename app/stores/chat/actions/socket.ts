@@ -44,7 +44,8 @@ export function createSocketActions(
             // mediaPath yangilanishi MessageBubble watch orqali playerni qayta ishga tushiradi
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
         }
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+        // mediaPath 'remote' yoki disk — IndexedDB ga yuklab qo'yiladi
+        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo')) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
     }
@@ -56,7 +57,7 @@ export function createSocketActions(
         } else {
             appendMessage(msg)
         }
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo')) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
 

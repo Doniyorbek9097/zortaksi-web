@@ -1,7 +1,16 @@
 /**
- * Chat media (voice/photo) auth bilan yuklab, blob URL keshida saqlaydi.
- * Cross-origin <audio>/<img> cookie yubormasligi mumkin — shuning uchun fetch+blob.
+ * Chat media (voice/photo):
+ * 1) memory blob URL
+ * 2) IndexedDB (qurilma keshi)
+ * 3) server → Telegram on-demand
  */
+import {
+  idbGetMedia,
+  idbPutMedia,
+  idbClearMedia,
+  idbMediaStats,
+} from '~/utils/mediaIdb'
+
 const cache = new Map<string, string>()
 const inflight = new Map<string, Promise<string>>()
 /** temp→real handoff: mahalliy preview server javobigacha saqlanadi */
@@ -23,7 +32,10 @@ function revokeCachedUrl(messageId: string) {
   localOnly.delete(messageId)
 }
 
-async function fetchMediaBlob(messageId: string, kind: 'voice' | 'photo'): Promise<string> {
+async function fetchMediaBlobFromNetwork(
+  messageId: string,
+  kind: 'voice' | 'photo',
+): Promise<Blob> {
   const fallbackMime = kind === 'voice' ? 'audio/mp4' : 'image/jpeg'
   const config = useRuntimeConfig()
   const token = useCookie('auth_token')
@@ -39,8 +51,30 @@ async function fetchMediaBlob(messageId: string, kind: 'voice' | 'photo'): Promi
   if (!res.ok) throw new Error('Media yuklanmadi')
   const mime = mimeFromResponse(res, fallbackMime)
   const raw = await res.blob()
-  const blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
-  return URL.createObjectURL(blob)
+  return raw.type === mime ? raw : new Blob([raw], { type: mime })
+}
+
+async function blobToObjectUrl(
+  messageId: string,
+  blob: Blob,
+  kind: 'voice' | 'photo',
+  persistIdb: boolean,
+): Promise<string> {
+  if (persistIdb && !messageId.startsWith('temp-')) {
+    void idbPutMedia(messageId, blob, kind)
+  }
+  const url = URL.createObjectURL(blob)
+  const existing = cache.get(messageId)
+  if (existing && localOnly.has(messageId)) {
+    URL.revokeObjectURL(url)
+    return existing
+  }
+  if (existing?.startsWith('blob:') && existing !== url) {
+    URL.revokeObjectURL(existing)
+  }
+  cache.set(messageId, url)
+  localOnly.delete(messageId)
+  return url
 }
 
 export function useVoiceMedia() {
@@ -59,6 +93,10 @@ export function useChatMedia() {
     const url = URL.createObjectURL(blob)
     cache.set(id, url)
     localOnly.add(id)
+    // Temp ham qurilmada saqlanadi — keyin real id ga ko'chiriladi
+    if (!id.startsWith('temp-')) {
+      void idbPutMedia(id, blob, blob.type.startsWith('image/') ? 'photo' : 'voice')
+    }
   }
 
   const adoptLocalUrl = (fromId: string, toId: string) => {
@@ -72,6 +110,18 @@ export function useChatMedia() {
     localOnly.delete(from)
     cache.set(to, url)
     if (keepLocal) localOnly.add(to)
+
+    // IndexedDB: temp blob ni real messageId ostida saqlash
+    void (async () => {
+      try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        const kind = blob.type.startsWith('image/') ? 'photo' : 'voice'
+        await idbPutMedia(to, blob, kind)
+      } catch {
+        /* */
+      }
+    })()
   }
 
   const getUrl = async (
@@ -92,25 +142,24 @@ export function useChatMedia() {
       try {
         await pending
       } catch {
-        /* inflight xato — kesh/local qayta tekshiriladi */
+        /* */
       }
       const afterPending = cache.get(id)
       if (afterPending) return afterPending
     }
 
     const job = (async () => {
-      const url = await fetchMediaBlob(id, kind)
-      const existing = cache.get(id)
-      if (existing && localOnly.has(id)) {
-        URL.revokeObjectURL(url)
-        return existing
+      // 1) IndexedDB — tez lokal ijro
+      if (!opts.forceNetwork) {
+        const idbBlob = await idbGetMedia(id)
+        if (idbBlob?.size) {
+          return blobToObjectUrl(id, idbBlob, kind, false)
+        }
       }
-      if (existing?.startsWith('blob:') && existing !== url) {
-        URL.revokeObjectURL(existing)
-      }
-      cache.set(id, url)
-      localOnly.delete(id)
-      return url
+
+      // 2) Server → Telegram
+      const blob = await fetchMediaBlobFromNetwork(id, kind)
+      return blobToObjectUrl(id, blob, kind, true)
     })()
 
     inflight.set(id, job)
@@ -131,30 +180,40 @@ export function useChatMedia() {
     if (!id || id.startsWith('temp-') || !localOnly.has(id)) return
     void (async () => {
       try {
-        const url = await fetchMediaBlob(id, kind)
-        if (!localOnly.has(id)) {
-          URL.revokeObjectURL(url)
-          return
-        }
-        const prev = cache.get(id)
-        cache.set(id, url)
-        localOnly.delete(id)
-        if (prev?.startsWith('blob:') && prev !== url) URL.revokeObjectURL(prev)
+        const blob = await fetchMediaBlobFromNetwork(id, kind)
+        if (!localOnly.has(id)) return
+        await blobToObjectUrl(id, blob, kind, true)
       } catch {
-        /* Mahalliy preview ishlayveradi */
+        /* Mahalliy preview ishlayveradi — IndexedDB ga yozib qo'yamiz */
+        const url = cache.get(id)
+        if (url) {
+          try {
+            const res = await fetch(url)
+            const blob = await res.blob()
+            await idbPutMedia(id, blob, kind)
+          } catch {
+            /* */
+          }
+        }
       }
     })()
   }
 
   /**
-   * Voice va rasmlarni oldindan yuklaydi.
-   * mediaPath bo'lmasa ham voice uriniladi — backend Telegramdan lazy yuklashi mumkin.
+   * Voice/photo oldindan yuklash.
+   * mediaPath 'remote' yoki bo'sh bo'lsa ham — Telegramdan olinadi.
    */
-  const prefetch = (messages: { _id: string; type?: string; mediaPath?: string }[]) => {
+  const prefetch = (
+    messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+  ) => {
     for (const m of messages) {
       if (m._id.startsWith('temp-')) continue
-      if (m.type === 'voice' || (m.type === 'photo' && m.mediaPath)) {
-        getUrl(m._id, m.type === 'voice' ? 'voice' : 'photo').catch(() => {})
+      const isVoice = m.type === 'voice'
+      const isPhoto = m.type === 'photo'
+      if (!isVoice && !isPhoto) continue
+      // Disk yo'li yoki Telegram remote — ikkalasi ham yuklanadi
+      if (isVoice || m.mediaPath || m.tgMessageId) {
+        getUrl(m._id, isVoice ? 'voice' : 'photo').catch(() => {})
       }
     }
   }
@@ -166,5 +225,23 @@ export function useChatMedia() {
     localOnly.clear()
   }
 
-  return { getUrl, peekUrl, setLocalUrl, adoptLocalUrl, upgradeFromServer, prefetch, revokeAll }
+  /** Profil: memory + IndexedDB tozalash */
+  const clearDeviceCache = async () => {
+    revokeAll()
+    await idbClearMedia()
+  }
+
+  const getCacheStats = () => idbMediaStats()
+
+  return {
+    getUrl,
+    peekUrl,
+    setLocalUrl,
+    adoptLocalUrl,
+    upgradeFromServer,
+    prefetch,
+    revokeAll,
+    clearDeviceCache,
+    getCacheStats,
+  }
 }

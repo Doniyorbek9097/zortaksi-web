@@ -94,6 +94,17 @@
           </template>
         </ProfileSettingRow>
 
+        <!-- Media kesh (IndexedDB) -->
+        <ProfileSettingRow
+          icon="fa-solid fa-broom"
+          title="Media keshni tozalash"
+          :subtitle="cacheSubtitle"
+          color="slate"
+          clickable
+          :disabled="clearingCache"
+          @click="onClearMediaCache"
+        />
+
         <!-- Contact admin -->
         <ProfileSettingRow
           icon="fa-solid fa-comments"
@@ -237,6 +248,45 @@ const onLogout = async () => {
   await navigateTo('/auth', { replace: true })
 }
 
+const onContactAdmin = () => {
+  if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
+}
+
+// --- Media IndexedDB kesh ---
+const { clearDeviceCache, getCacheStats } = useChatMedia()
+const clearingCache = ref(false)
+const cacheInfo = ref({ count: 0, bytes: 0 })
+
+const formatBytes = (n: number) => {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const cacheSubtitle = computed(() => {
+  if (clearingCache.value) return 'Tozalanmoqda...'
+  if (!cacheInfo.value.count) return 'Ovozli xabar va rasmlar qurilmada'
+  return `${cacheInfo.value.count} ta fayl · ${formatBytes(cacheInfo.value.bytes)}`
+})
+
+const refreshCacheStats = async () => {
+  if (!import.meta.client) return
+  cacheInfo.value = await getCacheStats()
+}
+
+const onClearMediaCache = async () => {
+  if (clearingCache.value) return
+  clearingCache.value = true
+  try {
+    await clearDeviceCache()
+    cacheInfo.value = { count: 0, bytes: 0 }
+  } catch (e) {
+    console.error('Kesh tozalash xato:', e)
+  } finally {
+    clearingCache.value = false
+  }
+}
+
 onMounted(async () => {
   accountStore.load()
   await accountStore.syncFromStorage()
@@ -245,9 +295,6 @@ onMounted(async () => {
   }
   // Faqat joriy user — boshqa hisob tokenlarini buzmasin
   if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  void refreshCacheStats()
 })
-
-const onContactAdmin = () => {
-  if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
-}
 </script>
