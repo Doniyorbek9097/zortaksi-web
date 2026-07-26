@@ -57,6 +57,28 @@ export function createTempPhotoMessage(
     } as unknown as IChatMessage
 }
 
+/** Joylashuv uchun "yuborilmoqda" bubble */
+export function createTempLocationMessage(
+    chatId: string,
+    lat: number,
+    lng: number,
+    tempId: string,
+    title?: string,
+): IChatMessage {
+    return {
+        _id: tempId,
+        chatId,
+        direction: 'out',
+        text: title || '📍 Joylashuv',
+        type: 'location',
+        status: 'sending',
+        locationLat: lat,
+        locationLng: lng,
+        locationTitle: title,
+        date: new Date().toISOString(),
+    } as unknown as IChatMessage
+}
+
 /** Temp bubble'ni failed holatiga o'tkazish (yuborish xatosi) */
 export function markTempFailed(temp: IChatMessage): IChatMessage {
     return { ...temp, status: 'failed' } as IChatMessage

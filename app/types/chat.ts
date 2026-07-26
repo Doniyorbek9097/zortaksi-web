@@ -30,7 +30,13 @@ export interface IChat {
 }
 
 export type ChatDirection = 'in' | 'out'
-export type ChatMessageType = 'text' | 'photo' | 'video' | 'voice' | 'document'
+export type ChatMessageType =
+    | 'text'
+    | 'photo'
+    | 'video'
+    | 'voice'
+    | 'document'
+    | 'location'
 export type ChatMessageStatus = 'sending' | 'sent' | 'failed' | 'read'
 
 export interface IChatMessage {
@@ -46,6 +52,9 @@ export interface IChatMessage {
     mimeType?: string
     duration?: number
     fileSize?: number
+    locationLat?: number
+    locationLng?: number
+    locationTitle?: string
     date: string | Date
     createdAt: string | Date
     updatedAt: string | Date

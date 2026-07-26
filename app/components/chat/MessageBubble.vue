@@ -105,6 +105,34 @@
         </p>
       </div>
 
+      <!-- Joylashuv -->
+      <a
+        v-else-if="type === 'location' && mapsUrl"
+        :href="mapsUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-3 min-w-[200px] px-1 py-1 no-underline"
+        :class="out ? 'text-white' : 'text-slate-800 dark:text-slate-100'"
+      >
+        <span
+          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center"
+          :class="out ? 'bg-white/20' : 'bg-sky-500/15 text-sky-500'"
+        >
+          <font-awesome-icon icon="fa-solid fa-location-dot" />
+        </span>
+        <span class="min-w-0">
+          <span class="block text-[15px] font-semibold truncate">
+            {{ locationTitle || 'Joylashuv' }}
+          </span>
+          <span
+            class="block text-[11px] mt-0.5"
+            :class="out ? 'text-white/75' : 'text-slate-500 dark:text-slate-400'"
+          >
+            Xaritada ochish
+          </span>
+        </span>
+      </a>
+
       <!-- To'lov kartalari (admin javobi) -->
       <ChatPaymentCardsBubble
         v-else-if="paymentCards"
@@ -214,11 +242,14 @@ interface Props {
   out?: boolean
   read?: boolean
   status?: 'sending' | 'sent' | 'failed' | 'read'
-  type?: 'text' | 'photo' | 'video' | 'voice' | 'document'
+  type?: 'text' | 'photo' | 'video' | 'voice' | 'document' | 'location'
   messageId?: string
   /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
   mediaPath?: string
   duration?: number
+  locationLat?: number
+  locationLng?: number
+  locationTitle?: string
   highlight?: boolean
 }
 
@@ -232,7 +263,17 @@ const props = withDefaults(defineProps<Props>(), {
   type: 'text',
   mediaPath: '',
   duration: 0,
+  locationLat: undefined,
+  locationLng: undefined,
+  locationTitle: '',
   highlight: false,
+})
+
+const mapsUrl = computed(() => {
+  const lat = Number(props.locationLat)
+  const lng = Number(props.locationLng)
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return ''
+  return `https://maps.google.com/?q=${lat},${lng}`
 })
 
 const { getUrl, peekUrl } = useChatMedia()

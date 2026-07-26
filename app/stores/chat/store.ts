@@ -81,6 +81,7 @@ export const useChatStore = defineStore('chat', () => {
         sendMessage: messaging.sendMessage,
         sendVoice: messaging.sendVoice,
         sendPhoto: messaging.sendPhoto,
+        sendLocation: messaging.sendLocation,
         startChatFromOrder: list.startChatFromOrder,
         startChatWithOrderOwner: list.startChatWithOrderOwner,
         startChatWithUser: list.startChatWithUser,

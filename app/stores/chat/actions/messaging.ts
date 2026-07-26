@@ -2,6 +2,7 @@ import type { IChat, IChatMessage } from '~/types'
 import { voiceBlobExtension } from '~/utils/voiceRecording'
 import {
     createTempId,
+    createTempLocationMessage,
     createTempPhotoMessage,
     createTempTextMessage,
     createTempVoiceMessage,
@@ -167,11 +168,53 @@ export function createMessagingActions(
         }
     }
 
+    /** Joylashuv yuborish */
+    const sendLocation = async (
+        chatId: string,
+        lat: number,
+        lng: number,
+        title?: string,
+    ) => {
+        const tempId = createTempId()
+        const temp = createTempLocationMessage(chatId, lat, lng, tempId, title)
+        messages.value.push(temp)
+
+        try {
+            isSending.value = true
+            const res = await useApi(`/chats/${chatId}/messages/location`, {
+                method: 'POST',
+                body: { lat, lng, title },
+            })
+            if (res.success) {
+                const result = replaceTempWithReal(messages.value, tempId, res.data)
+                if (result === 'missing' && !messages.value.some((m) => m._id === res.data._id)) {
+                    appendMessage(res.data)
+                }
+                patchChat(chatId, {
+                    lastMessage: res.data.locationTitle || '📍 Joylashuv',
+                    lastMessageAt: res.data.date,
+                })
+            } else {
+                const idx = messages.value.findIndex((m) => m._id === tempId)
+                if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            }
+            return res
+        } catch (error) {
+            const idx = messages.value.findIndex((m) => m._id === tempId)
+            if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            console.error('sendLocation error:', error)
+            throw error
+        } finally {
+            isSending.value = false
+        }
+    }
+
     return {
         handoffMediaTemp,
         replaceOutgoingMediaTemp,
         sendMessage,
         sendVoice,
         sendPhoto,
+        sendLocation,
     }
 }

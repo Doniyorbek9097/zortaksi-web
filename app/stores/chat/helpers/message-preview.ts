@@ -11,6 +11,9 @@ export function lastMessagePreview(msg: IChatMessage): string {
     if (msg.type === 'photo') {
         return msg.text || '📷 Rasm'
     }
+    if (msg.type === 'location') {
+        return msg.locationTitle || '📍 Joylashuv'
+    }
     if (String(msg.text || '').includes('[[ZT_PAYMENT_CARDS]]')) {
         return "💳 To'lov ma'lumoti"
     }
