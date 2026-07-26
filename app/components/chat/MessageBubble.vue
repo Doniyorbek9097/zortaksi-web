@@ -481,13 +481,16 @@ watch(
   { immediate: true },
 )
 
-// Telegramdan kelgan voice/photo avval mediaPathsiz keladi — fonda yuklanganda qayta yuklash
+// Telegram media avval 'remote', fonda yuklangach haqiqiy path — qayta yuklash
 watch(
   () => props.mediaPath,
   async (path, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!props.messageId || !path || path === prev) return
-    if (syncSrcFromCache()) return
+    // remote → hali tayyor emas
+    if (path === 'remote') return
+    // Endi diskda — majburiy qayta olish
+    src.value = ''
     await ensureSrc({ force: true })
   },
 )

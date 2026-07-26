@@ -44,8 +44,13 @@ export function createSocketActions(
             // mediaPath yangilanishi MessageBubble watch orqali playerni qayta ishga tushiradi
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
         }
-        // mediaPath 'remote' yoki disk — IndexedDB ga yuklab qo'yiladi
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo')) {
+        // mediaPath tayyor bo'lsa (remote emas) — IndexedDB ga yuklash
+        if (
+            import.meta.client &&
+            (msg.type === 'voice' || msg.type === 'photo') &&
+            msg.mediaPath &&
+            msg.mediaPath !== 'remote'
+        ) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
     }
@@ -57,7 +62,12 @@ export function createSocketActions(
         } else {
             appendMessage(msg)
         }
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo')) {
+        if (
+            import.meta.client &&
+            (msg.type === 'voice' || msg.type === 'photo') &&
+            msg.mediaPath &&
+            msg.mediaPath !== 'remote'
+        ) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
 

@@ -217,10 +217,9 @@ export function useChatMedia() {
       const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
       if (!isVoice && !isPhoto) continue
-      // Disk yo'li yoki Telegram remote — ikkalasi ham yuklanadi
-      if (isVoice || m.mediaPath || m.tgMessageId) {
-        getUrl(m._id, isVoice ? 'voice' : 'photo').catch(() => {})
-      }
+      // 'remote' — hali serverga yuklanmagan, kutamiz (socket update)
+      if (!m.mediaPath || m.mediaPath === 'remote') continue
+      getUrl(m._id, isVoice ? 'voice' : 'photo').catch(() => {})
     }
   }
 
