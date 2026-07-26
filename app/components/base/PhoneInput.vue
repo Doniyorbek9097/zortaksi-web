@@ -37,6 +37,8 @@
         class="w-full min-w-0 bg-transparent outline-none border-none text-lg font-black text-slate-900 dark:text-white placeholder:text-slate-300 dark:placeholder:text-slate-700 tabular-nums tracking-wide selection:bg-sky-500/20 disabled:opacity-50"
         @focus="onFocus"
         @input="onInput"
+        @change="onChange"
+        @paste="onPaste"
         @keydown="onKeydown"
       >
 
@@ -124,27 +126,44 @@ const onFocus = () => {
   })
 }
 
-const onKeydown = (e: KeyboardEvent) => {
-  const allowed = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter']
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    if (isComplete.value) emit('submit', digits.value)
-    return
-  }
-  if (!/[0-9]/.test(e.key) && !allowed.includes(e.key)) {
-    e.preventDefault()
-  }
+const syncFromElement = (el: HTMLInputElement) => {
+  localError.value = ''
+  const next = el.value.replace(/\D/g, '').slice(0, 15)
+  if (next === digits.value) return false
+  digits.value = next
+  emitFull()
+  return true
 }
 
-const onInput = (e: Event) => {
-  const el = e.target as HTMLInputElement
-  localError.value = ''
-  digits.value = el.value.replace(/\D/g, '').slice(0, 15)
-  emitFull()
+const moveCaretToEnd = (el: HTMLInputElement) => {
   nextTick(() => {
     const len = displayValue.value.length
     el.setSelectionRange(len, len)
   })
+}
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key !== 'Enter') return
+  e.preventDefault()
+  if (isComplete.value) emit('submit', digits.value)
+}
+
+const onInput = (e: Event) => {
+  const el = e.target as HTMLInputElement
+  if (syncFromElement(el)) moveCaretToEnd(el)
+}
+
+const onChange = (e: Event) => {
+  syncFromElement(e.target as HTMLInputElement)
+}
+
+const onPaste = (e: ClipboardEvent) => {
+  e.preventDefault()
+  const el = e.target as HTMLInputElement
+  const pasted = e.clipboardData?.getData('text') || ''
+  digits.value = `${digits.value}${pasted}`.replace(/\D/g, '').slice(0, 15)
+  emitFull()
+  moveCaretToEnd(el)
 }
 
 onMounted(() => {

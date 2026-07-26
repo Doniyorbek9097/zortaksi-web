@@ -1,5 +1,19 @@
 <template>
-    <div class="w-full overflow-x-hidden font-sans antialiased bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 transition-colors">
+    <!-- Kirilgan foydalanuvchi intro ko'rmasin — middleware dashboard ga yo'naltiradi -->
+    <div
+      v-if="!showLanding"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-white dark:bg-neutral-950"
+    >
+      <div class="flex flex-col items-center gap-3 text-neutral-500 dark:text-neutral-400">
+        <font-awesome-icon icon="fa-solid fa-spinner" class="text-2xl animate-spin text-emerald-500" />
+        <span class="text-xs font-semibold tracking-wide">Yuklanmoqda…</span>
+      </div>
+    </div>
+
+    <div
+      v-else
+      class="w-full overflow-x-hidden font-sans antialiased bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-50 transition-colors"
+    >
       <!-- Mavzu almashtirish tugmasi -->
       <button
         type="button"
@@ -175,8 +189,20 @@
   </template>
   
   <script setup lang="ts">
+  import { getAuthCookieOptions } from '~/utils/authCookie'
+
   definePageMeta({ layout: 'default' });
   
+  const authStore = useAuthStore()
+  const authToken = useCookie<string | null>('auth_token', { ...getAuthCookieOptions() })
+
+  /** Token bor bo'lsa intro hech qachon; mehmon SSR da SEO uchun ochiq */
+  const showLanding = computed(() => {
+    if (authToken.value) return false
+    if (import.meta.server) return true
+    return authStore.sessionReady
+  })
+
   const { theme, toggleTheme } = useTheme();
   
   const features = [

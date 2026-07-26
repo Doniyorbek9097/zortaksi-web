@@ -27,7 +27,8 @@ const INTL_PHONE_RULES: [prefix: string, exactLen: number][] = [
 
 /** Login / yangi hisob uchun xalqaro telefon yaroqliligi */
 export function isValidIntlPhone(phone: string): boolean {
-  const d = phone.replace(/\D/g, '')
+  const raw = phone.replace(/\D/g, '')
+  const d = normalizeTo998(raw) || raw
   if (!/^\d{8,15}$/.test(d)) return false
   for (const [prefix, exactLen] of INTL_PHONE_RULES) {
     if (!d.startsWith(prefix)) continue

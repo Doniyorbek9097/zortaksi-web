@@ -49,6 +49,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
         if (!token.value && isProtectedPath(to.path)) {
             return navigateTo('/auth')
         }
+        // Kirilgan foydalanuvchi intro/auth sahifalarini SSR da ko'rmasin
+        if (token.value && isAuthEntryPath(to.path)) {
+            return navigateTo('/driver/dashboard')
+        }
         return
     }
 

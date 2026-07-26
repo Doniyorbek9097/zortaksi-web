@@ -142,8 +142,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       // Nuxt env: NUXT_PUBLIC_BASE_URL → public.baseUrl (baseURL emas!)
-      baseUrl: process.env.NUXT_PUBLIC_BASE_URL || 'http://localhost:5000/api/v1',
-      socketUrl: process.env.NUXT_PUBLIC_SOCKET_URL || 'http://localhost:5000',
+      // Debug: lokal :5000 media disk/session Render bilan conflict — production API
+      baseUrl:
+        process.env.NUXT_PUBLIC_BASE_URL || 'https://api.zortaksi.uz/api/v1',
+      socketUrl:
+        process.env.NUXT_PUBLIC_SOCKET_URL || 'https://api.zortaksi.uz',
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',
       adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'doniyorbek_ergashev',
       vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY || '',

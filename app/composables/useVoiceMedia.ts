@@ -45,7 +45,12 @@ async function fetchMediaBlobFromNetwork(
     typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
       ? AbortSignal.timeout(120_000)
       : undefined
-  const url = `${config.public.baseUrl}/chats/messages/${messageId}/media`
+  // Lokal API media bermaydi (disk yo'q + session Renderda) — productionga majburiy
+  let apiBase = String(config.public.baseUrl || '')
+  if (/localhost|127\.0\.0\.1/i.test(apiBase)) {
+    apiBase = 'https://api.zortaksi.uz/api/v1'
+  }
+  const url = `${apiBase}/chats/messages/${messageId}/media`
   const res = await fetch(url, {
     headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
     credentials: 'include',
@@ -72,7 +77,8 @@ async function fetchMediaBlobFromNetwork(
       contentType: res.headers.get('Content-Type'),
       contentLength: res.headers.get('Content-Length'),
       hasToken: !!token.value,
-      apiBase: String(config.public.baseUrl || ''),
+      apiBase,
+      configBase: String(config.public.baseUrl || ''),
       errBody,
       runId: 'post-fix',
     },

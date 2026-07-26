@@ -177,7 +177,7 @@ import { useAccountStore } from '~/stores/account.store'
 import BaseSmsInput from '~/components/base/SmsInput.vue'
 import BasePasswordInput from '~/components/base/PasswordInput.vue'
 import BasePhoneInput from '~/components/base/PhoneInput.vue'
-import { isValidIntlPhone } from '~/utils/phone'
+import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
 
 definePageMeta({
   layout: false,
@@ -251,7 +251,10 @@ const stepDotClass = (key: Step) => {
   return 'bg-slate-300 dark:bg-slate-700 text-white'
 }
 
-const phoneDigits = computed(() => phoneLocal.value.replace(/\D/g, ''))
+const phoneDigits = computed(() => {
+  const raw = phoneLocal.value.replace(/\D/g, '')
+  return normalizeTo998(raw) || raw
+})
 const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 

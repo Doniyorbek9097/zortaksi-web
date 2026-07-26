@@ -182,7 +182,7 @@ import { useAccountStore } from '../stores/account.store'
 import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
-import { isValidIntlPhone } from '~/utils/phone'
+import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
 import { resolvePostAuthPath } from '~/utils/userRole'
 
 const authStore = useAuthStore()
@@ -269,7 +269,10 @@ const form = reactive({
   error: '',
 })
 
-const phoneDigits = computed(() => form.phoneLocal.replace(/\D/g, ''))
+const phoneDigits = computed(() => {
+  const raw = form.phoneLocal.replace(/\D/g, '')
+  return normalizeTo998(raw) || raw
+})
 const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
