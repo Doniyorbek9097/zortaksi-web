@@ -16,13 +16,6 @@
       @buy="onBuyTariff"
     />
 
-    <!-- To'lovlar tarixi -->
-    <DriverPaymentHistoryList
-      :max-items="8"
-      :refreshable="false"
-      more-to="/driver/payment"
-    />
-
     <!-- Accounts -->
     <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/10`" no-padding>
       <!-- Loading -->
@@ -101,6 +94,17 @@
           </template>
         </ProfileSettingRow>
 
+        <!-- Media kesh (IndexedDB) -->
+        <ProfileSettingRow
+          icon="fa-solid fa-broom"
+          title="Media keshni tozalash"
+          :subtitle="cacheSubtitle"
+          color="slate"
+          clickable
+          :disabled="clearingCache"
+          @click="onClearMediaCache"
+        />
+
         <!-- Contact admin -->
         <ProfileSettingRow
           icon="fa-solid fa-comments"
@@ -118,6 +122,15 @@
           color="violet"
           clickable
           @click="navigateTo('/privacy')"
+        />
+
+        <ProfileSettingRow
+          icon="fa-solid fa-right-from-bracket"
+          title="Chiqish"
+          subtitle="Boshqa hisob bilan kirish uchun"
+          color="rose"
+          clickable
+          @click="onLogout"
         />
       </div>
     </ProfileSectionCard>
@@ -143,6 +156,7 @@ import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
 import type { ScriptType } from '~/components/profile/ScriptToggle.vue'
+import { resolveHomePath } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'driver',
@@ -197,7 +211,7 @@ const onSelectAccount = async (acc: ILocalAccount) => {
   const target = String(acc.userId)
   const active = String(accountStore.activeUserId || '')
   if (target === active && String(authStore.user?.userId || '') === target) {
-    if (authStore.user?.role === 'admin') await navigateTo('/admin/dashboard')
+    await navigateTo(resolveHomePath(authStore.user))
     return
   }
   if (!acc.token) {
@@ -207,7 +221,7 @@ const onSelectAccount = async (acc: ILocalAccount) => {
   const ok = await accountStore.switchAccount(target)
   if (!ok) {
     switchError.value =
-      'Hisobga o\'tib bo\'lmadi. Admin uchun qayta login qiling — «Yangi hisob qo\'shish» orqali.'
+      'Hisobga o\'tib bo\'lmadi. Token eskirgan bo\'lishi mumkin — «Yangi hisob qo\'shish» orqali qayta kiring.'
   }
 }
 
@@ -227,6 +241,52 @@ const confirmDeleteAccount = async () => {
 
 const onAddAccount = () => navigateTo('/driver/accounts/add')
 
+const onLogout = async () => {
+  try {
+    await authStore.logout()
+  } catch { /* lokal tozalash logout ichida */ }
+  await navigateTo('/auth', { replace: true })
+}
+
+const onContactAdmin = () => {
+  if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
+}
+
+// --- Media IndexedDB kesh ---
+const { clearDeviceCache, getCacheStats } = useChatMedia()
+const clearingCache = ref(false)
+const cacheInfo = ref({ count: 0, bytes: 0 })
+
+const formatBytes = (n: number) => {
+  if (n < 1024) return `${n} B`
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const cacheSubtitle = computed(() => {
+  if (clearingCache.value) return 'Tozalanmoqda...'
+  if (!cacheInfo.value.count) return 'Ovozli xabar va rasmlar qurilmada'
+  return `${cacheInfo.value.count} ta fayl · ${formatBytes(cacheInfo.value.bytes)}`
+})
+
+const refreshCacheStats = async () => {
+  if (!import.meta.client) return
+  cacheInfo.value = await getCacheStats()
+}
+
+const onClearMediaCache = async () => {
+  if (clearingCache.value) return
+  clearingCache.value = true
+  try {
+    await clearDeviceCache()
+    cacheInfo.value = { count: 0, bytes: 0 }
+  } catch (e) {
+    console.error('Kesh tozalash xato:', e)
+  } finally {
+    clearingCache.value = false
+  }
+}
+
 onMounted(async () => {
   accountStore.load()
   await accountStore.syncFromStorage()
@@ -235,9 +295,6 @@ onMounted(async () => {
   }
   // Faqat joriy user — boshqa hisob tokenlarini buzmasin
   if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  void refreshCacheStats()
 })
-
-const onContactAdmin = () => {
-  if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
-}
 </script>
