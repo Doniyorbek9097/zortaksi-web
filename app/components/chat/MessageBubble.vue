@@ -390,7 +390,8 @@ const retryMedia = async () => {
 }
 
 const toggle = async () => {
-  await ensureSrc()
+  // src bo'lmasa ham urinadi — kelgan Telegram voice lazy download bo'lishi mumkin
+  await ensureSrc({ force: !src.value })
   await nextTick()
   const a = audioEl.value
   if (!a || !src.value) return
@@ -402,7 +403,16 @@ const toggle = async () => {
       await a.play()
       playing.value = true
     } catch (e) {
+      // Codec/blob xato — serverdan qayta yuklab urinish
       console.error('play', e)
+      await retryMedia()
+      await nextTick()
+      try {
+        await audioEl.value?.play()
+        playing.value = true
+      } catch (e2) {
+        console.error('play retry', e2)
+      }
     }
   }
 }

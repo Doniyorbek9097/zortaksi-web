@@ -43,7 +43,8 @@ export function createSocketActions(
         if (idx !== -1) {
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
         }
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+        // Voice — mediaPath keyinroq backfill bo'lishi mumkin (lazy download)
+        if (import.meta.client && (msg.type === 'voice' || (msg.type === 'photo' && msg.mediaPath))) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
     }
@@ -55,7 +56,8 @@ export function createSocketActions(
         } else {
             appendMessage(msg)
         }
-        if (import.meta.client && (msg.type === 'voice' || msg.type === 'photo') && msg.mediaPath) {
+        // Kelgan voice mediaPath bo'lmasa ham API orqali lazy download ishga tushadi
+        if (import.meta.client && (msg.type === 'voice' || (msg.type === 'photo' && msg.mediaPath))) {
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
 
