@@ -83,6 +83,14 @@ export default defineNuxtConfig({
         // Backup if NuxtPwaManifest is missing from a layout; primary injection is <NuxtPwaManifest />
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
+      // Telegram Mini App SDK — BackButton / history uchun
+      script: [
+        {
+          src: 'https://telegram.org/js/telegram-web-app.js',
+          defer: true,
+          tagPriority: 1,
+        },
+      ],
     },
   },
   pwa: {
