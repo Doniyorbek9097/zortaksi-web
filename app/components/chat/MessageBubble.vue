@@ -31,7 +31,7 @@
           class="w-9 h-9 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all"
           :class="out ? 'bg-white/20 text-white' : 'bg-sky-500/15 text-sky-500'"
           :aria-label="playing ? 'To\'xtatish' : 'Tinglash'"
-          :disabled="loading || !src"
+          :disabled="loading"
           @click="toggle"
         >
           <font-awesome-icon
