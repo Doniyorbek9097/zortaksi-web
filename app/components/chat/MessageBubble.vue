@@ -563,11 +563,8 @@ watch(
       return
     }
     if (id !== prevId) src.value = ''
-    // remote / Telegram — darhol tarmoqdan
-    const force =
-      !props.mediaPath ||
-      props.mediaPath === 'remote' ||
-      props.type === 'photo'
+    // remote — serverdan; diskdagi path — oddiy yuklash
+    const force = !props.mediaPath || props.mediaPath === 'remote'
     await ensureSrc({ force })
   },
   { immediate: true },

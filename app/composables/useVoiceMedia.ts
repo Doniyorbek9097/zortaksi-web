@@ -36,8 +36,8 @@ async function fetchMediaBlobFromNetwork(
   messageId: string,
   kind: 'voice' | 'photo',
 ): Promise<Blob> {
-  // Kelgan voice serverdan M4A (audio/mp4) keladi — brauzer/WebView ijro qiladi
-  const fallbackMime = kind === 'voice' ? 'audio/mp4' : 'image/jpeg'
+  // Server M4A yoki OGG qaytarishi mumkin — Content-Type ga ishonamiz
+  const fallbackMime = kind === 'voice' ? 'audio/ogg' : 'image/jpeg'
   const config = useRuntimeConfig()
   const token = useCookie('auth_token')
   const signal =
@@ -52,13 +52,11 @@ async function fetchMediaBlobFromNetwork(
   if (!res.ok) throw new Error('Media yuklanmadi')
   let mime = mimeFromResponse(res, fallbackMime)
   const raw = await res.blob()
-  // Server JSON xato yoki noto'g'ri MIME qaytarsa — fallback
   if (kind === 'photo' && (!mime.startsWith('image/') || /json|text/i.test(mime))) {
     mime = 'image/jpeg'
   }
-  if (kind === 'voice' && (!mime.startsWith('audio/') || /json|ogg|opus/i.test(mime))) {
-    // ogg bo'lsa ham qaytaramiz — getUrl stale deb qayta urinishi mumkin
-    if (/json|text/i.test(mime)) mime = fallbackMime
+  if (kind === 'voice' && (/json|text/i.test(mime) || !mime.startsWith('audio/'))) {
+    mime = raw.type?.startsWith('audio/') ? raw.type.split(';')[0]! : fallbackMime
   }
   const blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
   if (!blob.size) throw new Error('Media bo\'sh')
@@ -167,12 +165,11 @@ export function useChatMedia() {
       // 1) IndexedDB — tez lokal ijro
       if (!opts.forceNetwork) {
         const idbBlob = await idbGetMedia(id)
-        // Eski OGG / bo'sh MIME — brauzer play qilmaydi, serverdan M4A
+        // Faqat aniq buzilgan kesh — OGG ni rad etmaymiz (server shuni bersa play qilamiz)
         const staleVoice =
           kind === 'voice' &&
           !!idbBlob &&
-          (!idbBlob.type || /ogg|opus|octet-stream/i.test(idbBlob.type))
-        // Buzilgan / non-image kesh — rasm ochilmaydi
+          (!idbBlob.type || /octet-stream|json|text/i.test(idbBlob.type))
         const stalePhoto =
           kind === 'photo' &&
           !!idbBlob &&
