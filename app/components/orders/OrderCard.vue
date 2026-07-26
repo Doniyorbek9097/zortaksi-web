@@ -246,7 +246,7 @@ const groupViewUrl = computed(() => {
   const username = String(group.value?.username || '')
     .trim()
     .replace(/^@/, '')
-  if (username) return `https://t.me/${username}`
+  if (username) return `https://t.me/${username}/${props.order.message?.messageId}`
 
   const gid = String(group.value?.groupId || '').trim()
   const mid = Number(props.order.message?.messageId || 0)

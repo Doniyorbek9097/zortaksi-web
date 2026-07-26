@@ -238,6 +238,7 @@
 
 <script setup lang="ts">
 import { agentDebugLog } from '~/utils/agentDebugLog'
+import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
 
 interface Props {
   text?: string
@@ -501,10 +502,21 @@ const waitCanPlay = (a: HTMLAudioElement, ms = 12_000) =>
     }
   })
 
+const stopLocalVoice = () => {
+  const a = audioEl.value
+  if (a && !a.paused) a.pause()
+  playing.value = false
+  if (props.messageId) releaseVoicePlay(props.messageId)
+}
+
 const playAudio = async () => {
   await nextTick()
   const a = audioEl.value
   if (!a || !src.value) throw new Error('audio yo\'q')
+  // Boshqa bubble dagi voice to'xtasin
+  if (props.messageId) {
+    claimVoicePlay(props.messageId, stopLocalVoice)
+  }
   a.src = src.value
   await waitCanPlay(a)
   await a.play()
@@ -514,8 +526,7 @@ const playAudio = async () => {
 const toggle = async () => {
   const a = audioEl.value
   if (playing.value && a) {
-    a.pause()
-    playing.value = false
+    stopLocalVoice()
     return
   }
 
@@ -544,7 +555,7 @@ const toggle = async () => {
         },
       })
       // #endregion
-      playing.value = false
+      stopLocalVoice()
     }
   }
 }
@@ -582,10 +593,11 @@ const onMeta = () => {
 const onEnded = () => {
   playing.value = false
   current.value = 0
+  if (props.messageId) releaseVoicePlay(props.messageId)
 }
 
 const onAudioError = async () => {
-  playing.value = false
+  stopLocalVoice()
   if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
     syncSrcFromCache()
     return
@@ -681,7 +693,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  audioEl.value?.pause()
+  stopLocalVoice()
   if (remotePoll) {
     clearInterval(remotePoll)
     remotePoll = null
