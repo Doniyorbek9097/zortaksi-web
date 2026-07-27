@@ -30,6 +30,7 @@
       v-else-if="!chatStore.chats.length"
       icon="fa-solid fa-comments"
       title="Hozircha yozishmalar yo'q"
+      subtitle="Haydovchi va admin yozishmalari"
     />
 
     <!-- Chat list -->

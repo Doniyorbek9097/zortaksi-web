@@ -6,6 +6,10 @@ import {
 } from '../helpers/merge-messages'
 import type { ChatStoreRefs } from '../types'
 
+/** Chatlar sahifasida faqat ilova ichidagi suhbatlar (Telegram normal emas) */
+const isInAppChat = (chat: { kind?: string } | null | undefined) =>
+    chat?.kind === 'support' || chat?.kind === 'direct'
+
 /** Socket event handlerlari (yangi xabar, o'qildi, chat yangilanishi) */
 export function createSocketActions(
     refs: ChatStoreRefs,
@@ -71,21 +75,25 @@ export function createSocketActions(
             useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
         }
 
-        // Ro'yxatda oxirgi xabar + tartibni yangilaymiz
+        // Ro'yxat — faqat support/direct (Telegram chatlar Chatlar sahifasiga tushmaydi)
         const idx = chats.value.findIndex((c) => c._id === msg.chatId)
         if (idx !== -1) {
-            const preview = lastMessagePreview(msg)
-            const chat = {
-                ...chats.value[idx],
-                lastMessage: preview,
-                lastMessageAt: msg.date,
-            } as IChat
-            // Ochiq chat bo'lmasa va kiruvchi bo'lsa — unread oshiramiz
-            if (msg.direction === 'in' && currentChat.value?._id !== msg.chatId) {
-                chat.unreadCount = (chat.unreadCount || 0) + 1
+            const existing = chats.value[idx]
+            if (!isInAppChat(existing)) {
+                chats.value.splice(idx, 1)
+            } else {
+                const preview = lastMessagePreview(msg)
+                const chat = {
+                    ...existing,
+                    lastMessage: preview,
+                    lastMessageAt: msg.date,
+                } as IChat
+                if (msg.direction === 'in' && currentChat.value?._id !== msg.chatId) {
+                    chat.unreadCount = (chat.unreadCount || 0) + 1
+                }
+                chats.value.splice(idx, 1)
+                chats.value.unshift(chat)
             }
-            chats.value.splice(idx, 1)
-            chats.value.unshift(chat)
         }
 
         // Ochiq chatga kiruvchi kelsa — darrov o'qilgan deb belgilaymiz
@@ -96,6 +104,16 @@ export function createSocketActions(
 
     /** Socket: chat holati yangilandi (unread, oxirgi xabar) */
     const onChatUpdate = (chat: IChat) => {
+        // Telegram (normal) — Chatlar ro'yxatiga qo'shilmasin
+        if (!isInAppChat(chat)) {
+            const drop = chats.value.findIndex((c) => c._id === chat._id)
+            if (drop !== -1) chats.value.splice(drop, 1)
+            if (currentChat.value?._id === chat._id) {
+                currentChat.value = { ...currentChat.value, ...chat } as IChat
+            }
+            return
+        }
+
         const idx = chats.value.findIndex((c) => c._id === chat._id)
         if (idx !== -1) {
             chats.value[idx] = { ...chats.value[idx], ...chat } as IChat
