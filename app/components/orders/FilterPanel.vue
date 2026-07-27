@@ -43,7 +43,7 @@
               Hudud nomlarini vergul bilan ajrating. Buyurtma guruh nomi, username va matndan qidiriladi.
             </p>
 
-            <div class="flex items-center gap-2 pb-[env(safe-area-inset-bottom)]">
+            <div class="flex items-center gap-2" :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }">
               <button
                 type="button"
                 class="flex-1 py-3 rounded-xl text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"

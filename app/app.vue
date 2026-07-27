@@ -63,5 +63,12 @@ onMounted(() => {
 </script>
 
 <style>
-
+/*
+  Safe-area: home indicator uchun (max ~34px).
+  Telegram contentSafeArea (~100px) layoutga aralashmasin.
+*/
+:root {
+  --zt-safe-top: min(env(safe-area-inset-top, 0px), 28px);
+  --zt-safe-bottom: min(env(safe-area-inset-bottom, 0px), 34px);
+}
 </style>

@@ -85,7 +85,7 @@ onMounted(() => {
 <style scoped>
 .admin-tabbar {
   bottom: 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-bottom: var(--zt-safe-bottom, 0px);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   overflow-anchor: none;

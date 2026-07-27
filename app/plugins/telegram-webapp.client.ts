@@ -10,6 +10,8 @@ type TgBackButton = {
   isVisible?: boolean
 }
 
+type TgSafeArea = { top?: number; bottom?: number; left?: number; right?: number }
+
 type TgWebApp = {
   ready: () => void
   expand: () => void
@@ -17,9 +19,23 @@ type TgWebApp = {
   platform?: string
   initData?: string
   BackButton: TgBackButton
+  /** Qurilma notch / home indicator (Telegram chrome emas) */
+  safeAreaInset?: TgSafeArea
+  contentSafeAreaInset?: TgSafeArea
+  onEvent?: (eventType: string, callback: () => void) => void
+  offEvent?: (eventType: string, callback: () => void) => void
   disableVerticalSwipes?: () => void
   enableClosingConfirmation?: () => void
   disableClosingConfirmation?: () => void
+}
+
+/** Faqat device safe-area — contentSafeArea (~100px) e'tiborga olinmaydi */
+function applyTelegramSafeAreaCss(tg: TgWebApp) {
+  const top = Math.min(Math.max(0, Number(tg.safeAreaInset?.top) || 0), 28)
+  const bottom = Math.min(Math.max(0, Number(tg.safeAreaInset?.bottom) || 0), 34)
+  const root = document.documentElement
+  root.style.setProperty('--zt-safe-top', `${top}px`)
+  root.style.setProperty('--zt-safe-bottom', `${bottom}px`)
 }
 
 declare global {
@@ -96,6 +112,15 @@ export default defineNuxtPlugin(() => {
       tg.enableClosingConfirmation?.()
     } catch {
       /* eski client */
+    }
+
+    // Pastki/yuqori bo'sh joy: faqat device inset (Telegram panel emas)
+    try {
+      applyTelegramSafeAreaCss(tg)
+      tg.onEvent?.('safeAreaChanged', () => applyTelegramSafeAreaCss(tg))
+      tg.onEvent?.('contentSafeAreaChanged', () => applyTelegramSafeAreaCss(tg))
+    } catch {
+      /* */
     }
 
     const router = useRouter()

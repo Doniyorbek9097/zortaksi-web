@@ -1,9 +1,10 @@
 <template>
   <header
-    class="shrink-0 z-30 pt-[env(safe-area-inset-top)]"
+    class="shrink-0 z-30"
+    :style="{ paddingTop: 'var(--zt-safe-top, 0px)' }"
     :class="support
       ? 'bg-teal-600 dark:bg-teal-800 border-b border-teal-700/40'
-      : 'bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800'"
+      : 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50'"
   >
     <div class="mx-auto w-full max-w-2xl px-3 py-1.5 flex items-center gap-2">
       <button
@@ -11,7 +12,7 @@
         class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition-all"
         :class="support
           ? 'text-white/90 hover:bg-white/10'
-          : 'text-slate-500 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/5'"
+          : 'text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5'"
         aria-label="Orqaga"
         @click="$emit('back')"
       >

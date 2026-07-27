@@ -236,7 +236,11 @@ const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
 
-/** Klaviatura / visualViewport — shell doim ko'rinadigan zonada */
+/**
+ * Klaviatura ochilganda visualViewport;
+ * yopiq holatda 100dvh — Telegram offsetTop + safe-area qo'shilib
+ * yuqori/pastki ~100px bo'shliq qolmasin.
+ */
 const shellStyle = ref<Record<string, string>>({
   top: '0px',
   height: '100dvh',
@@ -249,10 +253,16 @@ const syncViewport = () => {
     shellStyle.value = { top: '0px', height: '100dvh' }
     return
   }
-  shellStyle.value = {
-    top: `${Math.max(0, vv.offsetTop)}px`,
-    height: `${Math.max(0, vv.height)}px`,
+  const keyboardGap = window.innerHeight - vv.height
+  const keyboardOpen = keyboardGap > 80
+  if (keyboardOpen) {
+    shellStyle.value = {
+      top: `${Math.max(0, vv.offsetTop)}px`,
+      height: `${Math.max(0, vv.height)}px`,
+    }
+    return
   }
+  shellStyle.value = { top: '0px', height: '100dvh' }
 }
 
 // Ulanish holati (senderga yozish mumkinmi)
