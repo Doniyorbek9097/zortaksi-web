@@ -86,11 +86,15 @@ onMounted(() => {
 /* Fixed tabbar — scrollbar/viewport o'zgarganda sakramasligi uchun */
 .driver-tabbar {
   bottom: 0;
-  /* --zt-safe-bottom: capped (Telegram contentSafeArea ~100px emas) */
   padding-bottom: var(--zt-safe-bottom, 0px);
   transform: translate3d(0, 0, 0);
   backface-visibility: hidden;
   overflow-anchor: none;
   contain: layout style;
+}
+
+/* Flutter WebView: pastki bo'shliqni majburan yopish */
+:global(html[data-zt-embed='webview']) .driver-tabbar {
+  padding-bottom: 0 !important;
 }
 </style>

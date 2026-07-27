@@ -91,4 +91,8 @@ onMounted(() => {
   overflow-anchor: none;
   contain: layout style;
 }
+
+:global(html[data-zt-embed='webview']) .admin-tabbar {
+  padding-bottom: 0 !important;
+}
 </style>

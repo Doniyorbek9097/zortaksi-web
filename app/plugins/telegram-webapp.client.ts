@@ -31,6 +31,8 @@ type TgWebApp = {
 
 /** Faqat device safe-area — contentSafeArea (~100px) e'tiborga olinmaydi */
 function applyTelegramSafeAreaCss(tg: TgWebApp) {
+  // Flutter WebView — host SafeArea; Telegram insetni yozib pastki bo'shliq ochilmasin
+  if (document.documentElement.dataset.ztEmbed === 'webview') return
   const top = Math.min(Math.max(0, Number(tg.safeAreaInset?.top) || 0), 28)
   const bottom = Math.min(Math.max(0, Number(tg.safeAreaInset?.bottom) || 0), 34)
   const root = document.documentElement

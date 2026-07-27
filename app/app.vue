@@ -64,11 +64,17 @@ onMounted(() => {
 
 <style>
 /*
-  Safe-area: home indicator uchun (max ~34px).
-  Telegram contentSafeArea (~100px) layoutga aralashmasin.
+  Default 0 — Flutter/Android WebView host SafeArea beradi.
+  Haqiqiy qiymat plugins/safe-area.client.ts da qo'yiladi.
 */
 :root {
-  --zt-safe-top: min(env(safe-area-inset-top, 0px), 28px);
-  --zt-safe-bottom: min(env(safe-area-inset-bottom, 0px), 34px);
+  --zt-safe-top: 0px;
+  --zt-safe-bottom: 0px;
+}
+
+/* Flutter / system WebView — hech qachon pastki pad ochilmasin */
+html[data-zt-embed='webview'] {
+  --zt-safe-top: 0px !important;
+  --zt-safe-bottom: 0px !important;
 }
 </style>
