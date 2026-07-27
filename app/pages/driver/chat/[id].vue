@@ -150,11 +150,12 @@
       </div>
     </div>
 
-    <!-- Composer — support/direct doim ochiq; Telegram chatda ulanish kutadi -->
+    <!-- Composer — ochilish/loading paytida ham ko'rinsin -->
     <ChatComposer
-      v-if="!isOpening && (isInAppChat || wasLinkedBefore || conn === 'ready' || conn === 'connecting' || conn === 'idle')"
+      v-if="showComposer"
       v-model="draft"
-      :disabled="!isInAppChat && !wasLinkedBefore && conn !== 'ready'"
+      :disabled="composerDisabled"
+      :placeholder="composerPlaceholder"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -278,6 +279,34 @@ const wasLinkedBefore = computed(() => {
 const canSendTelegram = computed(
   () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
 )
+
+/** Loading / open — input yo'qolmasin */
+const composerBusy = computed(
+  () => isOpening.value || chatStore.isLoadingMessages,
+)
+
+const showComposer = computed(
+  () =>
+    isOpening.value ||
+    composerBusy.value ||
+    isInAppChat.value ||
+    wasLinkedBefore.value ||
+    conn.value === 'ready' ||
+    conn.value === 'connecting' ||
+    conn.value === 'idle',
+)
+
+const composerDisabled = computed(
+  () => composerBusy.value || (!isInAppChat.value && !wasLinkedBefore.value && conn.value !== 'ready'),
+)
+
+const composerPlaceholder = computed(() => {
+  if (composerBusy.value) return 'Biroz kuting...'
+  if (!isInAppChat.value && !wasLinkedBefore.value && conn.value !== 'ready') {
+    return 'Yozish uchun ulanish kutilmoqda...'
+  }
+  return 'Xabar yozing...'
+})
 
 const formatTime = (value: string | Date) => {
   const d = new Date(value)

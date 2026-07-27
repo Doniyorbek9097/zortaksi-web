@@ -80,7 +80,7 @@
           data-bwignore="true"
           :readonly="draftLocked"
           :disabled="disabled"
-          :placeholder="disabled ? 'Yozish uchun ulanish kutilmoqda...' : 'Xabar yozing...'"
+          :placeholder="inputPlaceholder"
           class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
           @touchstart.passive="unlockDraft"
           @mousedown="unlockDraft"
@@ -127,7 +127,10 @@ import {
 
 const text = defineModel<string>({ default: '' })
 
-const props = defineProps<{ disabled?: boolean }>()
+const props = withDefaults(
+  defineProps<{ disabled?: boolean; placeholder?: string }>(),
+  { disabled: false, placeholder: '' },
+)
 
 const emit = defineEmits<{
   send: [text: string]
@@ -135,6 +138,12 @@ const emit = defineEmits<{
   photo: [file: File]
   attach: []
 }>()
+
+const inputPlaceholder = computed(() => {
+  if (props.placeholder) return props.placeholder
+  if (props.disabled) return 'Yozish uchun ulanish kutilmoqda...'
+  return 'Xabar yozing...'
+})
 
 const fileInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
