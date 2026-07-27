@@ -152,7 +152,7 @@
 
     <!-- Composer — support/direct doim ochiq; Telegram chatda ulanish kutadi -->
     <ChatComposer
-      v-if="isInAppChat || wasLinkedBefore || conn === 'ready' || conn === 'connecting' || conn === 'idle'"
+      v-if="!isOpening && (isInAppChat || wasLinkedBefore || conn === 'ready' || conn === 'connecting' || conn === 'idle')"
       v-model="draft"
       :disabled="!isInAppChat && !wasLinkedBefore && conn !== 'ready'"
       @send="onSend"
@@ -174,6 +174,8 @@ const route = useRoute()
 const chatStore = useChatStore()
 
 const chatId = computed(() => route.params.id as string)
+/** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
+const isOpening = computed(() => chatId.value === 'open')
 
 const isSupport = computed(() =>
   chatStore.currentChat?.kind === 'support' || route.query.support === '1'
@@ -207,6 +209,7 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
+  if (isOpening.value || chatStore.isLoadingMessages) return 'ochilmoqda...'
   if (chatStore.isPeerTyping) return 'yozmoqda...'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   if (isDirect.value) return 'Haydovchi'
@@ -294,19 +297,19 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (!canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   await chatStore.sendMessage(chatId.value, text)
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (!canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   await chatStore.sendVoice(chatId.value, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  if (!canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
 }
@@ -332,10 +335,138 @@ watch(() => chatStore.messages.length, scrollToBottom)
 watch(() => chatStore.isPeerTyping, (v) => { if (v) scrollToBottom() })
 
 let presenceTimer: ReturnType<typeof setInterval> | null = null
+let loadSeq = 0
 let prevBodyOverflow = ''
 let prevHtmlOverflow = ''
 
-onMounted(async () => {
+const clearPresenceTimer = () => {
+  if (presenceTimer) {
+    clearInterval(presenceTimer)
+    presenceTimer = null
+  }
+}
+
+const resetChatUi = () => {
+  clearPresenceTimer()
+  chatStore.messages = []
+  chatStore.currentChat = null
+  chatStore.resetConnection()
+  chatStore.isLoadingMessages = true
+  draft.value = ''
+  focusId.value = String(route.query.focus || '')
+}
+
+const startPresenceLoop = (id: string) => {
+  clearPresenceTimer()
+  presenceTimer = setInterval(() => {
+    void chatStore.fetchPresence(id)
+  }, 45000)
+}
+
+const setupConnection = (id: string) => {
+  if (isInAppChat.value) {
+    chatStore.connectionStatus = 'ready'
+    void chatStore.fetchPresence(id)
+    startPresenceLoop(id)
+    return
+  }
+
+  const peer = chatStore.currentChat?.peer
+  const alreadyLinked = !!(peer?.viaUserbotId || peer?.accessHash)
+  if (alreadyLinked) {
+    chatStore.connectionStatus = 'ready'
+    void chatStore.connect(id, { silent: true })
+  } else {
+    void chatStore.connect(id)
+  }
+  startPresenceLoop(id)
+}
+
+/** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
+const bootstrapOpenChat = async (seq: number) => {
+  const mode = String(route.query.open || '')
+  const orderId = String(route.query.orderId || '')
+  const userId = String(route.query.userId || '')
+  const username = String(route.query.username || '').replace(/^@/, '')
+
+  const fail = async () => {
+    if (seq !== loadSeq) return
+    chatStore.isLoadingMessages = false
+    if (username && (mode === 'order' || mode === 'agent')) {
+      if (import.meta.client) window.open(`https://t.me/${username}`, '_blank')
+    }
+    await navigateTo('/driver/orders')
+  }
+
+  try {
+    let res: any
+    if (mode === 'order' && orderId) {
+      res = await chatStore.startChatFromOrder(orderId)
+    } else if (mode === 'booked' && orderId) {
+      res = await chatStore.startChatWithBookedDriver(orderId)
+    } else if (mode === 'agent' && orderId) {
+      res = await chatStore.startChatWithOrderOwner(orderId)
+    } else if (mode === 'user' && userId) {
+      res = await chatStore.startChatWithUser(userId, orderId || undefined)
+    } else {
+      await fail()
+      return
+    }
+
+    if (seq !== loadSeq) return
+
+    if (res?.success && res.data?._id) {
+      const q: Record<string, string> = {}
+      const nameQ = String(route.query.name || '')
+      const phoneQ = String(route.query.phone || '')
+      if (nameQ) q.name = nameQ
+      if (phoneQ) q.phone = phoneQ
+      await navigateTo({
+        path: `/driver/chat/${res.data._id}`,
+        query: Object.keys(q).length ? q : undefined,
+        replace: true,
+      })
+      return
+    }
+    await fail()
+  } catch (err) {
+    console.error('bootstrapOpenChat error:', err)
+    await fail()
+  }
+}
+
+const loadChat = async (id: string) => {
+  const seq = ++loadSeq
+  resetChatUi()
+
+  if (id === 'open') {
+    await bootstrapOpenChat(seq)
+    return
+  }
+
+  const listed = chatStore.chats.find((c) => c._id === id)
+  if (listed?.peer?.viaUserbotId || listed?.peer?.accessHash) {
+    chatStore.connectionStatus = 'ready'
+  }
+
+  try {
+    await chatStore.fetchMessages(id)
+  } catch (err) {
+    console.error('loadChat fetchMessages error:', err)
+  }
+  if (seq !== loadSeq) return
+
+  scrollToFocus()
+  setupConnection(id)
+}
+
+// Chat → chat: component qayta mount bo'lmasa ham yangilanadi
+watch(chatId, (id) => {
+  if (!id) return
+  void loadChat(id)
+}, { immediate: true })
+
+onMounted(() => {
   prevBodyOverflow = document.body.style.overflow
   prevHtmlOverflow = document.documentElement.style.overflow
   document.body.style.overflow = 'hidden'
@@ -345,47 +476,17 @@ onMounted(async () => {
   window.visualViewport?.addEventListener('resize', syncViewport)
   window.visualViewport?.addEventListener('scroll', syncViewport)
   window.addEventListener('resize', syncViewport)
-
-  // Ro'yxatdan peer ma'lum — banner chiqmasin
-  const listed = chatStore.chats.find((c) => c._id === chatId.value)
-  if (listed?.peer?.viaUserbotId || listed?.peer?.accessHash) {
-    chatStore.connectionStatus = 'ready'
-  }
-
-  await chatStore.fetchMessages(chatId.value)
-  scrollToFocus()
-
-  if (isInAppChat.value) {
-    chatStore.connectionStatus = 'ready'
-    void chatStore.fetchPresence(chatId.value)
-    presenceTimer = setInterval(() => {
-      chatStore.fetchPresence(chatId.value)
-    }, 45000)
-  } else {
-    const peer = chatStore.currentChat?.peer
-    const alreadyLinked = !!(peer?.viaUserbotId || peer?.accessHash)
-    // Oldin ulangan — darhol ready, banner yo'q; fon tekshiruv
-    if (alreadyLinked) {
-      chatStore.connectionStatus = 'ready'
-      void chatStore.connect(chatId.value, { silent: true })
-    } else {
-      chatStore.connect(chatId.value)
-    }
-
-    presenceTimer = setInterval(() => {
-      chatStore.fetchPresence(chatId.value)
-    }, 45000)
-  }
 })
 
 onBeforeUnmount(() => {
+  loadSeq += 1
   window.visualViewport?.removeEventListener('resize', syncViewport)
   window.visualViewport?.removeEventListener('scroll', syncViewport)
   window.removeEventListener('resize', syncViewport)
   document.body.style.overflow = prevBodyOverflow
   document.documentElement.style.overflow = prevHtmlOverflow
 
-  if (presenceTimer) clearInterval(presenceTimer)
+  clearPresenceTimer()
   chatStore.currentChat = null
   chatStore.messages = []
   chatStore.resetConnection()

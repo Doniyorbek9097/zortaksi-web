@@ -4,39 +4,69 @@ import type { useOrderStore } from '~/stores/order.store'
 
 /**
  * Chat / qiziqish / agent amallari.
- * Xabar, band haydovchi chat, qiziqqanlar ro'yxati.
+ * Xabar tugmasi — darhol chat sahifasiga o'tadi; API ochilish sahifasida.
  */
 export function useOrdersChatActions(options: {
   orderStore: ReturnType<typeof useOrderStore>
   chatStore: ReturnType<typeof useChatStore>
   showError: (msg: string) => void
 }) {
-  const { orderStore, chatStore, showError } = options
-
-  /** Tashqi havola ochish (Telegram fallback) */
-  const openLink = (url: string) => {
-    if (import.meta.client) window.open(url, '_blank')
-  }
+  const { orderStore, chatStore } = options
 
   const markOrderInterest = (order: IOrder) => {
     if (!order._id) return
     void orderStore.markInterest(order._id)
   }
 
+  const senderDisplayName = (order: IOrder) => {
+    const s = order.sender
+    const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
+    return full || s?.username || 'Buyurtmachi'
+  }
+
+  const findChatByOrderPeer = (orderId: string, peerUserId?: string) => {
+    if (!peerUserId) return undefined
+    return chatStore.chats.find(
+      (c) =>
+        String(c.orderId || '') === String(orderId) &&
+        String(c.peer?.userId || '') === String(peerUserId),
+    )
+  }
+
+  /** Mavjud chat bo'lsa to'g'ridan; aks holda /chat/open orqali darhol UI */
+  const goOpenChat = (query: Record<string, string>) =>
+    navigateTo({
+      path: '/driver/chat/open',
+      query,
+    })
+
   const onMessage = async (order: IOrder) => {
     if (!order._id) return
     markOrderInterest(order)
-    try {
-      const res = await chatStore.startChatFromOrder(order._id)
-      if (res?.success && res.data?._id) {
-        return navigateTo(`/driver/chat/${res.data._id}`)
-      }
-    } catch (err) {
-      console.error('startChatFromOrder error:', err)
+
+    const peerId = order.sender?.userId
+    const existing = findChatByOrderPeer(order._id, peerId)
+    const name = senderDisplayName(order)
+    const phone = String(order.sender?.phone || '')
+    const username = String(order.sender?.username || '').replace(/^@/, '')
+
+    if (existing?._id) {
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: {
+          ...(name ? { name } : {}),
+          ...(phone ? { phone } : {}),
+        },
+      })
     }
-    // Fallback — Telegram profiliga o'tish
-    const username = order.sender?.username
-    if (username) openLink(`https://t.me/${username}`)
+
+    return goOpenChat({
+      open: 'order',
+      orderId: order._id,
+      ...(name ? { name } : {}),
+      ...(phone ? { phone } : {}),
+      ...(username ? { username } : {}),
+    })
   }
 
   const onCall = (order: IOrder) => {
@@ -70,66 +100,80 @@ export function useOrdersChatActions(options: {
   }
 
   const onInterestSelect = async (user: IInterestedUser) => {
-    try {
-      const res = await chatStore.startChatWithUser(
-        user.userId,
-        interestOrderId.value || undefined,
-      )
-      if (res?.success && res.data?._id) {
-        const name =
-          user.name ||
-          [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
-          user.username ||
-          'Haydovchi'
-        interestDialog.value?.close()
-        await navigateTo({
-          path: `/driver/chat/${res.data._id}`,
-          query: { name },
-        })
-        return
-      }
-      interestDialog.value?.resetOpening(res?.message || 'Chat ochilmadi')
-    } catch (err: any) {
-      interestDialog.value?.resetOpening(
-        err?.response?.data?.message || err?.message || 'Chat ochilmadi',
-      )
+    const name =
+      user.name ||
+      [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
+      user.username ||
+      'Haydovchi'
+    const orderId = interestOrderId.value || ''
+
+    interestDialog.value?.close()
+
+    const existing = orderId
+      ? findChatByOrderPeer(orderId, user.userId)
+      : chatStore.chats.find((c) => String(c.peer?.userId) === String(user.userId) && c.kind === 'direct')
+
+    if (existing?._id) {
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: { name },
+      })
     }
+
+    return goOpenChat({
+      open: 'user',
+      userId: user.userId,
+      ...(orderId ? { orderId } : {}),
+      name,
+    })
   }
 
   const onBookedChat = async (order: IOrder) => {
     if (!order._id) return
-    try {
-      const res = await chatStore.startChatWithBookedDriver(order._id)
-      if (res?.success && res.data?._id) {
-        const phone = res.data?.peer?.phone
-        return navigateTo({
-          path: `/driver/chat/${res.data._id}`,
-          query: phone ? { phone: String(phone) } : undefined,
-        })
-      }
-      showError(res?.message || 'Haydovchi bilan chat ochilmadi')
-    } catch (err: any) {
-      console.error('startChatWithBookedDriver error:', err)
-      showError(err?.response?.data?.message || 'Haydovchi bilan chat ochilmadi')
+    const peerId = String(order.bookedBy || '')
+    const existing = findChatByOrderPeer(order._id, peerId)
+    const name =
+      [order.bookedByUser?.firstName, order.bookedByUser?.lastName].filter(Boolean).join(' ').trim() ||
+      order.bookedByUser?.username ||
+      'Haydovchi'
+
+    if (existing?._id) {
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: { name },
+      })
     }
+
+    return goOpenChat({
+      open: 'booked',
+      orderId: order._id,
+      name,
+    })
   }
 
   const onAgent = async (order: IOrder) => {
-    // Agent — order egasi (owner) bilan chat
     if (!order._id) return
-    try {
-      const res = await chatStore.startChatWithOrderOwner(order._id)
-      if (res?.success && res.data?._id) {
-        return navigateTo(`/driver/chat/${res.data._id}`)
-      }
-      showError(res?.message || 'Agent chat ochilmadi')
-    } catch (err: any) {
-      console.error('startChatWithOrderOwner error:', err)
-      showError(err?.response?.data?.message || 'Agent chat ochilmadi')
+    const peerId = String(order.owner?.userId || '')
+    const existing = findChatByOrderPeer(order._id, peerId)
+    const name =
+      [order.owner?.firstName, order.owner?.lastName].filter(Boolean).join(' ').trim() ||
+      order.owner?.username ||
+      'Agent'
+    const username = String(order.owner?.username || '').replace(/^@/, '')
+
+    if (existing?._id) {
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: { name },
+      })
     }
-    // Fallback — owner Telegram profili
-    const username = order.owner?.username
-    if (username) openLink(`https://t.me/${username}`)
+
+    return goOpenChat({
+      open: 'agent',
+      orderId: order._id,
+      name,
+      ...(username ? { username } : {}),
+    })
   }
 
   return {
