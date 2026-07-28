@@ -104,7 +104,7 @@ const showDriverPageFor = (chat: IChat) =>
 const openDriverPage = (chat: IChat) => {
   const id = chat.peer?.userId
   if (!id) return
-  navigateTo(`/admin/drivers/${encodeURIComponent(id)}`)
+  navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
 }
 
 /** Peer ismi — haydovchi/admin ham oddiy foydalanuvchi kabi */
@@ -184,6 +184,8 @@ const confirmClear = async () => {
   }
 }
 
+const PAGE_LIMIT = 20
+
 const refresh = async () => {
   refreshing.value = true
   try {
@@ -192,6 +194,8 @@ const refresh = async () => {
     refreshing.value = false
   }
 }
+
+usePullToRefresh(refresh)
 
 const openChat = (chat: IChat) => {
   navigateTo({
@@ -204,7 +208,6 @@ const openChat = (chat: IChat) => {
   })
 }
 
-const PAGE_LIMIT = 20
 const loadMore = () => chatStore.loadMoreChats({ limit: PAGE_LIMIT })
 
 const sentinel = ref<HTMLElement | null>(null)

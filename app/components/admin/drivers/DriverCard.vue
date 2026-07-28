@@ -33,7 +33,10 @@
       </div>
 
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-black text-slate-900 dark:text-white truncate">
+        <p
+          class="text-sm font-black text-slate-900 dark:text-white truncate cursor-pointer hover:text-sky-600 dark:hover:text-sky-400"
+          @click.stop="$emit('open')"
+        >
           {{ name }}
         </p>
         <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 truncate">
@@ -139,6 +142,7 @@ defineEmits<{
   balance: []
   tariff: []
   block: []
+  open: []
 }>()
 
 const { avatarUrl } = useMediaUrl()

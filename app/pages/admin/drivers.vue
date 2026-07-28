@@ -49,6 +49,7 @@
         @balance="openBalance(d)"
         @tariff="openTariff(d)"
         @block="onBlock(d)"
+        @open="navigateTo(`/admin/driver/${encodeURIComponent(d.id)}`)"
       />
 
       <!-- Infinite scroll sentinel -->
@@ -217,6 +218,8 @@ const load = async () => {
     error.value = e?.response?.data?.message || 'Haydovchilar yuklanmadi'
   }
 }
+
+usePullToRefresh(load)
 
 const loadMore = () => store.loadMore(queryParams())
 

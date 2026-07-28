@@ -282,6 +282,14 @@ const onBonus = () => {
   navigateTo('/admin/bonus')
 }
 
+usePullToRefresh(async () => {
+  await Promise.all([
+    store.fetchStats().catch(() => {}),
+    referralStore.fetchAll().catch(() => {}),
+    authStore.getMe().catch(() => {}),
+  ])
+})
+
 onMounted(() => {
   store.fetchStats().catch(() => {})
   referralStore.fetchAll().catch(() => {})

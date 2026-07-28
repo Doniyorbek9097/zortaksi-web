@@ -71,8 +71,9 @@ export function applyBrowserChrome(value: ThemeName) {
 
 export const useTheme = () => {
   // Cookie orqali saqlaymiz — SSR ham, klient ham bir xil qiymatni ko'radi.
+  // Birinchi kirishda default: light
   const theme = useCookie<ThemeName>('zt-theme', {
-    default: () => 'dark',
+    default: () => 'light',
     maxAge: 60 * 60 * 24 * 365,
     path: '/',
     sameSite: 'lax',
@@ -93,16 +94,9 @@ export const useTheme = () => {
       .split('; ')
       .some((c) => c.startsWith('zt-theme='))
 
+    // Birinchi marta — light (OS / Telegram dark ga ergashmaydi)
     if (!hasSaved) {
-      const tg = (window as Window & {
-        Telegram?: { WebApp?: TgWebApp }
-      }).Telegram?.WebApp
-
-      if (tg?.colorScheme) {
-        theme.value = tg.colorScheme
-      } else if (window.matchMedia?.('(prefers-color-scheme: light)').matches) {
-        theme.value = 'light'
-      }
+      theme.value = 'light'
     }
 
     applyBrowserChrome(theme.value === 'light' ? 'light' : 'dark')

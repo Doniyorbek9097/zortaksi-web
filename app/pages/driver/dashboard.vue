@@ -219,6 +219,13 @@ const onBuyTariff = () => {
   navigateTo('/driver/payment')
 }
 
+usePullToRefresh(async () => {
+  await Promise.all([
+    fetchPlatformStats(),
+    authStore.getMe().catch(() => {}),
+  ])
+})
+
 onMounted(() => {
   fetchPlatformStats()
 })

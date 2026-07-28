@@ -80,4 +80,6 @@ const leaderboard = computed(() => store.leaderboard)
 onMounted(() => {
   store.fetchAll().catch(() => {})
 })
+
+usePullToRefresh(() => store.fetchAll())
 </script>

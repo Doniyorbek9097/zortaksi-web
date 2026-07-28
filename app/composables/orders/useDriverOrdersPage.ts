@@ -48,6 +48,8 @@ export function useDriverOrdersPage() {
 
   const onUnlock = () => navigateTo('/driver/payment')
 
+  usePullToRefresh(() => filter.load())
+
   return {
     authStore,
     orderStore,

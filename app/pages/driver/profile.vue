@@ -65,7 +65,7 @@
     </ProfileSectionCard>
 
     <!-- Script (Yozuv) -->
-    <ProfileSectionCard title="Yozuv" subtitle="Ilova tilini tanlang">
+    <ProfileSectionCard title="Yozuv" subtitle="Lotin yoki Kirill">
       <ProfileScriptToggle v-model="script" />
     </ProfileSectionCard>
 
@@ -159,7 +159,6 @@
 import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import type { ScriptType } from '~/components/profile/ScriptToggle.vue'
 import { resolveHomePath } from '~/utils/userRole'
 
 definePageMeta({
@@ -169,6 +168,7 @@ definePageMeta({
 const authStore = useAuthStore()
 const accountStore = useAccountStore()
 const { theme, toggleTheme } = useTheme()
+const { script } = useAppScript()
 
 const isDark = computed(() => theme.value === 'dark')
 
@@ -194,7 +194,6 @@ const accountToDelete = ref<ILocalAccount | null>(null)
 const deletingAccount = ref(false)
 
 // --- Settings state ---
-const script = ref<ScriptType>('latin')
 const { soundOn } = useNotifySound()
 const config = useRuntimeConfig()
 const adminUsername = computed(() =>
@@ -293,5 +292,13 @@ onMounted(async () => {
   // Faqat joriy user — boshqa hisob tokenlarini buzmasin
   if (authStore.user) accountStore.ensureCurrent(authStore.user)
   void refreshCacheStats()
+})
+
+usePullToRefresh(async () => {
+  await authStore.getMe().catch(() => {})
+  accountStore.load()
+  await accountStore.syncFromStorage()
+  if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  await refreshCacheStats()
 })
 </script>

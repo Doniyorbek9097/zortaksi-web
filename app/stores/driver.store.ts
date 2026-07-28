@@ -14,6 +14,14 @@ export interface DriverRow {
   expireAt?: string
   daysLeft?: number
   debt?: boolean
+  tariffExpireAt?: string | Date | null
+  startedAt?: string | Date | null
+  tariff?: {
+    name?: string
+    info?: string
+    price?: number
+    expireDays?: number
+  } | null
 }
 
 export const useDriverStore = defineStore('driver', () => {
@@ -195,6 +203,25 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
+  const deleteDriver = async (userId: string) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${encodeURIComponent(userId)}`, {
+        method: 'DELETE',
+      })
+      if (response.success) {
+        drivers.value = drivers.value.filter((d) => d.id !== userId)
+        total.value = Math.max(0, total.value - 1)
+      }
+      return response
+    } catch (error) {
+      console.error('DeleteDriver error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   return {
     drivers,
     counts,
@@ -213,5 +240,6 @@ export const useDriverStore = defineStore('driver', () => {
     assignTariff,
     sendMessage,
     bulkAction,
+    deleteDriver,
   }
 })

@@ -14,18 +14,19 @@
       <div class="leading-none min-w-0">
         <h1 class="text-base font-black text-slate-900 dark:text-white truncate">Haydovchi</h1>
         <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-          Profil va boshqaruv
+          Alohida boshqaruv sahifasi
         </p>
       </div>
     </header>
 
     <div v-if="loading" class="space-y-3">
       <div class="h-32 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+      <div class="h-40 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
       <div class="h-24 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      <div class="h-20 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     </div>
 
     <template v-else-if="driver">
+      <!-- Profil -->
       <section
         class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-3"
       >
@@ -69,12 +70,52 @@
           <p class="mt-2 text-lg font-black text-sky-500">
             {{ formatMoney(driver.balance) }} so'm
           </p>
-          <p class="text-[11px] font-semibold text-slate-400">
-            {{ tariffLine }}
-          </p>
         </div>
       </section>
 
+      <!-- Live tarif muddati (dashboard kabi) -->
+      <DashboardTariffCard
+        :name="tariffCard.name"
+        :info="tariffCard.info"
+        :price="tariffCard.price"
+        :expire-days="tariffCard.expireDays"
+        :start-date="tariffCard.startDate"
+        :end-date="tariffCard.endDate"
+        :started-at="tariffCard.startedAt"
+        :expire-at="tariffCard.expireAt"
+        :active="tariffCard.active"
+        @buy="openTariff"
+      />
+
+      <!-- Asosiy amallar -->
+      <section class="grid grid-cols-1 gap-2">
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
+          @click="navigateTo(`/admin/pay/${encodeURIComponent(driver.id)}`)"
+        >
+          <font-awesome-icon icon="fa-solid fa-wallet" />
+          Hisobni to'ldirish
+        </button>
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all"
+          @click="openTariff"
+        >
+          <font-awesome-icon icon="fa-solid fa-key" />
+          Tarifni yangilash
+        </button>
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-500/25 active:scale-[0.98] transition-all"
+          @click="deleteOpen = true"
+        >
+          <font-awesome-icon icon="fa-solid fa-trash" />
+          Hisobni o'chirish
+        </button>
+      </section>
+
+      <!-- Qo'shimcha -->
       <section class="grid grid-cols-2 gap-2">
         <button
           type="button"
@@ -93,32 +134,13 @@
           <font-awesome-icon icon="fa-solid fa-phone" />
           Qo'ng'iroq
         </button>
-      </section>
-
-      <section class="grid grid-cols-2 gap-2">
         <button
           type="button"
           class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 active:scale-95 transition-all"
           @click="balanceOpen = true"
         >
-          <font-awesome-icon icon="fa-solid fa-wallet" />
+          <font-awesome-icon icon="fa-solid fa-coins" />
           Balans
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20 active:scale-95 transition-all"
-          @click="openTariff"
-        >
-          <font-awesome-icon icon="fa-solid fa-key" />
-          Tarif
-        </button>
-        <button
-          type="button"
-          class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 active:scale-95 transition-all"
-          @click="navigateTo(`/admin/pay/${encodeURIComponent(driver.id)}`)"
-        >
-          <font-awesome-icon icon="fa-solid fa-credit-card" />
-          To'lov
         </button>
         <button
           type="button"
@@ -166,6 +188,7 @@
       :loading="store.isSaving"
       @confirm="saveTariff"
     />
+
     <BaseConfirmDialog
       v-model="blockOpen"
       :title="driver?.active ? 'Bloklash' : 'Blokdan chiqarish'"
@@ -180,6 +203,21 @@
       :loading="store.isSaving"
       @confirm="confirmBlock"
     />
+
+    <BaseConfirmDialog
+      v-model="deleteOpen"
+      title="Hisobni o'chirish"
+      description="Qaytarib bo'lmaydi"
+      :message="driver
+        ? `«${driver.name}» hisobi, chatlar, to'lovlar va barcha bog'liq ma'lumotlar o'chiriladi. Davom etasizmi?`
+        : ''"
+      confirm-text="O'chirish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="deleting"
+      :close-on-confirm="false"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>
 
@@ -187,6 +225,7 @@
 import type { DriverRow } from '~/stores/driver.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
+import { isTariffActive } from '~/utils/tariffActive'
 
 definePageMeta({ layout: 'admin' })
 
@@ -203,13 +242,15 @@ const paymentsApiPath = computed(() =>
   userId.value ? `/drivers/${encodeURIComponent(userId.value)}/payments` : ''
 )
 
-const driver = ref<(DriverRow & { _id?: string }) | null>(null)
+const driver = ref<DriverRow | null>(null)
 const loading = ref(true)
+const deleting = ref(false)
 const error = ref('')
 const success = ref('')
 const balanceOpen = ref(false)
 const tariffOpen = ref(false)
 const blockOpen = ref(false)
+const deleteOpen = ref(false)
 
 const { avatarUrl } = useMediaUrl()
 const avatarBroken = ref(false)
@@ -222,16 +263,34 @@ const avatarSrc = computed(() =>
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
-const tariffLine = computed(() => {
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return '—'
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleDateString('uz-UZ')
+}
+
+const tariffCard = computed(() => {
   const d = driver.value
-  if (!d?.tariffName) return 'Tarif ulanmagan'
-  const days =
-    d.daysLeft == null
-      ? ''
-      : d.daysLeft < 0
-        ? '(muddati o\'tgan)'
-        : `(${d.daysLeft} kun)`
-  return `${d.tariffName}${d.expireAt ? ` · ${d.expireAt}` : ''} ${days}`.trim()
+  const t = d?.tariff
+  const expireAt = d?.tariffExpireAt || null
+  const startedAt = d?.startedAt || null
+  const active = isTariffActive({
+    active: d?.active,
+    tariff: t || (d?.tariffName ? { name: d.tariffName } : null),
+    tariffExpireAt: expireAt,
+  })
+  return {
+    name: t?.name || d?.tariffName || 'Tarif ulanmagan',
+    info: t?.info || (d?.tariffName ? 'Joriy tarif' : 'Tarif biriktirilmagan'),
+    price: t?.price ?? 0,
+    expireDays: t?.expireDays ?? Math.max(1, d?.daysLeft ?? 1),
+    startDate: formatDate(startedAt),
+    endDate: d?.expireAt || formatDate(expireAt),
+    startedAt,
+    expireAt,
+    active,
+  }
 })
 
 const goBack = () => {
@@ -243,13 +302,14 @@ const load = async () => {
   loading.value = true
   error.value = ''
   driver.value = null
-  if (!payApiPath.value) {
+  if (!userId.value) {
     error.value = 'Haydovchi ID yo\'q'
     loading.value = false
     return
   }
   try {
-    const res = await useApi(payApiPath.value)
+    // Bitta haydovchi — to'liq maydonlar (tariffExpireAt, startedAt)
+    const res = await useApi(`/drivers/${encodeURIComponent(userId.value)}`)
     if (res?.success) driver.value = res.data
     else error.value = res?.message || 'Haydovchi topilmadi'
   } catch (e: any) {
@@ -344,5 +404,22 @@ const confirmBlock = async () => {
   }
 }
 
+const confirmDelete = async () => {
+  if (!driver.value) return
+  error.value = ''
+  deleting.value = true
+  try {
+    await store.deleteDriver(driver.value.id)
+    deleteOpen.value = false
+    await navigateTo('/admin/drivers')
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'O\'chirib bo\'lmadi'
+  } finally {
+    deleting.value = false
+  }
+}
+
 watch(userId, () => { void load() }, { immediate: true })
+
+usePullToRefresh(load)
 </script>

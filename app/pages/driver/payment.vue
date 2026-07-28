@@ -232,4 +232,9 @@ onMounted(async () => {
     error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
   }
 })
+
+usePullToRefresh(async () => {
+  await authStore.getMe().catch(() => {})
+  await tariffStore.fetchTariffs().catch(() => {})
+})
 </script>

@@ -20,6 +20,7 @@
 import { THEME_CHROME, applyBrowserChrome } from '~/composables/useTheme'
 
 const { theme, initTheme } = useTheme()
+const { script } = useAppScript()
 const { open, iosHint, manualHint, install, remindLater } = usePwaInstall()
 
 const chromeColor = computed(() =>
@@ -29,6 +30,7 @@ const chromeColor = computed(() =>
 useHead({
   htmlAttrs: {
     class: computed(() => (theme.value === 'dark' ? 'dark' : '')),
+    lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
     // `only` — OS dark bo'lsa ham app light da pastki system nav bar ochiq qoladi
     style: computed(() => {
       const scheme = theme.value === 'light' ? 'only light' : 'only dark'

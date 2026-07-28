@@ -133,4 +133,12 @@ onMounted(() => {
     error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
   })
 })
+
+usePullToRefresh(async () => {
+  try {
+    await store.fetchTariffs()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
+  }
+})
 </script>

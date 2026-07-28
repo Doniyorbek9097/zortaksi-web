@@ -1,9 +1,11 @@
 <template>
   <AuthSessionGate>
-    <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <slot />
-      <DriverBottomNavigation />
-    </div>
+    <BasePullToRefresh>
+      <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+        <slot />
+        <DriverBottomNavigation />
+      </div>
+    </BasePullToRefresh>
   </AuthSessionGate>
 </template>
 
@@ -37,5 +39,12 @@ watch(
 <style scoped>
 .driver-shell {
   scrollbar-gutter: stable;
+}
+</style>
+
+<style>
+html,
+body {
+  overscroll-behavior-y: contain;
 }
 </style>

@@ -384,6 +384,8 @@ onMounted(async () => {
   if (sentinel.value) observer.observe(sentinel.value)
 })
 
+usePullToRefresh(() => store.load(true))
+
 watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
 })

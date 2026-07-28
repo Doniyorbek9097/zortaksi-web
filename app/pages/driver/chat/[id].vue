@@ -1,8 +1,13 @@
 <template>
   <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
-  <div
-    class="fixed left-0 right-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+  <BasePullToRefresh
+    fill
+    scroll-selector=".chat-msg-scroll"
+    class="fixed left-0 right-0 z-40"
     :style="shellStyle"
+  >
+  <div
+    class="flex flex-col overflow-hidden h-full bg-slate-50 dark:bg-slate-950"
   >
     <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
@@ -17,7 +22,7 @@
     />
 
     <!-- Xabarlar -->
-    <div ref="scrollEl" class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
+    <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
@@ -161,6 +166,7 @@
       @photo="onPhoto"
     />
   </div>
+  </BasePullToRefresh>
 </template>
 
 <script setup lang="ts">
@@ -504,6 +510,13 @@ watch(chatId, (id) => {
   if (!id) return
   void loadChat(id)
 }, { immediate: true })
+
+usePullToRefresh(async () => {
+  const id = chatId.value
+  if (!id || id === 'open') return
+  await chatStore.fetchMessages(id)
+  scrollToFocus()
+})
 
 onMounted(() => {
   prevBodyOverflow = document.body.style.overflow

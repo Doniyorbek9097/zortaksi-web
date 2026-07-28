@@ -1,11 +1,10 @@
 <template>
+  <BasePullToRefresh>
     <div>
-        <slot />
+      <slot />
     </div>
+  </BasePullToRefresh>
 </template>
 
 <script setup lang="ts">
 </script>
-
-<style scoped>
-</style>
