@@ -26,6 +26,8 @@ export const useChatStore = defineStore('chat', () => {
     const total = ref(0)
     const page = ref(1)
     const totalPages = ref(1)
+    /** Chats ro'yxati scroll — profil/chatdan qaytganda tiklash */
+    const chatsListScrollY = ref(0)
 
     /** Tab badge — barcha chatlardagi o'qilmagan xabarlar yig'indisi */
     const unreadTotal = computed(() =>
@@ -76,6 +78,7 @@ export const useChatStore = defineStore('chat', () => {
         total,
         page,
         totalPages,
+        chatsListScrollY,
         hasMore: list.hasMore,
         unreadTotal,
         connectionStatus,

@@ -3,9 +3,10 @@
     <BasePullToRefresh>
       <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
         <slot />
-        <DriverBottomNavigation />
       </div>
     </BasePullToRefresh>
+    <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin -->
+    <DriverBottomNavigation />
   </AuthSessionGate>
 </template>
 

@@ -70,10 +70,10 @@
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
       <button v-if="locked" type="button" data-no-swipe
-        class="mt-4 w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[13px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+        class="mt-4 w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[13px] font-black whitespace-nowrap overflow-hidden text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
         @pointerdown.stop @click.stop="$emit('unlock')">
-        <font-awesome-icon icon="fa-solid fa-lock" class="text-sm" />
-        Tariffga ulanish →
+        <font-awesome-icon icon="fa-solid fa-lock" class="text-sm shrink-0" />
+        <span class="truncate">Tariffga ulanish →</span>
       </button>
 
       <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
@@ -84,42 +84,42 @@
           :class="callPhone ? 'grid grid-cols-2 gap-2' : 'grid grid-cols-1'"
         >
           <button type="button"
-            class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('message')">
-            <font-awesome-icon icon="fa-solid fa-comments" class="text-sm" />
-            Xabar yozish
+            <font-awesome-icon icon="fa-solid fa-comments" class="text-sm shrink-0" />
+            <span class="truncate">Xabar yozish</span>
           </button>
           <a
             v-if="callPhone"
             :href="normalizeTelHref(callPhone)"
-            class="min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
+            class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('call')"
           >
-            <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
-            Telefon qilish
+            <font-awesome-icon icon="fa-solid fa-phone" class="text-sm shrink-0" />
+            <span class="truncate">Telefon qilish</span>
           </a>
         </div>
 
         <div class="grid grid-cols-1 gap-2">
-          <!-- Band qilish -->
+          <!-- Band qilish — faqat admin uchun -->
           <button
-            v-if="!isBooked"
+            v-if="isAdmin && !isBooked"
             type="button"
-            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('book')"
           >
-            <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm" />
-            Band qilish
+            <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm shrink-0" />
+            <span class="truncate">Band qilish</span>
           </button>
 
           <!-- Boshqalar: band qilgan haydovchi → chat -->
           <button
-            v-else-if="!isBookedByMe"
+            v-if="isBooked && !isBookedByMe"
             type="button"
-            class="w-full min-h-[46px] inline-flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-[12px] font-black text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
             @click.stop="$emit('booked-chat')"
           >
-            <span class="inline-flex items-center gap-2 min-w-0">
+            <span class="inline-flex items-center gap-2 min-w-0 overflow-hidden">
               <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm text-emerald-500 shrink-0" />
               <span class="truncate">
                 <span class="text-emerald-600 dark:text-emerald-400">Band qildi</span>
@@ -133,33 +133,33 @@
           <button
             v-if="canUnbook"
             type="button"
-            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('unbook')"
           >
-            <font-awesome-icon icon="fa-solid fa-rotate" class="text-sm" />
-            Band bekor qilish
+            <font-awesome-icon icon="fa-solid fa-rotate" class="text-sm shrink-0" />
+            <span class="truncate">Band bekor qilish</span>
           </button>
         </div>
         <!-- Admin amallari -->
         <div v-if="isAdmin" class="space-y-2">
           <div class="grid grid-cols-3 gap-2">
             <button type="button"
-              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
+              class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1 px-1.5 py-3 rounded-xl text-[11px] font-black whitespace-nowrap overflow-hidden text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
               @click.stop="$emit('agent')">
-              <font-awesome-icon icon="fa-solid fa-headset" class="text-sm" />
-              Agent
+              <font-awesome-icon icon="fa-solid fa-headset" class="text-sm shrink-0" />
+              <span class="truncate">Agent</span>
             </button>
             <button type="button"
-              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+              class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1 px-1.5 py-3 rounded-xl text-[11px] font-black whitespace-nowrap overflow-hidden text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
               @click.stop="$emit('stop-group')">
-              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
-              Guruh
+              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm shrink-0" />
+              <span class="truncate">Guruh</span>
             </button>
             <button type="button"
-              class="min-h-[46px] inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[11px] font-black text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
+              class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1 px-1.5 py-3 rounded-xl text-[11px] font-black whitespace-nowrap overflow-hidden text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
               @click.stop="$emit('stop-user')">
-              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm" />
-              User
+              <font-awesome-icon icon="fa-solid fa-ban" class="text-sm shrink-0" />
+              <span class="truncate">User</span>
             </button>
           </div>
           <a
@@ -167,11 +167,11 @@
             :href="groupViewUrl"
             target="_blank"
             rel="noopener noreferrer"
-            class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[12px] font-black text-[#2AABEE] bg-[#2AABEE]/10 hover:bg-[#2AABEE]/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-[#2AABEE] bg-[#2AABEE]/10 hover:bg-[#2AABEE]/15 active:scale-[0.98] transition-all"
             @click.stop
           >
-            <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-sm" />
-            Guruhdan ko'rish
+            <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-sm shrink-0" />
+            <span class="truncate">Guruhdan ko'rish</span>
           </a>
         </div>
       </div>

@@ -1,6 +1,7 @@
 /**
  * DOM matnlarini Lotin ↔ Kirill ga o'giradi (client).
  * Vue qayta render qilganda ham MutationObserver orqali yangilanadi.
+ * Teleport dialoglar (body) ham qamrab olinadi.
  */
 import {
   cyrillicToLatin,
@@ -18,7 +19,6 @@ const SKIP_TAGS = new Set([
   'SCRIPT',
   'STYLE',
   'NOSCRIPT',
-  'TEXTAREA',
   'CODE',
   'PRE',
   'KBD',
@@ -29,18 +29,26 @@ const SKIP_TAGS = new Set([
 
 const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'] as const
 
-function shouldSkipEl(el: Element | null): boolean {
+/** Matn node'lari — input/textarea value o'zgarmasin */
+function shouldSkipTextEl(el: Element | null): boolean {
+  if (!el) return true
+  if (SKIP_TAGS.has(el.tagName)) return true
+  if (el.tagName === 'TEXTAREA') return true
+  if (el.closest('[data-no-script], [contenteditable="true"]')) return true
+  return false
+}
+
+/** Attr (placeholder…) — input/textarea ham o'giriladi */
+function shouldSkipAttrEl(el: Element | null): boolean {
   if (!el) return true
   if (SKIP_TAGS.has(el.tagName)) return true
   if (el.closest('[data-no-script], [contenteditable="true"]')) return true
-  if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') return true
   return false
 }
 
 function convertText(raw: string, mode: ScriptType): string {
   const s = String(raw || '')
   if (!s.trim()) return s
-  // URL / email / telefon — o'zgartirmaymiz
   if (/https?:\/\//i.test(s) || /www\./i.test(s) || /@\w+\.\w+/.test(s)) return s
   if (/^\+?\d[\d\s\-()]{5,}$/.test(s.trim())) return s
 
@@ -54,15 +62,17 @@ function convertText(raw: string, mode: ScriptType): string {
 
 function processTextNode(node: TextNodeEx, mode: ScriptType) {
   const parent = node.parentElement
-  if (shouldSkipEl(parent)) return
+  if (shouldSkipTextEl(parent)) return
   const cur = node.nodeValue ?? ''
   if (!cur.trim()) return
 
   if (!node[ORIG]) {
-    // Birinchi ko'rinish — manba lotin deb olamiz (agar krill bo'lsa — lotinga qaytaramiz)
     node[ORIG] = looksCyrillic(cur) ? cyrillicToLatin(cur) : cur
-  } else if (cur !== node[ORIG] && cur !== convertText(node[ORIG], 'cyrillic') && cur !== convertText(node[ORIG], 'latin')) {
-    // Vue yangi matn yozdi
+  } else if (
+    cur !== node[ORIG] &&
+    cur !== convertText(node[ORIG], 'cyrillic') &&
+    cur !== convertText(node[ORIG], 'latin')
+  ) {
     node[ORIG] = looksCyrillic(cur) ? cyrillicToLatin(cur) : cur
   }
 
@@ -71,7 +81,7 @@ function processTextNode(node: TextNodeEx, mode: ScriptType) {
 }
 
 function processAttrs(el: Element, mode: ScriptType) {
-  if (shouldSkipEl(el)) return
+  if (shouldSkipAttrEl(el)) return
   for (const attr of ATTRS) {
     if (!el.hasAttribute(attr)) continue
     const key = `__zt_${attr}`
@@ -95,7 +105,7 @@ export function applyScriptToDom(root: ParentNode, mode: ScriptType) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
     acceptNode(node) {
       const p = (node as Text).parentElement
-      if (shouldSkipEl(p)) return NodeFilter.FILTER_REJECT
+      if (shouldSkipTextEl(p)) return NodeFilter.FILTER_REJECT
       if (!(node.nodeValue || '').trim()) return NodeFilter.FILTER_REJECT
       return NodeFilter.FILTER_ACCEPT
     },
@@ -118,7 +128,8 @@ export function createScriptObserver(getMode: () => ScriptType) {
   let scheduled = false
   const run = () => {
     scheduled = false
-    const root = document.getElementById('__nuxt') || document.body
+    // Teleport dialoglar body ichida — butun body kuzatiladi
+    const root = document.body
     if (root) applyScriptToDom(root, getMode())
   }
   const schedule = () => {
@@ -137,7 +148,7 @@ export function createScriptObserver(getMode: () => ScriptType) {
   })
 
   const start = () => {
-    const root = document.getElementById('__nuxt') || document.body
+    const root = document.body
     if (!root) return
     obs.observe(root, {
       subtree: true,

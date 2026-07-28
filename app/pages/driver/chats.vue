@@ -101,12 +101,6 @@ const isDriverPeerChat = (chat: IChat) => chat.kind === 'support' || chat.kind =
 const showDriverPageFor = (chat: IChat) =>
   isAdminUser(authStore.user) && isDriverPeerChat(chat) && !!chat.peer?.userId
 
-const openDriverPage = (chat: IChat) => {
-  const id = chat.peer?.userId
-  if (!id) return
-  navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
-}
-
 /** Peer ismi — haydovchi/admin ham oddiy foydalanuvchi kabi */
 const peerName = (chat: IChat) => {
   const p = chat.peer
@@ -186,10 +180,24 @@ const confirmClear = async () => {
 
 const PAGE_LIMIT = 20
 
+const saveScroll = () => {
+  if (!import.meta.client) return
+  chatStore.chatsListScrollY = window.scrollY || document.documentElement.scrollTop || 0
+}
+
+const restoreScroll = () => {
+  if (!import.meta.client) return
+  const y = chatStore.chatsListScrollY
+  if (!y) return
+  window.scrollTo(0, y)
+}
+
 const refresh = async () => {
   refreshing.value = true
   try {
     await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
+    chatStore.chatsListScrollY = 0
+    if (import.meta.client) window.scrollTo({ top: 0 })
   } finally {
     refreshing.value = false
   }
@@ -198,6 +206,7 @@ const refresh = async () => {
 usePullToRefresh(refresh)
 
 const openChat = (chat: IChat) => {
+  saveScroll()
   navigateTo({
     path: `/driver/chat/${chat._id}`,
     query: {
@@ -208,13 +217,30 @@ const openChat = (chat: IChat) => {
   })
 }
 
+const openDriverPage = (chat: IChat) => {
+  const id = chat.peer?.userId
+  if (!id) return
+  saveScroll()
+  navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
+}
+
 const loadMore = () => chatStore.loadMoreChats({ limit: PAGE_LIMIT })
 
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(() => {
-  void chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
+  // Ro'yxat allaqachon yuklangan (pagination) — qayta page=1 qilmaymiz
+  const boot = async () => {
+    if (!chatStore.chats.length) {
+      await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
+    }
+    await nextTick()
+    restoreScroll()
+    // Avatar/layout joylashgach yana bir bor
+    setTimeout(restoreScroll, 80)
+  }
+  void boot()
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -230,6 +256,7 @@ watch(sentinel, (el) => {
 })
 
 onBeforeUnmount(() => {
+  saveScroll()
   if (observer) observer.disconnect()
 })
 </script>
