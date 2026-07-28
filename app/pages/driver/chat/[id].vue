@@ -12,10 +12,8 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!!callPhone"
-      :show-driver-page="showDriverPageBtn"
       @back="goChats"
       @call="onCall"
-      @driver-page="goDriverPage"
     />
 
     <!-- Xabarlar -->
@@ -167,8 +165,6 @@
 
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chat.store'
-import { useAuthStore } from '~/stores/auth.store'
-import { isAdminUser } from '~/utils/userRole'
 import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
 
 definePageMeta({
@@ -177,7 +173,6 @@ definePageMeta({
 
 const route = useRoute()
 const chatStore = useChatStore()
-const authStore = useAuthStore()
 
 const chatId = computed(() => route.params.id as string)
 /** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
@@ -212,14 +207,6 @@ const name = computed(() => {
 
 const peerAvatar = computed(() => chatStore.currentChat?.peer?.avatar)
 const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
-
-/** Admin + support/direct — peer haydovchi sahifasi */
-const showDriverPageBtn = computed(
-  () =>
-    isAdminUser(authStore.user) &&
-    (isSupport.value || isDirect.value) &&
-    !!peerUserId.value
-)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
@@ -368,12 +355,6 @@ const onPhoto = async (file: File) => {
 
 const goChats = () => navigateTo('/driver/chats')
 const goOrders = () => navigateTo('/driver/orders')
-
-const goDriverPage = () => {
-  const id = peerUserId.value
-  if (!id) return
-  navigateTo(`/admin/drivers/${encodeURIComponent(id)}`)
-}
 
 const callPhone = computed(() =>
   resolveChatPhone({
