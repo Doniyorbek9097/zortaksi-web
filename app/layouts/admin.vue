@@ -32,7 +32,7 @@ watch(
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
   if (!isAdminUser(authStore.user)) return
-  if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 50 })
+  if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 20 })
 }
 
 watch(

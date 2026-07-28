@@ -129,6 +129,22 @@ export function createListActions(
         }
     }
 
+    /** Barcha chatlarni o'qilgan qilish */
+    const markAllRead = async () => {
+        try {
+            const res = await useApi('/chats/read-all', { method: 'POST' })
+            if (res.success) {
+                chats.value = chats.value.map((c) =>
+                    c.unreadCount ? { ...c, unreadCount: 0 } : c,
+                )
+            }
+            return res
+        } catch (error) {
+            console.error('markAllRead error:', error)
+            throw error
+        }
+    }
+
     /** Chatlarni o'chirish */
     const deleteChats = async (ids: string[]) => {
         const res = await useApi('/chats', { method: 'DELETE', body: { ids } })
@@ -149,6 +165,7 @@ export function createListActions(
         startChatWithUser,
         startChatWithBookedDriver,
         markRead,
+        markAllRead,
         deleteChats,
     }
 }

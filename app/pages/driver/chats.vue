@@ -2,13 +2,16 @@
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
     <!-- Header -->
     <ChatsHeader
-      :count="chatStore.total"
+      :count="chatStore.chats.length"
       :selection-mode="selectionMode"
       :selected-count="selectedIds.length"
       :refreshing="refreshing"
+      :unread-total="chatStore.unreadTotal"
+      :marking-read="markingRead"
       @enter-select="enterSelect"
       @cancel-select="cancelSelect"
       @refresh="refresh"
+      @mark-all-read="markAllRead"
     />
 
     <!-- Selection bar -->
@@ -32,7 +35,7 @@
       title="Hozircha yozishmalar yo'q"
     />
 
-    <!-- Chat list -->
+    <!-- Chat list — faqat 20 ta eng yangi -->
     <div v-else class="space-y-2.5">
       <ChatsChatItem
         v-for="chat in chatStore.chats"
@@ -52,14 +55,6 @@
         @delete="requestSwipeDelete(chat)"
         @driver-page="openDriverPage(chat)"
       />
-
-      <div ref="sentinel" class="h-8 flex items-center justify-center">
-        <font-awesome-icon
-          v-if="chatStore.isLoadingMore"
-          icon="fa-solid fa-spinner"
-          class="animate-spin text-slate-400"
-        />
-      </div>
     </div>
 
     <!-- Universal o'chirish dialogi -->
@@ -90,6 +85,8 @@ import { isAdminUser } from '~/utils/userRole'
 definePageMeta({
   layout: 'driver',
 })
+
+const PAGE_LIMIT = 20
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
@@ -126,6 +123,7 @@ const formatDate = (value: string | Date) => {
 const selectionMode = ref(false)
 const selectedIds = ref<string[]>([])
 const refreshing = ref(false)
+const markingRead = ref(false)
 const deleting = ref(false)
 const showDeleteDialog = ref(false)
 const swipeDeleteId = ref<string | null>(null)
@@ -178,8 +176,6 @@ const confirmClear = async () => {
   }
 }
 
-const PAGE_LIMIT = 20
-
 const saveScroll = () => {
   if (!import.meta.client) return
   chatStore.chatsListScrollY = window.scrollY || document.documentElement.scrollTop || 0
@@ -200,6 +196,16 @@ const refresh = async () => {
     if (import.meta.client) window.scrollTo({ top: 0 })
   } finally {
     refreshing.value = false
+  }
+}
+
+const markAllRead = async () => {
+  if (markingRead.value || chatStore.unreadTotal <= 0) return
+  markingRead.value = true
+  try {
+    await chatStore.markAllRead()
+  } finally {
+    markingRead.value = false
   }
 }
 
@@ -224,39 +230,18 @@ const openDriverPage = (chat: IChat) => {
   navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
 }
 
-const loadMore = () => chatStore.loadMoreChats({ limit: PAGE_LIMIT })
-
-const sentinel = ref<HTMLElement | null>(null)
-let observer: IntersectionObserver | null = null
-
 onMounted(() => {
-  // Ro'yxat allaqachon yuklangan (pagination) — qayta page=1 qilmaymiz
   const boot = async () => {
-    if (!chatStore.chats.length) {
-      await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
-    }
+    // Har safar eng yangi 20 ta (scroll pagination yo'q)
+    await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
     await nextTick()
     restoreScroll()
-    // Avatar/layout joylashgach yana bir bor
     setTimeout(restoreScroll, 80)
   }
   void boot()
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting) loadMore()
-    },
-    { rootMargin: '200px' },
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
-})
-
-watch(sentinel, (el) => {
-  if (observer && el) observer.observe(el)
 })
 
 onBeforeUnmount(() => {
   saveScroll()
-  if (observer) observer.disconnect()
 })
 </script>

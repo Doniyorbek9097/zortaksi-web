@@ -101,6 +101,7 @@ export const useChatStore = defineStore('chat', () => {
         startChatWithUser: list.startChatWithUser,
         startChatWithBookedDriver: list.startChatWithBookedDriver,
         markRead: list.markRead,
+        markAllRead: list.markAllRead,
         deleteChats: list.deleteChats,
         onNewMessage: socket.onNewMessage,
         onMessageUpdate: socket.onMessageUpdate,
