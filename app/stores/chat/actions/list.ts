@@ -11,18 +11,44 @@ export function createListActions(
         currentChat,
         messages,
         isLoading,
+        isLoadingMore,
         isLoadingMessages,
         total,
+        page,
+        totalPages,
     } = refs
 
+    const hasMore = computed(() => page.value < totalPages.value)
+
     /** Chatlar ro'yxatini yuklash */
-    const fetchChats = async (params: FetchChatsParams = {}) => {
+    const fetchChats = async (
+        params: FetchChatsParams = {},
+        opts: { append?: boolean } = {},
+    ) => {
         try {
-            isLoading.value = true
-            const res = await useApi('/chats', { method: 'GET', params })
+            if (opts.append) isLoadingMore.value = true
+            else isLoading.value = true
+
+            const nextPage = params.page ?? 1
+            const res = await useApi('/chats', {
+                method: 'GET',
+                params: {
+                    page: nextPage,
+                    limit: params.limit ?? 20,
+                    search: params.search || undefined,
+                },
+            })
             if (res.success) {
-                chats.value = res.data.chats
+                const list: IChat[] = res.data.chats ?? []
+                if (opts.append) {
+                    const seen = new Set(chats.value.map((c) => c._id))
+                    chats.value = [...chats.value, ...list.filter((c) => !seen.has(c._id))]
+                } else {
+                    chats.value = list
+                }
                 total.value = res.data.pagination?.total ?? chats.value.length
+                page.value = res.data.pagination?.page ?? nextPage
+                totalPages.value = res.data.pagination?.totalPages ?? 1
             }
             return res
         } catch (error) {
@@ -30,7 +56,14 @@ export function createListActions(
             throw error
         } finally {
             isLoading.value = false
+            isLoadingMore.value = false
         }
+    }
+
+    /** Keyingi sahifa (infinite scroll) */
+    const loadMoreChats = async (params: Omit<FetchChatsParams, 'page'> = {}) => {
+        if (isLoading.value || isLoadingMore.value || !hasMore.value) return
+        return fetchChats({ ...params, page: page.value + 1 }, { append: true })
     }
 
     /** Bitta chat xabarlarini yuklash */
@@ -101,12 +134,15 @@ export function createListActions(
         const res = await useApi('/chats', { method: 'DELETE', body: { ids } })
         if (res.success) {
             chats.value = chats.value.filter((c) => !ids.includes(c._id))
+            total.value = Math.max(0, total.value - ids.length)
         }
         return res
     }
 
     return {
+        hasMore,
         fetchChats,
+        loadMoreChats,
         fetchMessages,
         startChatFromOrder,
         startChatWithOrderOwner,

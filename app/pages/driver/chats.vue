@@ -52,6 +52,14 @@
         @delete="requestSwipeDelete(chat)"
         @driver-page="openDriverPage(chat)"
       />
+
+      <div ref="sentinel" class="h-8 flex items-center justify-center">
+        <font-awesome-icon
+          v-if="chatStore.isLoadingMore"
+          icon="fa-solid fa-spinner"
+          class="animate-spin text-slate-400"
+        />
+      </div>
     </div>
 
     <!-- Universal o'chirish dialogi -->
@@ -179,7 +187,7 @@ const confirmClear = async () => {
 const refresh = async () => {
   refreshing.value = true
   try {
-    await chatStore.fetchChats()
+    await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
   } finally {
     refreshing.value = false
   }
@@ -196,7 +204,29 @@ const openChat = (chat: IChat) => {
   })
 }
 
+const PAGE_LIMIT = 20
+const loadMore = () => chatStore.loadMoreChats({ limit: PAGE_LIMIT })
+
+const sentinel = ref<HTMLElement | null>(null)
+let observer: IntersectionObserver | null = null
+
 onMounted(() => {
-  chatStore.fetchChats()
+  void chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) loadMore()
+    },
+    { rootMargin: '200px' },
+  )
+  if (sentinel.value) observer.observe(sentinel.value)
+})
+
+watch(sentinel, (el) => {
+  if (observer && el) observer.observe(el)
+})
+
+onBeforeUnmount(() => {
+  if (observer) observer.disconnect()
 })
 </script>

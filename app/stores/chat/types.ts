@@ -31,9 +31,12 @@ export interface ChatStoreRefs {
     currentChat: Ref<IChat | null>
     messages: Ref<IChatMessage[]>
     isLoading: Ref<boolean>
+    isLoadingMore: Ref<boolean>
     isLoadingMessages: Ref<boolean>
     isSending: Ref<boolean>
     total: Ref<number>
+    page: Ref<number>
+    totalPages: Ref<number>
     connectionStatus: Ref<ConnStatus>
     connectionReason: Ref<string>
     peerPresence: Ref<PeerPresence | null>

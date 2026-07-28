@@ -19,10 +19,13 @@ export const useChatStore = defineStore('chat', () => {
     const messages = ref<IChatMessage[]>([])
 
     const isLoading = ref(false)
+    const isLoadingMore = ref(false)
     const isLoadingMessages = ref(false)
     const isSending = ref(false)
 
     const total = ref(0)
+    const page = ref(1)
+    const totalPages = ref(1)
 
     /** Tab badge — barcha chatlardagi o'qilmagan xabarlar yig'indisi */
     const unreadTotal = computed(() =>
@@ -39,9 +42,12 @@ export const useChatStore = defineStore('chat', () => {
         currentChat,
         messages,
         isLoading,
+        isLoadingMore,
         isLoadingMessages,
         isSending,
         total,
+        page,
+        totalPages,
         connectionStatus,
         connectionReason,
         peerPresence,
@@ -64,9 +70,13 @@ export const useChatStore = defineStore('chat', () => {
         currentChat,
         messages,
         isLoading,
+        isLoadingMore,
         isLoadingMessages,
         isSending,
         total,
+        page,
+        totalPages,
+        hasMore: list.hasMore,
         unreadTotal,
         connectionStatus,
         connectionReason,
@@ -77,6 +87,7 @@ export const useChatStore = defineStore('chat', () => {
         fetchPresence: connection.fetchPresence,
         resetConnection: connection.resetConnection,
         fetchChats: list.fetchChats,
+        loadMoreChats: list.loadMoreChats,
         fetchMessages: list.fetchMessages,
         sendMessage: messaging.sendMessage,
         sendVoice: messaging.sendVoice,
