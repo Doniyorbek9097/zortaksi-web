@@ -41,6 +41,19 @@
       </div>
 
       <button
+        v-if="showDriverPage"
+        type="button"
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black shrink-0 active:scale-95 transition-all"
+        :class="support
+          ? 'text-white bg-white/15 hover:bg-white/25'
+          : 'text-violet-600 dark:text-violet-400 bg-violet-500/10'"
+        @click="$emit('driver-page')"
+      >
+        <font-awesome-icon icon="fa-solid fa-car" />
+        Haydovchi
+      </button>
+
+      <button
         v-if="canCall"
         type="button"
         class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black shrink-0 active:scale-95 transition-all"
@@ -65,6 +78,8 @@ interface Props {
   userId?: string
   canCall?: boolean
   support?: boolean
+  /** Admin uchun — haydovchi sahifasiga o'tish */
+  showDriverPage?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -72,7 +87,8 @@ withDefaults(defineProps<Props>(), {
   online: false,
   canCall: false,
   support: false,
+  showDriverPage: false,
 })
 
-defineEmits<{ back: []; call: [] }>()
+defineEmits<{ back: []; call: []; 'driver-page': [] }>()
 </script>

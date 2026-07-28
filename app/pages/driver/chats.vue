@@ -46,9 +46,11 @@
         :unread="chat.unreadCount"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
+        :show-driver-page="showDriverPageFor(chat)"
         @open="openChat(chat)"
         @toggle="toggleOne(chat._id)"
         @delete="requestSwipeDelete(chat)"
+        @driver-page="openDriverPage(chat)"
       />
     </div>
 
@@ -74,15 +76,28 @@
 <script setup lang="ts">
 import type { IChat } from '~/types'
 import { useChatStore } from '~/stores/chat.store'
+import { useAuthStore } from '~/stores/auth.store'
+import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'driver',
 })
 
 const chatStore = useChatStore()
+const authStore = useAuthStore()
 
 // --- Ko'rinish yordamchilari ---
 const isSupport = (chat: IChat) => chat.kind === 'support'
+const isDriverPeerChat = (chat: IChat) => chat.kind === 'support' || chat.kind === 'direct'
+
+const showDriverPageFor = (chat: IChat) =>
+  isAdminUser(authStore.user) && isDriverPeerChat(chat) && !!chat.peer?.userId
+
+const openDriverPage = (chat: IChat) => {
+  const id = chat.peer?.userId
+  if (!id) return
+  navigateTo(`/admin/drivers/${encodeURIComponent(id)}`)
+}
 
 /** Peer ismi — haydovchi/admin ham oddiy foydalanuvchi kabi */
 const peerName = (chat: IChat) => {

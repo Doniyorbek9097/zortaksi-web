@@ -56,7 +56,18 @@
           <p class="text-sm font-black text-slate-900 dark:text-white truncate">
             {{ name }}
           </p>
-          <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500 shrink-0">{{ date }}</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button
+              v-if="showDriverPage"
+              type="button"
+              class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 active:scale-95"
+              @click.stop="$emit('driver-page')"
+            >
+              <font-awesome-icon icon="fa-solid fa-car" />
+              Haydovchi
+            </button>
+            <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">{{ date }}</span>
+          </div>
         </div>
 
         <p v-if="phone" class="flex items-center gap-1.5 text-[12px] font-bold text-emerald-500 truncate">
@@ -100,6 +111,7 @@ interface Props {
   selectionMode?: boolean
   selected?: boolean
   support?: boolean
+  showDriverPage?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -109,9 +121,10 @@ const props = withDefaults(defineProps<Props>(), {
   selectionMode: false,
   selected: false,
   support: false,
+  showDriverPage: false,
 })
 
-const emit = defineEmits<{ open: []; toggle: []; delete: [] }>()
+const emit = defineEmits<{ open: []; toggle: []; delete: []; 'driver-page': [] }>()
 
 const REVEAL = 200
 const translateX = ref(0)
