@@ -59,6 +59,10 @@
               {{ group.username ? `@${group.username}` : "Username yo'q" }}
             </p>
 
+            <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400">
+              {{ membersLabel }}
+            </p>
+
             <p
               v-if="group.connections > 1"
               class="text-[10px] font-semibold text-slate-400"
@@ -86,20 +90,11 @@
       </button>
     </div>
 
-    <!-- Past: avatar+title tagida horizontal tugmalar -->
-    <div class="flex items-stretch gap-2 px-3 pb-3">
-      <div
-        class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0"
-      >
-        <font-awesome-icon icon="fa-solid fa-users" class="text-[11px] text-slate-400" />
-        <template v-if="group.membersCount">
-          {{ formatMembers(group.membersCount) }} a'zo
-        </template>
-        <template v-else>
-          — a'zo
-        </template>
-      </div>
-
+    <!-- Past: tugmalar -->
+    <div
+      v-if="showJoin || showLeave || viewUrl"
+      class="flex items-stretch gap-2 px-3 pb-3"
+    >
       <button
         v-if="showJoin"
         type="button"
@@ -182,6 +177,11 @@ const formatMembers = (n?: number) => {
   if (v >= 1_000) return `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K`
   return v.toLocaleString('ru-RU')
 }
+
+const membersLabel = computed(() => {
+  if (!props.group.membersCount) return "A'zolar soni noma'lum"
+  return `${formatMembers(props.group.membersCount)} a'zo`
+})
 
 const viewUrl = computed(() => {
   const join = String(props.group.joinUrl || '').trim()

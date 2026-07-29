@@ -196,24 +196,34 @@
       @confirm="onSend"
     />
 
-    <BaseConfirmDialog
+    <PostMembershipDialog
+      v-model="showJoinDialog"
+      title="Guruhga qo'shilish"
+      :message="joinMessage"
+      confirm-text="Qo'shilish"
+      variant="success"
+      :loading="!!store.joiningId"
+      :group="membershipTarget"
+      @confirm="onConfirmJoin"
+      @cancel="membershipTarget = null"
+    />
+
+    <PostMembershipDialog
       v-model="showLeaveDialog"
       title="Guruhni tark etish"
-      :description="leaveTarget ? `«${leaveTarget.title}»` : undefined"
       :message="leaveMessage"
       confirm-text="Tark etish"
-      cancel-text="Bekor"
       variant="warning"
       :loading="!!store.joiningId"
-      :close-on-confirm="false"
+      :group="membershipTarget"
       @confirm="onConfirmLeave"
-      @cancel="leaveTarget = null"
+      @cancel="membershipTarget = null"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { usePostStore } from '~/stores/post.store'
+import { usePostStore, type PostGroup } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
@@ -232,19 +242,24 @@ const showFilter = ref(false)
 const draftKeywords = ref('')
 const appliedKeywords = ref('')
 const filterActive = computed(() => !!appliedKeywords.value.trim())
+const showJoinDialog = ref(false)
 const showLeaveDialog = ref(false)
-const leaveTarget = ref<{ id: string; title: string; username?: string; accessHash?: string } | null>(null)
+const membershipTarget = ref<PostGroup | null>(null)
 
-const leaveMessage = computed(() => {
-  const title = leaveTarget.value?.title || 'Guruh'
-  return (
-    `«${title}» guruhidan chiqasiz.\n\n` +
-    `• Shu guruhdan buyurtma olish foizi kamayishi mumkin (Boshqalar bo‘limiga tushadi).\n` +
-    `• Xabarlaringiz boshqa haydovchilar / userbot nomidan ketishi mumkin.\n` +
-    `• To‘liq qulaylik uchun guruhda a'zo bo‘lib qolish tavsiya etiladi.\n\n` +
-    `Baribir tark etasizmi?`
-  )
-})
+const joinMessage = computed(() => (
+  `Guruhga a'zo bo'lasiz.\n\n` +
+  `• Shu guruhdan keladigan buyurtmalarni 100% olasiz (Meniki bo'limida).\n` +
+  `• E'lon yuborganingizda xabar o'zingizning Telegram nomingizdan ketadi.\n\n` +
+  `Davom etasizmi?`
+))
+
+const leaveMessage = computed(() => (
+  `Guruhdan chiqasiz.\n\n` +
+  `• Shu guruhdan buyurtma olish foizi kamayishi mumkin (Boshqalar bo'limiga tushadi).\n` +
+  `• Xabarlaringiz boshqa haydovchilar / userbot nomidan ketishi mumkin.\n` +
+  `• To'liq qulaylik uchun guruhda a'zo bo'lib qolish tavsiya etiladi.\n\n` +
+  `Baribir tark etasizmi?`
+))
 
 const onSaveFilter = async (value: string) => {
   draftKeywords.value = value
@@ -309,28 +324,37 @@ const onToggleVisibility = async (g: any) => {
   }
 }
 
-const onJoinGroup = async (g: any) => {
+const onJoinGroup = (g: PostGroup) => {
+  membershipTarget.value = g
+  showJoinDialog.value = true
+}
+
+const onAskLeave = (g: PostGroup) => {
+  membershipTarget.value = g
+  showLeaveDialog.value = true
+}
+
+const onConfirmJoin = async () => {
+  const g = membershipTarget.value
+  if (!g) return
   try {
     await store.joinGroup(g)
+    showJoinDialog.value = false
     success.value = `«${g.title}» Meniki ga qo'shildi`
+    membershipTarget.value = null
   } catch {
     /* store error */
   }
 }
 
-const onAskLeave = (g: any) => {
-  leaveTarget.value = g
-  showLeaveDialog.value = true
-}
-
 const onConfirmLeave = async () => {
-  const g = leaveTarget.value
+  const g = membershipTarget.value
   if (!g) return
   try {
-    await store.leaveGroup(g as any)
+    await store.leaveGroup(g)
     showLeaveDialog.value = false
     success.value = `«${g.title}» guruhidan chiqdingiz`
-    leaveTarget.value = null
+    membershipTarget.value = null
   } catch {
     /* store error */
   }
