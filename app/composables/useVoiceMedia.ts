@@ -11,6 +11,18 @@ import {
   idbMediaStats,
 } from '~/utils/mediaIdb'
 import { agentDebugLog } from '~/utils/agentDebugLog'
+import type { InjectionKey } from 'vue'
+
+/** Interest chat: /orders/.../messages/:id/media */
+export type ChatMediaUrlBuilder = (messageId: string) => string
+export const chatMediaUrlKey: InjectionKey<ChatMediaUrlBuilder> = Symbol('ztChatMediaUrl')
+
+/** provide o'zida inject bo'lmagani uchun (prefetch) — sahifa override */
+let pageMediaUrlBuilder: ChatMediaUrlBuilder | null = null
+
+export function setChatMediaUrlBuilder(builder: ChatMediaUrlBuilder | null) {
+  pageMediaUrlBuilder = builder
+}
 
 const cache = new Map<string, string>()
 const inflight = new Map<string, Promise<string>>()
@@ -33,24 +45,33 @@ function revokeCachedUrl(messageId: string) {
   localOnly.delete(messageId)
 }
 
+function resolveApiBase(): string {
+  const config = useRuntimeConfig()
+  let apiBase = String(config.public.baseUrl || '')
+  // Lokal API media bermaydi (disk yo'q + session Renderda) — productionga majburiy
+  if (/localhost|127\.0\.0\.1/i.test(apiBase)) {
+    apiBase = 'https://api.zortaksi.uz/api/v1'
+  }
+  return apiBase.replace(/\/$/, '')
+}
+
 async function fetchMediaBlobFromNetwork(
   messageId: string,
   kind: 'voice' | 'photo',
+  urlBuilder?: ChatMediaUrlBuilder | null,
 ): Promise<Blob> {
   // Server M4A yoki OGG qaytarishi mumkin — Content-Type ga ishonamiz
   const fallbackMime = kind === 'voice' ? 'audio/ogg' : 'image/jpeg'
-  const config = useRuntimeConfig()
   const token = useCookie('auth_token')
   const signal =
     typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
       ? AbortSignal.timeout(120_000)
       : undefined
-  // Lokal API media bermaydi (disk yo'q + session Renderda) — productionga majburiy
-  let apiBase = String(config.public.baseUrl || '')
-  if (/localhost|127\.0\.0\.1/i.test(apiBase)) {
-    apiBase = 'https://api.zortaksi.uz/api/v1'
-  }
-  const url = `${apiBase}/chats/messages/${messageId}/media`
+  const apiBase = resolveApiBase()
+  const builder = urlBuilder || pageMediaUrlBuilder
+  const url = builder
+    ? builder(messageId)
+    : `${apiBase}/chats/messages/${messageId}/media`
   const res = await fetch(url, {
     headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
     credentials: 'include',
@@ -78,7 +99,7 @@ async function fetchMediaBlobFromNetwork(
       contentLength: res.headers.get('Content-Length'),
       hasToken: !!token.value,
       apiBase,
-      configBase: String(config.public.baseUrl || ''),
+      mediaUrl: url,
       errBody,
       runId: 'post-fix',
     },
@@ -141,6 +162,8 @@ export function useVoiceMedia() {
 }
 
 export function useChatMedia() {
+  const injectedUrlBuilder = inject(chatMediaUrlKey, null)
+
   /** Keshdagi URL (sync) — temp xabarda ham ishlaydi */
   const peekUrl = (messageId: string): string => cache.get(normalizeMessageId(messageId)) || ''
 
@@ -226,14 +249,14 @@ export function useChatMedia() {
         const localUrl = await blobToObjectUrl(id, idbBlob, kind, false)
         if (!opts.forceNetwork) return localUrl
         // forceNetwork: IDB ko'rsatiladi, server fonda yangilanadi
-        void fetchMediaBlobFromNetwork(id, kind)
+        void fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
           .then((blob) => blobToObjectUrl(id, blob, kind, true))
           .catch(() => {})
         return localUrl
       }
 
       // 2) Server → Telegram (voice M4A / audio/mp4)
-      const blob = await fetchMediaBlobFromNetwork(id, kind)
+      const blob = await fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
       return blobToObjectUrl(id, blob, kind, true)
     })()
 
@@ -255,7 +278,7 @@ export function useChatMedia() {
     if (!id || id.startsWith('temp-') || !localOnly.has(id)) return
     void (async () => {
       try {
-        const blob = await fetchMediaBlobFromNetwork(id, kind)
+        const blob = await fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
         if (!localOnly.has(id)) return
         await blobToObjectUrl(id, blob, kind, true)
       } catch {

@@ -119,20 +119,17 @@
             <!-- Ovoz / rasm / joylashuv -->
             <div
               v-if="isMediaMsg(msg)"
-              class="rounded-2xl rounded-tl-md px-2 py-2 border overflow-hidden"
-              :class="isDriverMsg(msg)
-                ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/70 dark:border-sky-800/50'
-                : 'bg-violet-50 dark:bg-violet-950/30 border-violet-200/70 dark:border-violet-800/40'"
+              class="[&_.max-w-\[82\%\]]:!max-w-full"
             >
               <ChatMessageBubble
                 :text="msg.text"
                 :time="formatTime(msg.date)"
                 :date="msg.date"
-                :out="false"
+                :out="isDriverMsg(msg)"
                 :read="msg.status === 'read'"
                 :status="msg.status"
                 :type="mediaTypeOf(msg)"
-                :message-id="String(msg._id)"
+                :message-id="msgId(msg)"
                 :media-path="msg.mediaPath"
                 :duration="msg.duration"
                 :location-lat="msg.locationLat"
@@ -169,6 +166,11 @@
 
 <script setup lang="ts">
 import type { IChatMessage } from '~/types'
+import {
+  chatMediaUrlKey,
+  setChatMediaUrlBuilder,
+  useChatMedia,
+} from '~/composables/useVoiceMedia'
 
 definePageMeta({
   layout: false,
@@ -176,6 +178,8 @@ definePageMeta({
 
 const route = useRoute()
 const router = useRouter()
+const runtimeConfig = useRuntimeConfig()
+const { prefetch } = useChatMedia()
 
 const orderId = computed(() => String(route.query.orderId || ''))
 const driverUserId = computed(() => String(route.query.driverUserId || ''))
@@ -191,8 +195,26 @@ const customerAvatar = ref('')
 const driverId = ref('')
 const customerId = ref('')
 
+/** Interest chat media — maxsus endpoint (boshqa haydovchi chatiga ruxsat) */
+const interestMediaUrl = (messageId: string) => {
+  let apiBase = String(runtimeConfig.public.baseUrl || '')
+  if (/localhost|127\.0\.0\.1/i.test(apiBase)) {
+    apiBase = 'https://api.zortaksi.uz/api/v1'
+  }
+  apiBase = apiBase.replace(/\/$/, '')
+  const oid = encodeURIComponent(orderId.value)
+  const did = encodeURIComponent(driverUserId.value)
+  const mid = encodeURIComponent(messageId)
+  return `${apiBase}/orders/${oid}/interest/${did}/messages/${mid}/media`
+}
+provide(chatMediaUrlKey, interestMediaUrl)
+setChatMediaUrlBuilder(interestMediaUrl)
+onBeforeUnmount(() => setChatMediaUrlBuilder(null))
+
 /** Driver chatida out = haydovchi, in = yo'lovchi */
 const isDriverMsg = (msg: IChatMessage) => msg.direction === 'out'
+
+const msgId = (msg: IChatMessage) => String((msg as any)?._id || (msg as any)?.id || '')
 
 const isMediaMsg = (msg: IChatMessage) => {
   const t = String(msg.type || '')
@@ -207,10 +229,15 @@ const isMediaMsg = (msg: IChatMessage) => {
 
 const mediaTypeOf = (msg: IChatMessage): IChatMessage['type'] => {
   const t = String(msg.type || '')
-  if (t === 'voice' || t === 'photo' || t === 'document' || t === 'location') {
+  if (t === 'voice' || t === 'photo' || t === 'location') {
     return t as IChatMessage['type']
   }
   if (msg.locationLat != null && msg.locationLng != null) return 'location'
+  if (msg.duration || t === 'document') {
+    // audio document → voice player
+    if (msg.duration) return 'voice'
+  }
+  if (t === 'document') return 'photo'
   if (msg.duration) return 'voice'
   return 'photo'
 }
@@ -259,7 +286,10 @@ const load = async () => {
       return
     }
     const data = res.data
-    messages.value = (data.messages || []) as IChatMessage[]
+    messages.value = ((data.messages || []) as IChatMessage[]).map((m) => ({
+      ...m,
+      _id: String((m as any)._id || (m as any).id || ''),
+    }))
     orderText.value = String(data.orderText || data.chat?.orderText || '')
     driverName.value = data.driver?.name || 'Haydovchi'
     customerName.value = data.customer?.name || "Yo'lovchi"
@@ -267,6 +297,15 @@ const load = async () => {
     customerAvatar.value = data.customer?.avatar || data.chat?.peer?.avatar || ''
     driverId.value = data.driver?.userId || driverUserId.value
     customerId.value = data.customer?.userId || data.chat?.peer?.userId || ''
+    // Voice/photo oldindan yuklash (interest media endpoint orqali)
+    prefetch(
+      messages.value.map((m) => ({
+        _id: msgId(m),
+        type: mediaTypeOf(m),
+        mediaPath: m.mediaPath,
+        tgMessageId: (m as any).tgMessageId,
+      })),
+    )
   } catch (e: any) {
     const msg =
       e?.response?.data?.message ||
