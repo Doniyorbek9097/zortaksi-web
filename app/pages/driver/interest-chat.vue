@@ -116,23 +116,30 @@
               </span>
             </div>
 
-            <!-- Media / joylashuv — mavjud bubble -->
-            <ChatMessageBubble
-              v-if="msg.type && msg.type !== 'text'"
-              :text="msg.text"
-              :time="formatTime(msg.date)"
-              :date="msg.date"
-              :out="false"
-              :read="msg.status === 'read'"
-              :status="msg.status"
-              :type="msg.type"
-              :message-id="msg._id"
-              :media-path="msg.mediaPath"
-              :duration="msg.duration"
-              :location-lat="msg.locationLat"
-              :location-lng="msg.locationLng"
-              :location-title="msg.locationTitle"
-            />
+            <!-- Ovoz / rasm / joylashuv -->
+            <div
+              v-if="isMediaMsg(msg)"
+              class="rounded-2xl rounded-tl-md px-2 py-2 border overflow-hidden"
+              :class="isDriverMsg(msg)
+                ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/70 dark:border-sky-800/50'
+                : 'bg-violet-50 dark:bg-violet-950/30 border-violet-200/70 dark:border-violet-800/40'"
+            >
+              <ChatMessageBubble
+                :text="msg.text"
+                :time="formatTime(msg.date)"
+                :date="msg.date"
+                :out="false"
+                :read="msg.status === 'read'"
+                :status="msg.status"
+                :type="mediaTypeOf(msg)"
+                :message-id="String(msg._id)"
+                :media-path="msg.mediaPath"
+                :duration="msg.duration"
+                :location-lat="msg.locationLat"
+                :location-lng="msg.locationLng"
+                :location-title="msg.locationTitle"
+              />
+            </div>
 
             <!-- Oddiy matn -->
             <div
@@ -186,6 +193,27 @@ const customerId = ref('')
 
 /** Driver chatida out = haydovchi, in = yo'lovchi */
 const isDriverMsg = (msg: IChatMessage) => msg.direction === 'out'
+
+const isMediaMsg = (msg: IChatMessage) => {
+  const t = String(msg.type || '')
+  if (t === 'voice' || t === 'photo' || t === 'document' || t === 'location') return true
+  // type yo'q, lekin media path bor
+  const path = String(msg.mediaPath || '')
+  if (path && path !== 'remote' && t !== 'text') return true
+  if (path === 'remote') return true
+  if (msg.locationLat != null && msg.locationLng != null) return true
+  return false
+}
+
+const mediaTypeOf = (msg: IChatMessage): IChatMessage['type'] => {
+  const t = String(msg.type || '')
+  if (t === 'voice' || t === 'photo' || t === 'document' || t === 'location') {
+    return t as IChatMessage['type']
+  }
+  if (msg.locationLat != null && msg.locationLng != null) return 'location'
+  if (msg.duration) return 'voice'
+  return 'photo'
+}
 
 const speakerOf = (msg: IChatMessage) => {
   if (isDriverMsg(msg)) {
