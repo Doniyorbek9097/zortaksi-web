@@ -7,7 +7,6 @@
         <li>Telegram sessiya / kirish tokenlari</li>
         <li>Ilova ichidagi chatlar va xabarlar</li>
         <li>Balans, tarif va to'lovlar tarixi</li>
-        <li>Push-bildirishnoma obunalari</li>
       </ul>
       <p class="legal-p">
         O'chirish <strong>qaytarilmaydi</strong>. Keyin qayta kirish uchun yangidan

@@ -110,8 +110,8 @@ const emit = defineEmits<{
 
 const benefits = [
   'Bir bosishda tez kirish',
-  "Ekran o'chiq bo'lsa ham bildirishnoma",
   "Telegram buyurtmalarini doim qo'l ostida",
+  'Ilovani asosiy ekranga qo\'shish',
 ]
 
 const remindLater = () => {

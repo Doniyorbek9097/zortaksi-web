@@ -25,8 +25,8 @@
           <strong>Xabarlar:</strong> ilova ichidagi chat xabarlari (matn, ovoz, rasm).
         </li>
         <li>
-          <strong>Qurilma ma'lumotlari:</strong> push-bildirishnoma tokenlari, til/mavzu
-          sozlamalari (brauzer yoki ilova xotirasida).
+          <strong>Qurilma ma'lumotlari:</strong> til/mavzu sozlamalari (brauzer yoki
+          ilova xotirasida).
         </li>
         <li>
           <strong>Texnik jurnal:</strong> xatoliklarni tuzatish uchun minimal server

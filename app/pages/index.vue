@@ -242,7 +242,7 @@
   const trust = [
     { title: 'Haydovchilar uchun yaratilgan', desc: 'Platforma aynan taksichilar ehtiyojiga qarab ishlab chiqilgan.' },
     { title: 'Telegram orqali kirish', desc: 'Alohida ilova emas — o\'z Telegram akkauntingiz bilan ishlang.' },
-    { title: 'Real vaqtda xabar', desc: 'Yangi buyurtma tushganda darhol bildirishnoma olasiz.' },
+    { title: 'Real vaqtda xabar', desc: 'Yangi buyurtma tushganda darhol ko\'rasiz.' },
     { title: 'Qo\'llab-quvvatlash', desc: 'Muammo bo\'lsa admin bilan Telegram orqali bog\'lanasiz.' },
   ];
   
