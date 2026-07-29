@@ -633,8 +633,9 @@ watch(
       return
     }
     if (id !== prevId) src.value = ''
-    // Avval IndexedDB/kesh — keyin kerak bo'lsa server
-    await ensureSrc()
+    // remote — diskda yo'q, server/Telegram lazy majburiy
+    const forceRemote = props.mediaPath === 'remote'
+    await ensureSrc({ force: forceRemote })
     if (!src.value) await ensureSrc({ force: true })
   },
   { immediate: true },

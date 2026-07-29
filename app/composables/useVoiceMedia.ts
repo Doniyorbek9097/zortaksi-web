@@ -254,19 +254,22 @@ export function useChatMedia() {
         kind === 'photo' &&
         !!idbBlob &&
         (!idbBlob.type || !idbBlob.type.startsWith('image/'))
-      if (idbBlob?.size && !staleVoice && !stalePhoto) {
-        const localUrl = await blobToObjectUrl(id, idbBlob, kind, false)
-        if (!opts.forceNetwork) return localUrl
-        // forceNetwork: IDB ko'rsatiladi, server fonda yangilanadi
-        void fetchMediaBlobFromNetwork(id, kind, builder)
-          .then((blob) => blobToObjectUrl(id, blob, kind, true))
-          .catch(() => {})
-        return localUrl
+      if (idbBlob?.size && !staleVoice && !stalePhoto && !opts.forceNetwork) {
+        return blobToObjectUrl(id, idbBlob, kind, false)
       }
 
       // 2) Server → Telegram (voice M4A / audio/mp4)
-      const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
-      return blobToObjectUrl(id, blob, kind, true)
+      // forceNetwork / remote: IDB ni aylanib o'tib serverdan kutamiz
+      try {
+        const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
+        return blobToObjectUrl(id, blob, kind, true)
+      } catch (err) {
+        // Server bo'lmasa — eski IDB zaxira
+        if (idbBlob?.size && !staleVoice && !stalePhoto) {
+          return blobToObjectUrl(id, idbBlob, kind, false)
+        }
+        throw err
+      }
     })()
 
     inflight.set(id, job)
