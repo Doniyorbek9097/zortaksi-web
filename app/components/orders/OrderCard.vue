@@ -100,6 +100,25 @@
           </a>
         </div>
 
+        <!-- Guruhga qo'shilish / tark etish -->
+        <button
+          v-if="showGroupMembership"
+          type="button"
+          class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden active:scale-[0.98] transition-all"
+          :class="isMember
+            ? 'text-rose-600 dark:text-rose-400 bg-rose-500/10 hover:bg-rose-500/15'
+            : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/15'"
+          @click.stop="isMember ? $emit('leave-group') : $emit('join-group')"
+        >
+          <font-awesome-icon
+            :icon="isMember ? 'fa-solid fa-user-check' : 'fa-solid fa-user-plus'"
+            class="text-sm shrink-0"
+          />
+          <span class="truncate">
+            {{ isMember ? "Guruhni tark etish" : "Guruhga qo'shilish" }}
+          </span>
+        </button>
+
         <div class="grid grid-cols-1 gap-2">
           <!-- Band qilish — faqat admin uchun -->
           <button
@@ -190,12 +209,15 @@ interface Props {
   active?: boolean
   bookPrice?: number
   currentUserId?: string
+  /** Haydovchi shu guruhda a'zomi */
+  isMember?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   active: false,
   bookPrice: 1000,
   currentUserId: '',
+  isMember: false,
 })
 
 const emit = defineEmits<{
@@ -210,6 +232,8 @@ const emit = defineEmits<{
   'stop-user': []
   delete: []
   unlock: []
+  'join-group': []
+  'leave-group': []
 }>()
 
 const isAdmin = computed(() => props.role === 'admin')
@@ -229,6 +253,10 @@ const canUnbook = computed(() => {
 })
 /** Band bo'lganda boshqa haydovchilarga Xabar/Telefon yopiladi */
 const showContactActions = computed(() => !isBooked.value || isBookedByMe.value || isAdmin.value)
+/** Guruh tugmasi — tariff ochiq bo'lsa */
+const showGroupMembership = computed(
+  () => !locked.value && !!props.order.group?.groupId,
+)
 
 const bookedByName = computed(() => {
   const u = props.order.bookedByUser

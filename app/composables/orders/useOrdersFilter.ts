@@ -20,6 +20,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const draftKeywords = ref('')
   const appliedKeywords = ref('')
   const scope = ref<OrdersScope>('mine')
+  const scopeNewCounts = ref({ mine: 0, others: 0 })
   const filterActive = computed(() => !!appliedKeywords.value.trim())
 
   /** API so'rovlari uchun query (limit + search + scope) */
@@ -32,8 +33,34 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   /** Server filtrlangan ro'yxat — qo'shimcha client kesish yo'q */
   const displayOrders = computed(() => orderStore.orders)
 
+  const refreshScopeCounts = async () => {
+    const search = appliedKeywords.value.trim() || undefined
+    try {
+      const [mineRes, othersRes] = await Promise.all([
+        useApi('/orders', {
+          method: 'GET',
+          params: { status: 'new', page: 1, limit: 1, scope: 'mine', search },
+        }),
+        useApi('/orders', {
+          method: 'GET',
+          params: { status: 'new', page: 1, limit: 1, scope: 'others', search },
+        }),
+      ])
+      scopeNewCounts.value = {
+        mine: mineRes.success ? Number(mineRes.data?.pagination?.total ?? 0) : 0,
+        others: othersRes.success ? Number(othersRes.data?.pagination?.total ?? 0) : 0,
+      }
+    } catch {
+      /* badge ixtiyoriy */
+    }
+  }
+
   /** Birinchi sahifa (ro'yxatni almashtiradi) */
-  const load = () => orderStore.fetchOrders({ page: 1, ...queryParams() })
+  const load = async () => {
+    const res = await orderStore.fetchOrders({ page: 1, ...queryParams() })
+    void refreshScopeCounts()
+    return res
+  }
 
   /** Keyingi sahifa (ro'yxatga qo'shadi) */
   const loadMore = () => orderStore.loadMore(queryParams())
@@ -89,6 +116,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftKeywords,
     appliedKeywords,
     scope,
+    scopeNewCounts,
     filterActive,
     displayOrders,
     queryParams,
@@ -99,5 +127,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     onRemoveRegion,
     setScope,
     hydrateFilter,
+    refreshScopeCounts,
   }
 }

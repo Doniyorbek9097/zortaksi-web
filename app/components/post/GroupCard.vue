@@ -117,7 +117,27 @@
           icon="fa-solid fa-user-plus"
           class="text-[11px]"
         />
-        {{ joining ? 'Ulanmoqda...' : "A'zo bo'lish" }}
+        {{ joining ? 'Ulanmoqda...' : "Guruhga qo'shilish" }}
+      </button>
+
+      <button
+        v-if="showLeave"
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-black border border-rose-400/40 text-rose-600 dark:text-rose-400 bg-rose-500/10 active:scale-[0.98] disabled:opacity-60"
+        :disabled="leaving"
+        @click.stop="emit('leave')"
+      >
+        <font-awesome-icon
+          v-if="leaving"
+          icon="fa-solid fa-spinner"
+          class="animate-spin text-[11px]"
+        />
+        <font-awesome-icon
+          v-else
+          icon="fa-solid fa-user-check"
+          class="text-[11px]"
+        />
+        {{ leaving ? 'Chiqilmoqda...' : 'Tark etish' }}
       </button>
 
       <button
@@ -142,6 +162,8 @@ const props = defineProps<{
   selectable?: boolean
   showJoin?: boolean
   joining?: boolean
+  showLeave?: boolean
+  leaving?: boolean
   showVisibility?: boolean
   showAdminBadge?: boolean
   showVisibleBadge?: boolean
@@ -150,6 +172,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   toggle: []
   join: []
+  leave: []
   'toggle-visibility': []
 }>()
 

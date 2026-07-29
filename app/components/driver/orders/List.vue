@@ -12,6 +12,7 @@
         :role="role"
         :active="active"
         :current-user-id="currentUserId"
+        :is-member="isMember?.(order) ?? false"
         @unlock="$emit('unlock')"
         @book="$emit('book', order)"
         @unbook="$emit('unbook', order)"
@@ -23,6 +24,8 @@
         @stop-group="$emit('stop-group', order)"
         @stop-user="$emit('stop-user', order)"
         @delete="$emit('delete', order)"
+        @join-group="$emit('join-group', order)"
+        @leave-group="$emit('leave-group', order)"
       />
     </div>
 
@@ -56,6 +59,7 @@ defineProps<{
   currentUserId?: string
   loadingMore: boolean
   hasMore: boolean
+  isMember?: (order: IOrder) => boolean
 }>()
 
 defineEmits<{
@@ -70,6 +74,8 @@ defineEmits<{
   'stop-group': [order: IOrder]
   'stop-user': [order: IOrder]
   delete: [order: IOrder]
+  'join-group': [order: IOrder]
+  'leave-group': [order: IOrder]
 }>()
 
 /** Parent (useOrdersListSync) observerlari uchun — DOM ni v-model ga uzatamiz */

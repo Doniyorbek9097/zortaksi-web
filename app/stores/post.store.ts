@@ -265,6 +265,41 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  /** Meniki: guruhdan chiqish */
+  const leaveGroup = async (g: PostGroup) => {
+    if (!g?.id || joiningId.value) return null
+    try {
+      joiningId.value = g.id
+      error.value = ''
+      const res = await useApi('/groups/membership', {
+        method: 'POST',
+        body: {
+          action: 'leave',
+          groupId: g.id,
+          title: g.title,
+          username: g.username,
+          accessHash: g.accessHash,
+        },
+        timeout: 60_000,
+      })
+      if (res.success) {
+        const next = new Set(selected.value)
+        next.delete(g.id)
+        selected.value = next
+        mineGroups.value = mineGroups.value.filter((x) => x.id !== g.id)
+        mineTotal.value = Math.max(0, mineTotal.value - 1)
+        // Reklama ro'yxatini yangilash (endi a'zo emas)
+        void fetchAds({ page: 1, force: true, append: false }).catch(() => {})
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || "Guruhdan chiqish amalga oshmadi"
+      throw e
+    } finally {
+      joiningId.value = null
+    }
+  }
+
   /** Admin Meniki: admin guruhni haydovchilarga ko'rsatish / yashirish */
   const setVisibility = async (g: PostGroup, visible: boolean) => {
     if (!isAdmin.value) return
@@ -360,6 +395,7 @@ export const usePostStore = defineStore('post', () => {
     clearSelection,
     setVisibility,
     joinGroup,
+    leaveGroup,
     broadcast,
   }
 })

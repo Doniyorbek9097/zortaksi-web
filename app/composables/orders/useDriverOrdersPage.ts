@@ -6,6 +6,7 @@ import { useOrdersListSync } from './useOrdersListSync'
 import { useOrdersBooking } from './useOrdersBooking'
 import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
+import { useOrdersMembership } from './useOrdersMembership'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
@@ -47,6 +48,15 @@ export function useDriverOrdersPage() {
     beforeNavigate: saveScroll,
   })
 
+  const membership = useOrdersMembership({
+    orderStore,
+    showError: moderation.showError,
+    onMembershipChanged: () => {
+      void filter.load()
+      void filter.refreshScopeCounts()
+    },
+  })
+
   const onUnlock = () => navigateTo('/driver/payment')
 
   usePullToRefresh(() => filter.load())
@@ -63,6 +73,7 @@ export function useDriverOrdersPage() {
     appliedKeywords: filter.appliedKeywords,
     filterActive: filter.filterActive,
     scope: filter.scope,
+    scopeNewCounts: filter.scopeNewCounts,
     setScope: filter.setScope,
     displayOrders: filter.displayOrders,
     onSaveFilter: filter.onSaveFilter,
@@ -77,6 +88,18 @@ export function useDriverOrdersPage() {
     ...chat,
     // Moderation
     ...moderation,
+    // Membership
+    showJoinDialog: membership.showJoinDialog,
+    showLeaveDialog: membership.showLeaveDialog,
+    membershipLoading: membership.membershipLoading,
+    joinMessage: membership.joinMessage,
+    leaveMessage: membership.leaveMessage,
+    groupTitle: membership.groupTitle,
+    isMemberOfOrder: membership.isMemberOfOrder,
+    onJoinGroup: membership.onJoinGroup,
+    onLeaveGroup: membership.onLeaveGroup,
+    confirmJoin: membership.confirmJoin,
+    confirmLeave: membership.confirmLeave,
     onUnlock,
   }
 }

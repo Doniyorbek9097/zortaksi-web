@@ -84,6 +84,36 @@
       @confirm="showActionError = false"
     />
 
+    <!-- Guruhga qo'shilish -->
+    <BaseConfirmDialog
+      v-model="showJoinDialog"
+      title="Guruhga qo'shilish"
+      :description="`«${groupTitle}»`"
+      :message="joinMessage"
+      confirm-text="Qo'shilish"
+      cancel-text="Bekor"
+      variant="success"
+      :loading="membershipLoading"
+      :close-on-confirm="false"
+      @confirm="$emit('confirm-join')"
+      @cancel="$emit('cancel-membership')"
+    />
+
+    <!-- Guruhni tark etish -->
+    <BaseConfirmDialog
+      v-model="showLeaveDialog"
+      title="Guruhni tark etish"
+      :description="`«${groupTitle}»`"
+      :message="leaveMessage"
+      confirm-text="Tark etish"
+      cancel-text="Bekor"
+      variant="warning"
+      :loading="membershipLoading"
+      :close-on-confirm="false"
+      @confirm="$emit('confirm-leave')"
+      @cancel="$emit('cancel-membership')"
+    />
+
     <!-- Qiziqqanlar ro'yxati -->
     <OrdersInterestListDialog
       ref="interestDialogEl"
@@ -119,6 +149,10 @@ defineProps<{
   interestCount: number
   interestLoading: boolean
   currentUserId?: string
+  groupTitle?: string
+  joinMessage?: string
+  leaveMessage?: string
+  membershipLoading?: boolean
 }>()
 
 defineEmits<{
@@ -132,6 +166,9 @@ defineEmits<{
   'confirm-block-user': []
   'cancel-block-user': []
   'interest-select': [user: IInterestedUser]
+  'confirm-join': []
+  'confirm-leave': []
+  'cancel-membership': []
 }>()
 
 const showBookDialog = defineModel<boolean>('showBookDialog', { required: true })
@@ -141,6 +178,8 @@ const showBlockGroupDialog = defineModel<boolean>('showBlockGroupDialog', { requ
 const showBlockUserDialog = defineModel<boolean>('showBlockUserDialog', { required: true })
 const showActionError = defineModel<boolean>('showActionError', { required: true })
 const showInterestDialog = defineModel<boolean>('showInterestDialog', { required: true })
+const showJoinDialog = defineModel<boolean>('showJoinDialog', { required: true })
+const showLeaveDialog = defineModel<boolean>('showLeaveDialog', { required: true })
 
 /** Qiziqish dialogi — parent composable close/resetOpening chaqiradi */
 const interestDialog = defineModel<{

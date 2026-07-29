@@ -46,7 +46,7 @@
       @cancel="onCancelFilter"
     />
 
-    <!-- Tabs: Meniki / Reklama -->
+    <!-- Tabs: Meniki / Boshqalar -->
     <div class="flex gap-2">
       <button
         type="button"
@@ -67,22 +67,22 @@
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
         @click="store.setTab('ads')"
       >
-        <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-[10px]" />
-        Reklama {{ store.adsTotal }}
+        <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
+        Boshqalar {{ store.adsTotal }}
       </button>
     </div>
 
     <p
-      v-if="store.tab === 'ads' && !store.isAdmin"
+      v-if="store.tab === 'ads'"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Faqat a'zo bo'lmagan guruhlar. «A'zo bo'lish» — keyin Meniki dan e'lon yuboring.
+      A'zo bo'lmagan guruhlar. «Guruhga qo'shilish» — keyin Meniki dan e'lon yuboring.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Reklama tabida ko'rinadi.
+      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Boshqalar tabida ko'rinadi.
     </p>
 
     <!-- Count + select (faqat Meniki) -->
@@ -120,9 +120,7 @@
     <BaseEmptyState
       v-else-if="!filtered.length"
       icon="fa-solid fa-bullhorn"
-      :title="store.tab === 'mine'
-        ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring'
-        : (store.isAdmin ? 'Guruhlar topilmadi' : 'A\'zo bo\'lish uchun guruh qolmadi')"
+      :title="emptyTitle"
       tone="slate"
     />
 
@@ -135,11 +133,14 @@
         :selected="store.selected.has(g.id)"
         :show-admin-badge="store.tab === 'mine'"
         :show-visible-badge="store.tab === 'mine' && store.isAdmin"
-        :show-join="store.tab === 'ads' && !store.isAdmin"
+        :show-join="store.tab === 'ads'"
         :joining="store.joiningId === g.id"
+        :show-leave="store.tab === 'mine'"
+        :leaving="store.joiningId === g.id"
         :show-visibility="store.tab === 'mine' && store.isAdmin && g.isAdmin"
         @toggle="store.toggle(g.id)"
         @join="onJoinGroup(g)"
+        @leave="onAskLeave(g)"
         @toggle-visibility="onToggleVisibility(g)"
       />
 
@@ -194,6 +195,20 @@
       :loading="store.isSending"
       @confirm="onSend"
     />
+
+    <BaseConfirmDialog
+      v-model="showLeaveDialog"
+      title="Guruhni tark etish"
+      :description="leaveTarget ? `«${leaveTarget.title}»` : undefined"
+      :message="leaveMessage"
+      confirm-text="Tark etish"
+      cancel-text="Bekor"
+      variant="warning"
+      :loading="!!store.joiningId"
+      :close-on-confirm="false"
+      @confirm="onConfirmLeave"
+      @cancel="leaveTarget = null"
+    />
   </div>
 </template>
 
@@ -217,6 +232,19 @@ const showFilter = ref(false)
 const draftKeywords = ref('')
 const appliedKeywords = ref('')
 const filterActive = computed(() => !!appliedKeywords.value.trim())
+const showLeaveDialog = ref(false)
+const leaveTarget = ref<{ id: string; title: string; username?: string; accessHash?: string } | null>(null)
+
+const leaveMessage = computed(() => {
+  const title = leaveTarget.value?.title || 'Guruh'
+  return (
+    `«${title}» guruhidan chiqasiz.\n\n` +
+    `• Shu guruhdan buyurtma olish foizi kamayishi mumkin (Boshqalar bo‘limiga tushadi).\n` +
+    `• Xabarlaringiz boshqa haydovchilar / userbot nomidan ketishi mumkin.\n` +
+    `• To‘liq qulaylik uchun guruhda a'zo bo‘lib qolish tavsiya etiladi.\n\n` +
+    `Baribir tark etasizmi?`
+  )
+})
 
 const onSaveFilter = async (value: string) => {
   draftKeywords.value = value
@@ -239,6 +267,14 @@ const onRemoveRegion = (chip: string) => {
 }
 
 const filtered = computed(() => store.groups)
+
+const emptyTitle = computed(() => {
+  if (store.tab === 'mine') {
+    return "Guruhlar topilmadi — Telegram sessiyangizni tekshiring"
+  }
+  if (store.isAdmin) return 'Guruhlar topilmadi'
+  return "Qo'shilish uchun guruh qolmadi"
+})
 
 const selectedCount = computed(() => store.selected.size)
 
@@ -277,6 +313,24 @@ const onJoinGroup = async (g: any) => {
   try {
     await store.joinGroup(g)
     success.value = `«${g.title}» Meniki ga qo'shildi`
+  } catch {
+    /* store error */
+  }
+}
+
+const onAskLeave = (g: any) => {
+  leaveTarget.value = g
+  showLeaveDialog.value = true
+}
+
+const onConfirmLeave = async () => {
+  const g = leaveTarget.value
+  if (!g) return
+  try {
+    await store.leaveGroup(g as any)
+    showLeaveDialog.value = false
+    success.value = `«${g.title}» guruhidan chiqdingiz`
+    leaveTarget.value = null
   } catch {
     /* store error */
   }

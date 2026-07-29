@@ -30,7 +30,10 @@
             </div>
 
             <!-- Message -->
-            <p v-if="message" class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p
+              v-if="message"
+              class="mt-4 text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line"
+            >
               {{ message }}
             </p>
 

@@ -25,6 +25,15 @@
       >
         <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
         Meniki
+        <span
+          v-if="scopeNewCounts.mine > 0"
+          class="ml-0.5 min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-black"
+          :class="scope === 'mine'
+            ? 'bg-sky-500 text-white'
+            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+        >
+          {{ scopeNewCounts.mine > 99 ? '99+' : scopeNewCounts.mine }}
+        </span>
       </button>
       <button
         type="button"
@@ -36,6 +45,15 @@
       >
         <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
         Boshqalar
+        <span
+          v-if="scopeNewCounts.others > 0"
+          class="ml-0.5 min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-black"
+          :class="scope === 'others'
+            ? 'bg-amber-500 text-white'
+            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+        >
+          {{ scopeNewCounts.others > 99 ? '99+' : scopeNewCounts.others }}
+        </span>
       </button>
     </div>
 
@@ -76,6 +94,7 @@
       :current-user-id="authStore.user?.userId"
       :loading-more="orderStore.isLoadingMore"
       :has-more="orderStore.hasMore"
+      :is-member="isMemberOfOrder"
       @unlock="onUnlock"
       @book="onBook"
       @unbook="onUnbook"
@@ -87,6 +106,8 @@
       @stop-group="onStopGroup"
       @stop-user="onStopUser"
       @delete="onDelete"
+      @join-group="onJoinGroup"
+      @leave-group="onLeaveGroup"
     />
 
     <DriverOrdersDialogs
@@ -98,6 +119,8 @@
       v-model:show-action-error="showActionError"
       v-model:show-interest-dialog="showInterestDialog"
       v-model:interest-dialog="interestDialog"
+      v-model:show-join-dialog="showJoinDialog"
+      v-model:show-leave-dialog="showLeaveDialog"
       :is-admin="isAdmin"
       :book-confirm-message="bookConfirmMessage"
       :booking="booking"
@@ -116,6 +139,10 @@
       :interest-count="interestCount"
       :interest-loading="interestLoading"
       :current-user-id="authStore.user?.userId"
+      :group-title="groupTitle"
+      :join-message="joinMessage"
+      :leave-message="leaveMessage"
+      :membership-loading="membershipLoading"
       @confirm-book="confirmBook"
       @cancel-book="bookTarget = null"
       @confirm-unbook="confirmUnbook"
@@ -126,6 +153,8 @@
       @confirm-block-user="confirmBlockUser"
       @cancel-block-user="blockUserTarget = null"
       @interest-select="onInterestSelect"
+      @confirm-join="confirmJoin"
+      @confirm-leave="confirmLeave"
     />
   </div>
 </template>
@@ -152,6 +181,7 @@ const {
   appliedKeywords,
   filterActive,
   scope,
+  scopeNewCounts,
   setScope,
   displayOrders,
   onSaveFilter,
@@ -199,5 +229,16 @@ const {
   confirmBlockUser,
   onDelete,
   onUnlock,
+  showJoinDialog,
+  showLeaveDialog,
+  membershipLoading,
+  joinMessage,
+  leaveMessage,
+  groupTitle,
+  isMemberOfOrder,
+  onJoinGroup,
+  onLeaveGroup,
+  confirmJoin,
+  confirmLeave,
 } = useDriverOrdersPage()
 </script>
