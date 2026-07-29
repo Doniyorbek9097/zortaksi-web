@@ -17,7 +17,7 @@
               <div class="min-w-0">
                 <h3 class="text-lg font-black text-slate-900 dark:text-white">Mijozga bog'lanishdi</h3>
                 <p class="mt-0.5 text-[12px] font-medium text-slate-400 dark:text-slate-500">
-                  {{ count }} kishi · bosib chat oching
+                  {{ count }} kishi · faqat ko'rish (yozib bo'lmaydi)
                 </p>
               </div>
               <button
@@ -47,7 +47,7 @@
                   <button
                     type="button"
                     class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.99] transition-all disabled:opacity-50"
-                    :disabled="openingId === u.userId || isSelf(u)"
+                    :disabled="openingId === u.userId"
                     @click="onSelect(u)"
                   >
                     <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0 tabular-nums">
@@ -64,8 +64,8 @@
                         {{ displayName(u) }}
                         <span v-if="isSelf(u)" class="text-[11px] font-bold text-slate-400">(siz)</span>
                       </p>
-                      <p v-if="u.username" class="text-[11px] font-medium text-slate-400 truncate">
-                        @{{ u.username }}
+                      <p class="text-[11px] font-medium text-slate-400 truncate">
+                        {{ isSelf(u) ? 'O\'zingizning yozishmangiz' : 'Chatni ko\'rish' }}
                       </p>
                     </div>
                     <font-awesome-icon
@@ -74,8 +74,8 @@
                       class="text-sky-500 animate-spin shrink-0"
                     />
                     <font-awesome-icon
-                      v-else-if="!isSelf(u)"
-                      icon="fa-solid fa-comments"
+                      v-else
+                      icon="fa-solid fa-eye"
                       class="text-slate-300 dark:text-slate-600 shrink-0"
                     />
                   </button>
@@ -138,7 +138,7 @@ const isSelf = (u: IInterestedUser) =>
   !!props.currentUserId && String(u.userId) === String(props.currentUserId)
 
 const onSelect = (u: IInterestedUser) => {
-  if (isSelf(u) || openingId.value) return
+  if (openingId.value) return
   error.value = ''
   openingId.value = u.userId
   emit('select', u)

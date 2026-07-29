@@ -100,31 +100,21 @@ export function useOrdersChatActions(options: {
   }
 
   const onInterestSelect = async (user: IInterestedUser) => {
-    const name =
-      user.name ||
-      [user.firstName, user.lastName].filter(Boolean).join(' ').trim() ||
-      user.username ||
-      'Haydovchi'
     const orderId = interestOrderId.value || ''
+    if (!orderId || !user.userId) {
+      interestDialog.value?.resetOpening('Order topilmadi')
+      return
+    }
 
     interestDialog.value?.close()
 
-    const existing = orderId
-      ? findChatByOrderPeer(orderId, user.userId)
-      : chatStore.chats.find((c) => String(c.peer?.userId) === String(user.userId) && c.kind === 'direct')
-
-    if (existing?._id) {
-      return navigateTo({
-        path: `/driver/chat/${existing._id}`,
-        query: { name },
-      })
-    }
-
-    return goOpenChat({
-      open: 'user',
-      userId: user.userId,
-      ...(orderId ? { orderId } : {}),
-      name,
+    // Haydovchi ↔ buyurtmachi chatini faqat ko'rish (yozib bo'lmaydi)
+    return navigateTo({
+      path: '/driver/chat/peek',
+      query: {
+        orderId,
+        driverUserId: user.userId,
+      },
     })
   }
 
