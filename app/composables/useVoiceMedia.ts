@@ -7,6 +7,7 @@
 import {
   idbGetMedia,
   idbPutMedia,
+  idbDeleteMedia,
   idbClearMedia,
   idbMediaStats,
 } from '~/utils/mediaIdb'
@@ -67,12 +68,22 @@ async function fetchMediaBlobFromNetwork(
       ? AbortSignal.timeout(120_000)
       : undefined
   const apiBase = resolveApiBase()
-  const url = urlBuilder
+  let url = urlBuilder
     ? urlBuilder(messageId)
     : `${apiBase}/chats/messages/${messageId}/media`
+  // Mobile brauzer HTTP keshini aylanib o'tish (Cache-Control e'tiborsiz qolsa ham)
+  const sep = url.includes('?') ? '&' : '?'
+  url = `${url}${sep}_cb=${Date.now()}`
   const res = await fetch(url, {
-    headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
+    headers: token.value
+      ? {
+          Authorization: `Bearer ${token.value}`,
+          'Cache-Control': 'no-cache',
+          Pragma: 'no-cache',
+        }
+      : { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
     credentials: 'include',
+    cache: 'no-store',
     signal,
   })
   let errBody = ''
@@ -228,6 +239,10 @@ export function useChatMedia() {
     if (cached && !opts.forceNetwork) return cached
     if (opts.forceNetwork && cached && !localOnly.has(id)) {
       revokeCachedUrl(id)
+    }
+    // Majburiy yangilash — eski buzilgan IDB blob qaytib kelmasin
+    if (opts.forceNetwork) {
+      void idbDeleteMedia(id)
     }
 
     if (id.startsWith('temp-')) return cache.get(id) || ''
