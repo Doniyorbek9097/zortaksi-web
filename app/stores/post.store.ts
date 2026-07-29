@@ -21,6 +21,7 @@ export interface PostGroup {
 }
 
 export const AD_PRICE = 2000
+export const ADS_BROADCAST_PRICE = 500
 export const GROUPS_PAGE_SIZE = 10
 
 export const usePostStore = defineStore('post', () => {
@@ -33,6 +34,7 @@ export const usePostStore = defineStore('post', () => {
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const isSending = ref(false)
+  const isBlocking = ref(false)
   const joiningId = ref<string | null>(null)
   const error = ref('')
 
@@ -44,6 +46,8 @@ export const usePostStore = defineStore('post', () => {
   const adsHasMore = ref(false)
   /** Hudud kalit so'zlari — server `search` */
   const search = ref('')
+  /** Guruh nomi / username qidiruvi — server `q` */
+  const query = ref('')
 
   const isAdmin = computed(() => authStore.user?.role === 'admin')
   const balance = computed(() => authStore.user?.balance ?? 0)
@@ -55,8 +59,12 @@ export const usePostStore = defineStore('post', () => {
 
   const selectedList = computed(() => groups.value.filter(g => selected.value.has(g.id)))
 
-  /** Meniki va admin ochgan Reklama guruhlari — bepul */
-  const pricePerGroup = computed(() => 0)
+  /** Meniki — bepul. Boshqalar — haydovchi uchun 500 so'm/guruh (muvaffaqiyatli yuborish) */
+  const pricePerGroup = computed(() => {
+    if (tab.value === 'mine') return 0
+    if (isAdmin.value) return 0
+    return ADS_BROADCAST_PRICE
+  })
 
   const totalCost = computed(() => pricePerGroup.value * selected.value.size)
 
@@ -67,7 +75,11 @@ export const usePostStore = defineStore('post', () => {
 
   const searchParams = () => {
     const s = search.value.trim()
-    return s ? { search: s } : {}
+    const q = query.value.trim()
+    return {
+      ...(s ? { search: s } : {}),
+      ...(q ? { q } : {}),
+    }
   }
 
   const applyPageResult = (
@@ -166,6 +178,22 @@ export const usePostStore = defineStore('post', () => {
     await load(false)
   }
 
+  /** Guruh qidiruvi — serverdan qayta */
+  const setQuery = async (value: string) => {
+    query.value = String(value || '').trim()
+    selected.value = new Set()
+    try {
+      isLoading.value = true
+      error.value = ''
+      if (tab.value === 'ads') await fetchAds({ page: 1, append: false })
+      else await fetchMine({ page: 1, append: false })
+    } catch (e: any) {
+      error.value = friendlyErr(e?.response?.data?.message || 'Guruhlar yuklanmadi')
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const loadMore = async () => {
     if (isLoading.value || isLoadingMore.value || !hasMore.value) return
     try {
@@ -201,8 +229,6 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const toggle = (id: string) => {
-    // Reklama — checkbox yo'q, faqat Meniki dan tanlash
-    if (tab.value !== 'mine') return
     const next = new Set(selected.value)
     if (next.has(id)) {
       next.delete(id)
@@ -219,7 +245,6 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const selectAllVisible = (list: PostGroup[]) => {
-    if (tab.value !== 'mine') return
     const next = new Set<string>()
     let count = 0
     for (const g of list) {
@@ -363,6 +388,38 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  /** Admin: tanlangan guruhlarni bloklash */
+  const blockGroups = async () => {
+    const list = selectedList.value
+    if (!list.length || !isAdmin.value) return null
+    try {
+      isBlocking.value = true
+      error.value = ''
+      const res = await useApi('/groups/block', {
+        method: 'POST',
+        body: {
+          groups: list.map((g) => ({
+            groupId: g.id,
+            title: g.title,
+            username: g.username,
+          })),
+        },
+      })
+      if (res.success) {
+        const ids = new Set(list.map((g) => g.id))
+        adsGroups.value = adsGroups.value.filter((g) => !ids.has(g.id))
+        adsTotal.value = Math.max(0, adsTotal.value - ids.size)
+        selected.value = new Set()
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Bloklash amalga oshmadi'
+      throw e
+    } finally {
+      isBlocking.value = false
+    }
+  }
+
   return {
     tab,
     mineGroups,
@@ -373,9 +430,11 @@ export const usePostStore = defineStore('post', () => {
     isLoading,
     isLoadingMore,
     isSending,
+    isBlocking,
     joiningId,
     error,
     search,
+    query,
     isAdmin,
     balance,
     groups,
@@ -389,6 +448,7 @@ export const usePostStore = defineStore('post', () => {
     load,
     loadMore,
     setSearch,
+    setQuery,
     setTab,
     toggle,
     selectAllVisible,
@@ -397,5 +457,6 @@ export const usePostStore = defineStore('post', () => {
     joinGroup,
     leaveGroup,
     broadcast,
+    blockGroups,
   }
 })

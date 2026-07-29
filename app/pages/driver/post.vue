@@ -76,7 +76,9 @@
       v-if="store.tab === 'ads'"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      A'zo bo'lmagan guruhlar. «Guruhga qo'shilish» — keyin Meniki dan e'lon yuboring.
+      A'zo bo'lmagan guruhlar. Tanlab xabar yuboring
+      <span v-if="!store.isAdmin"> ({{ ADS_BROADCAST_PRICE.toLocaleString('ru-RU') }} so'm/guruh)</span>
+      yoki «Guruhga qo'shilish» orqali Meniki ga qo'shing.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
@@ -85,11 +87,22 @@
       Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Boshqalar tabida ko'rinadi.
     </p>
 
-    <!-- Count + select (faqat Meniki) -->
-    <div
-      v-if="store.tab === 'mine'"
-      class="flex items-center justify-between gap-2"
-    >
+    <!-- Guruh qidiruvi -->
+    <div class="relative">
+      <font-awesome-icon
+        icon="fa-solid fa-magnifying-glass"
+        class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none"
+      />
+      <input
+        v-model="groupQuery"
+        type="search"
+        placeholder="Guruh nomi yoki @username qidirish…"
+        class="w-full pl-9 pr-3 py-2.5 rounded-xl text-[13px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+      />
+    </div>
+
+    <!-- Count + select -->
+    <div class="flex items-center justify-between gap-2">
       <p class="text-[12px] font-bold text-slate-400">
         {{ selectedCount }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
       </p>
@@ -101,12 +114,6 @@
         {{ allFilteredSelected ? 'Bekor' : 'Hammasi' }}
       </button>
     </div>
-    <p
-      v-else
-      class="text-[12px] font-bold text-slate-400"
-    >
-      {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
-    </p>
 
     <!-- List -->
     <div v-if="store.isLoading" class="space-y-3">
@@ -129,7 +136,7 @@
         v-for="g in filtered"
         :key="g.id"
         :group="g"
-        :selectable="store.tab === 'mine'"
+        :selectable="true"
         :selected="store.selected.has(g.id)"
         :show-admin-badge="store.tab === 'mine'"
         :show-visible-badge="store.tab === 'mine' && store.isAdmin"
@@ -169,14 +176,44 @@
       {{ success }}
     </p>
 
-    <!-- Fixed send — Teleport: PTR transform fixed ni buzmasin -->
+    <!-- Fixed send / block -->
     <Teleport to="body">
       <div
-        v-if="store.tab === 'mine' && selectedCount > 0"
+        v-if="selectedCount > 0"
         class="fixed bottom-20 inset-x-0 z-[60] px-4 pointer-events-none"
       >
         <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl pointer-events-auto">
+          <div
+            v-if="store.tab === 'ads'"
+            class="flex gap-2"
+          >
+            <button
+              type="button"
+              class="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
+              @click="composeOpen = true"
+            >
+              <font-awesome-icon icon="fa-solid fa-paper-plane" />
+              Xabar yuborish
+              <span v-if="store.pricePerGroup > 0" class="text-[11px] opacity-90">
+                ({{ store.totalCost.toLocaleString('ru-RU') }} so'm)
+              </span>
+            </button>
+            <button
+              v-if="store.isAdmin"
+              type="button"
+              class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl text-sm font-black text-white bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/30 active:scale-[0.98] transition-all disabled:opacity-60"
+              :disabled="store.isBlocking"
+              @click="blockOpen = true"
+            >
+              <font-awesome-icon
+                :icon="store.isBlocking ? 'fa-solid fa-spinner' : 'fa-solid fa-ban'"
+                :class="store.isBlocking ? 'animate-spin' : ''"
+              />
+              Bloklash
+            </button>
+          </div>
           <button
+            v-else
             type="button"
             class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
             @click="composeOpen = true"
@@ -219,11 +256,24 @@
       @confirm="onConfirmLeave"
       @cancel="membershipTarget = null"
     />
+    <BaseConfirmDialog
+      v-model="blockOpen"
+      title="Guruhlarni bloklash"
+      description="Bu guruhlardan boshqa buyurtma olinmaydi"
+      :message="`${selectedCount} ta guruh bloklansinmi?`"
+      confirm-text="Bloklash"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="store.isBlocking"
+      :close-on-confirm="false"
+      @confirm="onBlock"
+      @cancel="blockOpen = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { usePostStore, type PostGroup } from '~/stores/post.store'
+import { usePostStore, type PostGroup, ADS_BROADCAST_PRICE } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
@@ -237,7 +287,9 @@ const store = usePostStore()
 const authStore = useAuthStore()
 
 const composeOpen = ref(false)
+const blockOpen = ref(false)
 const success = ref('')
+const groupQuery = ref('')
 const showFilter = ref(false)
 const draftKeywords = ref('')
 const appliedKeywords = ref('')
@@ -309,10 +361,28 @@ const onSend = async (text: string) => {
     composeOpen.value = false
     const sent = res.data?.sent ?? 0
     const failed = res.data?.failed ?? 0
-    if (failed) success.value = `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
-    else success.value = `${sent} ta guruhga tushdi`
+    const charged = res.data?.charged ?? 0
+    if (failed) {
+      success.value = `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
+      if (charged) success.value += ` · ${charged.toLocaleString('ru-RU')} so'm yechildi`
+    } else {
+      success.value = `${sent} ta guruhga tushdi`
+      if (charged) success.value += ` · ${charged.toLocaleString('ru-RU')} so'm yechildi`
+    }
   } catch {
     /* error in store */
+  }
+}
+
+const onBlock = async () => {
+  success.value = ''
+  const n = selectedCount.value
+  try {
+    const res = await store.blockGroups()
+    blockOpen.value = false
+    success.value = `${res?.data?.blocked ?? n} ta guruh bloklandi`
+  } catch {
+    /* store error */
   }
 }
 
@@ -383,13 +453,23 @@ onMounted(async () => {
   if (sentinel.value) observer.observe(sentinel.value)
 })
 
+let queryTimer: ReturnType<typeof setTimeout> | null = null
+watch(groupQuery, (val) => {
+  if (queryTimer) clearTimeout(queryTimer)
+  queryTimer = setTimeout(() => {
+    if (val.trim() === store.query) return
+    void store.setQuery(val)
+  }, 350)
+})
+
+onBeforeUnmount(() => {
+  if (queryTimer) clearTimeout(queryTimer)
+  if (observer) observer.disconnect()
+})
+
 usePullToRefresh(() => store.load(true))
 
 watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
-})
-
-onBeforeUnmount(() => {
-  if (observer) observer.disconnect()
 })
 </script>

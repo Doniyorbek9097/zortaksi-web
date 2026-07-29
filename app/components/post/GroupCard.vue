@@ -37,8 +37,8 @@
       >
         <div class="flex items-start gap-1.5">
           <div class="flex-1 min-w-0 space-y-1">
-            <div class="flex items-start gap-1.5 flex-wrap">
-              <h3 class="text-[13px] font-bold leading-snug text-slate-800 dark:text-slate-100 break-words">
+            <div class="flex items-start gap-1.5 flex-wrap min-w-0">
+              <h3 class="text-[13px] font-bold leading-snug text-slate-800 dark:text-slate-100 truncate min-w-0 flex-1">
                 {{ group.title }}
               </h3>
               <span

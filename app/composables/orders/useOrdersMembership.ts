@@ -1,4 +1,5 @@
 import type { IOrder } from '~/types'
+import type { PostGroup } from '~/stores/post.store'
 import type { useOrderStore } from '~/stores/order.store'
 
 /**
@@ -20,6 +21,22 @@ export function useOrdersMembership(options: {
   const groupTitle = computed(
     () => membershipTarget.value?.group?.title || 'Guruh',
   )
+
+  const membershipGroup = computed((): PostGroup | null => {
+    const order = membershipTarget.value
+    if (!order?.group?.groupId) return null
+    return {
+      id: String(order.group.groupId),
+      title: order.group.title || 'Guruh',
+      username: order.group.username,
+      membersCount: order.group.membersCount,
+      isAdmin: false,
+      viaUserbotId: '',
+      connections: 0,
+      price: 0,
+      free: true,
+    }
+  })
 
   const joinMessage = computed(
     () =>
@@ -87,6 +104,12 @@ export function useOrdersMembership(options: {
   const confirmJoin = () => runMembership('join')
   const confirmLeave = () => runMembership('leave')
 
+  const cancelMembership = () => {
+    showJoinDialog.value = false
+    showLeaveDialog.value = false
+    membershipTarget.value = null
+  }
+
   return {
     showJoinDialog,
     showLeaveDialog,
@@ -95,10 +118,12 @@ export function useOrdersMembership(options: {
     joinMessage,
     leaveMessage,
     groupTitle,
+    membershipGroup,
     isMemberOfOrder,
     onJoinGroup,
     onLeaveGroup,
     confirmJoin,
     confirmLeave,
+    cancelMembership,
   }
 }

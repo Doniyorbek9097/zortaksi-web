@@ -140,6 +140,7 @@
       :interest-loading="interestLoading"
       :current-user-id="authStore.user?.userId"
       :group-title="groupTitle"
+      :membership-group="membershipGroup"
       :join-message="joinMessage"
       :leave-message="leaveMessage"
       :membership-loading="membershipLoading"
@@ -155,6 +156,7 @@
       @interest-select="onInterestSelect"
       @confirm-join="confirmJoin"
       @confirm-leave="confirmLeave"
+      @cancel-membership="cancelMembership"
     />
   </div>
 </template>
@@ -235,10 +237,12 @@ const {
   joinMessage,
   leaveMessage,
   groupTitle,
+  membershipGroup,
   isMemberOfOrder,
   onJoinGroup,
   onLeaveGroup,
   confirmJoin,
   confirmLeave,
+  cancelMembership,
 } = useDriverOrdersPage()
 </script>

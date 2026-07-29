@@ -85,31 +85,27 @@
     />
 
     <!-- Guruhga qo'shilish -->
-    <BaseConfirmDialog
+    <PostMembershipDialog
       v-model="showJoinDialog"
       title="Guruhga qo'shilish"
-      :description="`«${groupTitle}»`"
-      :message="joinMessage"
+      :message="joinMessage || ''"
       confirm-text="Qo'shilish"
-      cancel-text="Bekor"
       variant="success"
       :loading="membershipLoading"
-      :close-on-confirm="false"
+      :group="membershipGroup"
       @confirm="$emit('confirm-join')"
       @cancel="$emit('cancel-membership')"
     />
 
     <!-- Guruhni tark etish -->
-    <BaseConfirmDialog
+    <PostMembershipDialog
       v-model="showLeaveDialog"
       title="Guruhni tark etish"
-      :description="`«${groupTitle}»`"
-      :message="leaveMessage"
+      :message="leaveMessage || ''"
       confirm-text="Tark etish"
-      cancel-text="Bekor"
       variant="warning"
       :loading="membershipLoading"
-      :close-on-confirm="false"
+      :group="membershipGroup"
       @confirm="$emit('confirm-leave')"
       @cancel="$emit('cancel-membership')"
     />
@@ -129,6 +125,7 @@
 
 <script setup lang="ts">
 import type { IInterestedUser } from '~/types'
+import type { PostGroup } from '~/stores/post.store'
 
 /**
  * Buyurtmalar sahifasidagi barcha tasdiqlash/xato dialoglari.
@@ -150,6 +147,7 @@ defineProps<{
   interestLoading: boolean
   currentUserId?: string
   groupTitle?: string
+  membershipGroup?: PostGroup | null
   joinMessage?: string
   leaveMessage?: string
   membershipLoading?: boolean

@@ -95,11 +95,14 @@ export function useDriverOrdersPage() {
     joinMessage: membership.joinMessage,
     leaveMessage: membership.leaveMessage,
     groupTitle: membership.groupTitle,
+    membershipGroup: membership.membershipGroup,
+    membershipGroup: membership.membershipGroup,
     isMemberOfOrder: membership.isMemberOfOrder,
     onJoinGroup: membership.onJoinGroup,
     onLeaveGroup: membership.onLeaveGroup,
     confirmJoin: membership.confirmJoin,
     confirmLeave: membership.confirmLeave,
+    cancelMembership: membership.cancelMembership,
     onUnlock,
   }
 }
