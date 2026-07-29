@@ -21,6 +21,8 @@ export const useOrderStore = defineStore('order', () => {
     const totalPages = ref(1)
     /** Tab badge — status=new buyurtmalar soni */
     const newOrdersCount = ref(0)
+    /** Orders scroll — chatdan qaytganda tiklash */
+    const ordersListScrollY = ref(0)
 
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
     const recentArrivals = ref<Record<string, number>>({})
@@ -400,6 +402,7 @@ export const useOrderStore = defineStore('order', () => {
         page,
         totalPages,
         newOrdersCount,
+        ordersListScrollY,
         recentMinuteCount,
         hasMore,
         fetchOrders,

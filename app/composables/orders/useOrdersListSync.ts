@@ -5,7 +5,7 @@ type QueryParams = () => { limit: number; search?: string }
 
 /**
  * Ro'yxat sync: poll, infinite scroll va "ko'rilgan" badge kuzatuvchisi.
- * Sahifa mount/unmount hayot siklini boshqaradi.
+ * Chatdan qaytganda ro'yxat/scroll saqlanadi (to'liq qayta load qilinmaydi).
  */
 export function useOrdersListSync(options: {
   orderStore: ReturnType<typeof useOrderStore>
@@ -28,6 +28,19 @@ export function useOrdersListSync(options: {
   const listRoot = ref<HTMLElement | null>(null)
   let seenObserver: IntersectionObserver | null = null
   const observedSeenEls = new WeakSet<Element>()
+
+  const saveScroll = () => {
+    if (!import.meta.client) return
+    orderStore.ordersListScrollY =
+      window.scrollY || document.documentElement.scrollTop || 0
+  }
+
+  const restoreScroll = () => {
+    if (!import.meta.client) return
+    const y = orderStore.ordersListScrollY
+    if (y == null || y <= 0) return
+    window.scrollTo(0, y)
+  }
 
   const bindSeenObserver = () => {
     if (!import.meta.client) return
@@ -57,10 +70,23 @@ export function useOrdersListSync(options: {
     })
   }
 
-  onMounted(() => {
+  onMounted(async () => {
     orderStore.startRecentMinuteTicker()
     hydrateFilter()
-    load()
+
+    const hasCachedList = orderStore.orders.length > 0
+    if (hasCachedList) {
+      // Chat/interest dan qaytish — pagination + scroll saqlansin
+      await nextTick()
+      restoreScroll()
+      setTimeout(restoreScroll, 50)
+      setTimeout(restoreScroll, 150)
+      // Fonida yangilarni tortamiz (ro'yxatni page=1 bilan almashtirmaymiz)
+      void orderStore.syncLatest(queryParams())
+    } else {
+      await load()
+    }
+
     pollTimer = setInterval(() => {
       void orderStore.syncLatest(queryParams())
     }, 10000)
@@ -86,6 +112,7 @@ export function useOrdersListSync(options: {
   )
 
   onBeforeUnmount(() => {
+    saveScroll()
     if (pollTimer) clearInterval(pollTimer)
     if (observer) observer.disconnect()
     if (seenObserver) seenObserver.disconnect()
@@ -94,5 +121,6 @@ export function useOrdersListSync(options: {
   return {
     sentinel,
     listRoot,
+    saveScroll,
   }
 }

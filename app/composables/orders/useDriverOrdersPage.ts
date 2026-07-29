@@ -23,7 +23,7 @@ export function useDriverOrdersPage() {
 
   const filter = useOrdersFilter(orderStore)
 
-  const { sentinel, listRoot } = useOrdersListSync({
+  const { sentinel, listRoot, saveScroll } = useOrdersListSync({
     orderStore,
     displayOrders: filter.displayOrders,
     queryParams: filter.queryParams,
@@ -44,6 +44,7 @@ export function useDriverOrdersPage() {
     orderStore,
     chatStore,
     showError: moderation.showError,
+    beforeNavigate: saveScroll,
   })
 
   const onUnlock = () => navigateTo('/driver/payment')

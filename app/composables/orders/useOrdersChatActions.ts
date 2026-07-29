@@ -10,8 +10,10 @@ export function useOrdersChatActions(options: {
   orderStore: ReturnType<typeof useOrderStore>
   chatStore: ReturnType<typeof useChatStore>
   showError: (msg: string) => void
+  /** Order → chat oldidan scroll saqlash */
+  beforeNavigate?: () => void
 }) {
-  const { orderStore, chatStore } = options
+  const { orderStore, chatStore, beforeNavigate } = options
 
   const markOrderInterest = (order: IOrder) => {
     if (!order._id) return
@@ -34,11 +36,13 @@ export function useOrdersChatActions(options: {
   }
 
   /** Mavjud chat bo'lsa to'g'ridan; aks holda /chat/open orqali darhol UI */
-  const goOpenChat = (query: Record<string, string>) =>
-    navigateTo({
+  const goOpenChat = (query: Record<string, string>) => {
+    beforeNavigate?.()
+    return navigateTo({
       path: '/driver/chat/open',
       query,
     })
+  }
 
   const onMessage = async (order: IOrder) => {
     if (!order._id) return
@@ -50,6 +54,7 @@ export function useOrdersChatActions(options: {
     const phone = String(order.sender?.phone || '')
     const username = String(order.sender?.username || '').replace(/^@/, '')
 
+    beforeNavigate?.()
     if (existing?._id) {
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
@@ -117,6 +122,7 @@ export function useOrdersChatActions(options: {
       interestDialog.value?.close()
     }
 
+    beforeNavigate?.()
     return navigateTo({
       path: '/driver/interest-chat',
       query: {
@@ -135,6 +141,7 @@ export function useOrdersChatActions(options: {
       order.bookedByUser?.username ||
       'Haydovchi'
 
+    beforeNavigate?.()
     if (existing?._id) {
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
@@ -159,6 +166,7 @@ export function useOrdersChatActions(options: {
       'Agent'
     const username = String(order.owner?.username || '').replace(/^@/, '')
 
+    beforeNavigate?.()
     if (existing?._id) {
       return navigateTo({
         path: `/driver/chat/${existing._id}`,

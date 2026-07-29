@@ -33,7 +33,7 @@
       title="Buyurtma topilmadi"
     />
 
-    <!-- Orders list — relative: leave animatsiya tabbar/scrollni siljitmasin -->
+    <!-- Orders list -->
     <DriverOrdersList
       v-else
       v-model:list-root="listRoot"

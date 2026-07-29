@@ -35,7 +35,7 @@
       title="Hozircha yozishmalar yo'q"
     />
 
-    <!-- Chat list — faqat 20 ta eng yangi -->
+    <!-- Chat list + infinite scroll -->
     <div v-else class="space-y-2.5">
       <ChatsChatItem
         v-for="chat in chatStore.chats"
@@ -55,6 +55,22 @@
         @delete="requestSwipeDelete(chat)"
         @driver-page="openDriverPage(chat)"
       />
+
+      <div ref="sentinelEl" class="h-1" />
+
+      <div
+        v-if="chatStore.isLoadingMore"
+        class="py-3 flex justify-center"
+      >
+        <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-slate-400" />
+      </div>
+
+      <p
+        v-else-if="!chatStore.hasMore && chatStore.chats.length"
+        class="py-3 text-center text-[12px] font-medium text-slate-400 dark:text-slate-600"
+      >
+        Barcha suhbatlar ko'rsatildi
+      </p>
     </div>
 
     <!-- Universal o'chirish dialogi -->
@@ -127,6 +143,8 @@ const markingRead = ref(false)
 const deleting = ref(false)
 const showDeleteDialog = ref(false)
 const swipeDeleteId = ref<string | null>(null)
+const sentinelEl = ref<HTMLElement | null>(null)
+let loadMoreObserver: IntersectionObserver | null = null
 
 const allSelected = computed(
   () => chatStore.chats.length > 0 && selectedIds.value.length === chatStore.chats.length
@@ -230,18 +248,44 @@ const openDriverPage = (chat: IChat) => {
   navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
 }
 
+const bindLoadMore = () => {
+  if (!import.meta.client) return
+  loadMoreObserver?.disconnect()
+  loadMoreObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) {
+        void chatStore.loadMoreChats({ limit: PAGE_LIMIT })
+      }
+    },
+    { rootMargin: '200px' },
+  )
+  if (sentinelEl.value) loadMoreObserver.observe(sentinelEl.value)
+}
+
+watch(sentinelEl, (el) => {
+  if (loadMoreObserver && el) loadMoreObserver.observe(el)
+})
+
 onMounted(() => {
   const boot = async () => {
-    // Har safar eng yangi 20 ta (scroll pagination yo'q)
-    await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
-    await nextTick()
-    restoreScroll()
-    setTimeout(restoreScroll, 80)
+    const hasCached = chatStore.chats.length > 0
+    if (hasCached) {
+      await nextTick()
+      restoreScroll()
+      setTimeout(restoreScroll, 80)
+    } else {
+      await chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT })
+      await nextTick()
+      restoreScroll()
+    }
+    bindLoadMore()
   }
   void boot()
 })
 
 onBeforeUnmount(() => {
   saveScroll()
+  loadMoreObserver?.disconnect()
+  loadMoreObserver = null
 })
 </script>
