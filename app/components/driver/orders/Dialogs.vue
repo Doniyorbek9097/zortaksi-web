@@ -143,11 +143,19 @@ const showActionError = defineModel<boolean>('showActionError', { required: true
 const showInterestDialog = defineModel<boolean>('showInterestDialog', { required: true })
 
 /** Qiziqish dialogi — parent composable close/resetOpening chaqiradi */
-const interestDialog = defineModel<{ resetOpening: (err?: string) => void; close: () => void } | null>('interestDialog', {
+const interestDialog = defineModel<{
+  resetOpening: (err?: string) => void
+  close: () => void
+  closeForNavigate?: () => void
+} | null>('interestDialog', {
   default: null,
 })
 
-const interestDialogEl = ref<{ resetOpening: (err?: string) => void; close: () => void } | null>(null)
+const interestDialogEl = ref<{
+  resetOpening: (err?: string) => void
+  close: () => void
+  closeForNavigate?: () => void
+} | null>(null)
 
 watch(interestDialogEl, (v) => {
   interestDialog.value = v

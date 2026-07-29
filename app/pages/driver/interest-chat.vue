@@ -153,8 +153,8 @@ const load = async () => {
     const res = await useApi(
       `/orders/${encodeURIComponent(orderId.value)}/interest/${encodeURIComponent(driverUserId.value)}/chat`,
     )
-    if (!res.success || !res.data) {
-      error.value = res.message || 'Chat yuklanmadi'
+    if (!res?.success || !res.data) {
+      error.value = res?.message || 'Chat yuklanmadi'
       return
     }
     const data = res.data
@@ -165,7 +165,11 @@ const load = async () => {
     driverAvatar.value = data.driver?.avatar || ''
     driverId.value = data.driver?.userId || driverUserId.value
   } catch (e: any) {
-    error.value = e?.message || 'Chat yuklanmadi'
+    const msg =
+      e?.response?.data?.message ||
+      e?.message ||
+      'Chat yuklanmadi'
+    error.value = String(msg)
   } finally {
     loading.value = false
   }

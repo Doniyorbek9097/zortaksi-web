@@ -78,7 +78,11 @@ export function useOrdersChatActions(options: {
   const interestUsers = ref<IInterestedUser[]>([])
   const interestCount = ref(0)
   const interestOrderId = ref<string | null>(null)
-  const interestDialog = ref<{ resetOpening: (err?: string) => void; close: () => void } | null>(null)
+  const interestDialog = ref<{
+    resetOpening: (err?: string) => void
+    close: () => void
+    closeForNavigate?: () => void
+  } | null>(null)
 
   const onInterest = async (order: IOrder) => {
     if (!order._id) return
@@ -106,14 +110,18 @@ export function useOrdersChatActions(options: {
       return
     }
 
-    interestDialog.value?.close()
+    // history.back() race — avval disarm, keyin sahifa
+    if (interestDialog.value?.closeForNavigate) {
+      interestDialog.value.closeForNavigate()
+    } else {
+      interestDialog.value?.close()
+    }
 
-    // Haydovchi ↔ buyurtmachi chatini faqat ko'rish (yozib bo'lmaydi)
     return navigateTo({
-      path: '/driver/chat/peek',
+      path: '/driver/interest-chat',
       query: {
         orderId,
-        driverUserId: user.userId,
+        driverUserId: String(user.userId),
       },
     })
   }

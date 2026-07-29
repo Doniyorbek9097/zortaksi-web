@@ -24,6 +24,11 @@ export function useHistoryBackClose(
   let pushed = false
   let closingViaPop = false
 
+  /** navigateTo oldidan — history.back() yangi sahifani yeb qo'ymasligi uchun */
+  const disarm = () => {
+    pushed = false
+  }
+
   const onPopState = () => {
     if (!toValue(open) || !pushed) return
     closingViaPop = true
@@ -74,4 +79,6 @@ export function useHistoryBackClose(
       }
     }
   })
+
+  return { disarm }
 }

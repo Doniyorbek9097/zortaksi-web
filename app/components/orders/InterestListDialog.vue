@@ -126,7 +126,7 @@ const close = () => {
   openingId.value = null
 }
 
-useHistoryBackClose(modelValue, close, { key: 'ztInterestList' })
+const { disarm } = useHistoryBackClose(modelValue, close, { key: 'ztInterestList' })
 
 const displayName = (u: IInterestedUser) => {
   if (u.name) return u.name
@@ -150,7 +150,15 @@ const resetOpening = (errMsg?: string) => {
   if (errMsg) error.value = errMsg
 }
 
-defineExpose({ resetOpening, close })
+/** navigateTo oldidan — history.back race bo'lmasin */
+const closeForNavigate = () => {
+  disarm()
+  modelValue.value = false
+  error.value = ''
+  openingId.value = null
+}
+
+defineExpose({ resetOpening, close, closeForNavigate })
 </script>
 
 <style scoped>
