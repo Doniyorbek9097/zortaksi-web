@@ -122,24 +122,22 @@
       tone="slate"
     />
 
-    <div v-else class="space-y-1.5">
+    <div v-else class="space-y-2">
       <div
-        v-for="(g, idx) in filtered"
+        v-for="g in filtered"
         :key="g.id"
-        class="w-full flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-left transition-colors"
+        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-colors"
         :class="store.tab === 'mine' && store.selected.has(g.id)
           ? 'border-amber-400/70 bg-amber-50 dark:bg-amber-950/30'
           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
       >
-        <!-- Meniki: checkbox bilan tanlash -->
+        <!-- Meniki: checkbox + avatar -->
         <button
           v-if="store.tab === 'mine'"
           type="button"
-          class="flex flex-1 items-center gap-2.5 min-w-0 text-left"
+          class="flex flex-1 items-center gap-3 min-w-0 text-left"
           @click="store.toggle(g.id)"
         >
-          <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0">{{ idx + 1 }}</span>
-
           <span
             class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
             :class="store.selected.has(g.id)
@@ -152,6 +150,13 @@
               class="text-[9px]"
             />
           </span>
+
+          <ProfileAvatar
+            :name="g.title"
+            :src="g.avatar"
+            size="md"
+            class="!rounded-xl"
+          />
 
           <span class="flex-1 min-w-0">
             <span class="flex items-center gap-1.5 min-w-0 flex-wrap">
@@ -171,30 +176,49 @@
                 Haydovchiga
               </span>
             </span>
-            <span class="block text-[11px] font-medium text-slate-400 truncate">
-              @{{ g.username || '—' }}
-              <template v-if="g.connections > 1">
-                · {{ g.connections }} haydovchi
-              </template>
+            <span class="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-slate-400 truncate">
+              <span class="truncate">@{{ g.username || '—' }}</span>
+              <span
+                v-if="g.membersCount"
+                class="shrink-0 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"
+              >
+                <font-awesome-icon icon="fa-solid fa-users" class="text-[9px] opacity-70" />
+                {{ formatMembers(g.membersCount) }}
+              </span>
             </span>
           </span>
         </button>
 
-        <!-- Reklama: checkbox yo'q — faqat ma'lumot + a'zo bo'lish -->
+        <!-- Reklama: avatar + a'zo bo'lish -->
         <div
           v-else
-          class="flex flex-1 items-center gap-2.5 min-w-0"
+          class="flex flex-1 items-center gap-3 min-w-0"
         >
-          <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0">{{ idx + 1 }}</span>
+          <ProfileAvatar
+            :name="g.title"
+            :src="g.avatar"
+            size="md"
+            class="!rounded-xl"
+          />
           <span class="flex-1 min-w-0">
             <span class="block text-[13px] font-black text-slate-900 dark:text-white truncate">
               {{ g.title }}
             </span>
-            <span class="block text-[11px] font-medium text-slate-400 truncate">
-              @{{ g.username || '—' }}
-              <template v-if="g.connections > 1">
+            <span class="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-slate-400 truncate">
+              <span class="truncate">@{{ g.username || '—' }}</span>
+              <span
+                v-if="g.membersCount"
+                class="shrink-0 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"
+              >
+                <font-awesome-icon icon="fa-solid fa-users" class="text-[9px] opacity-70" />
+                {{ formatMembers(g.membersCount) }}
+              </span>
+              <span
+                v-else-if="g.connections > 1"
+                class="shrink-0"
+              >
                 · {{ g.connections }} haydovchi
-              </template>
+              </span>
             </span>
           </span>
         </div>
@@ -202,7 +226,7 @@
         <button
           v-if="store.tab === 'ads' && !store.isAdmin"
           type="button"
-          class="shrink-0 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60"
+          class="shrink-0 inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60"
           :disabled="store.joiningId === g.id"
           @click.stop="onJoinGroup(g)"
         >
@@ -217,7 +241,7 @@
         <button
           v-if="store.tab === 'mine' && store.isAdmin && g.isAdmin"
           type="button"
-          class="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center border active:scale-95"
+          class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border active:scale-95"
           :class="g.visibleToDrivers
             ? 'border-violet-400/60 bg-violet-500/15 text-violet-600 dark:text-violet-400'
             : 'border-slate-200 dark:border-slate-700 text-slate-400'"
@@ -323,6 +347,13 @@ const onRemoveRegion = (chip: string) => {
 }
 
 const filtered = computed(() => store.groups)
+
+const formatMembers = (n?: number) => {
+  const v = Number(n) || 0
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+  return v.toLocaleString('ru-RU')
+}
 
 const selectedCount = computed(() => store.selected.size)
 

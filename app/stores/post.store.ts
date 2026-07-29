@@ -9,6 +9,7 @@ export interface PostGroup {
   username?: string
   accessHash?: string
   membersCount?: number
+  avatar?: string
   isAdmin: boolean
   viaUserbotId: string
   connections: number
