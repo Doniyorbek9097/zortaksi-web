@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
+import { loadOrderFilterKeywords } from '~/utils/orderFilterKeywords'
 
 export interface FetchOrdersParams {
     page?: number
@@ -23,6 +24,8 @@ export const useOrderStore = defineStore('order', () => {
     const totalPages = ref(1)
     /** Tab badge — status=new buyurtmalar soni */
     const newOrdersCount = ref(0)
+    /** Meniki / Boshqalar — yangi buyurtmalar (tab + tabbar badge) */
+    const scopeNewCounts = ref({ mine: 0, others: 0 })
     /** Orders scroll — chatdan qaytganda tiklash */
     const ordersListScrollY = ref(0)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
@@ -188,6 +191,46 @@ export const useOrderStore = defineStore('order', () => {
         return n
     })
 
+    /** Pastki tabbar — Meniki + Boshqalar yangi buyurtmalar */
+    const ordersTabBadge = computed(
+        () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
+    )
+
+    const refreshScopeCounts = async (search?: string) => {
+        const s =
+            search !== undefined
+                ? String(search || '').trim() || undefined
+                : loadOrderFilterKeywords().trim() || undefined
+        try {
+            const [mineRes, othersRes] = await Promise.all([
+                useApi('/orders', {
+                    method: 'GET',
+                    params: { status: 'new', page: 1, limit: 1, scope: 'mine', search: s },
+                }),
+                useApi('/orders', {
+                    method: 'GET',
+                    params: { status: 'new', page: 1, limit: 1, scope: 'others', search: s },
+                }),
+            ])
+            scopeNewCounts.value = {
+                mine: mineRes.success ? Number(mineRes.data?.pagination?.total ?? 0) : 0,
+                others: othersRes.success ? Number(othersRes.data?.pagination?.total ?? 0) : 0,
+            }
+        } catch {
+            /* badge ixtiyoriy */
+        }
+    }
+
+    const bumpScopeNewCount = (scope: 'mine' | 'others', delta = 1) => {
+        scopeNewCounts.value = {
+            ...scopeNewCounts.value,
+            [scope]: Math.max(0, scopeNewCounts.value[scope] + delta),
+        }
+    }
+
+    const scopeForOrder = (order: IOrder): 'mine' | 'others' =>
+        isMemberGroup(order?.group?.groupId) ? 'mine' : 'others'
+
     const startRecentMinuteTicker = () => {
         if (!import.meta.client || recentTicker) return
         loadSeenFromStorage()
@@ -268,6 +311,7 @@ export const useOrderStore = defineStore('order', () => {
             noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
+            void refreshScopeCounts(params.search)
             return response
         } catch (error) {
             console.warn('syncLatest error:', error)
@@ -346,8 +390,12 @@ export const useOrderStore = defineStore('order', () => {
                 }
                 if (prev?.status === 'new' || response.data?.order?.status === 'booked') {
                     bumpNewCount(-1)
+                    if (prev?.status === 'new') {
+                        bumpScopeNewCount(scopeForOrder(prev), -1)
+                    }
                 }
             }
+            void refreshScopeCounts()
             return response
         } catch (error: any) {
             // 402 va boshqa xatolarni caller ko'rsatadi
@@ -364,6 +412,7 @@ export const useOrderStore = defineStore('order', () => {
             }
             if (response.data?.order?.status === 'new') bumpNewCount(1)
         }
+        void refreshScopeCounts()
         return response
     }
 
@@ -373,8 +422,12 @@ export const useOrderStore = defineStore('order', () => {
         if (response.success) {
             orders.value = orders.value.filter((o) => o._id !== orderId)
             total.value = Math.max(0, total.value - 1)
-            if (prev?.status === 'new') bumpNewCount(-1)
+            if (prev?.status === 'new') {
+                bumpNewCount(-1)
+                bumpScopeNewCount(scopeForOrder(prev), -1)
+            }
         }
+        void refreshScopeCounts()
         return response
     }
 
@@ -387,6 +440,7 @@ export const useOrderStore = defineStore('order', () => {
             } else {
                 orders.value = orders.value.filter((o) => o._id !== orderId)
             }
+            void refreshScopeCounts()
         }
         return response
     }
@@ -400,6 +454,7 @@ export const useOrderStore = defineStore('order', () => {
             } else {
                 orders.value = orders.value.filter((o) => o._id !== orderId)
             }
+            void refreshScopeCounts()
         }
         return response
     }
@@ -454,6 +509,8 @@ export const useOrderStore = defineStore('order', () => {
         page,
         totalPages,
         newOrdersCount,
+        scopeNewCounts,
+        ordersTabBadge,
         ordersListScrollY,
         listSearch,
         listScope,
@@ -475,6 +532,8 @@ export const useOrderStore = defineStore('order', () => {
         markInterest,
         fetchInterest,
         refreshNewCount,
+        refreshScopeCounts,
+        bumpScopeNewCount,
         bumpNewCount,
         noteRecentOrder,
         markOrderSeen,

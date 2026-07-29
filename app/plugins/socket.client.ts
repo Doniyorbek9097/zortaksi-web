@@ -95,6 +95,10 @@ export default defineNuxtPlugin(() => {
       ) {
         return
       }
+      if ((order?.status || 'new') === 'new') {
+        const mine = orderStore.isMemberGroup(order?.group?.groupId)
+        orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
+      }
       // Meniki / Boshqalar — a'zolik
       const scope = orderStore.listScope === 'others' ? 'others' : 'mine'
       if (orderStore.memberGroupIds.size > 0) {

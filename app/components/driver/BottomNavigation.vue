@@ -49,7 +49,7 @@ const formatBadge = (n: number) => (n > 99 ? '99+' : n)
 
 const items = computed<NavItem[]>(() => {
   const chatsBadge = chatStore.unreadTotal
-  const ordersBadge = orderStore.recentMinuteCount
+  const ordersBadge = orderStore.ordersTabBadge
 
   return [
     {

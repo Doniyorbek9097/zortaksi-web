@@ -20,7 +20,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const draftKeywords = ref('')
   const appliedKeywords = ref('')
   const scope = ref<OrdersScope>('mine')
-  const scopeNewCounts = ref({ mine: 0, others: 0 })
+  const scopeNewCounts = computed(() => orderStore.scopeNewCounts)
   const filterActive = computed(() => !!appliedKeywords.value.trim())
 
   /** API so'rovlari uchun query (limit + search + scope) */
@@ -33,27 +33,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   /** Server filtrlangan ro'yxat — qo'shimcha client kesish yo'q */
   const displayOrders = computed(() => orderStore.orders)
 
-  const refreshScopeCounts = async () => {
-    const search = appliedKeywords.value.trim() || undefined
-    try {
-      const [mineRes, othersRes] = await Promise.all([
-        useApi('/orders', {
-          method: 'GET',
-          params: { status: 'new', page: 1, limit: 1, scope: 'mine', search },
-        }),
-        useApi('/orders', {
-          method: 'GET',
-          params: { status: 'new', page: 1, limit: 1, scope: 'others', search },
-        }),
-      ])
-      scopeNewCounts.value = {
-        mine: mineRes.success ? Number(mineRes.data?.pagination?.total ?? 0) : 0,
-        others: othersRes.success ? Number(othersRes.data?.pagination?.total ?? 0) : 0,
-      }
-    } catch {
-      /* badge ixtiyoriy */
-    }
-  }
+  const refreshScopeCounts = () =>
+    orderStore.refreshScopeCounts(appliedKeywords.value.trim() || undefined)
 
   /** Birinchi sahifa (ro'yxatni almashtiradi) */
   const load = async () => {
