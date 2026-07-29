@@ -76,7 +76,7 @@
       v-if="store.tab === 'ads' && !store.isAdmin"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Avval «A'zo bo'lish» — ilova ichida ulanasiz, keyin bepul o'z nomingizdan e'lon yuboring.
+      Barcha haydovchilar a'zo bo'lgan guruhlar. Avval «A'zo bo'lish», keyin e'lon yuboring.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
@@ -109,9 +109,9 @@
     <BaseEmptyState
       v-else-if="!filtered.length"
       icon="fa-solid fa-bullhorn"
-      :title="store.tab === 'mine'
+        :title="store.tab === 'mine'
         ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring'
-        : (store.isAdmin ? 'Guruhlar topilmadi' : 'Hali ochiq guruhlar yo\'q')"
+        : (store.isAdmin ? 'Guruhlar topilmadi' : 'Hali umumiy guruhlar yo\'q')"
       tone="slate"
     />
 
@@ -170,8 +170,8 @@
             </span>
             <span class="block text-[11px] font-medium text-slate-400 truncate">
               @{{ g.username || '—' }}
-              <template v-if="store.tab === 'mine' || store.isAdmin">
-                · {{ g.connections }} ulangan
+              <template v-if="g.connections > 1">
+                · {{ g.connections }} haydovchi
               </template>
             </span>
           </span>

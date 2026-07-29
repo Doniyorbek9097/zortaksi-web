@@ -190,6 +190,14 @@ export const usePostStore = defineStore('post', () => {
       selected.value = next
       return
     }
+    // Reklama: faqat a'zo guruhlarga yozish mumkin
+    if (tab.value === 'ads' && !isAdmin.value) {
+      const g = adsGroups.value.find((x) => x.id === id)
+      if (g && !g.isMember) {
+        error.value = "Avval «A'zo bo'lish» tugmasini bosing"
+        return
+      }
+    }
     if (pricePerGroup.value > 0 && next.size >= maxSelectable.value) {
       error.value = `Balans yetarli emas. Har bir guruh ${pricePerGroup.value.toLocaleString('ru-RU')} so'm`
       return
@@ -203,6 +211,7 @@ export const usePostStore = defineStore('post', () => {
     const next = new Set<string>()
     let count = 0
     for (const g of list) {
+      if (tab.value === 'ads' && !isAdmin.value && !g.isMember) continue
       if (pricePerGroup.value > 0 && count >= maxSelectable.value) break
       next.add(g.id)
       count++
@@ -237,6 +246,8 @@ export const usePostStore = defineStore('post', () => {
           copy[idx] = { ...copy[idx], isMember: true }
           adsGroups.value = copy
         }
+        // Meniki ham yangilansin
+        void fetchMine({ page: 1, force: true, append: false }).catch(() => {})
       }
       return res
     } catch (e: any) {
