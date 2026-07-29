@@ -41,6 +41,8 @@ export const usePostStore = defineStore('post', () => {
   const adsTotal = ref(0)
   const mineHasMore = ref(false)
   const adsHasMore = ref(false)
+  /** Hudud kalit so'zlari — server `search` */
+  const search = ref('')
 
   const isAdmin = computed(() => authStore.user?.role === 'admin')
   const balance = computed(() => authStore.user?.balance ?? 0)
@@ -61,6 +63,11 @@ export const usePostStore = defineStore('post', () => {
     if (pricePerGroup.value <= 0) return Infinity
     return Math.floor(balance.value / pricePerGroup.value)
   })
+
+  const searchParams = () => {
+    const s = search.value.trim()
+    return s ? { search: s } : {}
+  }
 
   const applyPageResult = (
     mode: PostTab,
@@ -91,6 +98,7 @@ export const usePostStore = defineStore('post', () => {
       params: {
         page: pageNum,
         limit: GROUPS_PAGE_SIZE,
+        ...searchParams(),
         ...(opts.force ? { force: '1' } : {}),
       },
       timeout: 120_000,
@@ -112,6 +120,7 @@ export const usePostStore = defineStore('post', () => {
       params: {
         page: pageNum,
         limit: GROUPS_PAGE_SIZE,
+        ...searchParams(),
         ...(opts.force ? { force: '1' } : {}),
       },
       timeout: isAdmin.value ? 180_000 : 60_000,
@@ -136,6 +145,7 @@ export const usePostStore = defineStore('post', () => {
 
   /** Birinchi sahifa — Meniki darhol; Reklama fonda */
   const load = async (force = false) => {
+    selected.value = new Set()
     try {
       isLoading.value = true
       error.value = ''
@@ -147,6 +157,12 @@ export const usePostStore = defineStore('post', () => {
       isLoading.value = false
     }
     fetchAds({ page: 1, force, append: false }).catch(() => {})
+  }
+
+  /** Hudud filtri o'zgarganda — serverdan qayta */
+  const setSearch = async (value: string) => {
+    search.value = String(value || '').trim()
+    await load(false)
   }
 
   const loadMore = async () => {
@@ -170,33 +186,27 @@ export const usePostStore = defineStore('post', () => {
   const setTab = async (t: PostTab) => {
     tab.value = t
     selected.value = new Set()
-    if (t === 'ads' && !adsGroups.value.length) {
-      try {
-        isLoading.value = true
-        error.value = ''
-        await fetchAds({ page: 1, append: false })
-      } catch (e: any) {
-        error.value = friendlyErr(e?.response?.data?.message || 'Guruhlar yuklanmadi')
-      } finally {
-        isLoading.value = false
-      }
+    // Har doim joriy search bilan yuklash (bo'sh bo'lsa ham)
+    try {
+      isLoading.value = true
+      error.value = ''
+      if (t === 'ads') await fetchAds({ page: 1, append: false })
+      else await fetchMine({ page: 1, append: false })
+    } catch (e: any) {
+      error.value = friendlyErr(e?.response?.data?.message || 'Guruhlar yuklanmadi')
+    } finally {
+      isLoading.value = false
     }
   }
 
   const toggle = (id: string) => {
+    // Reklama — checkbox yo'q, faqat Meniki dan tanlash
+    if (tab.value !== 'mine') return
     const next = new Set(selected.value)
     if (next.has(id)) {
       next.delete(id)
       selected.value = next
       return
-    }
-    // Reklama: faqat a'zo guruhlarga yozish mumkin
-    if (tab.value === 'ads' && !isAdmin.value) {
-      const g = adsGroups.value.find((x) => x.id === id)
-      if (g && !g.isMember) {
-        error.value = "Avval «A'zo bo'lish» tugmasini bosing"
-        return
-      }
     }
     if (pricePerGroup.value > 0 && next.size >= maxSelectable.value) {
       error.value = `Balans yetarli emas. Har bir guruh ${pricePerGroup.value.toLocaleString('ru-RU')} so'm`
@@ -208,10 +218,10 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const selectAllVisible = (list: PostGroup[]) => {
+    if (tab.value !== 'mine') return
     const next = new Set<string>()
     let count = 0
     for (const g of list) {
-      if (tab.value === 'ads' && !isAdmin.value && !g.isMember) continue
       if (pricePerGroup.value > 0 && count >= maxSelectable.value) break
       next.add(g.id)
       count++
@@ -240,13 +250,9 @@ export const usePostStore = defineStore('post', () => {
         timeout: 60_000,
       })
       if (res.success) {
-        const idx = adsGroups.value.findIndex((x) => x.id === g.id)
-        if (idx !== -1) {
-          const copy = [...adsGroups.value]
-          copy[idx] = { ...copy[idx], isMember: true }
-          adsGroups.value = copy
-        }
-        // Meniki ham yangilansin
+        // Reklamadan chiqariladi — endi Meniki da
+        adsGroups.value = adsGroups.value.filter((x) => x.id !== g.id)
+        adsTotal.value = Math.max(0, adsTotal.value - 1)
         void fetchMine({ page: 1, force: true, append: false }).catch(() => {})
       }
       return res
@@ -333,6 +339,7 @@ export const usePostStore = defineStore('post', () => {
     isSending,
     joiningId,
     error,
+    search,
     isAdmin,
     balance,
     groups,
@@ -345,6 +352,7 @@ export const usePostStore = defineStore('post', () => {
     maxSelectable,
     load,
     loadMore,
+    setSearch,
     setTab,
     toggle,
     selectAllVisible,

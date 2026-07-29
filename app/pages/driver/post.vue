@@ -76,7 +76,7 @@
       v-if="store.tab === 'ads' && !store.isAdmin"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Barcha haydovchilar a'zo bo'lgan guruhlar. Avval «A'zo bo'lish», keyin e'lon yuboring.
+      Faqat a'zo bo'lmagan guruhlar. «A'zo bo'lish» — keyin Meniki dan e'lon yuboring.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
@@ -85,21 +85,28 @@
       Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Reklama tabida ko'rinadi.
     </p>
 
-    <!-- Count + filters -->
-    <div class="flex items-center justify-between gap-2">
+    <!-- Count + select (faqat Meniki) -->
+    <div
+      v-if="store.tab === 'mine'"
+      class="flex items-center justify-between gap-2"
+    >
       <p class="text-[12px] font-bold text-slate-400">
         {{ selectedCount }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
       </p>
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          class="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-200 dark:border-slate-700 text-slate-500"
-          @click="toggleSelectAll"
-        >
-          {{ allFilteredSelected ? 'Bekor' : 'Hammasi' }}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="px-2.5 py-1 rounded-lg text-[11px] font-black border border-slate-200 dark:border-slate-700 text-slate-500"
+        @click="toggleSelectAll"
+      >
+        {{ allFilteredSelected ? 'Bekor' : 'Hammasi' }}
+      </button>
     </div>
+    <p
+      v-else
+      class="text-[12px] font-bold text-slate-400"
+    >
+      {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
+    </p>
 
     <!-- List -->
     <div v-if="store.isLoading" class="space-y-2">
@@ -109,9 +116,9 @@
     <BaseEmptyState
       v-else-if="!filtered.length"
       icon="fa-solid fa-bullhorn"
-        :title="store.tab === 'mine'
+      :title="store.tab === 'mine'
         ? 'Guruhlar topilmadi — Telegram sessiyangizni tekshiring'
-        : (store.isAdmin ? 'Guruhlar topilmadi' : 'Hali umumiy guruhlar yo\'q')"
+        : (store.isAdmin ? 'Guruhlar topilmadi' : 'A\'zo bo\'lish uchun guruh qolmadi')"
       tone="slate"
     />
 
@@ -120,11 +127,13 @@
         v-for="(g, idx) in filtered"
         :key="g.id"
         class="w-full flex items-center gap-2.5 px-3 py-3 rounded-2xl border text-left transition-colors"
-        :class="store.selected.has(g.id)
+        :class="store.tab === 'mine' && store.selected.has(g.id)
           ? 'border-amber-400/70 bg-amber-50 dark:bg-amber-950/30'
           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
       >
+        <!-- Meniki: checkbox bilan tanlash -->
         <button
+          v-if="store.tab === 'mine'"
           type="button"
           class="flex flex-1 items-center gap-2.5 min-w-0 text-left"
           @click="store.toggle(g.id)"
@@ -150,19 +159,13 @@
                 {{ g.title }}
               </span>
               <span
-                v-if="g.isAdmin && store.tab === 'mine'"
+                v-if="g.isAdmin"
                 class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/35 dark:border-sky-500/35"
               >
                 Admin
               </span>
               <span
-                v-if="store.tab === 'ads' && g.isMember"
-                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-400/35"
-              >
-                A'zo
-              </span>
-              <span
-                v-if="store.tab === 'mine' && store.isAdmin && g.visibleToDrivers"
+                v-if="store.isAdmin && g.visibleToDrivers"
                 class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-400/35"
               >
                 Haydovchiga
@@ -175,15 +178,29 @@
               </template>
             </span>
           </span>
-
-          <span class="text-[11px] font-black text-amber-500 shrink-0">
-            {{ g.free || store.tab === 'mine' || store.isAdmin ? 'Bepul' : `${g.price.toLocaleString('ru-RU')}` }}
-          </span>
         </button>
 
-        <!-- Haydovchi: ilova ichida a'zo bo'lish -->
+        <!-- Reklama: checkbox yo'q — faqat ma'lumot + a'zo bo'lish -->
+        <div
+          v-else
+          class="flex flex-1 items-center gap-2.5 min-w-0"
+        >
+          <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0">{{ idx + 1 }}</span>
+          <span class="flex-1 min-w-0">
+            <span class="block text-[13px] font-black text-slate-900 dark:text-white truncate">
+              {{ g.title }}
+            </span>
+            <span class="block text-[11px] font-medium text-slate-400 truncate">
+              @{{ g.username || '—' }}
+              <template v-if="g.connections > 1">
+                · {{ g.connections }} haydovchi
+              </template>
+            </span>
+          </span>
+        </div>
+
         <button
-          v-if="store.tab === 'ads' && !store.isAdmin && !g.isMember"
+          v-if="store.tab === 'ads' && !store.isAdmin"
           type="button"
           class="shrink-0 inline-flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60"
           :disabled="store.joiningId === g.id"
@@ -197,7 +214,6 @@
           {{ store.joiningId === g.id ? 'Ulanmoqda...' : "A'zo bo'lish" }}
         </button>
 
-        <!-- Admin Meniki: faqat o'zi admin bo'lgan guruhlarni haydovchilarga ochish -->
         <button
           v-if="store.tab === 'mine' && store.isAdmin && g.isAdmin"
           type="button"
@@ -215,7 +231,6 @@
         </button>
       </div>
 
-      <!-- Infinite scroll sentinel -->
       <div ref="sentinel" class="h-1" />
 
       <div v-if="store.isLoadingMore" class="space-y-2 pt-1">
@@ -237,25 +252,24 @@
       {{ success }}
     </p>
 
-    <!-- Floating send -->
-    <div
-      v-if="selectedCount > 0"
-      class="fixed bottom-20 inset-x-0 z-30 px-4 pointer-events-none"
-    >
-      <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl pointer-events-auto">
-        <button
-          type="button"
-          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
-          @click="composeOpen = true"
-        >
-          <font-awesome-icon icon="fa-solid fa-paper-plane" />
-          {{ selectedCount }} guruhga xabar yuborish
-          <span class="ml-1 px-2 py-0.5 rounded-lg text-[10px] font-black bg-white/25">
-            {{ store.totalCost > 0 ? `${store.totalCost.toLocaleString('ru-RU')} so'm` : 'Bepul' }}
-          </span>
-        </button>
+    <!-- Fixed send — Teleport: PTR transform fixed ni buzmasin -->
+    <Teleport to="body">
+      <div
+        v-if="store.tab === 'mine' && selectedCount > 0"
+        class="fixed bottom-20 inset-x-0 z-[60] px-4 pointer-events-none"
+      >
+        <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl pointer-events-auto">
+          <button
+            type="button"
+            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
+            @click="composeOpen = true"
+          >
+            <font-awesome-icon icon="fa-solid fa-paper-plane" />
+            {{ selectedCount }} guruhga xabar yuborish
+          </button>
+        </div>
       </div>
-    </div>
+    </Teleport>
 
     <PostComposeDialog
       v-model="composeOpen"
@@ -272,7 +286,6 @@ import { usePostStore } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
-  matchesKeywords,
   parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
@@ -284,17 +297,17 @@ const authStore = useAuthStore()
 
 const composeOpen = ref(false)
 const success = ref('')
-const filterFreeOnly = ref(false)
 const showFilter = ref(false)
 const draftKeywords = ref('')
 const appliedKeywords = ref('')
 const filterActive = computed(() => !!appliedKeywords.value.trim())
 
-const onSaveFilter = (value: string) => {
+const onSaveFilter = async (value: string) => {
   draftKeywords.value = value
   appliedKeywords.value = value
   saveOrderFilterKeywords(value)
   showFilter.value = false
+  await store.setSearch(value)
 }
 
 const onCancelFilter = () => {
@@ -306,19 +319,10 @@ const onRemoveRegion = (chip: string) => {
   const next = parseKeywords(appliedKeywords.value)
     .filter((k) => k !== chip)
     .join(', ')
-  onSaveFilter(next)
+  void onSaveFilter(next)
 }
 
-const filtered = computed(() => {
-  let list = store.groups
-  if (filterFreeOnly.value) list = list.filter(g => g.free)
-  if (appliedKeywords.value.trim()) {
-    list = list.filter(g =>
-      matchesKeywords([g.title, g.username], appliedKeywords.value),
-    )
-  }
-  return list
-})
+const filtered = computed(() => store.groups)
 
 const selectedCount = computed(() => store.selected.size)
 
@@ -356,12 +360,12 @@ const onToggleVisibility = async (g: any) => {
 const onJoinGroup = async (g: any) => {
   try {
     await store.joinGroup(g)
+    success.value = `«${g.title}» Meniki ga qo'shildi`
   } catch {
     /* store error */
   }
 }
 
-// --- Infinite scroll (10 tadan) ---
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
@@ -369,6 +373,7 @@ onMounted(async () => {
   const saved = loadOrderFilterKeywords()
   draftKeywords.value = saved
   appliedKeywords.value = saved
+  store.search = saved.trim()
 
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }

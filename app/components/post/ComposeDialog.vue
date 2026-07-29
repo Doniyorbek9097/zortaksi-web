@@ -16,10 +16,9 @@
                 <h3 class="text-lg font-black text-slate-900 dark:text-white">Xabar yuborish</h3>
                 <p class="text-[12px] font-medium text-slate-400 mt-0.5">
                   {{ count }} ta guruhga
-                  <span v-if="cost > 0" class="text-amber-500">
+                  <span v-if="cost && cost > 0" class="text-amber-500">
                     · {{ cost.toLocaleString('ru-RU') }} so'm
                   </span>
-                  <span v-else class="text-emerald-500">· Bepul</span>
                 </p>
               </div>
               <button
