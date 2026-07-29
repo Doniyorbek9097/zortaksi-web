@@ -23,6 +23,8 @@ export const useOrderStore = defineStore('order', () => {
     const newOrdersCount = ref(0)
     /** Orders scroll — chatdan qaytganda tiklash */
     const ordersListScrollY = ref(0)
+    /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
+    const listSearch = ref('')
 
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
     const recentArrivals = ref<Record<string, number>>({})
@@ -207,6 +209,7 @@ export const useOrderStore = defineStore('order', () => {
                 orders.value = list
                 page.value = 1
                 totalPages.value = response.data.pagination?.totalPages ?? 1
+                listSearch.value = String(params.search || '').trim()
             } else {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
@@ -243,6 +246,7 @@ export const useOrderStore = defineStore('order', () => {
                     orders.value = merged
                 } else {
                     orders.value = list
+                    listSearch.value = String(params.search || '').trim()
                     // Birinchi yuklash: oxirgi 1 daqiqadagi buyurtmalar badge
                     noteRecentOrdersFromList(list)
                 }
@@ -403,6 +407,7 @@ export const useOrderStore = defineStore('order', () => {
         totalPages,
         newOrdersCount,
         ordersListScrollY,
+        listSearch,
         recentMinuteCount,
         hasMore,
         fetchOrders,

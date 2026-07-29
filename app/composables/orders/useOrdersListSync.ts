@@ -74,16 +74,19 @@ export function useOrdersListSync(options: {
     orderStore.startRecentMinuteTicker()
     hydrateFilter()
 
+    const wantSearch = String(queryParams().search || '').trim()
     const hasCachedList = orderStore.orders.length > 0
-    if (hasCachedList) {
-      // Chat/interest dan qaytish — pagination + scroll saqlansin
+    const sameServerFilter = String(orderStore.listSearch || '') === wantSearch
+
+    if (hasCachedList && sameServerFilter) {
+      // Chatdan qaytish — pagination + scroll; filtr server bilan mos
       await nextTick()
       restoreScroll()
       setTimeout(restoreScroll, 50)
       setTimeout(restoreScroll, 150)
-      // Fonida yangilarni tortamiz (ro'yxatni page=1 bilan almashtirmaymiz)
       void orderStore.syncLatest(queryParams())
     } else {
+      // Filtr o'zgargan yoki bo'sh cache — serverdan filterlab yuklash
       await load()
     }
 

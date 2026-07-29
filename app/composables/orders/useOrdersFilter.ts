@@ -1,7 +1,6 @@
 import type { useOrderStore } from '~/stores/order.store'
 import {
   loadOrderFilterKeywords,
-  matchesKeywords,
   parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
@@ -9,8 +8,8 @@ import {
 const LIMIT = 10
 
 /**
- * Buyurtmalar sahifasi filtri (hudud kalit so'zlari).
- * localStorage orqali saqlanadi va socket/live ro'yxatni ham kesadi.
+ * Buyurtmalar filtri — kalit so'zlar serverga `search` sifatida yuboriladi.
+ * Ro'yxat faqat API natijasi (client-side qayta filter yo'q).
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const showFilter = ref(false)
@@ -24,17 +23,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     search: appliedKeywords.value.trim() || undefined,
   })
 
-  // Socket orqali kelgan buyurtmalarni ham filter bo'yicha kesish
-  const displayOrders = computed(() => {
-    const list = orderStore.orders
-    if (!appliedKeywords.value.trim()) return list
-    return list.filter((o: any) =>
-      matchesKeywords(
-        [o?.group?.title, o?.group?.username, o?.message?.text],
-        appliedKeywords.value,
-      ),
-    )
-  })
+  /** Server filtrlangan ro'yxat — qo'shimcha client kesish yo'q */
+  const displayOrders = computed(() => orderStore.orders)
 
   /** Birinchi sahifa (ro'yxatni almashtiradi) */
   const load = () => orderStore.fetchOrders({ page: 1, ...queryParams() })
@@ -47,7 +37,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedKeywords.value = value
     saveOrderFilterKeywords(value)
     showFilter.value = false
-    load()
+    // Har doim serverdan qayta yuklash
+    void load()
   }
 
   const onCancelFilter = () => {

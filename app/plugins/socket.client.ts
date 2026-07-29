@@ -5,6 +5,10 @@ import { useAuthStore } from '~/stores/auth.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
+import {
+  loadOrderFilterKeywords,
+  matchesKeywords,
+} from '~/utils/orderFilterKeywords'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
@@ -23,10 +27,15 @@ export default defineNuxtPlugin(() => {
 
   const currentToken = () => resolveAuthToken(cookie.value)
 
+  const orderSearchParams = () => {
+    const search = loadOrderFilterKeywords().trim() || undefined
+    return { limit: 40, search }
+  }
+
   /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
   const catchUpOrders = () => {
     if (!currentToken()) return
-    void orderStore.syncLatest()
+    void orderStore.syncLatest(orderSearchParams())
   }
 
   const catchUpChats = () => {
@@ -73,6 +82,17 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
+      // Faol filtr bo'lsa — live order ham kalit so'zga mos kelmasa qo'shilmasin
+      const kw = loadOrderFilterKeywords().trim()
+      if (
+        kw &&
+        !matchesKeywords(
+          [order?.group?.title, order?.group?.username, order?.message?.text],
+          kw,
+        )
+      ) {
+        return
+      }
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
     })
