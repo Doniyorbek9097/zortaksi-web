@@ -1,26 +1,29 @@
 <template>
   <div
-    class="fixed inset-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    class="fixed inset-0 z-40 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950"
     :style="{ paddingTop: 'var(--zt-safe-top, 0px)' }"
   >
     <header
-      class="shrink-0 z-30 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50"
+      class="shrink-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-b border-slate-200/70 dark:border-slate-800"
     >
-      <div class="mx-auto w-full max-w-2xl px-3 py-1.5 flex items-center gap-2">
+      <div class="mx-auto w-full max-w-2xl px-3 py-2 flex items-center gap-2">
         <button
           type="button"
-          class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5 active:scale-95 transition-all"
+          class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/5 active:scale-95 transition-all"
           aria-label="Orqaga"
           @click="goBack"
         >
           <font-awesome-icon icon="fa-solid fa-chevron-left" />
         </button>
 
-        <ProfileAvatar :name="headerName" :src="headerAvatar" :user-id="headerUserId" size="sm" />
+        <div class="flex -space-x-2 shrink-0">
+          <ProfileAvatar :name="driverName" :src="driverAvatar" :user-id="driverId" size="sm" />
+          <ProfileAvatar :name="customerName" :src="customerAvatar" :user-id="customerId" size="sm" />
+        </div>
 
         <div class="flex-1 min-w-0 leading-none">
           <p class="text-[13px] font-black truncate text-slate-900 dark:text-white">
-            {{ headerName }}
+            Suhbat ko'rinishi
           </p>
           <p class="text-[10px] font-medium truncate mt-0.5 text-amber-600 dark:text-amber-400">
             Faqat ko'rish · yozib bo'lmaydi
@@ -30,7 +33,7 @@
     </header>
 
     <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain">
-      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
+      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-4 min-h-full flex flex-col">
         <div
           v-if="orderText"
           class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
@@ -43,19 +46,29 @@
           </p>
         </div>
 
-        <div
-          class="rounded-xl px-3 py-2 text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800"
-        >
-          {{ driverName }} ↔ {{ customerName }}
+        <div class="flex flex-wrap items-center gap-2">
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/25"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-sky-500" />
+            Haydovchi
+          </span>
+          <span
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-black bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-400/25"
+          >
+            <span class="w-1.5 h-1.5 rounded-full bg-violet-500" />
+            Yo'lovchi
+          </span>
         </div>
 
-        <div v-if="loading" class="space-y-2">
-          <div
-            v-for="n in 6"
-            :key="n"
-            class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"
-            :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'"
-          />
+        <div v-if="loading" class="space-y-4 pt-2">
+          <div v-for="n in 5" :key="n" class="flex gap-2.5">
+            <div class="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 animate-pulse shrink-0" />
+            <div class="flex-1 space-y-1.5">
+              <div class="h-3 w-28 rounded bg-slate-200 dark:bg-slate-800 animate-pulse" />
+              <div class="h-14 rounded-2xl bg-slate-200 dark:bg-slate-800 animate-pulse" />
+            </div>
+          </div>
         </div>
 
         <BaseEmptyState
@@ -72,23 +85,67 @@
           class="!min-h-0 flex-1"
         />
 
-        <ChatMessageBubble
+        <article
           v-for="msg in messages"
           :key="msg._id"
-          :text="msg.text"
-          :time="formatTime(msg.date)"
-          :date="msg.date"
-          :out="msg.direction === 'out'"
-          :read="msg.status === 'read'"
-          :status="msg.status"
-          :type="msg.type"
-          :message-id="msg._id"
-          :media-path="msg.mediaPath"
-          :duration="msg.duration"
-          :location-lat="msg.locationLat"
-          :location-lng="msg.locationLng"
-          :location-title="msg.locationTitle"
-        />
+          class="flex gap-2.5 items-start"
+        >
+          <ProfileAvatar
+            :name="speakerOf(msg).name"
+            :src="speakerOf(msg).avatar"
+            :user-id="speakerOf(msg).userId"
+            size="sm"
+            class="shrink-0 mt-0.5"
+          />
+
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 mb-1.5 min-w-0 flex-wrap">
+              <p class="text-[13px] font-black text-slate-900 dark:text-white truncate max-w-[50%]">
+                {{ speakerOf(msg).name }}
+              </p>
+              <span
+                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wide"
+                :class="isDriverMsg(msg)
+                  ? 'bg-sky-500/15 text-sky-600 dark:text-sky-400'
+                  : 'bg-violet-500/15 text-violet-600 dark:text-violet-400'"
+              >
+                {{ isDriverMsg(msg) ? 'Haydovchi' : "Yo'lovchi" }}
+              </span>
+              <span class="shrink-0 text-[10px] font-medium text-slate-400 tabular-nums">
+                {{ formatTime(msg.date) }}
+              </span>
+            </div>
+
+            <!-- Media / joylashuv — mavjud bubble -->
+            <ChatMessageBubble
+              v-if="msg.type && msg.type !== 'text'"
+              :text="msg.text"
+              :time="formatTime(msg.date)"
+              :date="msg.date"
+              :out="false"
+              :read="msg.status === 'read'"
+              :status="msg.status"
+              :type="msg.type"
+              :message-id="msg._id"
+              :media-path="msg.mediaPath"
+              :duration="msg.duration"
+              :location-lat="msg.locationLat"
+              :location-lng="msg.locationLng"
+              :location-title="msg.locationTitle"
+            />
+
+            <!-- Oddiy matn -->
+            <div
+              v-else
+              class="rounded-2xl rounded-tl-md px-3.5 py-2.5 border text-[15px] leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-wrap break-words"
+              :class="isDriverMsg(msg)
+                ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/70 dark:border-sky-800/50'
+                : 'bg-violet-50 dark:bg-violet-950/30 border-violet-200/70 dark:border-violet-800/40'"
+            >
+              <ChatLinkifiedText :text="msg.text || ''" />
+            </div>
+          </div>
+        </article>
       </div>
     </div>
 
@@ -121,13 +178,29 @@ const error = ref('')
 const messages = ref<IChatMessage[]>([])
 const orderText = ref('')
 const driverName = ref('Haydovchi')
-const customerName = ref('Buyurtmachi')
+const customerName = ref("Yo'lovchi")
 const driverAvatar = ref('')
+const customerAvatar = ref('')
 const driverId = ref('')
+const customerId = ref('')
 
-const headerName = computed(() => driverName.value)
-const headerAvatar = computed(() => driverAvatar.value)
-const headerUserId = computed(() => driverId.value)
+/** Driver chatida out = haydovchi, in = yo'lovchi */
+const isDriverMsg = (msg: IChatMessage) => msg.direction === 'out'
+
+const speakerOf = (msg: IChatMessage) => {
+  if (isDriverMsg(msg)) {
+    return {
+      name: driverName.value,
+      avatar: driverAvatar.value,
+      userId: driverId.value,
+    }
+  }
+  return {
+    name: customerName.value,
+    avatar: customerAvatar.value,
+    userId: customerId.value,
+  }
+}
 
 const formatTime = (value: string | Date) => {
   if (!value) return ''
@@ -161,9 +234,11 @@ const load = async () => {
     messages.value = (data.messages || []) as IChatMessage[]
     orderText.value = String(data.orderText || data.chat?.orderText || '')
     driverName.value = data.driver?.name || 'Haydovchi'
-    customerName.value = data.customer?.name || 'Buyurtmachi'
+    customerName.value = data.customer?.name || "Yo'lovchi"
     driverAvatar.value = data.driver?.avatar || ''
+    customerAvatar.value = data.customer?.avatar || data.chat?.peer?.avatar || ''
     driverId.value = data.driver?.userId || driverUserId.value
+    customerId.value = data.customer?.userId || data.chat?.peer?.userId || ''
   } catch (e: any) {
     const msg =
       e?.response?.data?.message ||
