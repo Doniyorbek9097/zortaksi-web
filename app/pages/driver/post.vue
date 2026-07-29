@@ -109,8 +109,12 @@
     </p>
 
     <!-- List -->
-    <div v-if="store.isLoading" class="space-y-2">
-      <div v-for="n in 6" :key="n" class="h-16 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+    <div v-if="store.isLoading" class="space-y-3">
+      <div
+        v-for="n in 5"
+        :key="n"
+        class="h-[88px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+      />
     </div>
 
     <BaseEmptyState
@@ -122,143 +126,31 @@
       tone="slate"
     />
 
-    <div v-else class="space-y-2">
-      <div
+    <div v-else class="space-y-2.5">
+      <PostGroupCard
         v-for="g in filtered"
         :key="g.id"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl border text-left transition-colors"
-        :class="store.tab === 'mine' && store.selected.has(g.id)
-          ? 'border-amber-400/70 bg-amber-50 dark:bg-amber-950/30'
-          : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
-      >
-        <!-- Meniki: checkbox + avatar -->
-        <button
-          v-if="store.tab === 'mine'"
-          type="button"
-          class="flex flex-1 items-center gap-3 min-w-0 text-left"
-          @click="store.toggle(g.id)"
-        >
-          <span
-            class="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0"
-            :class="store.selected.has(g.id)
-              ? 'border-amber-500 bg-amber-500 text-white'
-              : 'border-slate-300 dark:border-slate-600'"
-          >
-            <font-awesome-icon
-              v-if="store.selected.has(g.id)"
-              icon="fa-solid fa-check"
-              class="text-[9px]"
-            />
-          </span>
-
-          <ProfileAvatar
-            :name="g.title"
-            :src="g.avatar"
-            size="md"
-            class="!rounded-xl"
-          />
-
-          <span class="flex-1 min-w-0">
-            <span class="flex items-center gap-1.5 min-w-0 flex-wrap">
-              <span class="text-[13px] font-black text-slate-900 dark:text-white truncate">
-                {{ g.title }}
-              </span>
-              <span
-                v-if="g.isAdmin"
-                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-400/35 dark:border-sky-500/35"
-              >
-                Admin
-              </span>
-              <span
-                v-if="store.isAdmin && g.visibleToDrivers"
-                class="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-black tracking-wide bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-400/35"
-              >
-                Haydovchiga
-              </span>
-            </span>
-            <span class="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-slate-400 truncate">
-              <span class="truncate">@{{ g.username || '—' }}</span>
-              <span
-                v-if="g.membersCount"
-                class="shrink-0 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"
-              >
-                <font-awesome-icon icon="fa-solid fa-users" class="text-[9px] opacity-70" />
-                {{ formatMembers(g.membersCount) }}
-              </span>
-            </span>
-          </span>
-        </button>
-
-        <!-- Reklama: avatar + a'zo bo'lish -->
-        <div
-          v-else
-          class="flex flex-1 items-center gap-3 min-w-0"
-        >
-          <ProfileAvatar
-            :name="g.title"
-            :src="g.avatar"
-            size="md"
-            class="!rounded-xl"
-          />
-          <span class="flex-1 min-w-0">
-            <span class="block text-[13px] font-black text-slate-900 dark:text-white truncate">
-              {{ g.title }}
-            </span>
-            <span class="mt-0.5 flex items-center gap-2 text-[11px] font-medium text-slate-400 truncate">
-              <span class="truncate">@{{ g.username || '—' }}</span>
-              <span
-                v-if="g.membersCount"
-                class="shrink-0 inline-flex items-center gap-1 text-slate-500 dark:text-slate-400"
-              >
-                <font-awesome-icon icon="fa-solid fa-users" class="text-[9px] opacity-70" />
-                {{ formatMembers(g.membersCount) }}
-              </span>
-              <span
-                v-else-if="g.connections > 1"
-                class="shrink-0"
-              >
-                · {{ g.connections }} haydovchi
-              </span>
-            </span>
-          </span>
-        </div>
-
-        <button
-          v-if="store.tab === 'ads' && !store.isAdmin"
-          type="button"
-          class="shrink-0 inline-flex items-center justify-center gap-1 px-2.5 py-2 rounded-xl text-[10px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60"
-          :disabled="store.joiningId === g.id"
-          @click.stop="onJoinGroup(g)"
-        >
-          <font-awesome-icon
-            v-if="store.joiningId === g.id"
-            icon="fa-solid fa-spinner"
-            class="animate-spin text-[9px]"
-          />
-          {{ store.joiningId === g.id ? 'Ulanmoqda...' : "A'zo bo'lish" }}
-        </button>
-
-        <button
-          v-if="store.tab === 'mine' && store.isAdmin && g.isAdmin"
-          type="button"
-          class="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border active:scale-95"
-          :class="g.visibleToDrivers
-            ? 'border-violet-400/60 bg-violet-500/15 text-violet-600 dark:text-violet-400'
-            : 'border-slate-200 dark:border-slate-700 text-slate-400'"
-          :title="g.visibleToDrivers ? 'Haydovchilardan yashirish' : 'Haydovchilarga korsatish'"
-          @click.stop="onToggleVisibility(g)"
-        >
-          <font-awesome-icon
-            :icon="g.visibleToDrivers ? 'fa-solid fa-eye' : 'fa-solid fa-eye-slash'"
-            class="text-[12px]"
-          />
-        </button>
-      </div>
+        :group="g"
+        :selectable="store.tab === 'mine'"
+        :selected="store.selected.has(g.id)"
+        :show-admin-badge="store.tab === 'mine'"
+        :show-visible-badge="store.tab === 'mine' && store.isAdmin"
+        :show-join="store.tab === 'ads' && !store.isAdmin"
+        :joining="store.joiningId === g.id"
+        :show-visibility="store.tab === 'mine' && store.isAdmin && g.isAdmin"
+        @toggle="store.toggle(g.id)"
+        @join="onJoinGroup(g)"
+        @toggle-visibility="onToggleVisibility(g)"
+      />
 
       <div ref="sentinel" class="h-1" />
 
-      <div v-if="store.isLoadingMore" class="space-y-2 pt-1">
-        <div v-for="n in 2" :key="n" class="h-14 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+      <div v-if="store.isLoadingMore" class="space-y-2.5 pt-1">
+        <div
+          v-for="n in 2"
+          :key="n"
+          class="h-[88px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        />
       </div>
 
       <p
@@ -347,13 +239,6 @@ const onRemoveRegion = (chip: string) => {
 }
 
 const filtered = computed(() => store.groups)
-
-const formatMembers = (n?: number) => {
-  const v = Number(n) || 0
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1).replace(/\.0$/, '')}K`
-  return v.toLocaleString('ru-RU')
-}
 
 const selectedCount = computed(() => store.selected.size)
 

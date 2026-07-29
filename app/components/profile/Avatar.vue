@@ -1,7 +1,7 @@
 <template>
   <div
-    class="rounded-full overflow-hidden flex items-center justify-center font-black text-white shrink-0"
-    :class="[sizeClass, !showImg && colorClass]"
+    class="overflow-hidden flex items-center justify-center font-black text-white shrink-0"
+    :class="[sizeClass, shapeClass, !showImg && colorClass]"
   >
     <img
       v-if="showImg"
@@ -20,11 +20,14 @@ interface Props {
   src?: string
   /** Telegram userId — src bo'lmasa `/media/avatars/{id}.jpg` sinab ko'riladi */
   userId?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  /** Guruhlar uchun kvadratroq avatar */
+  shape?: 'circle' | 'rounded'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
+  shape: 'circle',
 })
 
 const { avatarUrl } = useMediaUrl()
@@ -48,21 +51,24 @@ const sizeMap = {
   sm: 'w-10 h-10 text-sm',
   md: 'w-11 h-11 text-base',
   lg: 'w-14 h-14 text-lg',
+  xl: 'w-16 h-16 text-xl',
 }
 
-const palette = [
-  'bg-gradient-to-br from-pink-500 to-rose-500',
-  'bg-gradient-to-br from-violet-500 to-indigo-500',
-  'bg-gradient-to-br from-emerald-500 to-teal-500',
-  'bg-gradient-to-br from-amber-500 to-orange-500',
-  'bg-gradient-to-br from-sky-500 to-blue-500',
-  'bg-gradient-to-br from-fuchsia-500 to-purple-500',
-]
-
 const sizeClass = computed(() => sizeMap[props.size])
+const shapeClass = computed(() =>
+  props.shape === 'rounded' ? 'rounded-2xl' : 'rounded-full'
+)
 const initial = computed(() => (props.name?.trim()?.[0] || '?').toUpperCase())
 const colorClass = computed(() => {
   const code = (props.name || '?').charCodeAt(0) || 0
+  const palette = [
+    'bg-gradient-to-br from-pink-500 to-rose-500',
+    'bg-gradient-to-br from-violet-500 to-indigo-500',
+    'bg-gradient-to-br from-emerald-500 to-teal-500',
+    'bg-gradient-to-br from-amber-500 to-orange-500',
+    'bg-gradient-to-br from-sky-500 to-blue-500',
+    'bg-gradient-to-br from-fuchsia-500 to-purple-500',
+  ]
   return palette[code % palette.length]
 })
 
