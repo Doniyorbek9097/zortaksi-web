@@ -5,71 +5,32 @@
       ? 'border-amber-400/70 bg-amber-50 dark:bg-amber-950/30'
       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
   >
-    <div class="flex gap-3 p-3">
-      <!-- Chap: avatar + pastida a'zo / join / ko'rish -->
-      <div class="w-[76px] shrink-0 flex flex-col items-center gap-1.5">
-        <button
-          type="button"
-          class="relative rounded-2xl focus:outline-none"
-          :class="selectable ? 'cursor-pointer' : 'cursor-default'"
-          :disabled="!selectable"
-          @click="selectable && emit('toggle')"
-        >
-          <ProfileAvatar
-            :name="group.title"
-            :src="group.avatar"
-            size="xl"
-            shape="rounded"
-          />
-          <!-- Tanlangan holat — checkbox o'rniga avatar badge -->
-          <span
-            v-if="selectable && selected"
-            class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow border-2 border-white dark:border-slate-900"
-          >
-            <font-awesome-icon icon="fa-solid fa-check" class="text-[9px]" />
-          </span>
-        </button>
-
-        <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 text-center leading-tight tabular-nums">
-          <font-awesome-icon icon="fa-solid fa-users" class="text-[8px] opacity-70 mr-0.5" />
-          <template v-if="group.membersCount">
-            {{ formatMembers(group.membersCount) }} a'zo
-          </template>
-          <template v-else>
-            — a'zo
-          </template>
-        </span>
-
-        <button
-          v-if="showJoin"
-          type="button"
-          class="w-full inline-flex items-center justify-center px-1 py-1.5 rounded-lg text-[9px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95 disabled:opacity-60 leading-tight"
-          :disabled="joining"
-          @click.stop="emit('join')"
-        >
-          <font-awesome-icon
-            v-if="joining"
-            icon="fa-solid fa-spinner"
-            class="animate-spin text-[8px] mr-0.5"
-          />
-          {{ joining ? '...' : "A'zo bo'lish" }}
-        </button>
-
-        <button
-          v-if="viewUrl"
-          type="button"
-          class="w-full inline-flex items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[9px] font-black border border-emerald-400/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 active:scale-95 leading-tight"
-          @click.stop="openGroup"
-        >
-          <font-awesome-icon icon="fa-solid fa-eye" class="text-[8px]" />
-          Ko'rish
-        </button>
-      </div>
-
-      <!-- O'ng: title + username -->
+    <!-- Yuqori: avatar + title/username -->
+    <div class="flex gap-3 p-3 pb-2.5">
       <button
         type="button"
-        class="flex-1 min-w-0 text-left space-y-1.5 pt-0.5"
+        class="relative shrink-0 rounded-2xl focus:outline-none"
+        :class="selectable ? 'cursor-pointer' : 'cursor-default'"
+        :disabled="!selectable"
+        @click="selectable && emit('toggle')"
+      >
+        <ProfileAvatar
+          :name="group.title"
+          :src="group.avatar"
+          size="xl"
+          shape="rounded"
+        />
+        <span
+          v-if="selectable && selected"
+          class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center shadow border-2 border-white dark:border-slate-900"
+        >
+          <font-awesome-icon icon="fa-solid fa-check" class="text-[9px]" />
+        </span>
+      </button>
+
+      <button
+        type="button"
+        class="flex-1 min-w-0 text-left"
         :class="selectable ? 'cursor-pointer' : 'cursor-default'"
         :disabled="!selectable"
         @click="selectable && emit('toggle')"
@@ -124,6 +85,51 @@
         </div>
       </button>
     </div>
+
+    <!-- Past: avatar+title tagida horizontal tugmalar -->
+    <div class="flex items-stretch gap-2 px-3 pb-3">
+      <div
+        class="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0"
+      >
+        <font-awesome-icon icon="fa-solid fa-users" class="text-[11px] text-slate-400" />
+        <template v-if="group.membersCount">
+          {{ formatMembers(group.membersCount) }} a'zo
+        </template>
+        <template v-else>
+          — a'zo
+        </template>
+      </div>
+
+      <button
+        v-if="showJoin"
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-[0.98] disabled:opacity-60"
+        :disabled="joining"
+        @click.stop="emit('join')"
+      >
+        <font-awesome-icon
+          v-if="joining"
+          icon="fa-solid fa-spinner"
+          class="animate-spin text-[11px]"
+        />
+        <font-awesome-icon
+          v-else
+          icon="fa-solid fa-user-plus"
+          class="text-[11px]"
+        />
+        {{ joining ? 'Ulanmoqda...' : "A'zo bo'lish" }}
+      </button>
+
+      <button
+        v-if="viewUrl"
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-black border border-emerald-400/40 text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 active:scale-[0.98]"
+        @click.stop="openGroup"
+      >
+        <font-awesome-icon icon="fa-solid fa-eye" class="text-[11px]" />
+        Ko'rish
+      </button>
+    </div>
   </div>
 </template>
 
@@ -161,7 +167,6 @@ const viewUrl = computed(() => {
   if (username) return `https://t.me/${username}`
   const raw = String(props.group.id || '').replace(/\D/g, '')
   if (!raw) return ''
-  // Private supergroup: t.me/c/<id without -100>
   const channelId = raw.startsWith('100') && raw.length > 10 ? raw.slice(3) : raw
   return `https://t.me/c/${channelId}`
 })
