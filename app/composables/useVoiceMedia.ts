@@ -17,11 +17,10 @@ import type { InjectionKey } from 'vue'
 export type ChatMediaUrlBuilder = (messageId: string) => string
 export const chatMediaUrlKey: InjectionKey<ChatMediaUrlBuilder> = Symbol('ztChatMediaUrl')
 
-/** provide o'zida inject bo'lmagani uchun (prefetch) — sahifa override */
-let pageMediaUrlBuilder: ChatMediaUrlBuilder | null = null
-
-export function setChatMediaUrlBuilder(builder: ChatMediaUrlBuilder | null) {
-  pageMediaUrlBuilder = builder
+export type GetMediaUrlOpts = {
+  forceNetwork?: boolean
+  /** Interest chat prefetch — inject o'rniga aniq URL */
+  urlBuilder?: ChatMediaUrlBuilder | null
 }
 
 const cache = new Map<string, string>()
@@ -68,9 +67,8 @@ async function fetchMediaBlobFromNetwork(
       ? AbortSignal.timeout(120_000)
       : undefined
   const apiBase = resolveApiBase()
-  const builder = urlBuilder || pageMediaUrlBuilder
-  const url = builder
-    ? builder(messageId)
+  const url = urlBuilder
+    ? urlBuilder(messageId)
     : `${apiBase}/chats/messages/${messageId}/media`
   const res = await fetch(url, {
     headers: token.value ? { Authorization: `Bearer ${token.value}` } : {},
@@ -101,7 +99,7 @@ async function fetchMediaBlobFromNetwork(
       apiBase,
       mediaUrl: url,
       errBody,
-      runId: 'post-fix',
+      runId: 'chat-page-fix',
     },
   })
   // #endregion
@@ -162,7 +160,17 @@ export function useVoiceMedia() {
 }
 
 export function useChatMedia() {
-  const injectedUrlBuilder = inject(chatMediaUrlKey, null)
+  let injectedUrlBuilder: ChatMediaUrlBuilder | null = null
+  try {
+    injectedUrlBuilder = inject(chatMediaUrlKey, null)
+  } catch {
+    injectedUrlBuilder = null
+  }
+
+  const resolveBuilder = (override?: ChatMediaUrlBuilder | null) => {
+    if (override !== undefined) return override
+    return injectedUrlBuilder
+  }
 
   /** Keshdagi URL (sync) — temp xabarda ham ishlaydi */
   const peekUrl = (messageId: string): string => cache.get(normalizeMessageId(messageId)) || ''
@@ -209,10 +217,11 @@ export function useChatMedia() {
   const getUrl = async (
     messageId: string,
     kind: 'voice' | 'photo' = 'photo',
-    opts: { forceNetwork?: boolean } = {},
+    opts: GetMediaUrlOpts = {},
   ): Promise<string> => {
     const id = normalizeMessageId(messageId)
     if (!id) return ''
+    const builder = resolveBuilder(opts.urlBuilder)
 
     // forceNetwork — keshni aylanib o'tadi (OGG/buzilgan blob qayta olinadi)
     const cached = cache.get(id)
@@ -249,14 +258,14 @@ export function useChatMedia() {
         const localUrl = await blobToObjectUrl(id, idbBlob, kind, false)
         if (!opts.forceNetwork) return localUrl
         // forceNetwork: IDB ko'rsatiladi, server fonda yangilanadi
-        void fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
+        void fetchMediaBlobFromNetwork(id, kind, builder)
           .then((blob) => blobToObjectUrl(id, blob, kind, true))
           .catch(() => {})
         return localUrl
       }
 
       // 2) Server → Telegram (voice M4A / audio/mp4)
-      const blob = await fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
+      const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
       return blobToObjectUrl(id, blob, kind, true)
     })()
 
@@ -303,23 +312,26 @@ export function useChatMedia() {
    */
   const prefetch = (
     messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+    urlBuilder?: ChatMediaUrlBuilder | null,
   ) => {
     for (const m of messages) {
-      if (m._id.startsWith('temp-')) continue
+      const id = normalizeMessageId(m._id)
+      if (!id || id.startsWith('temp-')) continue
       const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
       if (!isVoice && !isPhoto) continue
       if (!m.mediaPath && !m.tgMessageId) continue
       const kind = isVoice ? 'voice' : 'photo'
+      const opts: GetMediaUrlOpts = { urlBuilder }
       // Avval IndexedDB — chat ochilganda darhol ko'rinsin
-      getUrl(m._id, kind)
+      getUrl(id, kind, opts)
         .then(() => {
           if (!m.mediaPath || m.mediaPath === 'remote') {
-            getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
+            getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
           }
         })
         .catch(() => {
-          getUrl(m._id, kind, { forceNetwork: true }).catch(() => {})
+          getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
         })
     }
   }

@@ -166,11 +166,7 @@
 
 <script setup lang="ts">
 import type { IChatMessage } from '~/types'
-import {
-  chatMediaUrlKey,
-  setChatMediaUrlBuilder,
-  useChatMedia,
-} from '~/composables/useVoiceMedia'
+import { chatMediaUrlKey, useChatMedia } from '~/composables/useVoiceMedia'
 
 definePageMeta({
   layout: false,
@@ -208,8 +204,6 @@ const interestMediaUrl = (messageId: string) => {
   return `${apiBase}/orders/${oid}/interest/${did}/messages/${mid}/media`
 }
 provide(chatMediaUrlKey, interestMediaUrl)
-setChatMediaUrlBuilder(interestMediaUrl)
-onBeforeUnmount(() => setChatMediaUrlBuilder(null))
 
 /** Driver chatida out = haydovchi, in = yo'lovchi */
 const isDriverMsg = (msg: IChatMessage) => msg.direction === 'out'
@@ -305,6 +299,7 @@ const load = async () => {
         mediaPath: m.mediaPath,
         tgMessageId: (m as any).tgMessageId,
       })),
+      interestMediaUrl,
     )
   } catch (e: any) {
     const msg =

@@ -73,12 +73,15 @@ export function createListActions(
             const res = await useApi(`/chats/${chatId}/messages`, { method: 'GET' })
             if (res.success) {
                 currentChat.value = res.data.chat
-                messages.value = res.data.messages
+                messages.value = (res.data.messages || []).map((m: any) => ({
+                    ...m,
+                    _id: String(m._id || m.id || ''),
+                }))
                 // Ro'yxatdagi unread'ni nolga tushiramiz
                 patchChat(chatId, { unreadCount: 0 })
-                // Voice'larni oldindan yuklaymiz — tinglash darhol ishlaydi
+                // Voice/photo — oddiy chat URL (/chats/messages/:id/media)
                 if (import.meta.client) {
-                    useChatMedia().prefetch(messages.value)
+                    useChatMedia().prefetch(messages.value, null)
                 }
             }
             return res

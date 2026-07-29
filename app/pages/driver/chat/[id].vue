@@ -60,7 +60,7 @@
 
         <ChatMessageBubble
           v-for="msg in chatStore.messages"
-          :key="msg._id"
+          :key="String(msg._id)"
           :id="`msg-${msg._id}`"
           :text="msg.text"
           :time="formatTime(msg.date)"
@@ -68,14 +68,14 @@
           :out="msg.direction === 'out'"
           :read="msg.status === 'read'"
           :status="msg.status"
-          :type="msg.type"
-          :message-id="msg._id"
+          :type="chatMediaType(msg)"
+          :message-id="String(msg._id)"
           :media-path="msg.mediaPath"
           :duration="msg.duration"
           :location-lat="msg.locationLat"
           :location-lng="msg.locationLng"
           :location-title="msg.locationTitle"
-          :highlight="focusId === msg._id"
+          :highlight="focusId === String(msg._id)"
         />
 
         <!-- Admin yozmoqda... -->
@@ -313,6 +313,16 @@ const composerPlaceholder = computed(() => {
   }
   return 'Xabar yozing...'
 })
+
+/** Voice/photo/document — MessageBubble to'g'ri tip bilan ochilsin */
+const chatMediaType = (msg: { type?: string; mediaPath?: string; duration?: number; locationLat?: number; locationLng?: number }) => {
+  const t = String(msg.type || '')
+  if (t === 'voice' || t === 'photo' || t === 'location') return t
+  if (msg.locationLat != null && msg.locationLng != null) return 'location'
+  if (msg.duration) return 'voice'
+  if (t === 'document' || (msg.mediaPath && t !== 'text')) return 'photo'
+  return t || 'text'
+}
 
 const formatTime = (value: string | Date) => {
   const d = new Date(value)

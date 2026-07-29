@@ -46,10 +46,14 @@ export function createSocketActions(
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            msg.mediaPath &&
-            msg.mediaPath !== 'remote'
+            (msg.mediaPath || msg.tgMessageId)
         ) {
-            useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
+            const kind = msg.type === 'voice' ? 'voice' : 'photo'
+            useChatMedia()
+                .getUrl(msg._id, kind, {
+                    forceNetwork: !msg.mediaPath || msg.mediaPath === 'remote',
+                })
+                .catch(() => {})
         }
     }
 
@@ -63,10 +67,14 @@ export function createSocketActions(
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            msg.mediaPath &&
-            msg.mediaPath !== 'remote'
+            (msg.mediaPath || msg.tgMessageId)
         ) {
-            useChatMedia().getUrl(msg._id, msg.type === 'voice' ? 'voice' : 'photo').catch(() => {})
+            const kind = msg.type === 'voice' ? 'voice' : 'photo'
+            useChatMedia()
+                .getUrl(msg._id, kind, {
+                    forceNetwork: !msg.mediaPath || msg.mediaPath === 'remote',
+                })
+                .catch(() => {})
         }
 
         // Ro'yxatda oxirgi xabar + tartib (owner socket — faqat o'z chatlari)
