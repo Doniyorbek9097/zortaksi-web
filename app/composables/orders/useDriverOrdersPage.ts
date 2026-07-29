@@ -62,6 +62,8 @@ export function useDriverOrdersPage() {
     draftKeywords: filter.draftKeywords,
     appliedKeywords: filter.appliedKeywords,
     filterActive: filter.filterActive,
+    scope: filter.scope,
+    setScope: filter.setScope,
     displayOrders: filter.displayOrders,
     onSaveFilter: filter.onSaveFilter,
     onCancelFilter: filter.onCancelFilter,

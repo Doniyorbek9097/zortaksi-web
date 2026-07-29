@@ -7,20 +7,26 @@ import {
 
 const LIMIT = 10
 
+export type OrdersScope = 'mine' | 'others'
+
+const SCOPE_STORAGE_KEY = 'zortaksi:orders-scope'
+
 /**
- * Buyurtmalar filtri — kalit so'zlar serverga `search` sifatida yuboriladi.
+ * Buyurtmalar filtri — kalit so'zlar + Meniki/Boshqalar scope serverga yuboriladi.
  * Ro'yxat faqat API natijasi (client-side qayta filter yo'q).
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const showFilter = ref(false)
   const draftKeywords = ref('')
   const appliedKeywords = ref('')
+  const scope = ref<OrdersScope>('mine')
   const filterActive = computed(() => !!appliedKeywords.value.trim())
 
-  /** API so'rovlari uchun query (limit + search) */
+  /** API so'rovlari uchun query (limit + search + scope) */
   const queryParams = () => ({
     limit: LIMIT,
     search: appliedKeywords.value.trim() || undefined,
+    scope: scope.value,
   })
 
   /** Server filtrlangan ro'yxat — qo'shimcha client kesish yo'q */
@@ -37,7 +43,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedKeywords.value = value
     saveOrderFilterKeywords(value)
     showFilter.value = false
-    // Har doim serverdan qayta yuklash
     void load()
   }
 
@@ -53,17 +58,37 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     onSaveFilter(next)
   }
 
+  const setScope = async (next: OrdersScope) => {
+    if (scope.value === next) return
+    scope.value = next
+    if (import.meta.client) {
+      try {
+        sessionStorage.setItem(SCOPE_STORAGE_KEY, next)
+      } catch { /* ignore */ }
+    }
+    orderStore.ordersListScrollY = 0
+    await orderStore.refreshMemberGroupIds()
+    await load()
+  }
+
   /** Saqlangan filtrni yuklash (onMounted da chaqiriladi) */
   const hydrateFilter = () => {
     const saved = loadOrderFilterKeywords()
     draftKeywords.value = saved
     appliedKeywords.value = saved
+    if (import.meta.client) {
+      try {
+        const s = sessionStorage.getItem(SCOPE_STORAGE_KEY)
+        if (s === 'mine' || s === 'others') scope.value = s
+      } catch { /* ignore */ }
+    }
   }
 
   return {
     showFilter,
     draftKeywords,
     appliedKeywords,
+    scope,
     filterActive,
     displayOrders,
     queryParams,
@@ -72,6 +97,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     onSaveFilter,
     onCancelFilter,
     onRemoveRegion,
+    setScope,
     hydrateFilter,
   }
 }

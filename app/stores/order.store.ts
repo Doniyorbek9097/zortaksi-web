@@ -9,6 +9,8 @@ export interface FetchOrdersParams {
     ownerId?: string
     search?: string
     text?: string
+    /** mine = a'zo guruhlar; others = a'zo bo'lmagan */
+    scope?: 'mine' | 'others'
 }
 
 export const useOrderStore = defineStore('order', () => {
@@ -25,6 +27,46 @@ export const useOrderStore = defineStore('order', () => {
     const ordersListScrollY = ref(0)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
+    /** Oxirgi fetchOrders scope */
+    const listScope = ref<'mine' | 'others'>('mine')
+    /** A'zo guruh IDlari — socket order:new filtri */
+    const memberGroupIds = ref<Set<string>>(new Set())
+
+    const normalizeGroupId = (id: string) => String(id || '').replace(/[^\d]/g, '')
+
+    const isMemberGroup = (groupId?: string | null) => {
+        const raw = String(groupId || '').trim()
+        if (!raw || !memberGroupIds.value.size) return false
+        if (memberGroupIds.value.has(raw)) return true
+        const digits = normalizeGroupId(raw)
+        return !!digits && memberGroupIds.value.has(digits)
+    }
+
+    const refreshMemberGroupIds = async () => {
+        try {
+            const res = await useApi('/groups/mine/ids', { timeout: 120_000 })
+            if (!res.success) return
+            const ids = Array.isArray(res.data?.ids) ? res.data.ids : []
+            const next = new Set<string>()
+            for (const id of ids) {
+                const s = String(id || '').trim()
+                if (!s) continue
+                next.add(s)
+                const digits = normalizeGroupId(s)
+                if (digits) next.add(digits)
+            }
+            memberGroupIds.value = next
+        } catch {
+            /* socket filtri ixtiyoriy — server sync asosiy */
+        }
+    }
+
+    const rememberListFilter = (params: FetchOrdersParams) => {
+        listSearch.value = String(params.search || '').trim()
+        if (params.scope === 'mine' || params.scope === 'others') {
+            listScope.value = params.scope
+        }
+    }
 
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
     const recentArrivals = ref<Record<string, number>>({})
@@ -159,7 +201,13 @@ export const useOrderStore = defineStore('order', () => {
         try {
             const response = await useApi('/orders', {
                 method: 'GET',
-                params: { status: 'new', page: 1, limit: 1 },
+                params: {
+                    status: 'new',
+                    page: 1,
+                    limit: 1,
+                    scope: listScope.value,
+                    search: listSearch.value || undefined,
+                },
             })
             if (response.success) {
                 newOrdersCount.value = Number(response.data.pagination?.total ?? 0)
@@ -209,7 +257,7 @@ export const useOrderStore = defineStore('order', () => {
                 orders.value = list
                 page.value = 1
                 totalPages.value = response.data.pagination?.totalPages ?? 1
-                listSearch.value = String(params.search || '').trim()
+                rememberListFilter(params)
             } else {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
@@ -246,7 +294,7 @@ export const useOrderStore = defineStore('order', () => {
                     orders.value = merged
                 } else {
                     orders.value = list
-                    listSearch.value = String(params.search || '').trim()
+                    rememberListFilter(params)
                     // Birinchi yuklash: oxirgi 1 daqiqadagi buyurtmalar badge
                     noteRecentOrdersFromList(list)
                 }
@@ -408,6 +456,10 @@ export const useOrderStore = defineStore('order', () => {
         newOrdersCount,
         ordersListScrollY,
         listSearch,
+        listScope,
+        memberGroupIds,
+        isMemberGroup,
+        refreshMemberGroupIds,
         recentMinuteCount,
         hasMore,
         fetchOrders,

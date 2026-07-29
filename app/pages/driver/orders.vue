@@ -13,6 +13,38 @@
       @remove="onRemoveRegion"
     />
 
+    <!-- Tabs: Meniki / Boshqalar -->
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        :class="scope === 'mine'
+          ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
+          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        @click="setScope('mine')"
+      >
+        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+        Meniki
+      </button>
+      <button
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        :class="scope === 'others'
+          ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        @click="setScope('others')"
+      >
+        <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
+        Boshqalar
+      </button>
+    </div>
+
+    <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug -mt-1">
+      {{ scope === 'mine'
+        ? "Faqat o'zingiz a'zo bo'lgan guruhlardan buyurtmalar"
+        : "A'zo bo'lmagan guruhlardan kelgan buyurtmalar" }}
+    </p>
+
     <!-- Filter panel -->
     <OrdersFilterPanel
       v-if="showFilter"
@@ -119,6 +151,8 @@ const {
   draftKeywords,
   appliedKeywords,
   filterActive,
+  scope,
+  setScope,
   displayOrders,
   onSaveFilter,
   onCancelFilter,
