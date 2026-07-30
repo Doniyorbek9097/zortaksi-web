@@ -137,6 +137,13 @@
             </button>
           </div>
 
+          <p
+            v-if="deliveryHint"
+            class="text-[11px] text-center font-medium text-emerald-600 dark:text-emerald-400 leading-snug px-1"
+          >
+            {{ deliveryHint }}
+          </p>
+
           <BaseSmsInput
             v-model="form.code"
             :loading="authStore.isLoading"
@@ -184,6 +191,7 @@ import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
 import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
 import { resolvePostAuthPath } from '~/utils/userRole'
+import { getApiErrorMessage } from '~/utils/apiError'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -225,7 +233,7 @@ const stepMeta = computed(() => {
   if (currentStep.value === 'verify') {
     return {
       title: 'Kodni kiriting',
-      subtitle: 'Kod Telegram ilovangizga yuborildi',
+      subtitle: deliveryHint.value || 'Kod Telegram ilovangizga yuborildi',
     }
   }
   return {
@@ -268,6 +276,7 @@ const form = reactive({
   password: '',
   error: '',
 })
+const deliveryHint = ref('')
 
 const phoneDigits = computed(() => {
   const raw = form.phoneLocal.replace(/\D/g, '')
@@ -296,12 +305,17 @@ const adoptFreshSession = (user: any) => {
 const handleSendCode = async () => {
   if (authStore.isLoading || !isPhoneValid.value) return
   form.error = ''
+  deliveryHint.value = ''
   try {
     const response = await authStore.sendCode(phoneDigits.value)
-    if (response.success) currentStep.value = 'verify'
-    else form.error = response.message || 'Xatolik yuz berdi'
+    if (response.success) {
+      deliveryHint.value = response.data?.message || 'Kod Telegram ilovasiga yuborildi.'
+      currentStep.value = 'verify'
+    } else {
+      form.error = response.message || 'Xatolik yuz berdi'
+    }
   } catch (error: any) {
-    form.error = error.response?.data?.message || 'Server bilan aloqa uzildi'
+    form.error = error.userMessage || getApiErrorMessage(error, 'Server bilan aloqa uzildi')
   }
 }
 
@@ -330,7 +344,7 @@ const handleVerifyCode = async () => {
       form.error = response.message || 'Kod noto\'g\'ri'
     }
   } catch (error: any) {
-    form.error = error.response?.data?.message || 'Xatolik yuz berdi'
+    form.error = error.userMessage || getApiErrorMessage(error, 'Xatolik yuz berdi')
   }
 }
 
@@ -352,7 +366,7 @@ const handleVerifyPassword = async () => {
       form.error = response.message || 'Parol noto\'g\'ri'
     }
   } catch (error: any) {
-    form.error = error.response?.data?.message || 'Xatolik yuz berdi'
+    form.error = error.userMessage || getApiErrorMessage(error, 'Xatolik yuz berdi')
   }
 }
 

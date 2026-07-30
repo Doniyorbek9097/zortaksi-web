@@ -10,6 +10,7 @@ import {
 } from '~/utils/activeAccount'
 import { isTariffActive } from '~/utils/tariffActive'
 import { normalizeUserRole } from '~/utils/userRole'
+import { AUTH_API_TIMEOUT_MS, getApiErrorMessage } from '~/utils/apiError'
 
 export const useAuthStore = defineStore('auth', () => {
     const token = useCookie('auth_token', { ...getAuthCookieOptions() })
@@ -110,12 +111,15 @@ export const useAuthStore = defineStore('auth', () => {
             isLoading.value = true
             const response = await useApi('/send-code', {
                 method: 'POST',
-                body: { phone }
+                body: { phone },
+                timeout: AUTH_API_TIMEOUT_MS,
             })
             return response
         } catch (error) {
             console.error('SendCode error:', error)
-            throw error
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Kod yuborib bo\'lmadi'),
+            })
         } finally {
             isLoading.value = false
         }
@@ -126,7 +130,8 @@ export const useAuthStore = defineStore('auth', () => {
             isLoading.value = true
             const response = await useApi('/verify-code', {
                 method: 'POST',
-                body: { phone, code, referrerId: referrerId || undefined }
+                body: { phone, code, referrerId: referrerId || undefined },
+                timeout: AUTH_API_TIMEOUT_MS,
             })
             if (response.success && response.data?.authToken) {
                 persistSession(response.data.authToken, response.data.user)
@@ -134,7 +139,9 @@ export const useAuthStore = defineStore('auth', () => {
             return response
         } catch (error) {
             console.error('VerifyCode error:', error)
-            throw error
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Kod tasdiqlanmadi'),
+            })
         } finally {
             isLoading.value = false
         }
@@ -145,7 +152,8 @@ export const useAuthStore = defineStore('auth', () => {
             isLoading.value = true
             const response = await useApi('/verify-password', {
                 method: 'POST',
-                body: { phone, password, referrerId: referrerId || undefined }
+                body: { phone, password, referrerId: referrerId || undefined },
+                timeout: AUTH_API_TIMEOUT_MS,
             })
             if (response.success && response.data?.authToken) {
                 persistSession(response.data.authToken, response.data.user)
@@ -153,7 +161,9 @@ export const useAuthStore = defineStore('auth', () => {
             return response
         } catch (error) {
             console.error('VerifyPassword error:', error)
-            throw error
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Parol tasdiqlanmadi'),
+            })
         } finally {
             isLoading.value = false
         }

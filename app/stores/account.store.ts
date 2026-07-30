@@ -10,6 +10,7 @@ import {
   writeAuthCookie,
 } from '~/utils/activeAccount'
 import { normalizeUserRole, resolveHomePath } from '~/utils/userRole'
+import { AUTH_API_TIMEOUT_MS, getApiErrorMessage } from '~/utils/apiError'
 
 /**
  * Accountlar localStorage'da. Faol hisob — reactive ref + localStorage.
@@ -145,6 +146,8 @@ export const useAccountStore = defineStore('account', () => {
     })
   }
 
+  const authOpts = { timeout: AUTH_API_TIMEOUT_MS }
+
   const sendCode = async (phone: string) => {
     if (hasAccount({ phone })) {
       return {
@@ -152,7 +155,13 @@ export const useAccountStore = defineStore('account', () => {
         message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
       }
     }
-    return useApi('/send-code', { method: 'POST', body: { phone } })
+    try {
+      return await useApi('/send-code', { method: 'POST', body: { phone }, ...authOpts })
+    } catch (error) {
+      throw Object.assign(error as object, {
+        userMessage: getApiErrorMessage(error, 'Kod yuborib bo\'lmadi'),
+      })
+    }
   }
 
   const verifyCode = async (phone: string, code: string) => {
@@ -162,12 +171,18 @@ export const useAccountStore = defineStore('account', () => {
         message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
       }
     }
-    const res = await useApi('/verify-code', { method: 'POST', body: { phone, code } })
-    if (res.success && res.data?.authToken) {
-      const activated = activateNew(res.data.user, res.data.authToken)
-      if (!activated.ok) return { success: false, message: activated.message }
+    try {
+      const res = await useApi('/verify-code', { method: 'POST', body: { phone, code }, ...authOpts })
+      if (res.success && res.data?.authToken) {
+        const activated = activateNew(res.data.user, res.data.authToken)
+        if (!activated.ok) return { success: false, message: activated.message }
+      }
+      return res
+    } catch (error) {
+      throw Object.assign(error as object, {
+        userMessage: getApiErrorMessage(error, 'Kod tasdiqlanmadi'),
+      })
     }
-    return res
   }
 
   const verifyPassword = async (phone: string, password: string) => {
@@ -177,12 +192,22 @@ export const useAccountStore = defineStore('account', () => {
         message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
       }
     }
-    const res = await useApi('/verify-password', { method: 'POST', body: { phone, password } })
-    if (res.success && res.data?.authToken) {
-      const activated = activateNew(res.data.user, res.data.authToken)
-      if (!activated.ok) return { success: false, message: activated.message }
+    try {
+      const res = await useApi('/verify-password', {
+        method: 'POST',
+        body: { phone, password },
+        ...authOpts,
+      })
+      if (res.success && res.data?.authToken) {
+        const activated = activateNew(res.data.user, res.data.authToken)
+        if (!activated.ok) return { success: false, message: activated.message }
+      }
+      return res
+    } catch (error) {
+      throw Object.assign(error as object, {
+        userMessage: getApiErrorMessage(error, 'Parol tasdiqlanmadi'),
+      })
     }
-    return res
   }
 
   const activateNew = (user: any, authToken: string): { ok: true } | { ok: false; message: string } => {
