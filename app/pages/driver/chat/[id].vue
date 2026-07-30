@@ -45,6 +45,17 @@
           </p>
         </div>
 
+        <!-- Eski xabarlar yuklanmoqda -->
+        <div
+          v-if="chatStore.isLoadingOlderMessages"
+          class="flex justify-center py-2"
+        >
+          <font-awesome-icon
+            icon="fa-solid fa-spinner"
+            class="animate-spin text-slate-400 text-sm"
+          />
+        </div>
+
         <!-- Loading -->
         <div v-if="chatStore.isLoadingMessages && !chatStore.messages.length" class="space-y-2">
           <div v-for="n in 6" :key="n" class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'" />
@@ -286,10 +297,8 @@ const canSendTelegram = computed(
   () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
 )
 
-/** Loading / open — input yo'qolmasin */
-const composerBusy = computed(
-  () => isOpening.value || chatStore.isLoadingMessages,
-)
+/** Loading / open — faqat bootstrap; xabarlar fon yuklanadi */
+const composerBusy = computed(() => isOpening.value)
 
 const showComposer = computed(
   () =>
@@ -385,12 +394,18 @@ const onCall = () => {
   window.location.href = normalizeTelHref(callPhone.value)
 }
 
-// Yangi xabar kelganda pastga surish
-watch(() => chatStore.messages.length, scrollToBottom)
+// Yangi xabar pastga qo'shilganda scroll (prepend da emas)
+watch(
+  () => chatStore.messages.at(-1)?._id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) scrollToBottom()
+  },
+)
 watch(() => chatStore.isPeerTyping, (v) => { if (v) scrollToBottom() })
 
 let presenceTimer: ReturnType<typeof setInterval> | null = null
 let loadSeq = 0
+let scrollLoadLock = false
 let prevBodyOverflow = ''
 let prevHtmlOverflow = ''
 
@@ -404,6 +419,7 @@ const clearPresenceTimer = () => {
 const resetChatUi = () => {
   clearPresenceTimer()
   chatStore.messages = []
+  chatStore.resetMessagesPagination()
   chatStore.currentChat = null
   chatStore.resetConnection()
   chatStore.isLoadingMessages = true
@@ -411,30 +427,33 @@ const resetChatUi = () => {
   focusId.value = String(route.query.focus || '')
 }
 
+/** Tepaga scroll — keyingi 10 ta eski xabar */
+const onMessagesScroll = async () => {
+  const el = scrollEl.value
+  const id = chatId.value
+  if (!el || !id || id === 'open') return
+  if (scrollLoadLock || chatStore.isLoadingOlderMessages || chatStore.isLoadingMessages) return
+  if (!chatStore.hasMoreMessages) return
+  if (el.scrollTop > 72) return
+
+  scrollLoadLock = true
+  const prevHeight = el.scrollHeight
+  try {
+    await chatStore.loadOlderMessages(id)
+    await nextTick()
+    el.scrollTop = el.scrollHeight - prevHeight
+  } catch (err) {
+    console.error('loadOlderMessages error:', err)
+  } finally {
+    scrollLoadLock = false
+  }
+}
+
 const startPresenceLoop = (id: string) => {
   clearPresenceTimer()
   presenceTimer = setInterval(() => {
     void chatStore.fetchPresence(id)
   }, 45000)
-}
-
-const setupConnection = (id: string) => {
-  if (isInAppChat.value) {
-    chatStore.connectionStatus = 'ready'
-    void chatStore.fetchPresence(id)
-    startPresenceLoop(id)
-    return
-  }
-
-  const peer = chatStore.currentChat?.peer
-  const alreadyLinked = !!(peer?.viaUserbotId || peer?.accessHash)
-  if (alreadyLinked) {
-    chatStore.connectionStatus = 'ready'
-    void chatStore.connect(id, { silent: true })
-  } else {
-    void chatStore.connect(id)
-  }
-  startPresenceLoop(id)
 }
 
 /** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
@@ -500,19 +519,30 @@ const loadChat = async (id: string) => {
   }
 
   const listed = chatStore.chats.find((c) => c._id === id)
-  if (listed?.peer?.viaUserbotId || listed?.peer?.accessHash) {
-    chatStore.connectionStatus = 'ready'
-  }
+  if (listed) chatStore.currentChat = listed
+
+  const kind = listed?.kind || chatStore.currentChat?.kind
+  const inApp = kind === 'support' || kind === 'direct'
+  const wasLinked = !!(listed?.peer?.viaUserbotId || listed?.peer?.accessHash)
+  if (wasLinked) chatStore.connectionStatus = 'ready'
 
   try {
-    await chatStore.fetchMessages(id)
+    const tasks: Promise<unknown>[] = [chatStore.fetchMessages(id)]
+    if (!inApp) {
+      tasks.push(chatStore.connect(id, { silent: wasLinked }))
+    }
+    await Promise.all(tasks)
   } catch (err) {
-    console.error('loadChat fetchMessages error:', err)
+    console.error('loadChat error:', err)
   }
   if (seq !== loadSeq) return
 
+  if (inApp) {
+    chatStore.connectionStatus = 'ready'
+    void chatStore.fetchPresence(id)
+  }
+  startPresenceLoop(id)
   scrollToFocus()
-  setupConnection(id)
 }
 
 // Chat → chat: component qayta mount bo'lmasa ham yangilanadi
@@ -526,6 +556,12 @@ usePullToRefresh(async () => {
   if (!id || id === 'open') return
   await chatStore.fetchMessages(id)
   scrollToFocus()
+})
+
+watch(scrollEl, (el, _, onCleanup) => {
+  if (!el) return
+  el.addEventListener('scroll', onMessagesScroll, { passive: true })
+  onCleanup(() => el.removeEventListener('scroll', onMessagesScroll))
 })
 
 onMounted(() => {
@@ -551,6 +587,7 @@ onBeforeUnmount(() => {
   clearPresenceTimer()
   chatStore.currentChat = null
   chatStore.messages = []
+  chatStore.resetMessagesPagination()
   chatStore.resetConnection()
 })
 </script>

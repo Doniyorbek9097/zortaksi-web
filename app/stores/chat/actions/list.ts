@@ -1,10 +1,14 @@
-import type { IChat } from '~/types'
+import type { IChatMessage } from '~/types'
+import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
+
+/** Bir sahifadagi xabarlar soni (eng yangi batch) */
+export const MESSAGES_PAGE_LIMIT = 10
 
 /** Chatlar ro'yxati, xabarlar va chat ochish API lari */
 export function createListActions(
     refs: ChatStoreRefs,
-    patchChat: (chatId: string, patch: Partial<IChat>) => void,
+    patchChat: (chatId: string, patch: Partial<import('~/types').IChat>) => void,
 ) {
     const {
         chats,
@@ -13,12 +17,29 @@ export function createListActions(
         isLoading,
         isLoadingMore,
         isLoadingMessages,
+        isLoadingOlderMessages,
         total,
         page,
         totalPages,
+        messagesPage,
+        messagesTotalPages,
     } = refs
 
     const hasMore = computed(() => page.value < totalPages.value)
+    const hasMoreMessages = computed(
+        () => messagesPage.value < messagesTotalPages.value,
+    )
+
+    const resetMessagesPagination = () => {
+        messagesPage.value = 1
+        messagesTotalPages.value = 1
+    }
+
+    const mapMessages = (list: unknown[]): IChatMessage[] =>
+        (list || []).map((m: any) => ({
+            ...m,
+            _id: String(m._id || m.id || ''),
+        }))
 
     /** Chatlar ro'yxatini yuklash */
     const fetchChats = async (
@@ -39,10 +60,10 @@ export function createListActions(
                 },
             })
             if (res.success) {
-                const list: IChat[] = res.data.chats ?? []
+                const list = res.data.chats ?? []
                 if (opts.append) {
                     const seen = new Set(chats.value.map((c) => c._id))
-                    chats.value = [...chats.value, ...list.filter((c) => !seen.has(c._id))]
+                    chats.value = [...chats.value, ...list.filter((c: { _id: string }) => !seen.has(c._id))]
                 } else {
                     chats.value = list
                 }
@@ -66,20 +87,25 @@ export function createListActions(
         return fetchChats({ ...params, page: page.value + 1 }, { append: true })
     }
 
-    /** Bitta chat xabarlarini yuklash */
+    /**
+     * Eng yangi xabarlar (page=1).
+     * Yuqoriga scroll — loadOlderMessages.
+     */
     const fetchMessages = async (chatId: string) => {
         try {
             isLoadingMessages.value = true
-            const res = await useApi(`/chats/${chatId}/messages`, { method: 'GET' })
+            resetMessagesPagination()
+
+            const res = await useApi(`/chats/${chatId}/messages`, {
+                method: 'GET',
+                params: { page: 1, limit: MESSAGES_PAGE_LIMIT },
+            })
             if (res.success) {
                 currentChat.value = res.data.chat
-                messages.value = (res.data.messages || []).map((m: any) => ({
-                    ...m,
-                    _id: String(m._id || m.id || ''),
-                }))
-                // Ro'yxatdagi unread'ni nolga tushiramiz
+                messages.value = mapMessages(res.data.messages || [])
+                messagesPage.value = res.data.pagination?.page ?? 1
+                messagesTotalPages.value = res.data.pagination?.totalPages ?? 1
                 patchChat(chatId, { unreadCount: 0 })
-                // Voice/photo — oddiy chat URL (/chats/messages/:id/media)
                 if (import.meta.client) {
                     useChatMedia().prefetch(messages.value, null)
                 }
@@ -90,6 +116,49 @@ export function createListActions(
             throw error
         } finally {
             isLoadingMessages.value = false
+        }
+    }
+
+    /** Tepaga scroll — keyingi 10 ta eski xabar */
+    const loadOlderMessages = async (chatId: string) => {
+        if (
+            isLoadingOlderMessages.value ||
+            isLoadingMessages.value ||
+            !hasMoreMessages.value
+        ) {
+            return null
+        }
+
+        const nextPage = messagesPage.value + 1
+        try {
+            isLoadingOlderMessages.value = true
+            const res = await useApi(`/chats/${chatId}/messages`, {
+                method: 'GET',
+                params: { page: nextPage, limit: MESSAGES_PAGE_LIMIT },
+            })
+            if (!res.success) return res
+
+            const older = mapMessages(res.data.messages || [])
+            const merged = [...older]
+            for (const m of messages.value) {
+                if (!messageAlreadyExists(merged, m)) merged.push(m)
+            }
+            sortMessagesByDate(merged)
+            messages.value = merged
+
+            messagesPage.value = res.data.pagination?.page ?? nextPage
+            messagesTotalPages.value =
+                res.data.pagination?.totalPages ?? messagesTotalPages.value
+
+            if (import.meta.client) {
+                useChatMedia().prefetch(older, null)
+            }
+            return res
+        } catch (error) {
+            console.error('loadOlderMessages error:', error)
+            throw error
+        } finally {
+            isLoadingOlderMessages.value = false
         }
     }
 
@@ -160,9 +229,12 @@ export function createListActions(
 
     return {
         hasMore,
+        hasMoreMessages,
+        resetMessagesPagination,
         fetchChats,
         loadMoreChats,
         fetchMessages,
+        loadOlderMessages,
         startChatFromOrder,
         startChatWithOrderOwner,
         startChatWithUser,

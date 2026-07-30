@@ -41,4 +41,7 @@ export interface ChatStoreRefs {
     connectionReason: Ref<string>
     peerPresence: Ref<PeerPresence | null>
     peerTypingChatId: Ref<string | null>
+    messagesPage: Ref<number>
+    messagesTotalPages: Ref<number>
+    isLoadingOlderMessages: Ref<boolean>
 }

@@ -21,11 +21,14 @@ export const useChatStore = defineStore('chat', () => {
     const isLoading = ref(false)
     const isLoadingMore = ref(false)
     const isLoadingMessages = ref(false)
+    const isLoadingOlderMessages = ref(false)
     const isSending = ref(false)
 
     const total = ref(0)
     const page = ref(1)
     const totalPages = ref(1)
+    const messagesPage = ref(1)
+    const messagesTotalPages = ref(1)
     /** Chats ro'yxati scroll — profil/chatdan qaytganda tiklash */
     const chatsListScrollY = ref(0)
 
@@ -46,10 +49,13 @@ export const useChatStore = defineStore('chat', () => {
         isLoading,
         isLoadingMore,
         isLoadingMessages,
+        isLoadingOlderMessages,
         isSending,
         total,
         page,
         totalPages,
+        messagesPage,
+        messagesTotalPages,
         connectionStatus,
         connectionReason,
         peerPresence,
@@ -74,12 +80,16 @@ export const useChatStore = defineStore('chat', () => {
         isLoading,
         isLoadingMore,
         isLoadingMessages,
+        isLoadingOlderMessages,
         isSending,
         total,
         page,
         totalPages,
+        messagesPage,
+        messagesTotalPages,
         chatsListScrollY,
         hasMore: list.hasMore,
+        hasMoreMessages: list.hasMoreMessages,
         unreadTotal,
         connectionStatus,
         connectionReason,
@@ -92,6 +102,8 @@ export const useChatStore = defineStore('chat', () => {
         fetchChats: list.fetchChats,
         loadMoreChats: list.loadMoreChats,
         fetchMessages: list.fetchMessages,
+        loadOlderMessages: list.loadOlderMessages,
+        resetMessagesPagination: list.resetMessagesPagination,
         sendMessage: messaging.sendMessage,
         sendVoice: messaging.sendVoice,
         sendPhoto: messaging.sendPhoto,
