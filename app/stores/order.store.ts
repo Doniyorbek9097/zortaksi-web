@@ -71,6 +71,10 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    const applyListFilter = (params: FetchOrdersParams) => {
+        rememberListFilter(params)
+    }
+
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
     const recentArrivals = ref<Record<string, number>>({})
     /** Ko'rilgan (badge dan chiqarilgan) buyurtmalar — session */
@@ -384,6 +388,10 @@ export const useOrderStore = defineStore('order', () => {
      */
     const syncLatest = async (params: FetchOrdersParams = {}) => {
         try {
+            const incomingScope = params.scope ?? 'all'
+            if (incomingScope !== listScope.value) {
+                return null
+            }
             const response = await useApi('/orders', {
                 method: 'GET',
                 params: { ...params, limit: params.limit ?? 40, page: 1 },
@@ -420,7 +428,10 @@ export const useOrderStore = defineStore('order', () => {
     ) => {
         try {
             if (opts.append) isLoadingMore.value = true
-            else isLoading.value = true
+            else {
+                isLoading.value = true
+                rememberListFilter(params)
+            }
 
             const response = await useApi('/orders', {
                 method: 'GET',
@@ -609,6 +620,7 @@ export const useOrderStore = defineStore('order', () => {
         ordersListScrollY,
         listSearch,
         listScope,
+        applyListFilter,
         memberGroupIds,
         isMemberGroup,
         refreshMemberGroupIds,

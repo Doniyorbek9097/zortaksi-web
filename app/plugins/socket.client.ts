@@ -9,6 +9,7 @@ import {
   loadOrderFilterKeywords,
   matchesKeywords,
 } from '~/utils/orderFilterKeywords'
+import { readOrdersScope } from '~/utils/ordersScope'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
@@ -29,8 +30,8 @@ export default defineNuxtPlugin(() => {
 
   const orderSearchParams = () => {
     const search = loadOrderFilterKeywords().trim() || undefined
-    const scope = orderStore.listScope
-    return { limit: 40, search, scope: scope || 'all' }
+    const scope = readOrdersScope(orderStore.listScope)
+    return { limit: 40, search, scope }
   }
 
   /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
@@ -99,7 +100,7 @@ export default defineNuxtPlugin(() => {
         orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
       }
       // Meniki / Boshqalar — a'zolik (Barchasi: hammasi)
-      const scope = orderStore.listScope || 'all'
+      const scope = readOrdersScope(orderStore.listScope)
       if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         if (scope === 'mine' && !mine) return

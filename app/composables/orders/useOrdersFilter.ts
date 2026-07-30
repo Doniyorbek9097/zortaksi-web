@@ -4,12 +4,15 @@ import {
   parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
+import {
+  ORDERS_SCOPE_STORAGE_KEY,
+  readOrdersScope,
+  type OrdersScope,
+} from '~/utils/ordersScope'
 
 const LIMIT = 10
 
-export type OrdersScope = 'all' | 'mine' | 'others'
-
-const SCOPE_STORAGE_KEY = 'zortaksi:orders-scope'
+export type { OrdersScope }
 
 /**
  * Buyurtmalar filtri — kalit so'zlar + Barchasi/Meniki/Boshqalar scope serverga yuboriladi.
@@ -76,11 +79,13 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     scope.value = next
     if (import.meta.client) {
       try {
-        sessionStorage.setItem(SCOPE_STORAGE_KEY, next)
+        sessionStorage.setItem(ORDERS_SCOPE_STORAGE_KEY, next)
       } catch { /* ignore */ }
     }
     orderStore.ordersListScrollY = 0
     orderStore.orders = []
+    // Poll/socket darhol yangi scope bilan ishlashi uchun
+    orderStore.applyListFilter({ page: 1, ...queryParams() })
     scopeLoading.value = true
     try {
       await orderStore.refreshMemberGroupIds()
@@ -97,10 +102,16 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedKeywords.value = saved
     if (import.meta.client) {
       try {
-        const s = sessionStorage.getItem(SCOPE_STORAGE_KEY)
+        const s = sessionStorage.getItem(ORDERS_SCOPE_STORAGE_KEY)
         if (s === 'all' || s === 'mine' || s === 'others') scope.value = s
       } catch { /* ignore */ }
     }
+    orderStore.applyListFilter({
+      page: 1,
+      limit: LIMIT,
+      search: appliedKeywords.value.trim() || undefined,
+      scope: scope.value,
+    })
   }
 
   return {
