@@ -14,6 +14,27 @@ interface IOptions {
   authToken?: string | null
 }
 
+/** SSR da relative /api/v1 → to'g'ridan backend; brauzerda Nuxt proxy */
+function buildApiUrl(baseUrl: string, path: string): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const base = baseUrl.replace(/\/$/, '')
+
+  if (base.startsWith('http://') || base.startsWith('https://')) {
+    return `${base}${normalizedPath}`
+  }
+
+  if (import.meta.client) {
+    return `${base}${normalizedPath}`
+  }
+
+  const direct =
+    process.env.NUXT_DEV_API_BACKEND ||
+    process.env.NUXT_PUBLIC_DEV_API_BACKEND ||
+    'http://127.0.0.1:5000'
+  const backendRoot = direct.replace(/\/$/, '').replace(/\/api\/v1$/, '')
+  return `${backendRoot}/api/v1${normalizedPath}`
+}
+
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
   const config = useRuntimeConfig()
   const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
@@ -38,7 +59,7 @@ export const useApi = async <T = any>(path: string, options: IOptions = {}) => {
     }
   }
 
-  const url = `${config.public.baseUrl}${path}`
+  const url = buildApiUrl(config.public.baseUrl, path)
 
   if (typeof FormData !== 'undefined' && options.body instanceof FormData) {
     delete headers['Content-Type']

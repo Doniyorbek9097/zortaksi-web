@@ -20,10 +20,6 @@ export default defineNuxtConfig({
     // Vercel deployda avtomatik `vercel` preset; lokal preview uchun node-server
     preset: process.env.VERCEL || process.env.NITRO_PRESET === 'vercel' ? 'vercel' : undefined,
   },
-  /**
-   * SSR yoqilgan. Xavfsizlik: shaxsiy sahifalar CDN da keshlanmaydi (Vary: Cookie).
-   * Token faqat shu so'rov cookie sidan — global memory SSR da ishlatilmaydi.
-   */
   routeRules: {
     '/': {
       ssr: true,
@@ -60,6 +56,15 @@ export default defineNuxtConfig({
     '/register': {
       ssr: true,
       headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+    },
+  },
+
+  /** Lokal dev: /api/v1 → backend :5000 (CORS muammosiz) */
+  $development: {
+    routeRules: {
+      '/api/v1/**': {
+        proxy: `${process.env.NUXT_DEV_API_BACKEND || 'http://127.0.0.1:5000'}/api/v1/**`,
+      },
     },
   },
 

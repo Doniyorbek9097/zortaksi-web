@@ -16,7 +16,13 @@ export function getApiErrorMessage(error: unknown, fallback = 'Xatolik yuz berdi
     return 'So\'rov vaqti tugadi. Telegram sekin javob berdi — qayta urinib ko\'ring.';
   }
   if (e.message === 'Network Error') {
-    return 'Server bilan aloqa yo\'q. Internet yoki API manzilini tekshiring.';
+    if (import.meta.client && typeof window !== 'undefined') {
+      const host = window.location.hostname
+      if (host === 'localhost' || host === '127.0.0.1') {
+        return 'Backend ishlamayapti. Terminalda: cd backend && npm run dev — keyin frontend ni qayta ishga tushiring.'
+      }
+    }
+    return 'Server bilan aloqa yo\'q. Internet yoki API manzilini tekshiring.'
   }
 
   return fallback;
