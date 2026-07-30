@@ -22,6 +22,8 @@ export interface IChat {
     orderText?: string
     /** support — admin↔haydovchi; direct — haydovchi↔haydovchi */
     kind?: ChatKind
+    /** Ro'yxatdan o'tgan peer — faqat ilova ichida (Telegramga ketmaydi) */
+    inAppOnly?: boolean
     lastMessage: string
     lastMessageAt: string | Date
     unreadCount: number

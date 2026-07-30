@@ -100,7 +100,7 @@
           />
 
           <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 leading-snug -mt-1">
-            Kod SMS emas — Telegram ilovasiga keladi
+            Telegram'da ro'yxatdan o'tgan raqamni kiriting (998…)
           </p>
 
           <button
@@ -137,18 +137,21 @@
             </button>
           </div>
 
-          <p
-            v-if="deliveryHint"
-            class="text-[11px] text-center font-medium text-emerald-600 dark:text-emerald-400 leading-snug px-1"
-          >
-            {{ deliveryHint }}
-          </p>
-
           <BaseSmsInput
             v-model="form.code"
             :loading="authStore.isLoading"
             @submit="handleVerifyCode"
           />
+
+          <button
+            v-if="canResendSms"
+            type="button"
+            :disabled="authStore.isLoading"
+            class="w-full py-2.5 text-[11px] font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
+            @click="handleResendSms"
+          >
+            SMS orqali olish
+          </button>
         </template>
 
         <template v-else-if="currentStep === 'password'">
@@ -233,7 +236,7 @@ const stepMeta = computed(() => {
   if (currentStep.value === 'verify') {
     return {
       title: 'Kodni kiriting',
-      subtitle: deliveryHint.value || 'Kod Telegram ilovangizga yuborildi',
+      subtitle: deliveryHint.value || 'Telegram kodini kiriting',
     }
   }
   return {
@@ -277,6 +280,7 @@ const form = reactive({
   error: '',
 })
 const deliveryHint = ref('')
+const canResendSms = ref(false)
 
 const phoneDigits = computed(() => {
   const raw = form.phoneLocal.replace(/\D/g, '')
@@ -302,15 +306,16 @@ const adoptFreshSession = (user: any) => {
   } catch { /* */ }
 }
 
-const handleSendCode = async () => {
+const handleSendCode = async (opts?: { forceSms?: boolean }) => {
   if (authStore.isLoading || !isPhoneValid.value) return
   form.error = ''
-  deliveryHint.value = ''
+  if (!opts?.forceSms) deliveryHint.value = ''
   try {
-    const response = await authStore.sendCode(phoneDigits.value)
+    const response = await authStore.sendCode(phoneDigits.value, opts)
     if (response.success) {
-      deliveryHint.value = response.data?.message || 'Kod Telegram ilovasiga yuborildi.'
-      currentStep.value = 'verify'
+      deliveryHint.value = response.data?.message || 'Telegram kodini kiriting'
+      canResendSms.value = !!response.data?.canResendSms
+      if (!opts?.forceSms) currentStep.value = 'verify'
     } else {
       form.error = response.message || 'Xatolik yuz berdi'
     }
@@ -318,6 +323,8 @@ const handleSendCode = async () => {
     form.error = error.userMessage || getApiErrorMessage(error, 'Server bilan aloqa uzildi')
   }
 }
+
+const handleResendSms = () => handleSendCode({ forceSms: true })
 
 const handleVerifyCode = async () => {
   if (authStore.isLoading) return

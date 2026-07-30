@@ -109,7 +109,8 @@ const authStore = useAuthStore()
 
 // --- Ko'rinish yordamchilari ---
 const isSupport = (chat: IChat) => chat.kind === 'support'
-const isDriverPeerChat = (chat: IChat) => chat.kind === 'support' || chat.kind === 'direct'
+const isDriverPeerChat = (chat: IChat) =>
+  chat.kind === 'support' || chat.kind === 'direct' || !!chat.inAppOnly
 
 const showDriverPageFor = (chat: IChat) =>
   isAdminUser(authStore.user) && isDriverPeerChat(chat) && !!chat.peer?.userId

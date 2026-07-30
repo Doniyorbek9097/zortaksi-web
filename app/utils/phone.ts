@@ -44,10 +44,10 @@ export function normalizeTo998(raw: string | null | undefined): string | null {
   if (!digits) return null
 
   if (digits.length === 12 && digits.startsWith('998')) return digits
-  if (digits.length === 9 && /^[39]\d{8}$/.test(digits)) return `998${digits}`
+  if (digits.length === 9 && /^(9\d|33|88|77)\d{7}$/.test(digits)) return `998${digits}`
   if (digits.length === 10 && digits.startsWith('0')) {
     const rest = digits.slice(1)
-    if (/^[39]\d{8}$/.test(rest)) return `998${rest}`
+    if (/^(9\d|33|88|77)\d{7}$/.test(rest)) return `998${rest}`
   }
   // Xalqaro / boshqa — o'z holicha (8–15)
   if (digits.length >= MIN_DIGITS && digits.length <= 15) return digits

@@ -106,12 +106,12 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    const sendCode = async (phone: string) => {
+    const sendCode = async (phone: string, opts?: { forceSms?: boolean }) => {
         try {
             isLoading.value = true
             const response = await useApi('/send-code', {
                 method: 'POST',
-                body: { phone },
+                body: { phone, forceSms: opts?.forceSms || undefined },
                 timeout: AUTH_API_TIMEOUT_MS,
             })
             return response

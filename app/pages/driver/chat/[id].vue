@@ -202,8 +202,11 @@ const isSupport = computed(() =>
 /** Ro'yxatdan o'tgan haydovchi ↔ haydovchi (qiziqqanlar va h.k.) */
 const isDirect = computed(() => chatStore.currentChat?.kind === 'direct')
 
+/** Ro'yxatdan o'tgan peer — faqat ilova ichida (Telegram ulanishi shart emas) */
+const isInAppOnly = computed(() => !!chatStore.currentChat?.inAppOnly)
+
 /** Telegram ulanishi shart emas — ilova ichidagi chat */
-const isInAppChat = computed(() => isSupport.value || isDirect.value)
+const isInAppChat = computed(() => isSupport.value || isDirect.value || isInAppOnly.value)
 const needsTelegramConnect = computed(() => !isInAppChat.value)
 
 /** Peer ismi — haydovchi ham oddiy foydalanuvchi kabi (haqiqiy ism) */
@@ -522,7 +525,11 @@ const loadChat = async (id: string) => {
   if (listed) chatStore.currentChat = listed
 
   const kind = listed?.kind || chatStore.currentChat?.kind
-  const inApp = kind === 'support' || kind === 'direct'
+  const inApp =
+    kind === 'support' ||
+    kind === 'direct' ||
+    !!listed?.inAppOnly ||
+    !!chatStore.currentChat?.inAppOnly
   const wasLinked = !!(listed?.peer?.viaUserbotId || listed?.peer?.accessHash)
   if (wasLinked) chatStore.connectionStatus = 'ready'
 

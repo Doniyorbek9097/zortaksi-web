@@ -100,7 +100,7 @@
           />
 
           <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 leading-snug -mt-1">
-            Kod SMS emas — Telegram ilovasiga keladi
+            Telegram'da ro'yxatdan o'tgan raqamni kiriting (998…)
           </p>
 
           <button
@@ -137,14 +137,17 @@
             </button>
           </div>
 
-          <p
-            v-if="deliveryHint"
-            class="text-[11px] text-center font-medium text-emerald-600 dark:text-emerald-400 leading-snug px-1"
-          >
-            {{ deliveryHint }}
-          </p>
-
           <BaseSmsInput v-model="code" :loading="loading" @submit="handleVerifyCode" />
+
+          <button
+            v-if="canResendSms"
+            type="button"
+            :disabled="loading"
+            class="w-full py-2.5 text-[11px] font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
+            @click="handleResendSms"
+          >
+            SMS orqali olish
+          </button>
         </template>
 
         <template v-else>
@@ -201,6 +204,7 @@ const code = ref('')
 const password = ref('')
 const error = ref('')
 const deliveryHint = ref('')
+const canResendSms = ref(false)
 const loading = ref(false)
 
 const allSteps = [
@@ -223,7 +227,7 @@ const stepMeta = computed(() => {
   if (step.value === 'code') {
     return {
       title: 'Kodni kiriting',
-      subtitle: deliveryHint.value || 'Kod Telegram ilovangizga yuborildi',
+      subtitle: deliveryHint.value || 'Telegram kodini kiriting',
     }
   }
   return {
@@ -267,10 +271,10 @@ const phoneDigits = computed(() => {
 const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
-const handleSendCode = async () => {
+const handleSendCode = async (opts?: { forceSms?: boolean }) => {
   if (loading.value || !isPhoneValid.value) return
   error.value = ''
-  deliveryHint.value = ''
+  if (!opts?.forceSms) deliveryHint.value = ''
   accountStore.load()
   if (accountStore.hasAccount({ phone: phoneDigits.value })) {
     error.value = 'Bu hisob allaqachon qo\'shilgan'
@@ -278,10 +282,11 @@ const handleSendCode = async () => {
   }
   loading.value = true
   try {
-    const res = await accountStore.sendCode(phoneDigits.value)
+    const res = await accountStore.sendCode(phoneDigits.value, opts)
     if (res.success) {
-      deliveryHint.value = res.data?.message || 'Kod Telegram ilovasiga yuborildi.'
-      step.value = 'code'
+      deliveryHint.value = res.data?.message || 'Telegram kodini kiriting'
+      canResendSms.value = !!res.data?.canResendSms
+      if (!opts?.forceSms) step.value = 'code'
     } else {
       error.value = res.message || 'Xatolik yuz berdi'
     }
@@ -291,6 +296,8 @@ const handleSendCode = async () => {
     loading.value = false
   }
 }
+
+const handleResendSms = () => handleSendCode({ forceSms: true })
 
 const handleVerifyCode = async () => {
   if (loading.value) return

@@ -148,7 +148,7 @@ export const useAccountStore = defineStore('account', () => {
 
   const authOpts = { timeout: AUTH_API_TIMEOUT_MS }
 
-  const sendCode = async (phone: string) => {
+  const sendCode = async (phone: string, opts?: { forceSms?: boolean }) => {
     if (hasAccount({ phone })) {
       return {
         success: false,
@@ -156,7 +156,11 @@ export const useAccountStore = defineStore('account', () => {
       }
     }
     try {
-      return await useApi('/send-code', { method: 'POST', body: { phone }, ...authOpts })
+      return await useApi('/send-code', {
+        method: 'POST',
+        body: { phone, forceSms: opts?.forceSms || undefined },
+        ...authOpts,
+      })
     } catch (error) {
       throw Object.assign(error as object, {
         userMessage: getApiErrorMessage(error, 'Kod yuborib bo\'lmadi'),
