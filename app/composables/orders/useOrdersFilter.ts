@@ -43,7 +43,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   /** Birinchi sahifa (ro'yxatni almashtiradi) */
   const load = async () => {
     const res = await orderStore.fetchOrders({ page: 1, ...queryParams() })
-    void refreshScopeCounts()
+    await refreshScopeCounts()
+    orderStore.reconcileScopeCountsAfterLoad()
     return res
   }
 

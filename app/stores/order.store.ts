@@ -79,7 +79,21 @@ export const useOrderStore = defineStore('order', () => {
     let recentTicker: ReturnType<typeof setInterval> | null = null
 
     const RECENT_WINDOW_MS = 60_000
+    /** O'qilmagan — buyurtma vaqti bo'yicha oxirgi 1 soat */
+    const UNREAD_WINDOW_MS = 60 * 60 * 1000
     const SEEN_STORAGE_KEY = 'zortaksi:seen-order-ids'
+
+    const orderCreatedAtMs = (order: IOrder) => {
+        const t = order?.createdAt ? new Date(order.createdAt).getTime() : NaN
+        return Number.isFinite(t) ? t : 0
+    }
+
+    const isWithinUnreadWindow = (order: IOrder) => {
+        void recentTick.value
+        const t = orderCreatedAtMs(order)
+        if (!t) return false
+        return Date.now() - t <= UNREAD_WINDOW_MS
+    }
 
     const loadSeenFromStorage = () => {
         if (!import.meta.client) return
@@ -149,15 +163,33 @@ export const useOrderStore = defineStore('order', () => {
     }
 
     /** Buyurtma ko'rildi — badge dan chiqarish */
+    const decScopeCountForOrder = (order: IOrder) => {
+        if ((order.status || 'new') !== 'new') return
+        if (!isWithinUnreadWindow(order)) return
+        if (isMemberGroup(order.group?.groupId)) {
+            scopeNewCounts.value = {
+                ...scopeNewCounts.value,
+                mine: Math.max(0, scopeNewCounts.value.mine - 1),
+            }
+        } else {
+            scopeNewCounts.value = {
+                ...scopeNewCounts.value,
+                others: Math.max(0, scopeNewCounts.value.others - 1),
+            }
+        }
+    }
+
     const markOrderSeen = (orderId?: string | null) => {
         const id = orderId ? String(orderId) : ''
         if (!id || seenOrderIds.value[id]) return
+        const order = orders.value.find((o) => String(o._id) === id)
         seenOrderIds.value = { ...seenOrderIds.value, [id]: true }
         if (recentArrivals.value[id]) {
             const next = { ...recentArrivals.value }
             delete next[id]
             recentArrivals.value = next
         }
+        if (order) decScopeCountForOrder(order)
         recentTick.value += 1
         persistSeen()
     }
@@ -172,6 +204,8 @@ export const useOrderStore = defineStore('order', () => {
             seenNext[id] = true
             if (recentNext[id]) delete recentNext[id]
             changed = true
+            const order = orders.value.find((o) => String(o._id) === id)
+            if (order) decScopeCountForOrder(order)
         }
         if (!changed) return
         seenOrderIds.value = seenNext
@@ -186,37 +220,32 @@ export const useOrderStore = defineStore('order', () => {
         return !!id && !!seenOrderIds.value[id]
     }
 
+    /** O'qilmagan = oxirgi 1 soat ichida va hali ko'rilmagan */
+    const isOrderUnread = (order: IOrder) => {
+        void recentTick.value
+        if (!order?._id) return false
+        if (!isWithinUnreadWindow(order)) return false
+        return !seenOrderIds.value[String(order._id)]
+    }
+
     const unreadOrdersCount = computed(() => {
         void recentTick.value
         let n = 0
         for (const o of orders.value) {
-            if (!o?._id) continue
-            if (!seenOrderIds.value[String(o._id)]) n += 1
+            if (isOrderUnread(o)) n += 1
         }
         return n
     })
 
-    /** Joriy ro'yxatdagi barcha buyurtmalarni o'qilgan deb belgilash */
+    /** Joriy ro'yxatdagi o'qilmagan (1 soat ichidagi) buyurtmalarni belgilash */
     const markAllOrdersAsRead = () => {
-        let mineDec = 0
-        let othersDec = 0
         const toMark: string[] = []
         for (const o of orders.value) {
-            if (!o?._id) continue
-            const id = String(o._id)
-            if (seenOrderIds.value[id]) continue
-            toMark.push(id)
-            if ((o.status || 'new') === 'new') {
-                if (isMemberGroup(o.group?.groupId)) mineDec += 1
-                else othersDec += 1
-            }
+            if (!isOrderUnread(o) || !o._id) continue
+            toMark.push(String(o._id))
         }
         if (!toMark.length) return 0
         markOrdersSeen(toMark)
-        scopeNewCounts.value = {
-            mine: Math.max(0, scopeNewCounts.value.mine - mineDec),
-            others: Math.max(0, scopeNewCounts.value.others - othersDec),
-        }
         return toMark.length
     }
 
@@ -245,11 +274,25 @@ export const useOrderStore = defineStore('order', () => {
             const [mineRes, othersRes] = await Promise.all([
                 useApi('/orders', {
                     method: 'GET',
-                    params: { status: 'new', page: 1, limit: 1, scope: 'mine', search: s },
+                    params: {
+                        status: 'new',
+                        page: 1,
+                        limit: 1,
+                        scope: 'mine',
+                        search: s,
+                        sinceHours: 1,
+                    },
                 }),
                 useApi('/orders', {
                     method: 'GET',
-                    params: { status: 'new', page: 1, limit: 1, scope: 'others', search: s },
+                    params: {
+                        status: 'new',
+                        page: 1,
+                        limit: 1,
+                        scope: 'others',
+                        search: s,
+                        sinceHours: 1,
+                    },
                 }),
             ])
             scopeNewCounts.value = {
@@ -258,6 +301,15 @@ export const useOrderStore = defineStore('order', () => {
             }
         } catch {
             /* badge ixtiyoriy */
+        }
+    }
+
+    /** Server 1 soat count dan ro'yxatdagi ko'rilganlarni ayirish */
+    const reconcileScopeCountsAfterLoad = () => {
+        for (const o of orders.value) {
+            const id = o?._id ? String(o._id) : ''
+            if (!id || !seenOrderIds.value[id]) continue
+            decScopeCountForOrder(o)
         }
     }
 
@@ -275,7 +327,10 @@ export const useOrderStore = defineStore('order', () => {
         if (!import.meta.client || recentTicker) return
         loadSeenFromStorage()
         pruneRecentArrivals()
-        recentTicker = setInterval(pruneRecentArrivals, 5000)
+        recentTicker = setInterval(() => {
+            pruneRecentArrivals()
+            recentTick.value += 1
+        }, 60_000)
     }
 
     const hasMore = computed(() => page.value < totalPages.value)
@@ -573,12 +628,14 @@ export const useOrderStore = defineStore('order', () => {
         fetchInterest,
         refreshNewCount,
         refreshScopeCounts,
+        reconcileScopeCountsAfterLoad,
         bumpScopeNewCount,
         bumpNewCount,
         noteRecentOrder,
         markOrderSeen,
         markOrdersSeen,
         isOrderSeen,
+        isOrderUnread,
         unreadOrdersCount,
         markAllOrdersAsRead,
         startRecentMinuteTicker,

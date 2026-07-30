@@ -1,3 +1,4 @@
+import type { IOrder } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
@@ -60,7 +61,7 @@ export function useDriverOrdersPage() {
   const onUnlock = () => navigateTo('/driver/payment')
 
   const unreadCount = computed(() => orderStore.unreadOrdersCount)
-  const isOrderSeen = (order: { _id?: string }) => orderStore.isOrderSeen(order._id)
+  const isOrderSeen = (order: IOrder) => !orderStore.isOrderUnread(order)
   const markAllAsRead = () => {
     orderStore.markAllOrdersAsRead()
   }
