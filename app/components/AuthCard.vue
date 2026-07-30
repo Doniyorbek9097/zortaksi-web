@@ -236,7 +236,7 @@ const stepMeta = computed(() => {
   if (currentStep.value === 'verify') {
     return {
       title: 'Kodni kiriting',
-      subtitle: deliveryHint.value || 'Telegram kodini kiriting',
+      subtitle: deliveryHint.value || `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`,
     }
   }
   return {
@@ -313,7 +313,9 @@ const handleSendCode = async (opts?: { forceSms?: boolean }) => {
   try {
     const response = await authStore.sendCode(phoneDigits.value, opts)
     if (response.success) {
-      deliveryHint.value = response.data?.message || 'Telegram kodini kiriting'
+      deliveryHint.value =
+        response.data?.message ||
+        `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`
       canResendSms.value = !!response.data?.canResendSms
       if (!opts?.forceSms) currentStep.value = 'verify'
     } else {

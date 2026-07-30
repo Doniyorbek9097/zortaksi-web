@@ -227,7 +227,7 @@ const stepMeta = computed(() => {
   if (step.value === 'code') {
     return {
       title: 'Kodni kiriting',
-      subtitle: deliveryHint.value || 'Telegram kodini kiriting',
+      subtitle: deliveryHint.value || `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`,
     }
   }
   return {
@@ -284,7 +284,9 @@ const handleSendCode = async (opts?: { forceSms?: boolean }) => {
   try {
     const res = await accountStore.sendCode(phoneDigits.value, opts)
     if (res.success) {
-      deliveryHint.value = res.data?.message || 'Telegram kodini kiriting'
+      deliveryHint.value =
+        res.data?.message ||
+        `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`
       canResendSms.value = !!res.data?.canResendSms
       if (!opts?.forceSms) step.value = 'code'
     } else {
