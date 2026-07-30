@@ -29,9 +29,8 @@ export default defineNuxtPlugin(() => {
 
   const orderSearchParams = () => {
     const search = loadOrderFilterKeywords().trim() || undefined
-    const scope =
-      orderStore.listScope === 'others' ? 'others' : 'mine'
-    return { limit: 40, search, scope }
+    const scope = orderStore.listScope
+    return { limit: 40, search, scope: scope || 'all' }
   }
 
   /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
@@ -99,9 +98,9 @@ export default defineNuxtPlugin(() => {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
       }
-      // Meniki / Boshqalar — a'zolik
-      const scope = orderStore.listScope === 'others' ? 'others' : 'mine'
-      if (orderStore.memberGroupIds.size > 0) {
+      // Meniki / Boshqalar — a'zolik (Barchasi: hammasi)
+      const scope = orderStore.listScope || 'all'
+      if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         if (scope === 'mine' && !mine) return
         if (scope === 'others' && mine) return

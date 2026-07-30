@@ -33,8 +33,13 @@
 
       <!-- Karta -->
       <article
-        class="relative z-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-sky-400 dark:border-l-sky-500 pt-5 px-4 pb-4 will-change-transform"
-        :class="dragging ? '' : 'transition-transform duration-200'"
+        class="relative z-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 pt-5 px-4 pb-4 will-change-transform"
+        :class="[
+          unread
+            ? 'border-l-amber-400 dark:border-l-amber-500 ring-1 ring-amber-400/25'
+            : 'border-l-sky-400 dark:border-l-sky-500 opacity-90',
+          dragging ? '' : 'transition-transform duration-200',
+        ]"
         :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: 'pan-y' }"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
@@ -211,6 +216,8 @@ interface Props {
   currentUserId?: string
   /** Haydovchi shu guruhda a'zomi */
   isMember?: boolean
+  /** O'qilmagan buyurtma (haydovchi ro'yxati) */
+  unread?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -218,6 +225,7 @@ const props = withDefaults(defineProps<Props>(), {
   bookPrice: 1000,
   currentUserId: '',
   isMember: false,
+  unread: false,
 })
 
 const emit = defineEmits<{

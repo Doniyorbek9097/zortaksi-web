@@ -59,6 +59,12 @@ export function useDriverOrdersPage() {
 
   const onUnlock = () => navigateTo('/driver/payment')
 
+  const unreadCount = computed(() => orderStore.unreadOrdersCount)
+  const isOrderSeen = (order: { _id?: string }) => orderStore.isOrderSeen(order._id)
+  const markAllAsRead = () => {
+    orderStore.markAllOrdersAsRead()
+  }
+
   usePullToRefresh(() => filter.load())
 
   return {
@@ -73,7 +79,9 @@ export function useDriverOrdersPage() {
     appliedKeywords: filter.appliedKeywords,
     filterActive: filter.filterActive,
     scope: filter.scope,
+    scopeLoading: filter.scopeLoading,
     scopeNewCounts: filter.scopeNewCounts,
+    allNewCount: filter.allNewCount,
     setScope: filter.setScope,
     displayOrders: filter.displayOrders,
     onSaveFilter: filter.onSaveFilter,
@@ -96,7 +104,6 @@ export function useDriverOrdersPage() {
     leaveMessage: membership.leaveMessage,
     groupTitle: membership.groupTitle,
     membershipGroup: membership.membershipGroup,
-    membershipGroup: membership.membershipGroup,
     isMemberOfOrder: membership.isMemberOfOrder,
     onJoinGroup: membership.onJoinGroup,
     onLeaveGroup: membership.onLeaveGroup,
@@ -104,5 +111,8 @@ export function useDriverOrdersPage() {
     confirmLeave: membership.confirmLeave,
     cancelMembership: membership.cancelMembership,
     onUnlock,
+    unreadCount,
+    isOrderSeen,
+    markAllAsRead,
   }
 }

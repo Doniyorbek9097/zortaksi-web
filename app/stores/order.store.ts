@@ -10,8 +10,8 @@ export interface FetchOrdersParams {
     ownerId?: string
     search?: string
     text?: string
-    /** mine = a'zo guruhlar; others = a'zo bo'lmagan */
-    scope?: 'mine' | 'others'
+    /** mine = a'zo guruhlar; others = a'zo bo'lmagan; all = ikkalasi */
+    scope?: 'all' | 'mine' | 'others'
 }
 
 export const useOrderStore = defineStore('order', () => {
@@ -31,7 +31,7 @@ export const useOrderStore = defineStore('order', () => {
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
     /** Oxirgi fetchOrders scope */
-    const listScope = ref<'mine' | 'others'>('mine')
+    const listScope = ref<'all' | 'mine' | 'others'>('all')
     /** A'zo guruh IDlari — socket order:new filtri */
     const memberGroupIds = ref<Set<string>>(new Set())
 
@@ -66,7 +66,7 @@ export const useOrderStore = defineStore('order', () => {
 
     const rememberListFilter = (params: FetchOrdersParams) => {
         listSearch.value = String(params.search || '').trim()
-        if (params.scope === 'mine' || params.scope === 'others') {
+        if (params.scope === 'all' || params.scope === 'mine' || params.scope === 'others') {
             listScope.value = params.scope
         }
     }
@@ -178,6 +178,46 @@ export const useOrderStore = defineStore('order', () => {
         recentArrivals.value = recentNext
         recentTick.value += 1
         persistSeen()
+    }
+
+    const isOrderSeen = (orderId?: string | null) => {
+        void recentTick.value
+        const id = orderId ? String(orderId) : ''
+        return !!id && !!seenOrderIds.value[id]
+    }
+
+    const unreadOrdersCount = computed(() => {
+        void recentTick.value
+        let n = 0
+        for (const o of orders.value) {
+            if (!o?._id) continue
+            if (!seenOrderIds.value[String(o._id)]) n += 1
+        }
+        return n
+    })
+
+    /** Joriy ro'yxatdagi barcha buyurtmalarni o'qilgan deb belgilash */
+    const markAllOrdersAsRead = () => {
+        let mineDec = 0
+        let othersDec = 0
+        const toMark: string[] = []
+        for (const o of orders.value) {
+            if (!o?._id) continue
+            const id = String(o._id)
+            if (seenOrderIds.value[id]) continue
+            toMark.push(id)
+            if ((o.status || 'new') === 'new') {
+                if (isMemberGroup(o.group?.groupId)) mineDec += 1
+                else othersDec += 1
+            }
+        }
+        if (!toMark.length) return 0
+        markOrdersSeen(toMark)
+        scopeNewCounts.value = {
+            mine: Math.max(0, scopeNewCounts.value.mine - mineDec),
+            others: Math.max(0, scopeNewCounts.value.others - othersDec),
+        }
+        return toMark.length
     }
 
     /** Badge = oxirgi 1 daqiqada kelgan va hali ko'rilmagan */
@@ -538,6 +578,9 @@ export const useOrderStore = defineStore('order', () => {
         noteRecentOrder,
         markOrderSeen,
         markOrdersSeen,
+        isOrderSeen,
+        unreadOrdersCount,
+        markAllOrdersAsRead,
         startRecentMinuteTicker,
     }
 })

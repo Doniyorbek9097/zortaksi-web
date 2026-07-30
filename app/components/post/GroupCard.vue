@@ -98,7 +98,7 @@
       <button
         v-if="showJoin"
         type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-[0.98] disabled:opacity-60"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[11px] font-black border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-[0.98] disabled:opacity-60 whitespace-nowrap min-w-0"
         :disabled="joining"
         @click.stop="emit('join')"
       >
@@ -112,13 +112,13 @@
           icon="fa-solid fa-user-plus"
           class="text-[11px]"
         />
-        {{ joining ? 'Ulanmoqda...' : "Guruhga qo'shilish" }}
+        <span class="whitespace-nowrap">{{ joining ? 'Ulanmoqda...' : "Guruhga qo'shilish" }}</span>
       </button>
 
       <button
         v-if="showLeave"
         type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-[12px] font-black border border-rose-400/40 text-rose-600 dark:text-rose-400 bg-rose-500/10 active:scale-[0.98] disabled:opacity-60"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-xl text-[11px] font-black border border-rose-400/40 text-rose-600 dark:text-rose-400 bg-rose-500/10 active:scale-[0.98] disabled:opacity-60 whitespace-nowrap min-w-0"
         :disabled="leaving"
         @click.stop="emit('leave')"
       >
@@ -132,7 +132,7 @@
           icon="fa-solid fa-user-check"
           class="text-[11px]"
         />
-        {{ leaving ? 'Chiqilmoqda...' : 'Tark etish' }}
+        <span class="whitespace-nowrap">{{ leaving ? 'Chiqilmoqda...' : 'Tark etish' }}</span>
       </button>
 
       <button

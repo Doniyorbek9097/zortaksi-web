@@ -1,7 +1,7 @@
 import type { Ref } from 'vue'
 import type { useOrderStore } from '~/stores/order.store'
 
-type QueryParams = () => { limit: number; search?: string; scope?: 'mine' | 'others' }
+type QueryParams = () => { limit: number; search?: string; scope?: 'all' | 'mine' | 'others' }
 
 /**
  * Ro'yxat sync: poll, infinite scroll va "ko'rilgan" badge kuzatuvchisi.
@@ -77,11 +77,12 @@ export function useOrdersListSync(options: {
 
     const q = queryParams()
     const wantSearch = String(q.search || '').trim()
-    const wantScope = q.scope === 'others' ? 'others' : 'mine'
+    const wantScope =
+      q.scope === 'others' ? 'others' : q.scope === 'mine' ? 'mine' : 'all'
     const hasCachedList = orderStore.orders.length > 0
     const sameServerFilter =
       String(orderStore.listSearch || '') === wantSearch &&
-      String(orderStore.listScope || 'mine') === wantScope
+      String(orderStore.listScope || 'all') === wantScope
 
     if (hasCachedList && sameServerFilter) {
       // Chatdan qaytish — pagination + scroll; filtr server bilan mos

@@ -13,21 +13,43 @@
       @remove="onRemoveRegion"
     />
 
-    <!-- Tabs: Meniki / Boshqalar -->
-    <div class="flex gap-2">
+    <!-- Tabs: Barchasi / Meniki / Boshqalar -->
+    <div class="grid grid-cols-3 gap-1.5">
       <button
         type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        class="inline-flex items-center justify-center gap-1 py-2.5 rounded-xl text-[11px] font-black border transition-all whitespace-nowrap"
+        :class="scope === 'all'
+          ? 'border-indigo-400 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
+          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        :disabled="scopeLoading"
+        @click="setScope('all')"
+      >
+        <font-awesome-icon icon="fa-solid fa-layer-group" class="text-[10px] shrink-0" />
+        Barchasi
+        <span
+          v-if="allNewCount > 0"
+          class="min-w-[1.1rem] h-4 px-1 inline-flex items-center justify-center rounded-full text-[9px] font-black"
+          :class="scope === 'all'
+            ? 'bg-indigo-500 text-white'
+            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
+        >
+          {{ allNewCount > 99 ? '99+' : allNewCount }}
+        </span>
+      </button>
+      <button
+        type="button"
+        class="inline-flex items-center justify-center gap-1 py-2.5 rounded-xl text-[11px] font-black border transition-all whitespace-nowrap"
         :class="scope === 'mine'
           ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        :disabled="scopeLoading"
         @click="setScope('mine')"
       >
-        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px] shrink-0" />
         Meniki
         <span
           v-if="scopeNewCounts.mine > 0"
-          class="ml-0.5 min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-black"
+          class="min-w-[1.1rem] h-4 px-1 inline-flex items-center justify-center rounded-full text-[9px] font-black"
           :class="scope === 'mine'
             ? 'bg-sky-500 text-white'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
@@ -37,17 +59,18 @@
       </button>
       <button
         type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        class="inline-flex items-center justify-center gap-1 py-2.5 rounded-xl text-[11px] font-black border transition-all whitespace-nowrap"
         :class="scope === 'others'
           ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        :disabled="scopeLoading"
         @click="setScope('others')"
       >
-        <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
+        <font-awesome-icon icon="fa-solid fa-users" class="text-[10px] shrink-0" />
         Boshqalar
         <span
           v-if="scopeNewCounts.others > 0"
-          class="ml-0.5 min-w-[1.25rem] h-5 px-1.5 inline-flex items-center justify-center rounded-full text-[10px] font-black"
+          class="min-w-[1.1rem] h-4 px-1 inline-flex items-center justify-center rounded-full text-[9px] font-black"
           :class="scope === 'others'
             ? 'bg-amber-500 text-white'
             : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'"
@@ -60,8 +83,27 @@
     <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug -mt-1">
       {{ scope === 'mine'
         ? "Faqat o'zingiz a'zo bo'lgan guruhlardan buyurtmalar"
-        : "A'zo bo'lmagan guruhlardan kelgan buyurtmalar" }}
+        : scope === 'others'
+          ? "A'zo bo'lmagan guruhlardan kelgan buyurtmalar"
+          : "Meniki va Boshqalar — barcha yangi buyurtmalar" }}
     </p>
+
+    <div
+      v-if="!isAdmin && unreadCount > 0"
+      class="flex justify-end -mt-1"
+    >
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 active:scale-95 transition-all"
+        @click="markAllAsRead"
+      >
+        <font-awesome-icon icon="fa-solid fa-check-double" class="text-[10px]" />
+        O'qilgan qilish
+        <span class="min-w-[1.1rem] h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] inline-flex items-center justify-center">
+          {{ unreadCount > 99 ? '99+' : unreadCount }}
+        </span>
+      </button>
+    </div>
 
     <!-- Filter panel -->
     <OrdersFilterPanel
@@ -71,8 +113,8 @@
       @cancel="onCancelFilter"
     />
 
-    <!-- Loading (birinchi yuklash) -->
-    <div v-if="orderStore.isLoading && !displayOrders.length" class="pt-2">
+    <!-- Loading (birinchi yuklash yoki tab almashish) -->
+    <div v-if="scopeLoading || (orderStore.isLoading && !displayOrders.length)" class="pt-2">
       <OrdersOrderCardSkeleton />
     </div>
 
@@ -95,6 +137,8 @@
       :loading-more="orderStore.isLoadingMore"
       :has-more="orderStore.hasMore"
       :is-member="isMemberOfOrder"
+      :is-order-seen="isOrderSeen"
+      :show-read-divider="!isAdmin"
       @unlock="onUnlock"
       @book="onBook"
       @unbook="onUnbook"
@@ -183,7 +227,9 @@ const {
   appliedKeywords,
   filterActive,
   scope,
+  scopeLoading,
   scopeNewCounts,
+  allNewCount,
   setScope,
   displayOrders,
   onSaveFilter,
@@ -244,5 +290,8 @@ const {
   confirmJoin,
   confirmLeave,
   cancelMembership,
+  unreadCount,
+  isOrderSeen,
+  markAllAsRead,
 } = useDriverOrdersPage()
 </script>

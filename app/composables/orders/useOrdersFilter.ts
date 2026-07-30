@@ -7,20 +7,24 @@ import {
 
 const LIMIT = 10
 
-export type OrdersScope = 'mine' | 'others'
+export type OrdersScope = 'all' | 'mine' | 'others'
 
 const SCOPE_STORAGE_KEY = 'zortaksi:orders-scope'
 
 /**
- * Buyurtmalar filtri — kalit so'zlar + Meniki/Boshqalar scope serverga yuboriladi.
+ * Buyurtmalar filtri — kalit so'zlar + Barchasi/Meniki/Boshqalar scope serverga yuboriladi.
  * Ro'yxat faqat API natijasi (client-side qayta filter yo'q).
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const showFilter = ref(false)
   const draftKeywords = ref('')
   const appliedKeywords = ref('')
-  const scope = ref<OrdersScope>('mine')
+  const scope = ref<OrdersScope>('all')
+  const scopeLoading = ref(false)
   const scopeNewCounts = computed(() => orderStore.scopeNewCounts)
+  const allNewCount = computed(
+    () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
+  )
   const filterActive = computed(() => !!appliedKeywords.value.trim())
 
   /** API so'rovlari uchun query (limit + search + scope) */
@@ -75,8 +79,14 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
       } catch { /* ignore */ }
     }
     orderStore.ordersListScrollY = 0
-    await orderStore.refreshMemberGroupIds()
-    await load()
+    orderStore.orders = []
+    scopeLoading.value = true
+    try {
+      await orderStore.refreshMemberGroupIds()
+      await load()
+    } finally {
+      scopeLoading.value = false
+    }
   }
 
   /** Saqlangan filtrni yuklash (onMounted da chaqiriladi) */
@@ -87,7 +97,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     if (import.meta.client) {
       try {
         const s = sessionStorage.getItem(SCOPE_STORAGE_KEY)
-        if (s === 'mine' || s === 'others') scope.value = s
+        if (s === 'all' || s === 'mine' || s === 'others') scope.value = s
       } catch { /* ignore */ }
     }
   }
@@ -97,7 +107,9 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftKeywords,
     appliedKeywords,
     scope,
+    scopeLoading,
     scopeNewCounts,
+    allNewCount,
     filterActive,
     displayOrders,
     queryParams,

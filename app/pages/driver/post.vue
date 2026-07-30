@@ -76,9 +76,11 @@
       v-if="store.tab === 'ads'"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      A'zo bo'lmagan guruhlar. Tanlab xabar yuboring
-      <span v-if="!store.isAdmin"> ({{ ADS_BROADCAST_PRICE.toLocaleString('ru-RU') }} so'm/guruh)</span>
-      yoki «Guruhga qo'shilish» orqali Meniki ga qo'shing.
+      Faqat public guruhlar (@username) — kanallar va yopiq guruhlar yo'q.
+      <span v-if="!store.isAdmin">
+        Xabar yuborish: {{ ADS_BROADCAST_PRICE.toLocaleString('ru-RU') }} so'm/guruh.
+      </span>
+      «Guruhga qo'shilish» orqali Meniki ga ham qo'shishingiz mumkin.
     </p>
     <p
       v-else-if="store.tab === 'mine' && store.isAdmin"
