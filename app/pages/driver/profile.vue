@@ -129,6 +129,15 @@
         />
 
         <ProfileSettingRow
+          icon="fa-solid fa-clipboard-list"
+          title="Foydalanish shartlari"
+          subtitle="Xizmatdan foydalanish qoidalari"
+          color="amber"
+          clickable
+          @click="navigateTo('/terms')"
+        />
+
+        <ProfileSettingRow
           icon="fa-solid fa-shield-alt"
           title="Maxfiylik siyosati"
           subtitle="Ma'lumotlaringiz qanday ishlatiladi"

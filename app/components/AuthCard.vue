@@ -103,9 +103,15 @@
             Telegram'da ro'yxatdan o'tgan raqamni kiriting (998…)
           </p>
 
+          <TermsConsent
+            v-if="showTermsConsent"
+            v-model="termsAccepted"
+            hint="Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi."
+          />
+
           <button
             type="button"
-            :disabled="authStore.isLoading || !isPhoneValid"
+            :disabled="authStore.isLoading || !isPhoneValid || !canProceedAuth"
             class="w-full py-3 px-5 rounded-xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleSendCode"
           >
@@ -178,7 +184,7 @@
       </div>
 
       <p class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 px-3 leading-snug">
-        Davom etish orqali siz Telegram akkauntingiz orqali ZorTaksi ga kirasiz.
+        Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi.
       </p>
     </main>
 
@@ -195,6 +201,8 @@ import BasePhoneInput from './base/PhoneInput.vue'
 import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
 import { resolvePostAuthPath } from '~/utils/userRole'
 import { getApiErrorMessage } from '~/utils/apiError'
+import TermsConsent from './legal/TermsConsent.vue'
+import { hasStoredTermsConsent, storeTermsConsent } from '~/utils/termsConsent'
 
 const authStore = useAuthStore()
 const route = useRoute()
@@ -205,12 +213,21 @@ const referralRef = useCookie<string | null>('referral_ref', {
   sameSite: 'lax',
 })
 
+const termsAccepted = ref(false)
+const showTermsConsent = ref(true)
+
 onMounted(() => {
   const q = route.query.ref
   if (typeof q === 'string' && q.trim()) {
     referralRef.value = q.trim()
   }
+  if (hasStoredTermsConsent()) {
+    termsAccepted.value = true
+    showTermsConsent.value = false
+  }
 })
+
+const canProceedAuth = computed(() => termsAccepted.value)
 
 type Step = 'register' | 'verify' | 'password'
 const currentStep = ref<Step>('register')
@@ -307,12 +324,13 @@ const adoptFreshSession = (user: any) => {
 }
 
 const handleSendCode = async (opts?: { forceSms?: boolean }) => {
-  if (authStore.isLoading || !isPhoneValid.value) return
+  if (authStore.isLoading || !isPhoneValid.value || !canProceedAuth.value) return
   form.error = ''
   if (!opts?.forceSms) deliveryHint.value = ''
   try {
     const response = await authStore.sendCode(phoneDigits.value, opts)
     if (response.success) {
+      if (termsAccepted.value) storeTermsConsent()
       deliveryHint.value =
         response.data?.message ||
         `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`

@@ -103,9 +103,14 @@
             Telegram'da ro'yxatdan o'tgan raqamni kiriting (998…)
           </p>
 
+          <TermsConsent
+            v-model="termsAccepted"
+            hint="Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi."
+          />
+
           <button
             type="button"
-            :disabled="loading || !isPhoneValid"
+            :disabled="loading || !isPhoneValid || !termsAccepted"
             class="w-full py-3 px-5 rounded-xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleSendCode"
           >
@@ -174,7 +179,7 @@
       </div>
 
       <p class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 px-3 leading-snug">
-        Yangi hisob Telegram orqali ulanadi.
+        Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi.
       </p>
     </main>
 
@@ -189,6 +194,7 @@ import BasePasswordInput from '~/components/base/PasswordInput.vue'
 import BasePhoneInput from '~/components/base/PhoneInput.vue'
 import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
 import { getApiErrorMessage } from '~/utils/apiError'
+import TermsConsent from '~/components/legal/TermsConsent.vue'
 
 definePageMeta({
   layout: false,
@@ -206,6 +212,7 @@ const error = ref('')
 const deliveryHint = ref('')
 const canResendSms = ref(false)
 const loading = ref(false)
+const termsAccepted = ref(false)
 
 const allSteps = [
   { key: 'phone' as const, label: 'Telefon' },
@@ -272,7 +279,7 @@ const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
 const handleSendCode = async (opts?: { forceSms?: boolean }) => {
-  if (loading.value || !isPhoneValid.value) return
+  if (loading.value || !isPhoneValid.value || !termsAccepted.value) return
   error.value = ''
   if (!opts?.forceSms) deliveryHint.value = ''
   accountStore.load()

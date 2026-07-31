@@ -78,7 +78,9 @@
         >@{{ adminUsername }}</a>
       </p>
       <p class="legal-p">
-        Maxfiylik siyosati:
+        Foydalanish shartlari:
+        <NuxtLink to="/terms" class="legal-link">/terms</NuxtLink>
+        · Maxfiylik siyosati:
         <NuxtLink to="/privacy" class="legal-link">/privacy</NuxtLink>
       </p>
     </section>
