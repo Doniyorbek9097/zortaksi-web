@@ -74,11 +74,17 @@
         order.message?.text }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
-      <button v-if="locked" type="button" data-no-swipe
-        class="mt-4 w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-2 px-2.5 py-3 rounded-xl text-[13px] font-black whitespace-nowrap overflow-hidden text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20 hover:bg-amber-500/15 active:scale-[0.98] transition-all"
-        @pointerdown.stop @click.stop="$emit('unlock')">
-        <font-awesome-icon icon="fa-solid fa-lock" class="text-sm shrink-0" />
-        <span class="truncate">Tariffga ulanish →</span>
+      <button
+        v-if="locked"
+        type="button"
+        data-no-swipe
+        class="mt-4 w-full min-h-[52px] inline-flex items-center justify-center gap-2.5 px-4 py-3.5 rounded-xl text-[13px] font-black leading-snug text-center text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:from-amber-600 hover:to-orange-600 active:scale-[0.98] transition-all"
+        @pointerdown.stop
+        @click.stop="$emit('unlock')"
+      >
+        <font-awesome-icon icon="fa-solid fa-wallet" class="text-base shrink-0" />
+        <span>Buyurtmalarni olish uchun Tarif sotib oling</span>
+        <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-sm shrink-0 opacity-90" />
       </button>
 
       <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
