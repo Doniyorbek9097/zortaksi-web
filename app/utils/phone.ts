@@ -2,6 +2,37 @@
 const PHONE_CANDIDATE = /\+?\d(?:[\s\t().\-:/·•]*\d){6,14}|\b\d{7,15}\b/g
 const MIN_DIGITS = 7
 
+export const PHONE_MASK = '■■■'
+
+/** 2024-12-31 / 12.31.2024 kabi sanalarni telefon emas deb qoldirish */
+function looksLikeDate(raw: string, digits: string): boolean {
+  if (digits.length !== 8) return false
+  if (!/^[\d.\-/]+$/.test(raw.trim())) return false
+  const y = digits.slice(0, 4)
+  const y2 = digits.slice(4)
+  if (y.startsWith('19') || y.startsWith('20')) return true
+  if (y2.startsWith('19') || y2.startsWith('20')) return true
+  return false
+}
+
+/** Matndagi telefon raqamlarini maska bilan almashtiradi (tomoshabin chatlari) */
+export function hidePhoneNumbers(
+  text: string | null | undefined,
+  mask: string = PHONE_MASK,
+): string {
+  if (!text) return ''
+
+  return text.replace(PHONE_CANDIDATE, (match) => {
+    const digits = (match.match(/\d/g) || []).join('')
+    if (digits.length < MIN_DIGITS || digits.length > 15) return match
+    if (looksLikeDate(match, digits)) return match
+
+    const leading = match.match(/^\s*/)?.[0] ?? ''
+    const trailing = match.match(/\s*$/)?.[0] ?? ''
+    return `${leading}${mask}${trailing}`
+  })
+}
+
 /** Auth / account: E.164 raqamlar (+ siz), istalgan davlat */
 const INTL_PHONE_RULES: [prefix: string, exactLen: number][] = [
   ['998', 12],

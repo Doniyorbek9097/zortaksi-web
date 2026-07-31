@@ -103,7 +103,7 @@
           class="px-2 text-[15px] leading-relaxed"
           :class="out ? 'text-white' : ''"
         >
-          <ChatLinkifiedText :text="text" :out="out" />
+          <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
       </div>
 
@@ -149,7 +149,7 @@
         v-else-if="paymentRequest"
         :type="paymentRequest.type"
         :name="paymentRequest.name"
-        :phone="paymentRequest.phone"
+        :phone="maskPhones ? PHONE_MASK : paymentRequest.phone"
         :tariff="paymentRequest.tariff"
         :amount="paymentRequest.amount"
         :pay-url="paymentRequest.payUrl"
@@ -166,7 +166,7 @@
         v-else
         class="text-[15px] leading-relaxed"
       >
-        <ChatLinkifiedText :text="text" :out="out" />
+        <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
       </p>
 
       <div
@@ -239,6 +239,7 @@
 <script setup lang="ts">
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
+import { PHONE_MASK } from '~/utils/phone'
 
 interface Props {
   text?: string
@@ -256,6 +257,8 @@ interface Props {
   locationLng?: number
   locationTitle?: string
   highlight?: boolean
+  /** Tomoshabin rejimi — telefon raqamlar yashiriladi */
+  maskPhones?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -272,6 +275,7 @@ const props = withDefaults(defineProps<Props>(), {
   locationLng: undefined,
   locationTitle: '',
   highlight: false,
+  maskPhones: false,
 })
 
 const mapsUrl = computed(() => {

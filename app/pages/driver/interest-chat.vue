@@ -135,6 +135,7 @@
                 :location-lat="msg.locationLat"
                 :location-lng="msg.locationLng"
                 :location-title="msg.locationTitle"
+                mask-phones
               />
             </div>
 
@@ -146,7 +147,7 @@
                 ? 'bg-sky-50 dark:bg-sky-950/40 border-sky-200/70 dark:border-sky-800/50'
                 : 'bg-violet-50 dark:bg-violet-950/30 border-violet-200/70 dark:border-violet-800/40'"
             >
-              <ChatLinkifiedText :text="msg.text || ''" />
+              <ChatLinkifiedText :text="msg.text || ''" mask-phones />
             </div>
           </div>
         </article>
@@ -167,6 +168,7 @@
 <script setup lang="ts">
 import type { IChatMessage } from '~/types'
 import { chatMediaUrlKey, useChatMedia } from '~/composables/useVoiceMedia'
+import { hidePhoneNumbers } from '~/utils/phone'
 
 definePageMeta({
   layout: false,
@@ -284,7 +286,9 @@ const load = async () => {
       ...m,
       _id: String((m as any)._id || (m as any).id || ''),
     }))
-    orderText.value = String(data.orderText || data.chat?.orderText || '')
+    orderText.value = hidePhoneNumbers(
+      String(data.orderText || data.chat?.orderText || ''),
+    )
     driverName.value = data.driver?.name || 'Haydovchi'
     customerName.value = data.customer?.name || "Yo'lovchi"
     driverAvatar.value = data.driver?.avatar || ''

@@ -24,17 +24,24 @@
 
 <script setup lang="ts">
 import { linkifyParts } from '~/utils/linkify'
+import { hidePhoneNumbers } from '~/utils/phone'
 
 const props = withDefaults(
   defineProps<{
     text?: string
     /** out bubble — oq link; in — sky */
     out?: boolean
+    /** Telefon raqamlarini tel: link qilmasdan maskalaydi */
+    maskPhones?: boolean
   }>(),
-  { text: '', out: false }
+  { text: '', out: false, maskPhones: false }
 )
 
-const parts = computed(() => linkifyParts(props.text || ''))
+const displayText = computed(() =>
+  props.maskPhones ? hidePhoneNumbers(props.text || '') : props.text || ''
+)
+
+const parts = computed(() => linkifyParts(displayText.value))
 
 const linkClass = computed(() =>
   props.out
