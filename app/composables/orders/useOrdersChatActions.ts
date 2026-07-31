@@ -1,6 +1,7 @@
 import type { IInterestedUser, IOrder } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
+import { useAuthStore } from '~/stores/auth.store'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -33,6 +34,21 @@ export function useOrdersChatActions(options: {
         String(c.orderId || '') === String(orderId) &&
         String(c.peer?.userId || '') === String(peerUserId),
     )
+  }
+
+  const findDirectChatWithUser = (peerUserId: string, orderId?: string) => {
+    return chatStore.chats.find((c) => {
+      if (c.kind !== 'direct') return false
+      if (String(c.peer?.userId || '') !== String(peerUserId)) return false
+      if (orderId && String(c.orderId || '') !== String(orderId)) return false
+      return true
+    })
+  }
+
+  const interestedUserName = (u: IInterestedUser) => {
+    if (u.name) return u.name
+    const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim()
+    return full || u.username || 'Haydovchi'
   }
 
   /** Mavjud chat bo'lsa to'g'ridan; aks holda /chat/open orqali darhol UI */
@@ -83,6 +99,7 @@ export function useOrdersChatActions(options: {
   const interestUsers = ref<IInterestedUser[]>([])
   const interestCount = ref(0)
   const interestOrderId = ref<string | null>(null)
+  const interestOrder = ref<IOrder | null>(null)
   const interestDialog = ref<{
     resetOpening: (err?: string) => void
     close: () => void
@@ -91,6 +108,7 @@ export function useOrdersChatActions(options: {
 
   const onInterest = async (order: IOrder) => {
     if (!order._id) return
+    interestOrder.value = order
     interestOrderId.value = order._id
     showInterestDialog.value = true
     interestUsers.value = order.interestedUsers || []
@@ -108,20 +126,23 @@ export function useOrdersChatActions(options: {
     }
   }
 
-  const onInterestSelect = async (user: IInterestedUser) => {
+  const closeInterestDialogForNavigate = () => {
+    if (interestDialog.value?.closeForNavigate) {
+      interestDialog.value.closeForNavigate()
+    } else {
+      interestDialog.value?.close()
+    }
+  }
+
+  /** Ko'z ikonkasi — mijoz↔haydovchi suhbatini faqat ko'rish */
+  const onInterestView = async (user: IInterestedUser) => {
     const orderId = interestOrderId.value || ''
     if (!orderId || !user.userId) {
       interestDialog.value?.resetOpening('Order topilmadi')
       return
     }
 
-    // history.back() race — avval disarm, keyin sahifa
-    if (interestDialog.value?.closeForNavigate) {
-      interestDialog.value.closeForNavigate()
-    } else {
-      interestDialog.value?.close()
-    }
-
+    closeInterestDialogForNavigate()
     beforeNavigate?.()
     return navigateTo({
       path: '/driver/interest-chat',
@@ -129,6 +150,42 @@ export function useOrdersChatActions(options: {
         orderId,
         driverUserId: String(user.userId),
       },
+    })
+  }
+
+  /** Karta — haydovchiga yozish (o'zingiz bo'lsangiz mijozga) */
+  const onInterestChat = async (user: IInterestedUser) => {
+    const order = interestOrder.value
+    const orderId = order?._id || interestOrderId.value || ''
+    if (!orderId || !user.userId) {
+      interestDialog.value?.resetOpening('Order topilmadi')
+      return
+    }
+
+    const currentUserId = String(useAuthStore().user?.userId || '')
+    const isSelf = !!currentUserId && String(user.userId) === currentUserId
+
+    closeInterestDialogForNavigate()
+    beforeNavigate?.()
+
+    if (isSelf && order) {
+      return onMessage(order)
+    }
+
+    const name = interestedUserName(user)
+    const existing = findDirectChatWithUser(String(user.userId), orderId)
+    if (existing?._id) {
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: { name },
+      })
+    }
+
+    return goOpenChat({
+      open: 'user',
+      userId: String(user.userId),
+      orderId,
+      name,
     })
   }
 
@@ -191,7 +248,8 @@ export function useOrdersChatActions(options: {
     onMessage,
     onCall,
     onInterest,
-    onInterestSelect,
+    onInterestView,
+    onInterestChat,
     onBookedChat,
     onAgent,
   }

@@ -197,7 +197,8 @@
       @cancel-block-group="blockGroupTarget = null"
       @confirm-block-user="confirmBlockUser"
       @cancel-block-user="blockUserTarget = null"
-      @interest-select="onInterestSelect"
+      @interest-chat="onInterestChat"
+      @interest-view="onInterestView"
       @confirm-join="confirmJoin"
       @confirm-leave="confirmLeave"
       @cancel-membership="cancelMembership"
@@ -260,7 +261,8 @@ const {
   onMessage,
   onCall,
   onInterest,
-  onInterestSelect,
+  onInterestChat,
+  onInterestView,
   onBookedChat,
   onAgent,
   showBlockGroupDialog,

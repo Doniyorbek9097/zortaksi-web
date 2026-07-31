@@ -118,7 +118,8 @@
       :count="interestCount"
       :loading="interestLoading"
       :current-user-id="currentUserId"
-      @select="$emit('interest-select', $event)"
+      @chat="$emit('interest-chat', $event)"
+      @view="$emit('interest-view', $event)"
     />
   </div>
 </template>
@@ -163,7 +164,8 @@ defineEmits<{
   'cancel-block-group': []
   'confirm-block-user': []
   'cancel-block-user': []
-  'interest-select': [user: IInterestedUser]
+  'interest-chat': [user: IInterestedUser]
+  'interest-view': [user: IInterestedUser]
   'confirm-join': []
   'confirm-leave': []
   'cancel-membership': []

@@ -17,7 +17,7 @@
               <div class="min-w-0">
                 <h3 class="text-lg font-black text-slate-900 dark:text-white">Mijozga bog'lanishdi</h3>
                 <p class="mt-0.5 text-[12px] font-medium text-slate-400 dark:text-slate-500">
-                  {{ count }} kishi · faqat ko'rish (yozib bo'lmaydi)
+                  {{ count }} kishi · kartaga bosib yozish · ko'z — suhbatni ko'rish
                 </p>
               </div>
               <button
@@ -44,41 +44,65 @@
 
               <ul v-else class="space-y-1">
                 <li v-for="(u, idx) in users" :key="u.userId">
-                  <button
-                    type="button"
-                    class="w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-left hover:bg-slate-50 dark:hover:bg-slate-800/80 active:scale-[0.99] transition-all disabled:opacity-50"
-                    :disabled="openingId === u.userId"
-                    @click="onSelect(u)"
+                  <div
+                    class="flex items-center gap-1 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors"
                   >
-                    <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0 tabular-nums">
-                      {{ idx + 1 }}
-                    </span>
-                    <ProfileAvatar
-                      :name="displayName(u)"
-                      :src="u.avatar"
-                      :user-id="u.userId"
-                      size="sm"
-                    />
-                    <div class="min-w-0 flex-1">
-                      <p class="text-sm font-black text-slate-900 dark:text-white truncate">
-                        {{ displayName(u) }}
-                        <span v-if="isSelf(u)" class="text-[11px] font-bold text-slate-400">(siz)</span>
-                      </p>
-                      <p class="text-[11px] font-medium text-slate-400 truncate">
-                        {{ isSelf(u) ? 'O\'zingizning yozishmangiz' : 'Chatni ko\'rish' }}
-                      </p>
-                    </div>
-                    <font-awesome-icon
-                      v-if="openingId === u.userId"
-                      icon="fa-solid fa-spinner"
-                      class="text-sky-500 animate-spin shrink-0"
-                    />
-                    <font-awesome-icon
-                      v-else
-                      icon="fa-solid fa-eye"
-                      class="text-slate-300 dark:text-slate-600 shrink-0"
-                    />
-                  </button>
+                    <button
+                      type="button"
+                      class="flex-1 min-w-0 flex items-center gap-3 px-2.5 py-2.5 text-left active:scale-[0.99] transition-all disabled:opacity-50"
+                      :disabled="!!opening"
+                      @click="onChat(u)"
+                    >
+                      <span class="w-5 text-[11px] font-bold text-slate-400 shrink-0 tabular-nums">
+                        {{ idx + 1 }}
+                      </span>
+                      <ProfileAvatar
+                        :name="displayName(u)"
+                        :src="u.avatar"
+                        :user-id="u.userId"
+                        size="sm"
+                      />
+                      <div class="min-w-0 flex-1">
+                        <p class="text-sm font-black text-slate-900 dark:text-white truncate">
+                          {{ displayName(u) }}
+                          <span v-if="isSelf(u)" class="text-[11px] font-bold text-slate-400">(siz)</span>
+                        </p>
+                        <p class="text-[11px] font-medium text-slate-400 truncate">
+                          {{ isSelf(u) ? 'Mijozga yozish' : 'Haydovchiga yozish' }}
+                        </p>
+                      </div>
+                      <font-awesome-icon
+                        v-if="opening?.userId === u.userId && opening.mode === 'chat'"
+                        icon="fa-solid fa-spinner"
+                        class="text-sky-500 animate-spin shrink-0"
+                      />
+                      <font-awesome-icon
+                        v-else
+                        icon="fa-solid fa-comments"
+                        class="text-sky-400/70 dark:text-sky-500/50 shrink-0 text-sm"
+                      />
+                    </button>
+
+                    <button
+                      type="button"
+                      class="shrink-0 w-10 h-10 mr-1.5 rounded-xl flex items-center justify-center text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-95 transition-all disabled:opacity-50"
+                      :disabled="!!opening"
+                      aria-label="Suhbatni ko'rish"
+                      :title="`Suhbatni ko'rish — ${displayName(u)}`"
+                      @click="onView(u)"
+                    >
+                      <font-awesome-icon
+                        v-if="opening?.userId === u.userId && opening.mode === 'view'"
+                        icon="fa-solid fa-spinner"
+                        class="animate-spin text-sm"
+                      />
+                      <font-awesome-icon
+                        v-else
+                        icon="fa-solid fa-eye"
+                        class="text-sm"
+                      />
+                    </button>
+                  </div>
                 </li>
               </ul>
 
@@ -114,16 +138,17 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  select: [user: IInterestedUser]
+  chat: [user: IInterestedUser]
+  view: [user: IInterestedUser]
 }>()
 
-const openingId = ref<string | null>(null)
+const opening = ref<{ userId: string; mode: 'chat' | 'view' } | null>(null)
 const error = ref('')
 
 const close = () => {
   modelValue.value = false
   error.value = ''
-  openingId.value = null
+  opening.value = null
 }
 
 const { disarm } = useHistoryBackClose(modelValue, close, { key: 'ztInterestList' })
@@ -137,16 +162,23 @@ const displayName = (u: IInterestedUser) => {
 const isSelf = (u: IInterestedUser) =>
   !!props.currentUserId && String(u.userId) === String(props.currentUserId)
 
-const onSelect = (u: IInterestedUser) => {
-  if (openingId.value) return
+const onChat = (u: IInterestedUser) => {
+  if (opening.value) return
   error.value = ''
-  openingId.value = u.userId
-  emit('select', u)
+  opening.value = { userId: u.userId, mode: 'chat' }
+  emit('chat', u)
+}
+
+const onView = (u: IInterestedUser) => {
+  if (opening.value) return
+  error.value = ''
+  opening.value = { userId: u.userId, mode: 'view' }
+  emit('view', u)
 }
 
 /** Parent navigatsiya tugagach / xato bo'lganda chaqiriladi */
 const resetOpening = (errMsg?: string) => {
-  openingId.value = null
+  opening.value = null
   if (errMsg) error.value = errMsg
 }
 
@@ -155,7 +187,7 @@ const closeForNavigate = () => {
   disarm()
   modelValue.value = false
   error.value = ''
-  openingId.value = null
+  opening.value = null
 }
 
 defineExpose({ resetOpening, close, closeForNavigate })
