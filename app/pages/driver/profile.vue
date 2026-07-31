@@ -197,7 +197,7 @@ const deletingAccount = ref(false)
 const { soundOn } = useNotifySound()
 const config = useRuntimeConfig()
 const adminUsername = computed(() =>
-  String(config.public.adminTelegram || 'doniyorbek_ergashev').replace(/^@/, '')
+  String(config.public.adminTelegram || 'zortaksi_admin').replace(/^@/, '')
 )
 
 // --- Actions ---

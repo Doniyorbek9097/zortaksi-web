@@ -125,7 +125,7 @@ const accountStore = useAccountStore()
 const token = useCookie('auth_token')
 
 const adminUsername = computed(() =>
-  String(config.public.adminTelegram || 'doniyorbek_ergashev').replace(/^@/, '')
+  String(config.public.adminTelegram || 'zortaksi_admin').replace(/^@/, '')
 )
 
 const isLoggedIn = computed(() => !!token.value && !!authStore.user)
