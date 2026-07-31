@@ -2,6 +2,7 @@ import type { AxiosProgressEvent, Method } from "axios"
 import { api } from "~/config/axios"
 import { getAuthCookieOptions } from "~/utils/authCookie"
 import { resolveAuthToken } from "~/utils/activeAccount"
+import { buildApiUrl } from "~/utils/buildApiUrl"
 
 interface IOptions {
   method?: Method
@@ -12,27 +13,6 @@ interface IOptions {
   onUploadProgress?: (e: AxiosProgressEvent) => void
   /** Account switch: aniq token (cookie poygasiga qarshi) */
   authToken?: string | null
-}
-
-/** SSR da relative /api/v1 → to'g'ridan backend; brauzerda Nuxt proxy */
-function buildApiUrl(baseUrl: string, path: string): string {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`
-  const base = baseUrl.replace(/\/$/, '')
-
-  if (base.startsWith('http://') || base.startsWith('https://')) {
-    return `${base}${normalizedPath}`
-  }
-
-  if (import.meta.client) {
-    return `${base}${normalizedPath}`
-  }
-
-  const direct =
-    process.env.NUXT_DEV_API_BACKEND ||
-    process.env.NUXT_PUBLIC_DEV_API_BACKEND ||
-    'http://127.0.0.1:5000'
-  const backendRoot = direct.replace(/\/$/, '').replace(/\/api\/v1$/, '')
-  return `${backendRoot}/api/v1${normalizedPath}`
 }
 
 export const useApi = async <T = any>(path: string, options: IOptions = {}) => {

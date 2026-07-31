@@ -8,12 +8,18 @@ import {
   idbGetMedia,
   idbPutMedia,
   idbDeleteMedia,
-  idbClearMedia,
   idbMediaStats,
 } from '~/utils/mediaIdb'
 import { isCorruptMediaBlob, isValidMediaBlob } from '~/utils/mediaBlobValidate'
-import { ensureMediaCacheReady, MEDIA_CACHE_SCHEMA_VERSION } from '~/utils/mediaCacheReady'
+import {
+  ensureMediaCacheReady,
+  clearMediaCachesOnly,
+} from '~/utils/mediaCacheReady'
 import { agentDebugLog } from '~/utils/agentDebugLog'
+import { api } from '~/config/axios'
+import { getAuthCookieOptions } from '~/utils/authCookie'
+import { resolveAuthToken } from '~/utils/activeAccount'
+import { buildApiUrl } from '~/utils/buildApiUrl'
 import type { InjectionKey } from 'vue'
 
 /** Interest chat: /orders/.../messages/:id/media */
@@ -35,11 +41,6 @@ const localOnly = new Set<string>()
 
 function normalizeMessageId(messageId: string): string {
   return String(messageId || '').trim()
-}
-
-function mimeFromResponse(res: Response, fallback: string): string {
-  const raw = res.headers.get('Content-Type') || fallback
-  return raw.split(';')[0]?.trim() || fallback
 }
 
 function touchCacheOrder(id: string) {
@@ -77,13 +78,22 @@ export function invalidateChatMediaCache(messageId: string) {
   void idbDeleteMedia(id)
 }
 
-function resolveApiBase(): string {
+function resolveMediaRequestUrl(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+): string {
   const config = useRuntimeConfig()
-  let apiBase = String(config.public.baseUrl || '')
-  if (/localhost|127\.0\.0\.1/i.test(apiBase)) {
-    apiBase = 'https://api.zortaksi.uz/api/v1'
+  let base = String(config.public.baseUrl || '').replace(/\/$/, '')
+  if (import.meta.client && /localhost|127\.0\.0\.1/i.test(base)) {
+    base = 'https://api.zortaksi.uz/api/v1'
   }
-  return apiBase.replace(/\/$/, '')
+  const cb = Date.now()
+  if (urlBuilder) {
+    const built = urlBuilder(messageId)
+    const sep = built.includes('?') ? '&' : '?'
+    return `${built}${sep}_cb=${cb}`
+  }
+  return `${buildApiUrl(base, `/chats/messages/${messageId}/media`)}?_cb=${cb}`
 }
 
 async function fetchMediaBlobFromNetwork(
@@ -92,37 +102,43 @@ async function fetchMediaBlobFromNetwork(
   urlBuilder?: ChatMediaUrlBuilder | null,
 ): Promise<Blob> {
   const fallbackMime = kind === 'voice' ? 'audio/ogg' : 'image/jpeg'
-  const token = useCookie('auth_token')
-  const signal =
-    typeof AbortSignal !== 'undefined' && 'timeout' in AbortSignal
-      ? AbortSignal.timeout(120_000)
-      : undefined
-  const apiBase = resolveApiBase()
-  let url = urlBuilder
-    ? urlBuilder(messageId)
-    : `${apiBase}/chats/messages/${messageId}/media`
-  const sep = url.includes('?') ? '&' : '?'
-  url = `${url}${sep}_cb=${Date.now()}`
-  const res = await fetch(url, {
-    headers: token.value
-      ? {
-          Authorization: `Bearer ${token.value}`,
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-        }
-      : { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
-    credentials: 'include',
-    cache: 'no-store',
-    signal,
-  })
-  let errBody = ''
-  if (!res.ok) {
-    try {
-      errBody = (await res.clone().text()).slice(0, 120)
-    } catch {
-      /* */
-    }
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
+  const token = resolveAuthToken(cookie.value)
+  const url = resolveMediaRequestUrl(messageId, urlBuilder)
+
+  let res: { data: Blob; status: number; headers: Record<string, string> }
+  try {
+    res = await api.get<Blob>(url, {
+      responseType: 'blob',
+      timeout: 120_000,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    })
+  } catch (err: any) {
+    const status = err?.response?.status
+    const errBody =
+      err?.response?.data instanceof Blob
+        ? await err.response.data.text().catch(() => '')
+        : String(err?.response?.data || err?.message || '')
+    agentDebugLog({
+      hypothesisId: 'B',
+      location: 'useVoiceMedia.ts:fetchMediaBlobFromNetwork',
+      message: 'media_http_error',
+      data: {
+        messageId,
+        kind,
+        status,
+        hasToken: !!token,
+        mediaUrl: url,
+        errBody: String(errBody).slice(0, 120),
+      },
+    })
+    throw new Error('Media yuklanmadi')
   }
+
   agentDebugLog({
     hypothesisId: 'B',
     location: 'useVoiceMedia.ts:fetchMediaBlobFromNetwork',
@@ -131,24 +147,22 @@ async function fetchMediaBlobFromNetwork(
       messageId,
       kind,
       status: res.status,
-      ok: res.ok,
-      contentType: res.headers.get('Content-Type'),
-      contentLength: res.headers.get('Content-Length'),
-      hasToken: !!token.value,
-      apiBase,
+      ok: res.status >= 200 && res.status < 300,
+      contentType: res.headers?.['content-type'],
+      hasToken: !!token,
       mediaUrl: url,
-      errBody,
-      runId: 'chat-page-fix',
     },
   })
-  if (!res.ok) throw new Error('Media yuklanmadi')
 
-  let mime = mimeFromResponse(res, fallbackMime)
+  const ct = String(
+    (res.headers as Record<string, string> | undefined)?.['content-type'] || fallbackMime,
+  )
+  let mime = ct.split(';')[0]?.trim() || fallbackMime
   if (/json|text\/html|text\/plain/i.test(mime)) {
     throw new Error('Media yuklanmadi')
   }
 
-  const raw = await res.blob()
+  const raw = res.data
   if (kind === 'photo' && (!mime.startsWith('image/') || /json|text/i.test(mime))) {
     mime = 'image/jpeg'
   }
@@ -167,7 +181,6 @@ async function fetchMediaBlobFromNetwork(
       blobSize: blob.size,
       blobType: blob.type,
       headerMime: mime,
-      rawType: raw.type,
     },
   })
 
@@ -415,14 +428,7 @@ export function useChatMedia() {
 
   const clearDeviceCache = async () => {
     revokeAll()
-    await idbClearMedia()
-    if (import.meta.client) {
-      try {
-        localStorage.setItem('zt_media_cache_schema', MEDIA_CACHE_SCHEMA_VERSION)
-      } catch {
-        /* */
-      }
-    }
+    await clearMediaCachesOnly()
   }
 
   const invalidateMedia = (messageId: string) => {

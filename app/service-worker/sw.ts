@@ -3,6 +3,7 @@ import { clientsClaim } from 'workbox-core'
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
 import { NavigationRoute, registerRoute } from 'workbox-routing'
 import { createHandlerBoundToURL } from 'workbox-precaching'
+import { NetworkOnly } from 'workbox-strategies'
 
 declare let self: ServiceWorkerGlobalScope
 
@@ -11,7 +12,15 @@ clientsClaim()
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
-// Offline navigation — auth sahifalar denylist (boshqa user shell/keshiga tushmasin)
+// Chat media — hech qachon SW keshiga tushmasin (eski 404/JSON ushlanmasin)
+registerRoute(
+  ({ request, url }) =>
+    request.method === 'GET' &&
+    (url.pathname.endsWith('/media') || url.pathname.includes('/messages/') && /\/media$/.test(url.pathname)),
+  new NetworkOnly(),
+)
+
+// Offline navigation — auth sahifalar denylist
 try {
   const handler = createHandlerBoundToURL('/')
   registerRoute(
