@@ -4,7 +4,7 @@
  */
 
 const DB_NAME = 'zortaksi-media'
-const DB_VERSION = 1
+const DB_VERSION = 2
 const STORE = 'blobs'
 
 type MediaRecord = {
@@ -23,8 +23,12 @@ function openDb(): Promise<IDBDatabase> {
     const req = indexedDB.open(DB_NAME, DB_VERSION)
     req.onerror = () => reject(req.error || new Error('IDB open xato'))
     req.onsuccess = () => resolve(req.result)
-    req.onupgradeneeded = () => {
+    req.onupgradeneeded = (event) => {
       const db = req.result
+      const oldVersion = event.oldVersion
+      if (oldVersion > 0 && db.objectStoreNames.contains(STORE)) {
+        db.deleteObjectStore(STORE)
+      }
       if (!db.objectStoreNames.contains(STORE)) {
         db.createObjectStore(STORE, { keyPath: 'id' })
       }

@@ -10,9 +10,9 @@ import {
   idbDeleteMedia,
   idbClearMedia,
   idbMediaStats,
-  idbPurgeInvalid,
 } from '~/utils/mediaIdb'
-import { isBlobUrlAlive, isValidMediaBlob } from '~/utils/mediaBlobValidate'
+import { isCorruptMediaBlob, isValidMediaBlob } from '~/utils/mediaBlobValidate'
+import { ensureMediaCacheReady, MEDIA_CACHE_SCHEMA_VERSION } from '~/utils/mediaCacheReady'
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import type { InjectionKey } from 'vue'
 
@@ -32,13 +32,6 @@ const cacheOrder: string[] = []
 const inflight = new Map<string, Promise<string>>()
 /** temp→real handoff: mahalliy preview server javobigacha saqlanadi */
 const localOnly = new Set<string>()
-
-let idbSanitized = false
-function sanitizeIdbOnce() {
-  if (idbSanitized || !import.meta.client) return
-  idbSanitized = true
-  void idbPurgeInvalid(isValidMediaBlob).catch(() => {})
-}
 
 function normalizeMessageId(messageId: string): string {
   return String(messageId || '').trim()
@@ -179,7 +172,7 @@ async function fetchMediaBlobFromNetwork(
   })
 
   if (!blob.size) throw new Error('Media bo\'sh')
-  if (!(await isValidMediaBlob(blob, kind))) {
+  if (await isCorruptMediaBlob(blob, kind)) {
     throw new Error('Media yuklanmadi')
   }
   return blob
@@ -191,7 +184,7 @@ async function blobToObjectUrl(
   kind: 'voice' | 'photo',
   persistIdb: boolean,
 ): Promise<string> {
-  if (!(await isValidMediaBlob(blob, kind))) {
+  if (await isCorruptMediaBlob(blob, kind)) {
     void idbDeleteMedia(messageId)
     throw new Error('Media buzilgan')
   }
@@ -232,7 +225,6 @@ export function useVoiceMedia() {
 }
 
 export function useChatMedia() {
-  sanitizeIdbOnce()
   let injectedUrlBuilder: ChatMediaUrlBuilder | null = null
   try {
     injectedUrlBuilder = inject(chatMediaUrlKey, null)
@@ -258,7 +250,7 @@ export function useChatMedia() {
     if (!id.startsWith('temp-')) {
       void (async () => {
         const kind = blob.type.startsWith('image/') ? 'photo' : 'voice'
-        if (await isValidMediaBlob(blob, kind)) {
+        if (!(await isCorruptMediaBlob(blob, kind))) {
           await idbPutMedia(id, blob, kind)
         }
       })()
@@ -285,7 +277,7 @@ export function useChatMedia() {
         const res = await fetch(url)
         const blob = await res.blob()
         const kind = blob.type.startsWith('image/') ? 'photo' : 'voice'
-        if (await isValidMediaBlob(blob, kind)) {
+        if (!(await isCorruptMediaBlob(blob, kind))) {
           await idbPutMedia(to, blob, kind)
         }
       } catch {
@@ -299,6 +291,7 @@ export function useChatMedia() {
     kind: 'voice' | 'photo' = 'photo',
     opts: GetMediaUrlOpts = {},
   ): Promise<string> => {
+    await ensureMediaCacheReady()
     const id = normalizeMessageId(messageId)
     if (!id) return ''
     const builder = resolveBuilder(opts.urlBuilder)
@@ -310,11 +303,8 @@ export function useChatMedia() {
 
     const cached = cache.get(id)
     if (cached && !opts.forceNetwork) {
-      if (!cached.startsWith('blob:') || (await isBlobUrlAlive(cached))) {
-        touchCacheOrder(id)
-        return cached
-      }
-      revokeCachedUrl(id)
+      touchCacheOrder(id)
+      return cached
     }
 
     if (id.startsWith('temp-')) return cache.get(id) || ''
@@ -327,12 +317,7 @@ export function useChatMedia() {
         /* */
       }
       const afterPending = cache.get(id)
-      if (afterPending) {
-        if (!afterPending.startsWith('blob:') || (await isBlobUrlAlive(afterPending))) {
-          return afterPending
-        }
-        revokeCachedUrl(id)
-      }
+      if (afterPending) return afterPending
     }
 
     const job = (async () => {
@@ -361,8 +346,6 @@ export function useChatMedia() {
     try {
       return await job
     } catch (err) {
-      const local = cache.get(id)
-      if (local && (await isBlobUrlAlive(local))) return local
       revokeCachedUrl(id)
       throw err
     } finally {
@@ -384,7 +367,7 @@ export function useChatMedia() {
           try {
             const res = await fetch(url)
             const blob = await res.blob()
-            if (await isValidMediaBlob(blob, kind)) {
+            if (!(await isCorruptMediaBlob(blob, kind))) {
               await idbPutMedia(id, blob, kind)
             }
           } catch {
@@ -433,6 +416,13 @@ export function useChatMedia() {
   const clearDeviceCache = async () => {
     revokeAll()
     await idbClearMedia()
+    if (import.meta.client) {
+      try {
+        localStorage.setItem('zt_media_cache_schema', MEDIA_CACHE_SCHEMA_VERSION)
+      } catch {
+        /* */
+      }
+    }
   }
 
   const invalidateMedia = (messageId: string) => {
