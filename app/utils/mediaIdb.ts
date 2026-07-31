@@ -106,6 +106,40 @@ export async function idbClearMedia(): Promise<void> {
   }
 }
 
+/** Barcha yozuvlar — migratsiya / buzilgan blob tozalash */
+export async function idbListAllMedia(): Promise<MediaRecord[]> {
+  try {
+    const db = await openDb()
+    const tx = db.transaction(STORE, 'readonly')
+    const all = await idbReq<MediaRecord[]>(tx.objectStore(STORE).getAll())
+    db.close()
+    return all || []
+  } catch {
+    return []
+  }
+}
+
+/** Yaroqsiz bloblarni o'chirish (brauzer keshini qo'lda tozalamasdan) */
+export async function idbPurgeInvalid(
+  isValid: (blob: Blob, kind: 'voice' | 'photo') => Promise<boolean>,
+): Promise<number> {
+  const rows = await idbListAllMedia()
+  let removed = 0
+  for (const row of rows) {
+    if (!row?.id || !row.blob?.size) {
+      await idbDeleteMedia(row?.id || '')
+      removed++
+      continue
+    }
+    const kind = row.kind === 'voice' ? 'voice' : 'photo'
+    if (!(await isValid(row.blob, kind))) {
+      await idbDeleteMedia(row.id)
+      removed++
+    }
+  }
+  return removed
+}
+
 /** Taxminiy kesh hajmi (bayt) */
 export async function idbMediaStats(): Promise<{ count: number; bytes: number }> {
   try {

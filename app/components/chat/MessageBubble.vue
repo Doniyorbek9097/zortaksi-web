@@ -281,7 +281,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, peekUrl } = useChatMedia()
+const { getUrl, invalidateMedia } = useChatMedia()
 
 const pickLine = (raw: string, re: RegExp) => {
   const m = raw.match(re)
@@ -418,20 +418,14 @@ if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
 }
 // #endregion
 
-const syncSrcFromCache = () => {
-  if (!props.messageId) return false
-  const cached = peekUrl(props.messageId)
-  if (cached && cached !== src.value) {
-    src.value = cached
-    return true
-  }
-  return !!cached
-}
-
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
-  if (!opts.force && syncSrcFromCache()) return
-  if (!opts.force && src.value) return
+  if (opts.force) {
+    invalidateMedia(props.messageId)
+    src.value = ''
+  } else if (src.value) {
+    return
+  }
   loading.value = true
   try {
     const url = await getUrl(
@@ -456,7 +450,7 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
       },
     })
     // #endregion
-    if (syncSrcFromCache()) return
+    if (props.messageId) invalidateMedia(props.messageId)
     src.value = ''
   } finally {
     loading.value = false
@@ -599,18 +593,10 @@ const onEnded = () => {
 
 const onAudioError = async () => {
   stopLocalVoice()
-  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
-    syncSrcFromCache()
-    return
-  }
   await retryMedia()
 }
 
 const onImageError = async () => {
-  if (props.messageId && peekUrl(props.messageId) && peekUrl(props.messageId) !== src.value) {
-    syncSrcFromCache()
-    return
-  }
   await retryMedia()
 }
 
