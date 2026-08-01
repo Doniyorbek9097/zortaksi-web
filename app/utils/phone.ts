@@ -1,4 +1,4 @@
-/** Matndan birinchi telefon raqamini topadi (nuqta, ikki nuqta, tire va h.k.) */
+/** Matndan telefon raqamini topadi (nuqta, ikki nuqta, tire va h.k.) */
 const PHONE_CANDIDATE = /\+?\d(?:[\s\t().\-:/·•]*\d){6,14}|\b\d{7,15}\b/g
 const MIN_DIGITS = 7
 
@@ -85,26 +85,24 @@ export function normalizeTo998(raw: string | null | undefined): string | null {
   return null
 }
 
+/** Matndan oxirgi topilgan telefon raqamini qaytaradi */
 export function extractPhoneFromText(text?: string | null): string | null {
   if (!text) return null
   const matches = text.match(PHONE_CANDIDATE) || []
-  let fallback: string | null = null
+  let lastValid: string | null = null
 
   for (const m of matches) {
-    // Maskalangan raqam emas
     if (m.includes('■')) continue
     const digits = (m.match(/\d/g) || []).join('')
     if (digits.length < MIN_DIGITS || digits.length > 15) continue
+    if (looksLikeDate(m, digits)) continue
 
     const normalized = normalizeTo998(digits)
     if (!normalized) continue
-
-    // UZ mobil — ustuvor
-    if (/^998(9\d|33|88|77)\d{7}$/.test(normalized)) return normalized
-    if (!fallback) fallback = normalized
+    lastValid = normalized
   }
 
-  return fallback
+  return lastValid
 }
 
 /** tel: uchun tozalangan raqam (+ bilan) */
@@ -116,7 +114,7 @@ export function normalizeTelHref(phone: string): string {
 
 /**
  * Order uchun qo'ng'iroq raqami:
- * 1) message.text ichidan (+998 format)
+ * 1) callPhone (server) yoki message.text ichidagi oxirgi telefon
  * 2) sender.phone
  * ikkalasi yo'q → null (tugma ko'rinmaydi)
  */

@@ -71,7 +71,7 @@
 
       <!-- Message -->
       <p class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words">{{
-        order.message?.text }}</p>
+        orderMessageText }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
       <button
@@ -212,7 +212,7 @@
 
 <script setup lang="ts">
 import type { IOrder } from '~/types'
-import { normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
+import { hidePhoneNumbers, normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
 
 interface Props {
   order: IOrder
@@ -302,7 +302,10 @@ const groupViewUrl = computed(() => {
 
 const interestCount = computed(() => Math.max(0, Number(props.order.interestCount || 0)))
 
-/** 1) message.text → 2) sender.phone; ikkalasi yo'q → tugma chiqmaydi */
+/** Matnda telefonlar yashirilgan ko'rinish (server + qo'shimcha himoya) */
+const orderMessageText = computed(() => hidePhoneNumbers(props.order.message?.text))
+
+/** 1) callPhone / xabar (oxirgi telefon) → 2) sender.phone */
 const callPhone = computed(() => resolveOrderPhone(props.order))
 
 const senderName = computed(() => {
