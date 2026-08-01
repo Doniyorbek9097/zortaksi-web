@@ -37,9 +37,8 @@
       </p>
     </div>
 
-    <!-- To'lov holati (topup) -->
+    <!-- To'lov holati -->
     <div
-      v-if="isTopup"
       class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-black"
       :class="isPaid
         ? (out
@@ -57,15 +56,18 @@
     </div>
 
     <p class="text-[12px] leading-relaxed opacity-80 break-words">
-      <template v-if="isTopup && isPaid">
+      <template v-if="isPaid && isTopup">
         {{ out ? "Hisobingiz to'ldirildi." : "Balansga muvaffaqiyatli qo'shildi." }}
+      </template>
+      <template v-else-if="isPaid && !isTopup">
+        {{ out ? 'Tarif faollashtirildi.' : 'Tarif ulandi.' }}
       </template>
       <template v-else>
         {{ out
           ? 'So\'rov yuborildi. Admin karta ma\'lumotini yuboradi.'
           : isTopup
             ? 'To\'lovdan keyin summani haydovchi balansiga qo\'shing.'
-            : 'To\'lovdan keyin chek/skrinshot yuboriladi.' }}
+            : 'Haydovchi tanlagan tarifni faollashtiring.' }}
       </template>
     </p>
 
@@ -80,7 +82,7 @@
       @click.stop.prevent="goPay"
     >
       <font-awesome-icon icon="fa-solid fa-wallet" class="shrink-0" />
-      <span class="truncate">{{ isTopup ? "Balansga qo'shish" : "To'lov qilish" }}</span>
+      <span class="truncate">{{ isTopup ? "Balansga qo'shish" : 'Tarifni faollashtirish' }}</span>
     </button>
   </div>
 </template>
@@ -162,7 +164,7 @@ const resolvedAmount = computed(() => {
 const showPayButton = computed(() =>
   !!resolvedUserId.value &&
   authStore.user?.role === 'admin' &&
-  !(isTopup.value && isPaid.value)
+  !isPaid.value
 )
 
 const goPay = async () => {
@@ -170,7 +172,8 @@ const goPay = async () => {
   if (!id) return
   const query: Record<string, string> = {}
   if (resolvedAmount.value) query.amount = resolvedAmount.value
+  if (props.tariffId) query.tariffId = String(props.tariffId)
   if (props.messageId) query.messageId = String(props.messageId)
-  await navigateTo({ path: `/admin/pay/${id}`, query })
+  await navigateTo({ path: `/admin/pay/${encodeURIComponent(id)}`, query })
 }
 </script>

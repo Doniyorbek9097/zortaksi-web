@@ -63,52 +63,34 @@
         </div>
       </section>
 
-      <!-- Balansga qo'shish -->
+      <!-- Tarif so'rovi banner -->
       <section
-        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+        v-if="requestedTariff"
+        class="rounded-2xl p-4 bg-violet-50 dark:bg-violet-950/30 border border-violet-200/80 dark:border-violet-800/50 space-y-1"
       >
-        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-          Balansga qo'shish
+        <p class="text-[11px] font-black uppercase tracking-wider text-violet-600 dark:text-violet-400">
+          Haydovchi tarif so'rovi
         </p>
-        <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          Haydovchi so'ragan summani kiriting (ixtiyoriy — faqat tarif ulash ham mumkin).
+        <p class="text-[14px] font-black text-slate-900 dark:text-white">
+          «{{ requestedTariff.name }}» tarifiga ulanmoqchi
         </p>
-
-        <div class="space-y-1">
-          <label class="px-1 text-[11px] font-bold text-slate-400">To'lov summasi (so'm)</label>
-          <input
-            v-model="amountText"
-            type="text"
-            inputmode="numeric"
-            class="w-full px-3.5 py-3 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-          >
-        </div>
-
-        <div class="flex items-center justify-between text-[12px] font-bold">
-          <span class="text-slate-400">To'lovdan keyin balans</span>
-          <span class="text-sky-500">{{ formatMoney(balanceAfterCredit) }} so'm</span>
-        </div>
-
-        <button
-          type="button"
-          :disabled="saving || creditAmount <= 0"
-          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-          @click="addBalanceOnly"
-        >
-          <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'" :class="saving ? 'animate-spin' : ''" />
-          Faqat balansga qo'shish — {{ formatMoney(creditAmount) }} so'm
-        </button>
+        <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400">
+          Tanlangan tarif tayyor — to'lovdan keyin faollashtiring.
+        </p>
       </section>
 
       <!-- Tarif faollashtirish -->
       <section
-        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border shadow-sm space-y-3"
+        :class="requestedTariffId
+          ? 'border-violet-200 dark:border-violet-800/50'
+          : 'border-slate-200 dark:border-slate-800'"
       >
         <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
           Tarif faollashtirish
         </p>
         <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-          Kerakli tarifni tanlang. Istasangiz balansdan narxini yechib, yoki yuqoridagi summa bilan birga ulang.
+          Kerakli tarifni tanlang. Istasangiz balansdan narxini yechib, yoki pastdagi summa bilan birga ulang.
         </p>
 
         <div class="space-y-2">
@@ -193,6 +175,43 @@
         </div>
       </section>
 
+      <!-- Balansga qo'shish -->
+      <section
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+      >
+        <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+          Balansga qo'shish
+        </p>
+        <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
+          Faqat hisob to'ldirish (tarifsiz). Tarif so'rovida yuqoridagi tugmalardan foydalaning.
+        </p>
+
+        <div class="space-y-1">
+          <label class="px-1 text-[11px] font-bold text-slate-400">To'lov summasi (so'm)</label>
+          <input
+            v-model="amountText"
+            type="text"
+            inputmode="numeric"
+            class="w-full px-3.5 py-3 rounded-xl text-base font-bold bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+        </div>
+
+        <div class="flex items-center justify-between text-[12px] font-bold">
+          <span class="text-slate-400">To'lovdan keyin balans</span>
+          <span class="text-sky-500">{{ formatMoney(balanceAfterCredit) }} so'm</span>
+        </div>
+
+        <button
+          type="button"
+          :disabled="saving || creditAmount <= 0"
+          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
+          @click="addBalanceOnly"
+        >
+          <font-awesome-icon :icon="saving ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'" :class="saving ? 'animate-spin' : ''" />
+          Faqat balansga qo'shish — {{ formatMoney(creditAmount) }} so'm
+        </button>
+      </section>
+
       <DriverPaymentHistoryList
         v-if="paymentsApiPath"
         ref="historyList"
@@ -270,6 +289,14 @@ const balanceAfterCredit = computed(() => (driver.value?.balance ?? 0) + creditA
 
 const requestMessageId = computed(() => String(route.query.messageId || '').trim())
 
+const requestedTariffId = computed(() => String(route.query.tariffId || '').trim())
+
+const requestedTariff = computed(() => {
+  const id = requestedTariffId.value
+  if (!id) return null
+  return tariffs.value.find((t) => t.id === id) || null
+})
+
 const load = async () => {
   loading.value = true
   error.value = ''
@@ -320,7 +347,7 @@ const postPay = async (body: Record<string, unknown>, okMessage: string) => {
   error.value = ''
   success.value = ''
   try {
-    if (requestMessageId.value && Number(body.creditAmount || 0) > 0) {
+    if (requestMessageId.value) {
       body.messageId = requestMessageId.value
     }
     const res = await useApi(payApiPath.value, { method: 'POST', body })
