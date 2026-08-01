@@ -1,5 +1,6 @@
 /** Matndan telefon raqamini topadi (nuqta, ikki nuqta, tire va h.k.) */
-const PHONE_CANDIDATE = /\+?\d(?:[\s\t().\-:/·•]*\d){6,14}|\b\d{7,15}\b/g
+const PHONE_CANDIDATE = /\+?\d(?:[ \t().\-·•:]*\d){6,14}|\b\d{7,15}\b/g
+const FRAGMENT_SEP = /\n+|\/|,|;|\||(?:\s+va\s+)/i
 const MIN_DIGITS = 7
 
 export const PHONE_MASK = '■■■'
@@ -85,24 +86,50 @@ export function normalizeTo998(raw: string | null | undefined): string | null {
   return null
 }
 
-/** Matndan oxirgi topilgan telefon raqamini qaytaradi */
-export function extractPhoneFromText(text?: string | null): string | null {
-  if (!text) return null
-  const matches = text.match(PHONE_CANDIDATE) || []
-  let lastValid: string | null = null
+function normalizeCandidate(raw: string): string | null {
+  if (raw.includes('■')) return null
+  const digits = (raw.match(/\d/g) || []).join('')
+  if (digits.length < MIN_DIGITS || digits.length > 15) return null
+  if (looksLikeDate(raw, digits)) return null
+  return normalizeTo998(digits)
+}
 
-  for (const m of matches) {
-    if (m.includes('■')) continue
-    const digits = (m.match(/\d/g) || []).join('')
-    if (digits.length < MIN_DIGITS || digits.length > 15) continue
-    if (looksLikeDate(m, digits)) continue
+/** Matndan barcha telefonlarni matn tartibida to'playdi */
+export function extractPhonesInOrder(text?: string | null): string[] {
+  if (!text || text.includes('■')) return []
+  const out: string[] = []
 
-    const normalized = normalizeTo998(digits)
-    if (!normalized) continue
-    lastValid = normalized
+  const scan = (chunk: string) => {
+    if (!chunk.trim()) return
+    const re = new RegExp(PHONE_CANDIDATE.source, 'g')
+    for (const m of chunk.matchAll(re)) {
+      const normalized = normalizeCandidate(m[0])
+      if (normalized) out.push(normalized)
+    }
   }
 
-  return lastValid
+  for (const line of text.split(/\n+/)) {
+    const trimmedLine = line.trim()
+    if (!trimmedLine) continue
+    for (const part of trimmedLine.split(FRAGMENT_SEP)) {
+      scan(part.trim())
+    }
+    for (const part of trimmedLine.split(/\s+(?=\+?\d)/)) {
+      scan(part.trim())
+    }
+  }
+
+  return out
+}
+
+/** Matndan oxirgi topilgan telefon raqamini qaytaradi */
+export function extractLastPhoneFromText(text?: string | null): string | null {
+  const all = extractPhonesInOrder(text)
+  return all.length ? all[all.length - 1] : null
+}
+
+export function extractPhoneFromText(text?: string | null): string | null {
+  return extractLastPhoneFromText(text)
 }
 
 /** tel: uchun tozalangan raqam (+ bilan) */
@@ -123,10 +150,10 @@ export function resolveOrderPhone(order: {
   message?: { text?: string } | null
   sender?: { phone?: string } | null
 }): string | null {
-  const serverPhone = normalizeTo998(order.callPhone)
-  if (serverPhone) return serverPhone
+  const fromServer = normalizeTo998(order.callPhone)
+  if (fromServer) return fromServer
 
-  const fromText = extractPhoneFromText(order.message?.text)
+  const fromText = extractLastPhoneFromText(order.message?.text)
   if (fromText) return fromText
 
   const senderPhone = normalizeTo998(order.sender?.phone)
