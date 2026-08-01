@@ -67,6 +67,8 @@ export interface IOrder {
     bookedAt?: string | Date | null;
     bookedByUser?: IBookedByUser | null;
     bookPrice?: number;
+    /** Qo'ng'iroq raqami (server: xabar matni → sender.phone) */
+    callPhone?: string | null;
     /** Xabar/Telefon bosganlar soni */
     interestCount?: number;
     interestedUsers?: IInterestedUser[];

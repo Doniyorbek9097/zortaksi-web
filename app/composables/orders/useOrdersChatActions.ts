@@ -2,6 +2,7 @@ import type { IInterestedUser, IOrder } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
+import { resolveOrderPhone } from '~/utils/phone'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -67,7 +68,7 @@ export function useOrdersChatActions(options: {
     const peerId = order.sender?.userId
     const existing = findChatByOrderPeer(order._id, peerId)
     const name = senderDisplayName(order)
-    const phone = String(order.sender?.phone || '')
+    const phone = resolveOrderPhone(order) || ''
     const username = String(order.sender?.username || '').replace(/^@/, '')
 
     beforeNavigate?.()

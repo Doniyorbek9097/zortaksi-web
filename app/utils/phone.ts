@@ -121,9 +121,13 @@ export function normalizeTelHref(phone: string): string {
  * ikkalasi yo'q → null (tugma ko'rinmaydi)
  */
 export function resolveOrderPhone(order: {
+  callPhone?: string | null
   message?: { text?: string } | null
   sender?: { phone?: string } | null
 }): string | null {
+  const serverPhone = normalizeTo998(order.callPhone)
+  if (serverPhone) return serverPhone
+
   const fromText = extractPhoneFromText(order.message?.text)
   if (fromText) return fromText
 
