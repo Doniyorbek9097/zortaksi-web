@@ -117,6 +117,9 @@
             </span>
           </template>
         </ProfileSettingRow>
+        <p class="px-4 pb-1 text-[11px] leading-snug text-slate-400 dark:text-slate-500">
+          Bu yer loginni saqlaydi. Brauzer «barcha ma'lumotlar» tozalansa qayta kirish kerak bo'ladi.
+        </p>
 
         <!-- Contact admin -->
         <ProfileSettingRow
@@ -285,6 +288,7 @@ const onClearMediaCache = async () => {
   try {
     await clearDeviceCache()
     cacheInfo.value = { count: 0, bytes: 0 }
+    await refreshCacheStats()
   } catch (e) {
     console.error('Kesh tozalash xato:', e)
   } finally {

@@ -78,6 +78,16 @@ export function invalidateChatMediaCache(messageId: string) {
   void idbDeleteMedia(id)
 }
 
+/** Bir nechta xabar media keshini tozalash (chat o'chirish) */
+export function invalidateChatMediaCaches(messageIds: string[]) {
+  for (const raw of messageIds) {
+    invalidateChatMediaCache(raw)
+  }
+}
+
+/** Profil/kesh tozalash — bubble lar qayta yuklashi uchun */
+export const mediaCacheEpoch = ref(0)
+
 function resolveMediaRequestUrl(
   messageId: string,
   urlBuilder?: ChatMediaUrlBuilder | null,
@@ -429,6 +439,7 @@ export function useChatMedia() {
   const clearDeviceCache = async () => {
     revokeAll()
     await clearMediaCachesOnly()
+    mediaCacheEpoch.value += 1
   }
 
   const invalidateMedia = (messageId: string) => {
@@ -447,6 +458,8 @@ export function useChatMedia() {
     revokeAll,
     clearDeviceCache,
     invalidateMedia,
+    invalidateMany: invalidateChatMediaCaches,
     getCacheStats,
+    mediaCacheEpoch: readonly(mediaCacheEpoch),
   }
 }

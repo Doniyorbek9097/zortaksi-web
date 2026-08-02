@@ -285,7 +285,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, invalidateMedia } = useChatMedia()
+const { getUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const pickLine = (raw: string, re: RegExp) => {
   const m = raw.match(re)
@@ -683,6 +683,19 @@ watch(
     }
   },
 )
+
+/** Profil → media kesh tozalanganda ochiq bubble qayta yuklanadi */
+watch(mediaCacheEpoch, async () => {
+  if (props.type !== 'voice' && props.type !== 'photo') return
+  if (!props.messageId) return
+  src.value = ''
+  loading.value = true
+  try {
+    await ensureSrc({ force: true })
+  } finally {
+    loading.value = false
+  }
+})
 
 onBeforeUnmount(() => {
   stopLocalVoice()

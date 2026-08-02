@@ -1,4 +1,5 @@
 import type { IChatMessage } from '~/types'
+import { invalidateChatMediaCaches } from '~/composables/useVoiceMedia'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
 
@@ -217,12 +218,36 @@ export function createListActions(
         }
     }
 
-    /** Chatlarni o'chirish */
+    /** Chatlarni o'chirish — server media + qurilma IndexedDB keshi */
     const deleteChats = async (ids: string[]) => {
+        const idSet = new Set(ids.map(String))
+        const localMediaIds = messages.value
+            .filter(
+                (m) =>
+                    idSet.has(String(m.chatId)) &&
+                    (m.type === 'voice' || m.type === 'photo'),
+            )
+            .map((m) => String(m._id))
+
         const res = await useApi('/chats', { method: 'DELETE', body: { ids } })
         if (res.success) {
             chats.value = chats.value.filter((c) => !ids.includes(c._id))
             total.value = Math.max(0, total.value - ids.length)
+
+            const serverIds = (res.data?.messageIds as string[] | undefined) || []
+            const purgeIds = [...new Set([...localMediaIds, ...serverIds.map(String)])]
+            if (purgeIds.length && import.meta.client) {
+                invalidateChatMediaCaches(purgeIds)
+            }
+
+            if (currentChat.value && idSet.has(String(currentChat.value._id))) {
+                currentChat.value = null
+                messages.value = []
+            } else {
+                messages.value = messages.value.filter(
+                    (m) => !idSet.has(String(m.chatId)),
+                )
+            }
         }
         return res
     }
