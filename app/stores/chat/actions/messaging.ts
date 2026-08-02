@@ -115,12 +115,13 @@ export function createMessagingActions(
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                console.error('sendVoice failed:', res.message || res)
             }
             return res
-        } catch (error) {
+        } catch (error: any) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
             if (idx !== -1) messages.value[idx] = markTempFailed(temp)
-            console.error('sendVoice error:', error)
+            console.error('sendVoice error:', error?.response?.data?.message || error?.message || error)
             throw error
         } finally {
             isSending.value = false
@@ -156,12 +157,13 @@ export function createMessagingActions(
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                console.error('sendPhoto failed:', res.message || res)
             }
             return res
-        } catch (error) {
+        } catch (error: any) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
             if (idx !== -1) messages.value[idx] = markTempFailed(temp)
-            console.error('sendPhoto error:', error)
+            console.error('sendPhoto error:', error?.response?.data?.message || error?.message || error)
             throw error
         } finally {
             isSending.value = false
