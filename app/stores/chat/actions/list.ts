@@ -1,5 +1,5 @@
 import type { IChatMessage } from '~/types'
-import { invalidateChatMediaCaches } from '~/composables/useVoiceMedia'
+import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
 
@@ -107,6 +107,9 @@ export function createListActions(
                 messagesPage.value = res.data.pagination?.page ?? 1
                 messagesTotalPages.value = res.data.pagination?.totalPages ?? 1
                 patchChat(chatId, { unreadCount: 0 })
+                if (import.meta.client) {
+                    useChatMedia().prefetch(messages.value, null)
+                }
             }
             return res
         } catch (error) {
@@ -148,6 +151,9 @@ export function createListActions(
             messagesTotalPages.value =
                 res.data.pagination?.totalPages ?? messagesTotalPages.value
 
+            if (import.meta.client) {
+                useChatMedia().prefetch(older, null)
+            }
             return res
         } catch (error) {
             console.error('loadOlderMessages error:', error)

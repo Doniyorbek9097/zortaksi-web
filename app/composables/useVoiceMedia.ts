@@ -1,10 +1,16 @@
 /**
  * Chat media (voice/photo):
- * - Yuborilayotgan xabar: mahalliy blob (temp)
- * - Qolganlari: har safar serverdan (IndexedDB / uzoq kesh yo'q)
+ * 1) xotira blob URL (sessiya)
+ * 2) IndexedDB (qurilma — Telegram kelgan media uchun barqaror)
+ * 3) server / Telegram on-demand
  */
-import { idbClearMedia, idbDeleteMedia, idbMediaStats } from '~/utils/mediaIdb'
-import { isCorruptMediaBlob } from '~/utils/mediaBlobValidate'
+import {
+  idbGetMedia,
+  idbPutMedia,
+  idbDeleteMedia,
+  idbMediaStats,
+} from '~/utils/mediaIdb'
+import { isCorruptMediaBlob, isValidMediaBlob } from '~/utils/mediaBlobValidate'
 import {
   ensureMediaCacheReady,
   clearMediaCachesOnly,
@@ -25,29 +31,51 @@ export type GetMediaUrlOpts = {
   urlBuilder?: ChatMediaUrlBuilder | null
 }
 
-/** Faqat yuborilayotgan temp preview */
-const localUrls = new Map<string, string>()
-const localOnly = new Set<string>()
+const MAX_MEMORY_ENTRIES = 96
+/** Sessiya blob URL — barcha bubble lar ulashadi, unmount da revoke qilinmaydi */
+const cache = new Map<string, string>()
+const cacheOrder: string[] = []
 const inflight = new Map<string, Promise<string>>()
+/** Yuborilayotgan temp preview */
+const localOnly = new Set<string>()
 
 function normalizeMessageId(messageId: string): string {
   return String(messageId || '').trim()
 }
 
-function revokeLocalUrl(messageId: string) {
-  const id = normalizeMessageId(messageId)
-  if (!id) return
-  const url = localUrls.get(id)
-  if (url?.startsWith('blob:')) URL.revokeObjectURL(url)
-  localUrls.delete(id)
-  localOnly.delete(id)
+function touchCacheOrder(id: string) {
+  const i = cacheOrder.indexOf(id)
+  if (i >= 0) cacheOrder.splice(i, 1)
+  cacheOrder.push(id)
+  while (cacheOrder.length > MAX_MEMORY_ENTRIES) {
+    let evicted = false
+    for (let j = 0; j < cacheOrder.length; j++) {
+      const victim = cacheOrder[j]
+      if (!victim || localOnly.has(victim)) continue
+      cacheOrder.splice(j, 1)
+      revokeCachedUrl(victim)
+      evicted = true
+      break
+    }
+    if (!evicted) break
+  }
 }
 
-/** Eski IndexedDB yozuvi + mahalliy preview tozalash */
+function revokeCachedUrl(messageId: string) {
+  const id = normalizeMessageId(messageId)
+  if (!id) return
+  const prev = cache.get(id)
+  if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+  cache.delete(id)
+  localOnly.delete(id)
+  const i = cacheOrder.indexOf(id)
+  if (i >= 0) cacheOrder.splice(i, 1)
+}
+
 export function invalidateChatMediaCache(messageId: string) {
   const id = normalizeMessageId(messageId)
   if (!id) return
-  revokeLocalUrl(id)
+  revokeCachedUrl(id)
   void idbDeleteMedia(id)
 }
 
@@ -55,7 +83,6 @@ export function invalidateChatMediaCaches(messageIds: string[]) {
   for (const raw of messageIds) invalidateChatMediaCache(raw)
 }
 
-/** Profil / chat o'chirish — bubble qayta yuklash */
 export const mediaCacheEpoch = ref(0)
 
 function resolveMediaRequestUrl(
@@ -93,7 +120,7 @@ async function fetchMediaBlobFromNetwork(
       timeout: 120_000,
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        'Cache-Control': 'no-cache, no-store',
+        'Cache-Control': 'no-cache',
         Pragma: 'no-cache',
       },
     })
@@ -143,6 +170,46 @@ async function fetchMediaBlobFromNetwork(
   return blob
 }
 
+async function loadFromIdb(id: string, kind: 'voice' | 'photo'): Promise<Blob | null> {
+  const idbBlob = await idbGetMedia(id)
+  if (!idbBlob?.size) return null
+  if (!(await isValidMediaBlob(idbBlob, kind))) {
+    void idbDeleteMedia(id)
+    return null
+  }
+  return idbBlob
+}
+
+async function blobToObjectUrl(
+  messageId: string,
+  blob: Blob,
+  kind: 'voice' | 'photo',
+  persistIdb: boolean,
+): Promise<string> {
+  if (await isCorruptMediaBlob(blob, kind)) {
+    void idbDeleteMedia(messageId)
+    throw new Error('Media buzilgan')
+  }
+
+  if (persistIdb && !messageId.startsWith('temp-')) {
+    void idbPutMedia(messageId, blob, kind)
+  }
+
+  const existing = cache.get(messageId)
+  if (existing && localOnly.has(messageId)) {
+    return existing
+  }
+
+  const url = URL.createObjectURL(blob)
+  if (existing?.startsWith('blob:') && existing !== url) {
+    URL.revokeObjectURL(existing)
+  }
+  cache.set(messageId, url)
+  touchCacheOrder(messageId)
+  localOnly.delete(messageId)
+  return url
+}
+
 export function useVoiceMedia() {
   return useChatMedia()
 }
@@ -161,15 +228,15 @@ export function useChatMedia() {
   }
 
   const peekUrl = (messageId: string): string =>
-    localUrls.get(normalizeMessageId(messageId)) || ''
+    cache.get(normalizeMessageId(messageId)) || ''
 
-  /** Yuborilayotgan ovoz/rasm preview (faqat shu sessiya) */
   const setLocalUrl = (messageId: string, blob: Blob) => {
     const id = normalizeMessageId(messageId)
     if (!id || !import.meta.client) return
-    revokeLocalUrl(id)
+    revokeCachedUrl(id)
     const url = URL.createObjectURL(blob)
-    localUrls.set(id, url)
+    cache.set(id, url)
+    touchCacheOrder(id)
     localOnly.add(id)
   }
 
@@ -177,18 +244,31 @@ export function useChatMedia() {
     const from = normalizeMessageId(fromId)
     const to = normalizeMessageId(toId)
     if (!from || !to || from === to) return
-    const url = localUrls.get(from)
+    const url = cache.get(from)
     if (!url) return
-    localUrls.delete(from)
+    const keepLocal = localOnly.has(from)
+    cache.delete(from)
     localOnly.delete(from)
-    localUrls.set(to, url)
-    localOnly.add(to)
+    const fi = cacheOrder.indexOf(from)
+    if (fi >= 0) cacheOrder.splice(fi, 1)
+    cache.set(to, url)
+    touchCacheOrder(to)
+    if (keepLocal) localOnly.add(to)
+
+    void (async () => {
+      try {
+        const res = await fetch(url)
+        const blob = await res.blob()
+        const kind = blob.type.startsWith('image/') ? 'photo' : 'voice'
+        if (!(await isCorruptMediaBlob(blob, kind))) {
+          await idbPutMedia(to, blob, kind)
+        }
+      } catch {
+        /* */
+      }
+    })()
   }
 
-  /**
-   * Serverdan to'g'ridan-to'g'ri blob URL (keshsiz).
-   * Caller blob URL ni unmount da revoke qilishi kerak.
-   */
   const getUrl = async (
     messageId: string,
     kind: 'voice' | 'photo' = 'photo',
@@ -199,8 +279,19 @@ export function useChatMedia() {
     if (!id) return ''
     const builder = resolveBuilder(opts.urlBuilder)
 
+    if (opts.forceNetwork) {
+      if (!localOnly.has(id)) revokeCachedUrl(id)
+      void idbDeleteMedia(id)
+    }
+
     if (localOnly.has(id) || id.startsWith('temp-')) {
-      return localUrls.get(id) || ''
+      return cache.get(id) || ''
+    }
+
+    const cached = cache.get(id)
+    if (cached && !opts.forceNetwork) {
+      touchCacheOrder(id)
+      return cached
     }
 
     if (!opts.forceNetwork) {
@@ -209,40 +300,103 @@ export function useChatMedia() {
         try {
           return await pending
         } catch {
-          /* qayta urinadi */
+          /* */
         }
       }
     }
 
     const job = (async () => {
-      const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
-      return URL.createObjectURL(blob)
+      if (!opts.forceNetwork) {
+        const idbBlob = await loadFromIdb(id, kind)
+        if (idbBlob) {
+          return blobToObjectUrl(id, idbBlob, kind, false)
+        }
+      }
+
+      try {
+        const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
+        return blobToObjectUrl(id, blob, kind, true)
+      } catch (err) {
+        if (!opts.forceNetwork) {
+          const idbBlob = await loadFromIdb(id, kind)
+          if (idbBlob) {
+            return blobToObjectUrl(id, idbBlob, kind, false)
+          }
+        }
+        throw err
+      }
     })()
 
     inflight.set(id, job)
     try {
       return await job
+    } catch (err) {
+      revokeCachedUrl(id)
+      throw err
     } finally {
       inflight.delete(id)
     }
   }
 
-  /** Outgoing temp — server javobidan keyin endi kerak emas */
-  const upgradeFromServer = (_messageId: string, _kind: 'voice' | 'photo') => {}
+  /** Chiquvchi temp — serverdan yuklab IDB ga yozish */
+  const upgradeFromServer = (messageId: string, kind: 'voice' | 'photo') => {
+    const id = normalizeMessageId(messageId)
+    if (!id || id.startsWith('temp-') || !localOnly.has(id)) return
+    void (async () => {
+      try {
+        const blob = await fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
+        if (!localOnly.has(id)) return
+        await blobToObjectUrl(id, blob, kind, true)
+      } catch {
+        const url = cache.get(id)
+        if (!url) return
+        try {
+          const res = await fetch(url)
+          const blob = await res.blob()
+          if (!(await isCorruptMediaBlob(blob, kind))) {
+            await idbPutMedia(id, blob, kind)
+          }
+        } catch {
+          /* */
+        }
+      }
+    })()
+  }
 
-  /** Kesh yo'q — fon yuklash o'chirilgan */
+  /** Fon: IDB ga oldindan yozish (Telegram remote → disk) */
   const prefetch = (
-    _messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
-    _urlBuilder?: ChatMediaUrlBuilder | null,
-  ) => {}
+    messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+    urlBuilder?: ChatMediaUrlBuilder | null,
+  ) => {
+    for (const m of messages) {
+      const id = normalizeMessageId(m._id)
+      if (!id || id.startsWith('temp-')) continue
+      const isVoice = m.type === 'voice'
+      const isPhoto = m.type === 'photo'
+      if (!isVoice && !isPhoto) continue
+      if (!m.mediaPath && !m.tgMessageId) continue
+      const kind = isVoice ? 'voice' : 'photo'
+      const opts: GetMediaUrlOpts = { urlBuilder }
+      getUrl(id, kind, opts)
+        .then(() => {
+          if (!m.mediaPath || m.mediaPath === 'remote') {
+            getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
+          }
+        })
+        .catch(() => {
+          getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
+        })
+    }
+  }
 
   const revokeAll = () => {
-    for (const url of localUrls.values()) {
+    for (const url of cache.values()) {
       if (url.startsWith('blob:')) URL.revokeObjectURL(url)
     }
-    localUrls.clear()
-    localOnly.clear()
+    cache.clear()
+    cacheOrder.length = 0
     inflight.clear()
+    localOnly.clear()
   }
 
   const clearDeviceCache = async () => {
@@ -255,23 +409,7 @@ export function useChatMedia() {
     invalidateChatMediaCache(messageId)
   }
 
-  const getCacheStats = async () => {
-    const legacy = await idbMediaStats()
-    let bytes = 0
-    for (const url of localUrls.values()) {
-      try {
-        const res = await fetch(url)
-        const b = await res.blob()
-        bytes += b.size
-      } catch {
-        /* */
-      }
-    }
-    return {
-      count: localUrls.size + legacy.count,
-      bytes: bytes + legacy.bytes,
-    }
-  }
+  const getCacheStats = () => idbMediaStats()
 
   return {
     getUrl,

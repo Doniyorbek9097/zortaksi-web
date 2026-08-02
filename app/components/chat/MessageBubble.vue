@@ -292,7 +292,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
+const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const pickLine = (raw: string, re: RegExp) => {
   const m = raw.match(re)
@@ -391,8 +391,6 @@ const paymentRequest = computed(() => {
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
-/** Serverdan olingan blob URL — unmount da revoke */
-let objectUrl = ''
 const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
@@ -431,24 +429,8 @@ if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
 }
 // #endregion
 
-const revokeObjectUrl = () => {
-  if (objectUrl?.startsWith('blob:')) {
-    URL.revokeObjectURL(objectUrl)
-  }
-  objectUrl = ''
-}
-
 const applySrc = (url: string) => {
-  if (!url) {
-    revokeObjectUrl()
-    src.value = ''
-    return
-  }
-  if (url.startsWith('blob:') && url !== objectUrl) {
-    revokeObjectUrl()
-    objectUrl = url
-  }
-  src.value = url
+  src.value = url || ''
 }
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
@@ -650,7 +632,27 @@ watch(
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!id || id !== prevId) {
       applySrc('')
+      if (id) {
+        const cached = peekUrl(id)
+        if (cached) applySrc(cached)
+        else if (props.type === 'photo' && props.mediaPath && props.mediaPath !== 'remote') {
+          void ensureSrc()
+        }
+      }
     }
+  },
+  { immediate: true },
+)
+
+/** Telegram: remote → disk (mediaPath yangilanganda IDB ga yuklash) */
+watch(
+  () => props.mediaPath,
+  async (path, prev) => {
+    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!props.messageId || !path || path === prev) return
+    if (path === 'remote') return
+    applySrc('')
+    await ensureSrc({ force: path !== prev && !!prev })
   },
 )
 
@@ -659,7 +661,6 @@ watch(
   async (status, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!props.messageId) return
-    // Yuborilgan temp preview — mahalliy blob saqlanadi
     if (prev === 'sending' && status !== 'sending') {
       applySrc('')
       await ensureSrc()
@@ -667,7 +668,7 @@ watch(
   },
 )
 
-/** Profil → tozalash: faqat joriy blob ni bo'shatamiz (qayta yuklash play/ko'rishda) */
+/** Profil → kesh tozalanganda bubble ni qayta yuklash */
 watch(mediaCacheEpoch, () => {
   if (props.type !== 'voice' && props.type !== 'photo') return
   stopLocalVoice()
@@ -676,7 +677,6 @@ watch(mediaCacheEpoch, () => {
 
 onBeforeUnmount(() => {
   stopLocalVoice()
-  revokeObjectUrl()
 })
 </script>
 

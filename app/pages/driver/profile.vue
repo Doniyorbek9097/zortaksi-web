@@ -94,10 +94,10 @@
           </template>
         </ProfileSettingRow>
 
-        <!-- Media / brauzer kesh -->
+        <!-- Media kesh (IndexedDB) -->
         <ProfileSettingRow
           icon="fa-solid fa-image"
-          title="Brauzer keshi"
+          title="Media kesh"
           :subtitle="cacheSubtitle"
           color="slate"
           clickable
@@ -118,7 +118,7 @@
           </template>
         </ProfileSettingRow>
         <p class="px-4 pb-1 text-[11px] leading-snug text-slate-400 dark:text-slate-500">
-          Ovoz va rasm play/ko'rishda serverdan yuklanadi. Bu tugma faqat brauzer qoldiqlarini tozalaydi — login saqlanadi.
+          Ovoz va rasm qurilmada saqlanadi — keyingi ochish tezroq. Login saqlanadi; brauzer «barcha ma'lumotlar» tozalasa qayta kirish kerak.
         </p>
 
         <!-- Contact admin -->
@@ -273,8 +273,8 @@ const formatBytes = (n: number) => {
 
 const cacheSubtitle = computed(() => {
   if (clearingCache.value) return 'Tozalanmoqda...'
-  if (!cacheInfo.value.count) return 'Media serverdan yuklanadi (kesh yo\'q)'
-  return `${cacheInfo.value.count} ta qoldiq · ${formatBytes(cacheInfo.value.bytes)}`
+  if (!cacheInfo.value.count) return 'Ovoz va rasmlar IndexedDB da'
+  return `${cacheInfo.value.count} ta fayl · ${formatBytes(cacheInfo.value.bytes)}`
 })
 
 const refreshCacheStats = async () => {
