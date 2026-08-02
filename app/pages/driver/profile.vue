@@ -94,10 +94,10 @@
           </template>
         </ProfileSettingRow>
 
-        <!-- Media kesh (IndexedDB) — icon orqali tozalash -->
+        <!-- Media / brauzer kesh -->
         <ProfileSettingRow
           icon="fa-solid fa-image"
-          title="Media kesh"
+          title="Brauzer keshi"
           :subtitle="cacheSubtitle"
           color="slate"
           clickable
@@ -118,7 +118,7 @@
           </template>
         </ProfileSettingRow>
         <p class="px-4 pb-1 text-[11px] leading-snug text-slate-400 dark:text-slate-500">
-          Bu yer loginni saqlaydi. Brauzer «barcha ma'lumotlar» tozalansa qayta kirish kerak bo'ladi.
+          Ovoz va rasm play/ko'rishda serverdan yuklanadi. Bu tugma faqat brauzer qoldiqlarini tozalaydi — login saqlanadi.
         </p>
 
         <!-- Contact admin -->
@@ -273,8 +273,8 @@ const formatBytes = (n: number) => {
 
 const cacheSubtitle = computed(() => {
   if (clearingCache.value) return 'Tozalanmoqda...'
-  if (!cacheInfo.value.count) return 'Ovozli xabar va rasmlar qurilmada'
-  return `${cacheInfo.value.count} ta fayl · ${formatBytes(cacheInfo.value.bytes)}`
+  if (!cacheInfo.value.count) return 'Media serverdan yuklanadi (kesh yo\'q)'
+  return `${cacheInfo.value.count} ta qoldiq · ${formatBytes(cacheInfo.value.bytes)}`
 })
 
 const refreshCacheStats = async () => {

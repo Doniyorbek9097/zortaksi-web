@@ -81,6 +81,13 @@
           >
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-lg opacity-60" />
           </div>
+          <div
+            v-else-if="!src && !loading"
+            class="w-[220px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
+          >
+            <font-awesome-icon icon="fa-solid fa-image" class="text-lg" />
+            <span>Rasmni ko'rish</span>
+          </div>
           <img
             v-else-if="src"
             :src="src"
@@ -384,6 +391,8 @@ const paymentRequest = computed(() => {
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
+/** Serverdan olingan blob URL — unmount da revoke */
+let objectUrl = ''
 const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
@@ -422,11 +431,31 @@ if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
 }
 // #endregion
 
+const revokeObjectUrl = () => {
+  if (objectUrl?.startsWith('blob:')) {
+    URL.revokeObjectURL(objectUrl)
+  }
+  objectUrl = ''
+}
+
+const applySrc = (url: string) => {
+  if (!url) {
+    revokeObjectUrl()
+    src.value = ''
+    return
+  }
+  if (url.startsWith('blob:') && url !== objectUrl) {
+    revokeObjectUrl()
+    objectUrl = url
+  }
+  src.value = url
+}
+
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
   if (opts.force) {
     invalidateMedia(props.messageId)
-    src.value = ''
+    applySrc('')
   } else if (src.value) {
     return
   }
@@ -435,12 +464,11 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
     const url = await getUrl(
       props.messageId,
       mediaKind.value,
-      opts.force ? { forceNetwork: true } : {},
+      { forceNetwork: !!opts.force },
     )
-    if (url) src.value = url
+    if (url) applySrc(url)
   } catch (e) {
     console.error('media load', e)
-    // #region agent log
     agentDebugLog({
       hypothesisId: 'D',
       location: 'MessageBubble.vue:ensureSrc',
@@ -453,16 +481,15 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
         err: String((e as any)?.message || e),
       },
     })
-    // #endregion
     if (props.messageId) invalidateMedia(props.messageId)
-    src.value = ''
+    applySrc('')
   } finally {
     loading.value = false
   }
 }
 
 const retryMedia = async () => {
-  src.value = ''
+  applySrc('')
   await ensureSrc({ force: true })
 }
 
@@ -529,13 +556,13 @@ const toggle = async () => {
     return
   }
 
-  // Avval kesh, keyin majburiy server (M4A)
+  // Play bosilganda serverdan yuklab olamiz
   await ensureSrc({ force: !src.value })
   try {
     await playAudio()
   } catch (e) {
     console.error('play', e)
-    src.value = ''
+    applySrc('')
     await ensureSrc({ force: true })
     try {
       await playAudio()
@@ -560,10 +587,14 @@ const toggle = async () => {
 }
 
 const openLightbox = async () => {
-  if (!src.value) await ensureSrc({ force: true })
-  else await ensureSrc()
-  if (!src.value) await ensureSrc({ force: true })
-  // #region agent log
+  if (!src.value) {
+    loading.value = true
+    try {
+      await ensureSrc({ force: true })
+    } finally {
+      loading.value = false
+    }
+  }
   agentDebugLog({
     hypothesisId: 'D',
     location: 'MessageBubble.vue:openLightbox',
@@ -575,7 +606,6 @@ const openLightbox = async () => {
       opened: !!src.value,
     },
   })
-  // #endregion
   if (src.value) lightbox.value = true
 }
 
@@ -616,60 +646,12 @@ const seek = (e: MouseEvent) => {
 
 watch(
   () => props.messageId,
-  async (id, prevId) => {
+  (id, prevId) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!id) {
-      src.value = ''
-      return
+    if (!id || id !== prevId) {
+      applySrc('')
     }
-    if (id !== prevId) src.value = ''
-    // remote — diskda yo'q, server/Telegram lazy majburiy
-    const forceRemote = props.mediaPath === 'remote'
-    await ensureSrc({ force: forceRemote })
-    if (!src.value) await ensureSrc({ force: true })
   },
-  { immediate: true },
-)
-
-// Telegram media avval 'remote', fonda yuklangach haqiqiy path — qayta yuklash
-watch(
-  () => props.mediaPath,
-  async (path, prev) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId || !path || path === prev) return
-    // remote → hali diskda yo'q, lekin lazy API ishlashi mumkin
-    if (path === 'remote') {
-      await ensureSrc({ force: true })
-      return
-    }
-    // Endi diskda — majburiy qayta olish
-    src.value = ''
-    await ensureSrc({ force: true })
-  },
-)
-
-// remote bo'lganda fonda saqlanishini kutib qayta urinish
-let remotePoll: ReturnType<typeof setInterval> | null = null
-watch(
-  () => [props.mediaPath, props.messageId, props.type] as const,
-  ([path, id, type]) => {
-    if (remotePoll) {
-      clearInterval(remotePoll)
-      remotePoll = null
-    }
-    if ((type !== 'voice' && type !== 'photo') || !id || path !== 'remote') return
-    let tries = 0
-    remotePoll = setInterval(() => {
-      tries += 1
-      if (tries > 12 || src.value) {
-        if (remotePoll) clearInterval(remotePoll)
-        remotePoll = null
-        return
-      }
-      void ensureSrc({ force: true })
-    }, 2500)
-  },
-  { immediate: true },
 )
 
 watch(
@@ -677,32 +659,24 @@ watch(
   async (status, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!props.messageId) return
+    // Yuborilgan temp preview — mahalliy blob saqlanadi
     if (prev === 'sending' && status !== 'sending') {
-      src.value = ''
+      applySrc('')
       await ensureSrc()
     }
   },
 )
 
-/** Profil → media kesh tozalanganda ochiq bubble qayta yuklanadi */
-watch(mediaCacheEpoch, async () => {
+/** Profil → tozalash: faqat joriy blob ni bo'shatamiz (qayta yuklash play/ko'rishda) */
+watch(mediaCacheEpoch, () => {
   if (props.type !== 'voice' && props.type !== 'photo') return
-  if (!props.messageId) return
-  src.value = ''
-  loading.value = true
-  try {
-    await ensureSrc({ force: true })
-  } finally {
-    loading.value = false
-  }
+  stopLocalVoice()
+  applySrc('')
 })
 
 onBeforeUnmount(() => {
   stopLocalVoice()
-  if (remotePoll) {
-    clearInterval(remotePoll)
-    remotePoll = null
-  }
+  revokeObjectUrl()
 })
 </script>
 

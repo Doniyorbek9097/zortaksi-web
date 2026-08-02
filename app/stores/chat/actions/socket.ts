@@ -43,18 +43,6 @@ export function createSocketActions(
         if (idx !== -1) {
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
         }
-        if (
-            import.meta.client &&
-            (msg.type === 'voice' || msg.type === 'photo') &&
-            (msg.mediaPath || msg.tgMessageId)
-        ) {
-            const kind = msg.type === 'voice' ? 'voice' : 'photo'
-            useChatMedia()
-                .getUrl(msg._id, kind, {
-                    forceNetwork: !msg.mediaPath || msg.mediaPath === 'remote',
-                })
-                .catch(() => {})
-        }
     }
 
     /** Socket: yangi xabar keldi (kiruvchi yoki chiquvchi) */
@@ -63,18 +51,6 @@ export function createSocketActions(
             // temp bilan birlashtirildi
         } else {
             appendMessage(msg)
-        }
-        if (
-            import.meta.client &&
-            (msg.type === 'voice' || msg.type === 'photo') &&
-            (msg.mediaPath || msg.tgMessageId)
-        ) {
-            const kind = msg.type === 'voice' ? 'voice' : 'photo'
-            useChatMedia()
-                .getUrl(msg._id, kind, {
-                    forceNetwork: !msg.mediaPath || msg.mediaPath === 'remote',
-                })
-                .catch(() => {})
         }
 
         // Ro'yxatda oxirgi xabar + tartib (owner socket — faqat o'z chatlari)

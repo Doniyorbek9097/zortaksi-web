@@ -1,7 +1,7 @@
 import { idbClearMedia } from '~/utils/mediaIdb'
 
-/** O'zgarganda media IDB + Workbox kesh tozalanadi (auth/cookie saqlanadi) */
-export const MEDIA_CACHE_SCHEMA_VERSION = '5'
+/** O'zgarganda eski IndexedDB + Workbox tozalanadi (auth saqlanadi) */
+export const MEDIA_CACHE_SCHEMA_VERSION = '6'
 
 const LS_KEY = 'zt_media_cache_schema'
 
