@@ -7,6 +7,9 @@ export interface IChatPeer {
     avatar?: string
     isBot: boolean
     accessHash?: string
+    fromPeerId?: string
+    fromMsgId?: number
+    fromGroupUsername?: string
     /** Oldin muvaffaqiyatli bog'langan userbot — loadingsiz ochish uchun */
     viaUserbotId?: string
 }

@@ -21,6 +21,8 @@
       @call="onCall"
     />
 
+    <ChatQuickActions v-if="showQuickActions" :items="quickActionItems" />
+
     <!-- Xabarlar -->
     <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
@@ -197,6 +199,8 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
+import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
+import type { QuickActionItem } from '~/components/chat/QuickActions.vue'
 import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
@@ -458,6 +462,66 @@ const callPhone = computed(() =>
     fallbackPhone: route.query.phone as string | undefined,
   })
 )
+
+const telegramContactUrl = computed(() => {
+  const p = chatStore.currentChat?.peer
+  return buildTelegramContactUrl({
+    username: p?.username || (route.query.username as string | undefined),
+    phone: callPhone.value || p?.phone,
+    tgId: p?.userId,
+  })
+})
+
+const groupViewUrl = computed(() => {
+  const p = chatStore.currentChat?.peer
+  return buildGroupViewUrl({
+    groupUsername: p?.fromGroupUsername,
+    groupId: p?.fromPeerId,
+    messageId: p?.fromMsgId,
+  })
+})
+
+const showQuickActions = computed(
+  () => needsTelegramConnect.value && !isOpening.value,
+)
+
+const quickActionItems = computed((): QuickActionItem[] => {
+  const items: QuickActionItem[] = []
+
+  if (telegramContactUrl.value) {
+    items.push({
+      key: 'telegram',
+      label: 'Telegram',
+      icon: 'fa-brands fa-telegram',
+      href: telegramContactUrl.value,
+      external: true,
+      class: 'text-[#2AABEE] bg-[#2AABEE]/10 hover:bg-[#2AABEE]/15',
+    })
+  }
+
+  if (callPhone.value) {
+    items.push({
+      key: 'phone',
+      label: 'Telefon',
+      icon: 'fa-solid fa-phone',
+      href: normalizeTelHref(callPhone.value),
+      class: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
+    })
+  }
+
+  if (groupViewUrl.value) {
+    items.push({
+      key: 'group',
+      label: "Guruhdan ko'rish",
+      icon: 'fa-solid fa-arrow-up-right-from-square',
+      href: groupViewUrl.value,
+      external: true,
+      class: 'text-violet-600 dark:text-violet-400 bg-violet-500/10',
+    })
+  }
+
+  return items
+})
 
 const onCall = () => {
   if (!callPhone.value || !import.meta.client) return
