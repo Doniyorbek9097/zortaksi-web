@@ -12,9 +12,25 @@ export interface BotGroupRow {
   lastError?: string
 }
 
+export interface BotConfigRow {
+  active: boolean
+  running: boolean
+  hasToken: boolean
+  tokenMasked: string
+  username?: string
+  botId?: string
+  lastError?: string
+  updatedAt?: string
+}
+
 export type BotGroupPayload = {
   username: string
   keywords: string
+  active?: boolean
+}
+
+export type BotConfigPayload = {
+  token?: string
   active?: boolean
 }
 
@@ -30,10 +46,53 @@ const toRow = (g: any): BotGroupRow => ({
   lastError: g.lastError,
 })
 
+const toConfig = (c: any): BotConfigRow => ({
+  active: !!c.active,
+  running: !!c.running,
+  hasToken: !!c.hasToken,
+  tokenMasked: c.tokenMasked || '',
+  username: c.username,
+  botId: c.botId,
+  lastError: c.lastError,
+  updatedAt: c.updatedAt,
+})
+
 export const useBotGroupStore = defineStore('botGroup', () => {
   const groups = ref<BotGroupRow[]>([])
+  const botConfig = ref<BotConfigRow | null>(null)
   const isLoading = ref(false)
   const isSaving = ref(false)
+  const isConfigSaving = ref(false)
+
+  const fetchBotConfig = async () => {
+    const response = await useApi('/bot-groups/config')
+    if (response.success) {
+      botConfig.value = toConfig(response.data)
+    }
+    return response
+  }
+
+  const saveBotConfig = async (payload: BotConfigPayload) => {
+    try {
+      isConfigSaving.value = true
+      const body: BotConfigPayload = { active: payload.active }
+      if (payload.token?.trim()) body.token = payload.token.trim()
+
+      const response = await useApi('/bot-groups/config', {
+        method: 'PUT',
+        body,
+      })
+      if (response.success) {
+        botConfig.value = toConfig(response.data)
+      }
+      return response
+    } catch (error) {
+      console.error('SaveBotConfig error:', error)
+      throw error
+    } finally {
+      isConfigSaving.value = false
+    }
+  }
 
   const fetchGroups = async () => {
     try {
@@ -135,8 +194,12 @@ export const useBotGroupStore = defineStore('botGroup', () => {
 
   return {
     groups,
+    botConfig,
     isLoading,
     isSaving,
+    isConfigSaving,
+    fetchBotConfig,
+    saveBotConfig,
     fetchGroups,
     createGroup,
     updateGroup,

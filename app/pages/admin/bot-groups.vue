@@ -16,10 +16,73 @@
       </div>
     </header>
 
+    <!-- Bot token sozlama -->
+    <section class="rounded-2xl border border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-950/20 p-4 space-y-3">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h2 class="text-[13px] font-black text-slate-900 dark:text-white">Telegram bot</h2>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+            BotFather token — guruh e'lonlari va yo'lovchi buyurtma shu bot orqali ishlaydi
+          </p>
+        </div>
+        <span
+          v-if="store.botConfig"
+          class="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full"
+          :class="store.botConfig.running
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+            : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
+        >
+          {{ store.botConfig.running ? 'Ishlayapti' : 'To\'xtagan' }}
+        </span>
+      </div>
+
+      <p v-if="store.botConfig?.username" class="text-[12px] font-bold text-violet-700 dark:text-violet-300">
+        @{{ store.botConfig.username }}
+        <span v-if="store.botConfig.tokenMasked" class="text-slate-400 font-semibold ml-1">
+          · {{ store.botConfig.tokenMasked }}
+        </span>
+      </p>
+
+      <form class="space-y-3" @submit.prevent="onSaveBotConfig">
+        <label class="block space-y-1">
+          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Bot token</span>
+          <input
+            v-model="botTokenInput"
+            type="password"
+            autocomplete="off"
+            :placeholder="store.botConfig?.hasToken ? 'Yangi token (ixtiyoriy)' : '1234567890:AA...'"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2.5 text-[13px] font-mono font-semibold outline-none focus:ring-2 focus:ring-violet-500/30"
+          />
+        </label>
+
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input
+            v-model="botActive"
+            type="checkbox"
+            class="rounded border-slate-300 text-violet-500 focus:ring-violet-500"
+          />
+          <span class="text-[12px] font-bold text-slate-700 dark:text-slate-200">Bot faol</span>
+        </label>
+
+        <button
+          type="submit"
+          class="w-full rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-[12px] font-black py-2.5 disabled:opacity-50"
+          :disabled="store.isConfigSaving"
+        >
+          {{ store.isConfigSaving ? 'Saqlanmoqda...' : 'Botni saqlash va ishga tushirish' }}
+        </button>
+      </form>
+
+      <p v-if="configError" class="text-[11px] font-bold text-red-500">{{ configError }}</p>
+      <p v-if="store.botConfig?.lastError" class="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+        {{ store.botConfig.lastError }}
+      </p>
+    </section>
+
     <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
       <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-        Guruhga <strong>@zor_taksi_bot</strong> ni admin qiling. Username va viloyat kalit so'zlarini kiriting —
-        mos buyurtmalar guruhga yuboriladi. «Mijozni olish» tugmasi ZorTaksi ilovasini ochadi.
+        Yuqoridagi botni guruhga <strong>admin</strong> qiling. Username va viloyat kalit so'zlarini kiriting —
+        mos buyurtmalar guruhga yuboriladi.
       </p>
 
       <form class="space-y-3" @submit.prevent="onSubmit">
@@ -183,6 +246,10 @@ definePageMeta({ layout: 'admin' })
 
 const store = useBotGroupStore()
 
+const botTokenInput = ref('')
+const botActive = ref(true)
+const configError = ref('')
+
 const emptyForm = () => ({
   username: '',
   keywords: '',
@@ -198,6 +265,23 @@ const error = ref('')
 const resetForm = () => {
   form.value = emptyForm()
   editingId.value = null
+}
+
+const onSaveBotConfig = async () => {
+  configError.value = ''
+  if (!store.botConfig?.hasToken && !botTokenInput.value.trim()) {
+    configError.value = 'Bot token kiriting'
+    return
+  }
+  try {
+    await store.saveBotConfig({
+      token: botTokenInput.value.trim() || undefined,
+      active: botActive.value,
+    })
+    botTokenInput.value = ''
+  } catch (e: any) {
+    configError.value = e?.response?.data?.message || e?.message || 'Bot saqlash xato'
+  }
 }
 
 const onSubmit = async () => {
@@ -270,7 +354,13 @@ const formatDate = (iso: string) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    await store.fetchBotConfig()
+    if (store.botConfig) {
+      botActive.value = store.botConfig.active
+    }
+  } catch { /* ignore */ }
   void store.fetchGroups()
 })
 </script>
