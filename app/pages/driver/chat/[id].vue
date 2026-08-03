@@ -194,14 +194,17 @@
 </template>
 
 <script setup lang="ts">
+import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
+import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
   layout: false,
 })
 
 const route = useRoute()
+const authStore = useAuthStore()
 const chatStore = useChatStore()
 
 const chatId = computed(() => route.params.id as string)
@@ -524,12 +527,41 @@ const startPresenceLoop = (id: string) => {
   }, 45000)
 }
 
+/** Guruh «Mijozni olish» — tarif yo'q bo'lsa avval to'lov sahifasi */
+const ensureTariffForOrderTake = async (): Promise<boolean> => {
+  if (!authStore.user) {
+    try {
+      await authStore.getMe()
+    } catch {
+      /* middleware auth */
+    }
+  }
+
+  if (isAdminUser(authStore.user)) return true
+  if (authStore.tariffActive) return true
+
+  chatStore.isLoadingMessages = false
+  await navigateTo(
+    {
+      path: '/driver/payment',
+      query: { tab: 'tariff', next: route.fullPath },
+    },
+    { replace: true },
+  )
+  return false
+}
+
 /** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
 const bootstrapOpenChat = async (seq: number) => {
   const mode = String(route.query.open || '')
   const orderId = String(route.query.orderId || '')
   const userId = String(route.query.userId || '')
   const username = String(route.query.username || '').replace(/^@/, '')
+
+  if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
+    const ok = await ensureTariffForOrderTake()
+    if (!ok || seq !== loadSeq) return
+  }
 
   const fail = async () => {
     if (seq !== loadSeq) return

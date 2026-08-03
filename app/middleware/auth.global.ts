@@ -47,7 +47,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         authStore.sessionReady = false
 
         if (!token.value && isProtectedPath(to.path)) {
-            return navigateTo('/auth')
+            return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         // Kirilgan foydalanuvchi intro/auth sahifalarini SSR da ko'rmasin
         if (token.value && isAuthEntryPath(to.path)) {
@@ -95,7 +95,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
         authStore.user = null
         markReady()
         if (isProtectedPath(to.path)) {
-            return navigateTo('/auth')
+            return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         return
     }

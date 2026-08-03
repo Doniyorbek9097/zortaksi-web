@@ -17,6 +17,15 @@
       </div>
     </header>
 
+    <section
+      v-if="returnPath"
+      class="rounded-2xl px-4 py-3 border border-amber-200/80 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30"
+    >
+      <p class="text-[12px] font-bold text-amber-800 dark:text-amber-200 leading-snug">
+        Mijozni olish uchun avval tarifga ulaning. To'lovdan keyin avtomatik qaytasiz.
+      </p>
+    </section>
+
     <!-- Rejim tanlash -->
     <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
       <button
@@ -221,6 +230,7 @@
 import type { TariffRow } from '~/stores/tariff.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { useAuthStore } from '~/stores/auth.store'
+import { resolveSafeNextPath } from '~/utils/userRole'
 
 definePageMeta({ layout: 'driver' })
 
@@ -242,6 +252,8 @@ const amountPresets = [50000, 100000, 150000, 200000]
 const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
+
+const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
 
 const payUserId = computed(() => {
   const u = authStore.user
@@ -391,7 +403,11 @@ const buyTariff = async () => {
     })
     if (res.success) {
       await authStore.getMe()
-      await navigateTo('/driver/dashboard')
+      if (returnPath.value && authStore.tariffActive) {
+        await navigateTo(returnPath.value)
+      } else {
+        await navigateTo('/driver/dashboard')
+      }
     } else {
       error.value = res.message || 'Tarif ulanmadi'
     }
@@ -417,6 +433,7 @@ onMounted(async () => {
 
   const tab = String(route.query.tab || '')
   if (tab === 'topup') mode.value = 'topup'
+  if (tab === 'tariff') mode.value = 'tariff'
 
   const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
   if (Number.isFinite(qAmount) && qAmount > 0) {
@@ -426,7 +443,10 @@ onMounted(async () => {
 
   try {
     await tariffStore.fetchTariffs()
-    if (!selectedId.value && tariffStore.tariffs.length) {
+    const qTariffId = String(route.query.tariffId || '').trim()
+    if (qTariffId && tariffStore.tariffs.some(t => t.id === qTariffId)) {
+      selectedId.value = qTariffId
+    } else if (!selectedId.value && tariffStore.tariffs.length) {
       selectedId.value = tariffStore.tariffs[0]!.id
     }
   } catch (e: any) {
