@@ -2,7 +2,7 @@ import type { IInterestedUser, IOrder } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { resolveOrderPhone } from '~/utils/phone'
+import { orderQuickLinkQuery } from '~/utils/orderChatQuery'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -20,12 +20,6 @@ export function useOrdersChatActions(options: {
   const markOrderInterest = (order: IOrder) => {
     if (!order._id) return
     void orderStore.markInterest(order._id)
-  }
-
-  const senderDisplayName = (order: IOrder) => {
-    const s = order.sender
-    const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
-    return full || s?.username || 'Buyurtmachi'
   }
 
   const findChatByOrderPeer = (orderId: string, peerUserId?: string) => {
@@ -67,9 +61,6 @@ export function useOrdersChatActions(options: {
 
     const peerId = order.sender?.userId
     const existing = findChatByOrderPeer(order._id, peerId)
-    const name = senderDisplayName(order)
-    const phone = resolveOrderPhone(order) || ''
-    const username = String(order.sender?.username || '').replace(/^@/, '')
 
     beforeNavigate?.()
     if (existing?._id) {
@@ -77,21 +68,13 @@ export function useOrdersChatActions(options: {
       void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
-        query: {
-          ...(name ? { name } : {}),
-          ...(phone ? { phone } : {}),
-          ...(username ? { username } : {}),
-          orderId: order._id,
-        },
+        query: orderQuickLinkQuery(order),
       })
     }
 
     return goOpenChat({
       open: 'order',
-      orderId: order._id,
-      ...(name ? { name } : {}),
-      ...(phone ? { phone } : {}),
-      ...(username ? { username } : {}),
+      ...orderQuickLinkQuery(order),
     })
   }
 
@@ -179,20 +162,26 @@ export function useOrdersChatActions(options: {
 
     const name = interestedUserName(user)
     const existing = findDirectChatWithUser(String(user.userId), orderId)
+    const linkQ = order
+      ? orderQuickLinkQuery(order, {
+          name,
+          username: String(user.username || '').replace(/^@/, ''),
+        })
+      : { name, orderId }
+
     if (existing?._id) {
       chatStore.primeFromChat(existing)
       void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
-        query: { name },
+        query: linkQ,
       })
     }
 
     return goOpenChat({
       open: 'user',
       userId: String(user.userId),
-      orderId,
-      name,
+      ...linkQ,
     })
   }
 
@@ -204,6 +193,10 @@ export function useOrdersChatActions(options: {
       [order.bookedByUser?.firstName, order.bookedByUser?.lastName].filter(Boolean).join(' ').trim() ||
       order.bookedByUser?.username ||
       'Haydovchi'
+    const linkQ = orderQuickLinkQuery(order, {
+      name,
+      username: String(order.bookedByUser?.username || '').replace(/^@/, ''),
+    })
 
     beforeNavigate?.()
     if (existing?._id) {
@@ -211,14 +204,13 @@ export function useOrdersChatActions(options: {
       void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
-        query: { name },
+        query: linkQ,
       })
     }
 
     return goOpenChat({
       open: 'booked',
-      orderId: order._id,
-      name,
+      ...linkQ,
     })
   }
 
@@ -230,7 +222,11 @@ export function useOrdersChatActions(options: {
       [order.owner?.firstName, order.owner?.lastName].filter(Boolean).join(' ').trim() ||
       order.owner?.username ||
       'Agent'
-    const username = String(order.owner?.username || '').replace(/^@/, '')
+    const linkQ = orderQuickLinkQuery(order, {
+      name,
+      username: String(order.owner?.username || '').replace(/^@/, ''),
+      ...(order.owner?.phone ? { phone: order.owner.phone } : {}),
+    })
 
     beforeNavigate?.()
     if (existing?._id) {
@@ -238,15 +234,13 @@ export function useOrdersChatActions(options: {
       void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
-        query: { name },
+        query: linkQ,
       })
     }
 
     return goOpenChat({
       open: 'agent',
-      orderId: order._id,
-      name,
-      ...(username ? { username } : {}),
+      ...linkQ,
     })
   }
 

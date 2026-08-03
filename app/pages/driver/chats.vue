@@ -97,6 +97,7 @@ import type { IChat } from '~/types'
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
+import { chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 
 definePageMeta({
   layout: 'driver',
@@ -236,13 +237,11 @@ const openChat = (chat: IChat) => {
   if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {
     void chatStore.connect(chat._id, { silent: true })
   }
-  const username = String(chat.peer?.username || '').replace(/^@/, '')
   navigateTo({
     path: `/driver/chat/${chat._id}`,
     query: {
       name: peerName(chat),
-      phone: isSupport(chat) ? undefined : chat.peer.phone,
-      username: isSupport(chat) || !username ? undefined : username,
+      ...chatPeerQuickLinkQuery(chat),
       support: isSupport(chat) ? '1' : undefined,
     },
   })

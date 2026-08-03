@@ -204,6 +204,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
+import { pickQuickLinkQuery } from '~/utils/orderChatQuery'
 import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
@@ -458,18 +459,21 @@ const onPhoto = async (file: File) => {
 const goChats = () => navigateTo('/driver/chats')
 const goOrders = () => navigateTo('/driver/orders')
 
-const callPhone = computed(() =>
-  resolveChatPhone({
+const callPhone = computed(() => {
+  const qPhone = String(route.query.phone || '').trim()
+  if (qPhone.replace(/\D/g, '').length >= 7) return qPhone.replace(/\D/g, '')
+
+  return resolveChatPhone({
     messages: chatStore.messages,
     peerPhone: chatStore.currentChat?.peer?.phone,
     fallbackPhone: route.query.phone as string | undefined,
-  }) || extractPhoneFromText(orderText.value) || '',
-)
+  }) || extractPhoneFromText(orderText.value) || ''
+})
 
 const senderUsername = computed(() => {
-  const fromPeer = String(chatStore.currentChat?.peer?.username || '').replace(/^@/, '').trim()
-  if (fromPeer) return fromPeer
-  return String(route.query.username || '').replace(/^@/, '').trim()
+  const fromQuery = String(route.query.username || '').replace(/^@/, '').trim()
+  if (fromQuery) return fromQuery
+  return String(chatStore.currentChat?.peer?.username || '').replace(/^@/, '').trim()
 })
 
 const telegramContactUrl = computed(() => {
@@ -485,10 +489,12 @@ const telegramContactUrl = computed(() => {
 
 const groupViewUrl = computed(() => {
   const p = chatStore.currentChat?.peer
+  const q = route.query
+  const msgId = p?.fromMsgId || Number(q.msgId || 0) || undefined
   return buildGroupViewUrl({
-    groupUsername: p?.fromGroupUsername,
-    groupId: p?.fromPeerId,
-    messageId: p?.fromMsgId,
+    groupUsername: p?.fromGroupUsername || String(q.groupUsername || ''),
+    groupId: p?.fromPeerId || String(q.groupId || ''),
+    messageId: msgId,
   })
 })
 
@@ -628,16 +634,9 @@ const bootstrapOpenChat = async (seq: number) => {
     if (seq !== loadSeq) return
 
     if (res?.success && res.data?._id) {
-      const q: Record<string, string> = {}
-      const nameQ = String(route.query.name || '')
-      const phoneQ = String(route.query.phone || '')
-      const usernameQ = String(route.query.username || '').replace(/^@/, '')
-      if (nameQ) q.name = nameQ
-      if (phoneQ) q.phone = phoneQ
-      if (usernameQ) q.username = usernameQ
       await navigateTo({
         path: `/driver/chat/${res.data._id}`,
-        query: Object.keys(q).length ? q : undefined,
+        query: pickQuickLinkQuery(route.query as Record<string, unknown>),
         replace: true,
       })
       return
