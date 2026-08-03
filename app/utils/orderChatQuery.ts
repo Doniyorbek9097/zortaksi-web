@@ -14,7 +14,65 @@ export const QUICK_LINK_QUERY_KEYS = [
   'groupId',
   'msgId',
   'orderId',
+  'orderText',
 ] as const
+
+const ORDER_TEXT_STORAGE_PREFIX = 'zt:order-text:'
+/** URL uzunligi cheklovi — qisqa preview */
+const ORDER_TEXT_QUERY_MAX = 280
+
+function stashKey(orderId: string) {
+  return `${ORDER_TEXT_STORAGE_PREFIX}${orderId}`
+}
+
+/** Order matnini sessionStorage ga (to'liq matn) */
+export function stashOrderText(orderId: string, text: string) {
+  if (!import.meta.client || !orderId || !text.trim()) return
+  try {
+    sessionStorage.setItem(stashKey(orderId), text.trim())
+  } catch {
+    /* quota */
+  }
+}
+
+export function readStashedOrderText(orderId: string): string {
+  if (!import.meta.client || !orderId) return ''
+  try {
+    return sessionStorage.getItem(stashKey(orderId)) || ''
+  } catch {
+    return ''
+  }
+}
+
+/** Order → chat oldidan kontekstni saqlash */
+export function primeOrderContext(order: IOrder) {
+  const id = String(order._id || '')
+  const text = String(order.message?.text || '').trim()
+  if (id && text) stashOrderText(id, text)
+}
+
+/** Chat ochilganda buyurtma matni (query → stash → chat) */
+export function resolveOrderTextHint(
+  query: Record<string, unknown>,
+  chat?: { orderId?: string; orderText?: string } | null,
+): string {
+  const fromQuery = String(query.orderText || '').trim()
+  if (fromQuery) return fromQuery
+
+  const orderId = String(query.orderId || chat?.orderId || '')
+  if (orderId) {
+    const stashed = readStashedOrderText(orderId)
+    if (stashed) return stashed
+  }
+
+  return String(chat?.orderText || '').trim()
+}
+
+function truncateForQuery(text: string): string {
+  const t = text.trim()
+  if (t.length <= ORDER_TEXT_QUERY_MAX) return t
+  return `${t.slice(0, ORDER_TEXT_QUERY_MAX)}…`
+}
 
 export function pickQuickLinkQuery(
   query: Record<string, unknown>,
@@ -57,6 +115,12 @@ export function orderQuickLinkQuery(
   if (groupId) q.groupId = groupId
   if (msgId > 0) q.msgId = String(msgId)
 
+  const orderText = String(order.message?.text || '').trim()
+  if (orderText) {
+    primeOrderContext(order)
+    q.orderText = truncateForQuery(orderText)
+  }
+
   return q
 }
 
@@ -77,6 +141,12 @@ export function chatPeerQuickLinkQuery(
   if (groupUsername) q.groupUsername = groupUsername
   if (p?.fromPeerId) q.groupId = String(p.fromPeerId)
   if (p?.fromMsgId) q.msgId = String(p.fromMsgId)
+
+  const orderText = String(chat.orderText || '').trim()
+  if (orderText && chat.orderId) {
+    stashOrderText(String(chat.orderId), orderText)
+    q.orderText = truncateForQuery(orderText)
+  }
 
   return q
 }

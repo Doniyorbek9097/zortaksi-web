@@ -103,6 +103,8 @@ export const useChatStore = defineStore('chat', () => {
         fetchChats: list.fetchChats,
         loadMoreChats: list.loadMoreChats,
         fetchMessages: list.fetchMessages,
+        hydrateMessagesFromCache: list.hydrateMessagesFromCache,
+        persistCurrentMessagesCache: list.persistCurrentMessagesCache,
         loadOlderMessages: list.loadOlderMessages,
         resetMessagesPagination: list.resetMessagesPagination,
         sendMessage: messaging.sendMessage,

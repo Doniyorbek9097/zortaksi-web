@@ -1,6 +1,10 @@
 import type { IChatMessage } from '~/types'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
+import {
+    restoreMessagesCache,
+    saveMessagesCache,
+} from '../helpers/message-cache'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
 
 /** Bir sahifadagi xabarlar soni (eng yangi batch) */
@@ -90,12 +94,15 @@ export function createListActions(
 
     /**
      * Eng yangi xabarlar (page=1).
-     * Yuqoriga scroll — loadOlderMessages.
+     * Cache bo'lsa skeleton ko'rsatilmaydi — fon da yangilanadi.
      */
     const fetchMessages = async (chatId: string) => {
+        const hadCached = messages.value.length > 0
         try {
-            isLoadingMessages.value = true
-            resetMessagesPagination()
+            if (!hadCached) {
+                isLoadingMessages.value = true
+                resetMessagesPagination()
+            }
 
             const res = await useApi(`/chats/${chatId}/messages`, {
                 method: 'GET',
@@ -107,6 +114,11 @@ export function createListActions(
                 messagesPage.value = res.data.pagination?.page ?? 1
                 messagesTotalPages.value = res.data.pagination?.totalPages ?? 1
                 patchChat(chatId, { unreadCount: 0 })
+                saveMessagesCache(chatId, {
+                    messages: messages.value,
+                    page: messagesPage.value,
+                    totalPages: messagesTotalPages.value,
+                })
                 if (import.meta.client) {
                     useChatMedia().prefetch(messages.value, null)
                 }
@@ -118,6 +130,28 @@ export function createListActions(
         } finally {
             isLoadingMessages.value = false
         }
+    }
+
+    /** Oldin ochilgan chat xabarlarini darhol tiklash */
+    const hydrateMessagesFromCache = (chatId: string): boolean => {
+        const cached = restoreMessagesCache(chatId)
+        if (!cached) return false
+        messages.value = cached.messages
+        messagesPage.value = cached.page
+        messagesTotalPages.value = cached.totalPages
+        isLoadingMessages.value = false
+        return true
+    }
+
+    /** Joriy chat xabarlarini cache ga saqlash (chat almashtirishdan oldin) */
+    const persistCurrentMessagesCache = () => {
+        const id = currentChat.value?._id
+        if (!id || !messages.value.length) return
+        saveMessagesCache(id, {
+            messages: messages.value,
+            page: messagesPage.value,
+            totalPages: messagesTotalPages.value,
+        })
     }
 
     /** Tepaga scroll — keyingi 10 ta eski xabar */
@@ -296,6 +330,8 @@ export function createListActions(
         fetchChats,
         loadMoreChats,
         fetchMessages,
+        hydrateMessagesFromCache,
+        persistCurrentMessagesCache,
         loadOlderMessages,
         startChatFromOrder,
         startChatWithOrderOwner,

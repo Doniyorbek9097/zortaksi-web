@@ -62,14 +62,14 @@
           />
         </div>
 
-        <!-- Loading -->
-        <div v-if="chatStore.isLoadingMessages && !chatStore.messages.length" class="space-y-2">
+        <!-- Loading — faqat cache/query yo'q bo'lsa skeleton -->
+        <div v-if="showMessageSkeleton" class="space-y-2">
           <div v-for="n in 6" :key="n" class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'" />
         </div>
 
-        <!-- Empty -->
+        <!-- Empty — darhol ko'rinsin (order konteksti bo'lsa) -->
         <BaseEmptyState
-          v-else-if="!chatStore.messages.length"
+          v-else-if="!chatStore.messages.length && showReadyEmpty"
           icon="fa-solid fa-comments"
           title="Xabar yozishga tayyor"
           class="!min-h-0 flex-1"
@@ -204,7 +204,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
-import { pickQuickLinkQuery } from '~/utils/orderChatQuery'
+import { pickQuickLinkQuery, resolveOrderTextHint } from '~/utils/orderChatQuery'
 import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
@@ -254,15 +254,39 @@ const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
-  if (isOpening.value || chatStore.isLoadingMessages) return 'ochilmoqda...'
+  if ((isOpening.value || chatStore.isLoadingMessages) && !hasInstantContext.value) {
+    return 'ochilmoqda...'
+  }
   if (chatStore.isPeerTyping) return 'yozmoqda...'
   if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
   if (isDirect.value) return 'Haydovchi'
+  if (hasInstantContext.value && chatStore.isLoadingMessages) return 'yangilanmoqda...'
   return '...'
 })
 
-const orderText = computed(() =>
-  String(chatStore.currentChat?.orderText || '').trim()
+const orderText = computed(() => {
+  const fromChat = String(chatStore.currentChat?.orderText || '').trim()
+  if (fromChat) return fromChat
+  return resolveOrderTextHint(
+    route.query as Record<string, unknown>,
+    chatStore.currentChat,
+  )
+})
+
+/** Buyurtma banneri yoki cache — skeletonsiz darhol UI */
+const hasInstantContext = computed(
+  () => !!orderText.value || !!route.query.orderId,
+)
+
+const showMessageSkeleton = computed(
+  () =>
+    chatStore.isLoadingMessages &&
+    !chatStore.messages.length &&
+    !hasInstantContext.value,
+)
+
+const showReadyEmpty = computed(
+  () => !chatStore.isLoadingMessages || hasInstantContext.value,
 )
 
 /** Direct chatda buyurtma matni o'rniga fixed kontekst xabari */
@@ -530,7 +554,8 @@ const clearPresenceTimer = () => {
   }
 }
 
-const resetChatUi = () => {
+const resetChatUi = (nextChatId?: string) => {
+  chatStore.persistCurrentMessagesCache()
   clearPresenceTimer()
   exitSelectionMode()
   chatStore.messages = []
@@ -540,6 +565,10 @@ const resetChatUi = () => {
   chatStore.isLoadingMessages = true
   draft.value = ''
   focusId.value = String(route.query.focus || '')
+
+  if (nextChatId && nextChatId !== 'open') {
+    chatStore.hydrateMessagesFromCache(nextChatId)
+  }
 }
 
 /** Tepaga scroll — keyingi 10 ta eski xabar */
@@ -650,7 +679,7 @@ const bootstrapOpenChat = async (seq: number) => {
 
 const loadChat = async (id: string) => {
   const seq = ++loadSeq
-  resetChatUi()
+  resetChatUi(id)
 
   if (id === 'open') {
     await bootstrapOpenChat(seq)
