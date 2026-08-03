@@ -80,6 +80,7 @@ export function useOrdersChatActions(options: {
         query: {
           ...(name ? { name } : {}),
           ...(phone ? { phone } : {}),
+          ...(username ? { username } : {}),
         },
       })
     }

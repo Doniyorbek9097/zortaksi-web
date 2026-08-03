@@ -1,19 +1,15 @@
 import { normalizePhoneDigits } from '~/utils/phone'
 
-/** Telegram profiliga ochish — username, telefon yoki userId */
+/** Telegram shaxsiy chat — faqat username yoki telefon */
 export function buildTelegramContactUrl(input: {
     username?: string
     phone?: string
-    tgId?: string
 }): string {
     const uname = String(input.username || '').replace(/^@/, '').trim()
     if (uname) return `https://t.me/${uname}`
 
     const digits = normalizePhoneDigits(input.phone)
     if (digits) return `https://t.me/+${digits}`
-
-    const id = String(input.tgId || '').replace(/\D/g, '')
-    if (id) return `tg://user?id=${id}`
 
     return ''
 }

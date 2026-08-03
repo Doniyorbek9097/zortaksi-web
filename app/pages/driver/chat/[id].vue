@@ -19,9 +19,11 @@
       :can-call="!!callPhone"
       @back="goChats"
       @call="onCall"
-    />
-
-    <ChatQuickActions v-if="showQuickActions" :items="quickActionItems" />
+    >
+      <template #actions>
+        <ChatQuickActions :items="quickActionItems" />
+      </template>
+    </ChatHeader>
 
     <!-- Xabarlar -->
     <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
@@ -198,7 +200,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
-import { normalizeTelHref, resolveChatPhone } from '~/utils/phone'
+import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
 import type { QuickActionItem } from '~/components/chat/QuickActions.vue'
 import { isAdminUser } from '~/utils/userRole'
@@ -460,17 +462,21 @@ const callPhone = computed(() =>
     messages: chatStore.messages,
     peerPhone: chatStore.currentChat?.peer?.phone,
     fallbackPhone: route.query.phone as string | undefined,
-  })
+  }) || extractPhoneFromText(orderText.value) || '',
 )
 
-const telegramContactUrl = computed(() => {
-  const p = chatStore.currentChat?.peer
-  return buildTelegramContactUrl({
-    username: p?.username || (route.query.username as string | undefined),
-    phone: callPhone.value || p?.phone,
-    tgId: p?.userId,
-  })
+const senderUsername = computed(() => {
+  const fromPeer = String(chatStore.currentChat?.peer?.username || '').replace(/^@/, '').trim()
+  if (fromPeer) return fromPeer
+  return String(route.query.username || '').replace(/^@/, '').trim()
 })
+
+const telegramContactUrl = computed(() =>
+  buildTelegramContactUrl({
+    username: senderUsername.value,
+    phone: callPhone.value || chatStore.currentChat?.peer?.phone,
+  }),
+)
 
 const groupViewUrl = computed(() => {
   const p = chatStore.currentChat?.peer
@@ -481,11 +487,13 @@ const groupViewUrl = computed(() => {
   })
 })
 
-const showQuickActions = computed(
-  () => needsTelegramConnect.value && !isOpening.value,
+const isOrderSenderChat = computed(
+  () => !isSupport.value && !isDirect.value,
 )
 
 const quickActionItems = computed((): QuickActionItem[] => {
+  if (!isOrderSenderChat.value || isOpening.value) return []
+
   const items: QuickActionItem[] = []
 
   if (telegramContactUrl.value) {
@@ -657,8 +665,10 @@ const bootstrapOpenChat = async (seq: number) => {
       const q: Record<string, string> = {}
       const nameQ = String(route.query.name || '')
       const phoneQ = String(route.query.phone || '')
+      const usernameQ = String(route.query.username || '').replace(/^@/, '')
       if (nameQ) q.name = nameQ
       if (phoneQ) q.phone = phoneQ
+      if (usernameQ) q.username = usernameQ
       await navigateTo({
         path: `/driver/chat/${res.data._id}`,
         query: Object.keys(q).length ? q : undefined,

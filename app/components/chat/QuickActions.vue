@@ -1,9 +1,8 @@
 <template>
   <div
     v-if="items.length"
-    class="shrink-0 border-b border-slate-200/60 dark:border-slate-800/60 bg-white/80 dark:bg-slate-950/80"
+    class="mx-auto w-full max-w-2xl px-3 pb-2 flex gap-2 overflow-x-auto no-scrollbar"
   >
-    <div class="mx-auto w-full max-w-2xl px-3 py-2 flex gap-2 overflow-x-auto no-scrollbar">
       <a
         v-for="item in items"
         :key="item.key"
@@ -17,7 +16,6 @@
         <font-awesome-icon :icon="item.icon" class="text-xs shrink-0" />
         <span>{{ item.label }}</span>
       </a>
-    </div>
   </div>
 </template>
 

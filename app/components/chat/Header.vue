@@ -66,6 +66,8 @@
         Qo'ng'iroq
       </button>
     </div>
+
+    <slot name="actions" />
   </header>
 </template>
 
