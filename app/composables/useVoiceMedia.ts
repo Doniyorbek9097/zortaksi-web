@@ -1,8 +1,8 @@
 /**
  * Chat media (voice/photo):
  * 1) xotira blob URL (sessiya)
- * 2) IndexedDB (qurilma — Telegram kelgan media uchun barqaror)
- * 3) server / Telegram on-demand
+ * 2) IndexedDB (qurilma keshi)
+ * 3) server — kerak bo'lsa Telegramdan yuklab, keyin IDB ga saqlaydi
  */
 import {
   idbGetMediaRecord,
@@ -174,16 +174,13 @@ async function fetchMediaBlobFromNetwork(
   return blob
 }
 
-function isRemoteMediaPath(mediaPath?: string | null): boolean {
-  const p = String(mediaPath || '').trim()
-  return !p || p === 'remote'
-}
-
 function idbPathMatches(stored?: string, expected?: string | null): boolean {
   const exp = String(expected || '').trim()
-  if (!exp || exp === 'remote') return true
   const got = String(stored || '').trim()
-  if (!got) return false
+  // Hali remote yoki noma'lum — keshdagi faylni ishlatish mumkin
+  if (!exp || exp === 'remote') return true
+  // Kesh remote paytda yuklangan — disk path kelguncha ham yaroqli
+  if (!got || got === 'remote') return true
   return got === exp
 }
 
@@ -218,8 +215,8 @@ async function blobToObjectUrl(
     throw new Error('Media buzilgan')
   }
 
-  if (persistIdb && !messageId.startsWith('temp-') && !isRemoteMediaPath(mediaPath)) {
-    void idbPutMedia(messageId, blob, kind, mediaPath)
+  if (persistIdb && !messageId.startsWith('temp-')) {
+    void idbPutMedia(messageId, blob, kind, mediaPath || 'remote')
   }
 
   const existing = cache.get(messageId)
@@ -232,9 +229,7 @@ async function blobToObjectUrl(
     URL.revokeObjectURL(existing)
   }
   cache.set(messageId, url)
-  if (mediaPath && !isRemoteMediaPath(mediaPath)) {
-    cacheMediaPath.set(messageId, String(mediaPath).trim())
-  }
+  cacheMediaPath.set(messageId, String(mediaPath || 'remote').trim())
   touchCacheOrder(messageId)
   localOnly.delete(messageId)
   return url
@@ -319,10 +314,6 @@ export function useChatMedia() {
     const builder = resolveBuilder(opts.urlBuilder)
     const mediaPath = opts.mediaPath
 
-    if (isRemoteMediaPath(mediaPath)) {
-      return ''
-    }
-
     if (opts.forceNetwork) {
       if (!localOnly.has(id)) revokeCachedUrl(id)
       void idbDeleteMedia(id)
@@ -361,25 +352,17 @@ export function useChatMedia() {
     }
 
     const job = (async () => {
+      // 1) Qurilma keshi (IndexedDB)
       if (!opts.forceNetwork) {
         const idbBlob = await loadFromIdb(id, kind, mediaPath)
         if (idbBlob) {
-          return blobToObjectUrl(id, idbBlob, kind, false, mediaPath)
+          return blobToObjectUrl(id, idbBlob, kind, false, mediaPath || 'remote')
         }
       }
 
-      try {
-        const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
-        return blobToObjectUrl(id, blob, kind, true, mediaPath)
-      } catch (err) {
-        if (!opts.forceNetwork) {
-          const idbBlob = await loadFromIdb(id, kind, mediaPath)
-          if (idbBlob) {
-            return blobToObjectUrl(id, idbBlob, kind, false, mediaPath)
-          }
-        }
-        throw err
-      }
+      // 2) Server → kerak bo'lsa Telegramdan yuklab beradi
+      const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
+      return blobToObjectUrl(id, blob, kind, true, mediaPath || 'remote')
     })()
 
     inflight.set(id, job)
@@ -418,7 +401,7 @@ export function useChatMedia() {
     })()
   }
 
-  /** Fon: IDB ga oldindan yozish (faqat diskda tayyor media) */
+  /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
     messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
     urlBuilder?: ChatMediaUrlBuilder | null,
@@ -429,10 +412,12 @@ export function useChatMedia() {
       const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
       if (!isVoice && !isPhoto) continue
-      if (isRemoteMediaPath(m.mediaPath) && !m.tgMessageId) continue
-      if (isRemoteMediaPath(m.mediaPath)) continue
+      if (!m.mediaPath && !m.tgMessageId) continue
       const kind = isVoice ? 'voice' : 'photo'
-      getUrl(id, kind, { urlBuilder, mediaPath: m.mediaPath }).catch(() => {})
+      getUrl(id, kind, {
+        urlBuilder,
+        mediaPath: m.mediaPath || 'remote',
+      }).catch(() => {})
     }
   }
 

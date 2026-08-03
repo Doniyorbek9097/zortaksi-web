@@ -48,16 +48,16 @@ export function createSocketActions(
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            msg.mediaPath &&
-            msg.mediaPath !== 'remote'
+            (msg.mediaPath || msg.tgMessageId)
         ) {
             const kind = msg.type === 'voice' ? 'voice' : 'photo'
             const prevPath = prev?.mediaPath
             const wasRemote = !prevPath || prevPath === 'remote'
+            const nowReady = msg.mediaPath && msg.mediaPath !== 'remote'
             useChatMedia()
                 .getUrl(msg._id, kind, {
-                    forceNetwork: wasRemote,
-                    mediaPath: msg.mediaPath,
+                    forceNetwork: !!(wasRemote && nowReady),
+                    mediaPath: msg.mediaPath || 'remote',
                 })
                 .catch(() => {})
         }
@@ -74,12 +74,11 @@ export function createSocketActions(
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            msg.mediaPath &&
-            msg.mediaPath !== 'remote'
+            (msg.mediaPath || msg.tgMessageId)
         ) {
             const kind = msg.type === 'voice' ? 'voice' : 'photo'
             useChatMedia()
-                .getUrl(msg._id, kind, { mediaPath: msg.mediaPath })
+                .getUrl(msg._id, kind, { mediaPath: msg.mediaPath || 'remote' })
                 .catch(() => {})
         }
 

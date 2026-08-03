@@ -2,7 +2,7 @@ import { idbClearMedia, idbPurgeInvalid } from '~/utils/mediaIdb'
 import { isValidMediaBlob } from '~/utils/mediaBlobValidate'
 
 /** O'zgarganda eski IndexedDB + Workbox tozalanadi (auth saqlanadi) */
-export const MEDIA_CACHE_SCHEMA_VERSION = '7'
+export const MEDIA_CACHE_SCHEMA_VERSION = '8'
 
 const LS_KEY = 'zt_media_cache_schema'
 

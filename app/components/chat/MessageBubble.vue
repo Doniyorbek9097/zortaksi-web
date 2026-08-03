@@ -440,7 +440,6 @@ const applySrc = (url: string) => {
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
-  if (!opts.force && isRemoteMedia(props.mediaPath)) return
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
@@ -452,7 +451,10 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
     const url = await getUrl(
       props.messageId,
       mediaKind.value,
-      { forceNetwork: !!opts.force, mediaPath: props.mediaPath },
+      {
+        forceNetwork: !!opts.force,
+        mediaPath: props.mediaPath || 'remote',
+      },
     )
     if (url) applySrc(url)
   } catch (e) {
@@ -638,30 +640,31 @@ watch(
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!id || id !== prevId) {
       applySrc('')
-      if (!id || isRemoteMedia(props.mediaPath)) return
+      if (!id) return
       const cached = peekUrl(id, props.mediaPath)
       if (cached) applySrc(cached)
-      else if (props.type === 'photo') {
-        void ensureSrc()
-      }
+      else void ensureSrc()
     }
   },
   { immediate: true },
 )
 
-/** Telegram: remote → disk (mediaPath yangilanganda qayta yuklash) */
+/** mediaPath yangilanganda (remote → disk) */
 watch(
   () => props.mediaPath,
   async (path, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!props.messageId || path === prev) return
-    if (isRemoteMedia(path)) {
+    const becameReady =
+      isRemoteMedia(prev) && !isRemoteMedia(path)
+    if (becameReady) {
       applySrc('')
+      await ensureSrc({ force: true })
       return
     }
-    const force = isRemoteMedia(prev) || (!!prev && prev !== path)
-    applySrc('')
-    await ensureSrc({ force })
+    if (!src.value) {
+      await ensureSrc()
+    }
   },
 )
 
