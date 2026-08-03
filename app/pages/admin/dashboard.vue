@@ -200,6 +200,13 @@ const navItems = [
     tone: 'blue' as const,
     to: '/admin/banners',
   },
+  {
+    title: 'Bot guruhlari',
+    subtitle: "Buyurtma e'lon · Web App",
+    icon: 'fa-solid fa-bullhorn',
+    tone: 'rose' as const,
+    to: '/admin/bot-groups',
+  },
 ]
 
 const num = (...vals: Array<number | undefined | null>) => {
