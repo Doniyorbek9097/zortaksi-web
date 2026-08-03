@@ -20,6 +20,7 @@ export interface BotConfigRow {
   username?: string
   botId?: string
   lastError?: string
+  launching?: boolean
   updatedAt?: string
 }
 
@@ -54,8 +55,25 @@ const toConfig = (c: any): BotConfigRow => ({
   username: c.username,
   botId: c.botId,
   lastError: c.lastError,
+  launching: !!c.launching,
   updatedAt: c.updatedAt,
 })
+
+async function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function pollBotRunningAfterSave(fetchConfig: () => Promise<unknown>, getConfig: () => BotConfigRow | null) {
+  for (let i = 0; i < 8; i++) {
+    await wait(2000)
+    try {
+      await fetchConfig()
+      const cfg = getConfig()
+      if (cfg?.running) return
+      if (cfg?.lastError && !cfg?.launching) return
+    } catch { /* ignore */ }
+  }
+}
 
 export const useBotGroupStore = defineStore('botGroup', () => {
   const groups = ref<BotGroupRow[]>([])
@@ -81,9 +99,13 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       const response = await useApi('/bot-groups/config', {
         method: 'PUT',
         body,
+        timeout: 45_000,
       })
       if (response.success) {
         botConfig.value = toConfig(response.data)
+        if (response.data?.launching) {
+          void pollBotRunningAfterSave(fetchBotConfig, () => botConfig.value)
+        }
       }
       return response
     } catch (error) {

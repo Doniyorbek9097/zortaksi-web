@@ -30,9 +30,11 @@
           class="shrink-0 text-[10px] font-black px-2 py-0.5 rounded-full"
           :class="store.botConfig.running
             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-            : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
+            : store.botConfig.launching
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+              : 'bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400'"
         >
-          {{ store.botConfig.running ? 'Ishlayapti' : 'To\'xtagan' }}
+          {{ store.botConfig.running ? 'Ishlayapti' : store.botConfig.launching ? 'Ishga tushmoqda...' : 'To\'xtagan' }}
         </span>
       </div>
 
