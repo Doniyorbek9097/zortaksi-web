@@ -1,4 +1,4 @@
-import { normalizePhoneDigits } from '~/utils/phone'
+import { normalizeTo998 } from '~/utils/phone'
 
 /** Telegram shaxsiy chat — faqat username yoki telefon */
 export function buildTelegramContactUrl(input: {
@@ -8,7 +8,7 @@ export function buildTelegramContactUrl(input: {
     const uname = String(input.username || '').replace(/^@/, '').trim()
     if (uname) return `https://t.me/${uname}`
 
-    const digits = normalizePhoneDigits(input.phone)
+    const digits = normalizeTo998(input.phone)
     if (digits) return `https://t.me/+${digits}`
 
     return ''
