@@ -236,11 +236,13 @@ const openChat = (chat: IChat) => {
   if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {
     void chatStore.connect(chat._id, { silent: true })
   }
+  const username = String(chat.peer?.username || '').replace(/^@/, '')
   navigateTo({
     path: `/driver/chat/${chat._id}`,
     query: {
       name: peerName(chat),
       phone: isSupport(chat) ? undefined : chat.peer.phone,
+      username: isSupport(chat) || !username ? undefined : username,
       support: isSupport(chat) ? '1' : undefined,
     },
   })

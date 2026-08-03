@@ -81,6 +81,7 @@ export function useOrdersChatActions(options: {
           ...(name ? { name } : {}),
           ...(phone ? { phone } : {}),
           ...(username ? { username } : {}),
+          orderId: order._id,
         },
       })
     }
