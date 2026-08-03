@@ -87,6 +87,10 @@
           :location-lng="msg.locationLng"
           :location-title="msg.locationTitle"
           :highlight="focusId === String(msg._id)"
+          :selection-mode="selectionMode"
+          :selected="selectedMessageIds.includes(String(msg._id))"
+          @long-press="onMessageLongPress(String(msg._id), chatMediaType(msg))"
+          @toggle-select="toggleMessageSelect(String(msg._id), chatMediaType(msg))"
         />
 
         <!-- Admin yozmoqda... -->
@@ -166,9 +170,18 @@
       </div>
     </div>
 
+    <!-- Tanlangan xabarlarni o'chirish -->
+    <ChatMessageSelectionBar
+      v-if="selectionMode"
+      :selected-count="selectedMessageIds.length"
+      :deleting="isDeletingMessages"
+      @cancel="exitSelectionMode"
+      @delete="confirmDeleteSelected"
+    />
+
     <!-- Composer — ochilish/loading paytida ham ko'rinsin -->
     <ChatComposer
-      v-if="showComposer"
+      v-if="showComposer && !selectionMode"
       v-model="draft"
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
@@ -256,6 +269,57 @@ const displayOrderText = computed(() => {
 const draft = ref('')
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
+const selectionMode = ref(false)
+const selectedMessageIds = ref<string[]>([])
+const isDeletingMessages = ref(false)
+
+const isSelectableMedia = (type: string) => type === 'voice' || type === 'photo'
+
+const enterSelectionMode = (messageId: string) => {
+  selectionMode.value = true
+  if (!selectedMessageIds.value.includes(messageId)) {
+    selectedMessageIds.value = [...selectedMessageIds.value, messageId]
+  }
+}
+
+const exitSelectionMode = () => {
+  selectionMode.value = false
+  selectedMessageIds.value = []
+}
+
+const onMessageLongPress = (messageId: string, type: string) => {
+  if (!isSelectableMedia(type)) return
+  enterSelectionMode(messageId)
+}
+
+const toggleMessageSelect = (messageId: string, type: string) => {
+  if (!isSelectableMedia(type)) return
+  if (!selectionMode.value) return
+  const set = new Set(selectedMessageIds.value)
+  if (set.has(messageId)) set.delete(messageId)
+  else set.add(messageId)
+  selectedMessageIds.value = [...set]
+  if (!selectedMessageIds.value.length) selectionMode.value = false
+}
+
+const confirmDeleteSelected = async () => {
+  const ids = selectedMessageIds.value.filter((id) => !id.startsWith('temp-'))
+  if (!ids.length || isDeletingMessages.value) return
+  if (!import.meta.client) return
+  const ok = window.confirm(`${ids.length} ta xabarni o'chirishni tasdiqlaysizmi?`)
+  if (!ok) return
+
+  isDeletingMessages.value = true
+  try {
+    await chatStore.deleteMessages(chatId.value, ids)
+    exitSelectionMode()
+  } catch (err) {
+    console.error('deleteMessages error:', err)
+    window.alert('Xabarlarni o\'chirib bo\'lmadi')
+  } finally {
+    isDeletingMessages.value = false
+  }
+}
 
 /**
  * Klaviatura ochilganda visualViewport;
@@ -421,6 +485,7 @@ const clearPresenceTimer = () => {
 
 const resetChatUi = () => {
   clearPresenceTimer()
+  exitSelectionMode()
   chatStore.messages = []
   chatStore.resetMessagesPagination()
   chatStore.currentChat = null
@@ -524,21 +589,22 @@ const loadChat = async (id: string) => {
   const listed = chatStore.chats.find((c) => c._id === id)
   if (listed) chatStore.currentChat = listed
 
+  chatStore.primeFromChat(listed || chatStore.currentChat)
+
   const kind = listed?.kind || chatStore.currentChat?.kind
   const inApp =
     kind === 'support' ||
     kind === 'direct' ||
     !!listed?.inAppOnly ||
     !!chatStore.currentChat?.inAppOnly
-  const wasLinked = !!(listed?.peer?.viaUserbotId || listed?.peer?.accessHash)
-  if (wasLinked) chatStore.connectionStatus = 'ready'
+  const wasLinked = chatStore.connectionStatus === 'ready'
 
   try {
-    const tasks: Promise<unknown>[] = [chatStore.fetchMessages(id)]
     if (!inApp) {
-      tasks.push(chatStore.connect(id, { silent: wasLinked }))
+      void chatStore.connect(id, { silent: wasLinked })
     }
-    await Promise.all(tasks)
+    await chatStore.fetchMessages(id)
+    chatStore.primeFromChat(chatStore.currentChat)
   } catch (err) {
     console.error('loadChat error:', err)
   }

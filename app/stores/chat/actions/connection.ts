@@ -1,4 +1,19 @@
-import type { ChatStoreRefs } from '../types'
+import type { IChat } from '~/types'
+import type { ChatStoreRefs, ConnStatus } from '../types'
+
+/** Chat allaqachon Telegramga ulanishi mumkinmi (optimistik ready) */
+export function isChatLikelyReady(
+    chat: {
+        kind?: string
+        inAppOnly?: boolean
+        peer?: { viaUserbotId?: string; accessHash?: string }
+    } | null
+    | undefined,
+): boolean {
+    if (!chat) return false
+    if (chat.kind === 'support' || chat.kind === 'direct' || chat.inAppOnly) return true
+    return !!(chat.peer?.viaUserbotId && chat.peer?.accessHash)
+}
 
 /**
  * Ulanish, presence va typing holatlari.
@@ -11,9 +26,65 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         peerPresence,
         peerTypingChatId,
         currentChat,
+        chats,
     } = refs
 
     let typingClearTimer: ReturnType<typeof setTimeout> | null = null
+    const connectInflight = new Map<string, Promise<unknown>>()
+    let activeConnectChatId: string | null = null
+
+    const patchChatPeerLink = (
+        chatId: string,
+        patch: { viaUserbotId?: string; accessHash?: string },
+    ) => {
+        const apply = (c: IChat | null) => {
+            if (!c || c._id !== chatId) return c
+            return {
+                ...c,
+                peer: { ...c.peer, ...patch },
+            } as IChat
+        }
+        if (currentChat.value?._id === chatId) {
+            currentChat.value = apply(currentChat.value)!
+        }
+        const idx = chats.value.findIndex((c) => c._id === chatId)
+        if (idx !== -1) {
+            chats.value[idx] = apply(chats.value[idx])!
+        }
+    }
+
+    /** Ro'yxat/API dan — composer darhol ochiladi */
+    const primeFromChat = (chat: IChat | null | undefined) => {
+        if (!chat) return
+        if (isChatLikelyReady(chat)) {
+            connectionStatus.value = 'ready'
+            connectionReason.value = ''
+        }
+    }
+
+    const applyConnectResult = (
+        chatId: string,
+        data: {
+            status?: ConnStatus
+            reason?: string
+            viaUserbotId?: string
+            accessHash?: string
+        },
+    ) => {
+        if (activeConnectChatId && activeConnectChatId !== chatId) return
+        if (currentChat.value?._id && currentChat.value._id !== chatId) return
+
+        const next = (data.status || 'unreachable') as ConnStatus
+        connectionStatus.value = next
+        connectionReason.value = data.reason ?? ''
+
+        if (data.viaUserbotId || data.accessHash) {
+            patchChatPeerLink(chatId, {
+                viaUserbotId: data.viaUserbotId,
+                accessHash: data.accessHash,
+            })
+        }
+    }
 
     /** Suhbatdosh onlayn / oxirgi kirishni yuklash */
     const fetchPresence = async (chatId: string) => {
@@ -25,39 +96,38 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
     }
 
-    /**
-     * Senderga ulanishni tekshirish (xabar yubormasdan).
-     * Transient timeout/network: bir necha marta qayta urinadi, UI connecting da qoladi.
-     */
-    const connect = async (chatId: string, opts: { silent?: boolean } = {}) => {
-        const maxAttempts = opts.silent ? 1 : 3
-        if (!opts.silent) {
+    const runConnect = async (chatId: string, opts: { silent?: boolean } = {}) => {
+        const maxAttempts = opts.silent ? 1 : 2
+        if (!opts.silent && !isChatLikelyReady(currentChat.value)) {
             connectionStatus.value = 'connecting'
             connectionReason.value = ''
         }
+        activeConnectChatId = chatId
 
-        let lastError: any = null
+        let lastError: unknown = null
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const res = await useApi(`/chats/${chatId}/connect`, {
                     method: 'POST',
-                    // Telegram resolve uzoqroq olishi mumkin — 8s yetmaydi
                     timeout: 45000,
                 })
                 if (res.success) {
-                    const next = res.data?.status ?? 'unreachable'
+                    const next = (res.data?.status ?? 'unreachable') as ConnStatus
 
-                    // Transient unreachable — yana urinish (UI connecting da qoladi)
                     if (next === 'unreachable' && attempt < maxAttempts && !opts.silent) {
                         continue
                     }
 
-                    // Silent: faqat ready/restricted yangilanadi — transient fail UI ni yopmasin
-                    if (!opts.silent || next === 'ready' || next === 'restricted') {
-                        connectionStatus.value = next
-                        connectionReason.value = res.data?.reason ?? ''
+                    applyConnectResult(chatId, {
+                        status: next,
+                        reason: res.data?.reason,
+                        viaUserbotId: res.data?.viaUserbotId,
+                        accessHash: res.data?.accessHash,
+                    })
+
+                    if (next === 'ready') {
+                        void fetchPresence(chatId)
                     }
-                    fetchPresence(chatId)
                     return res
                 }
 
@@ -81,32 +151,61 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         return lastError
     }
 
+    /**
+     * Senderga ulanish — duplicate so'rovlar bitta inflight ga birlashtiriladi.
+     * Ro'yxatdan oldin silent preconnect mumkin.
+     */
+    const connect = async (chatId: string, opts: { silent?: boolean } = {}) => {
+        const inflight = connectInflight.get(chatId)
+        if (inflight) return inflight
+
+        const job = runConnect(chatId, opts).finally(() => {
+            connectInflight.delete(chatId)
+            if (activeConnectChatId === chatId) activeConnectChatId = null
+        })
+        connectInflight.set(chatId, job)
+        return job
+    }
+
+    /** Socket: chat:connect — HTTP kutmasdan UI yangilanadi */
+    const onChatConnect = (data: {
+        chatId: string
+        status: ConnStatus
+        reason?: string
+        viaUserbotId?: string
+        accessHash?: string
+    }) => {
+        if (!data?.chatId) return
+        applyConnectResult(data.chatId, data)
+        if (data.status === 'ready') {
+            void fetchPresence(data.chatId)
+        }
+    }
+
     /** Ulanish / presence / typing holatini tozalash */
     const resetConnection = () => {
         connectionStatus.value = 'idle'
         connectionReason.value = ''
         peerPresence.value = null
         peerTypingChatId.value = null
+        activeConnectChatId = null
         if (typingClearTimer) {
             clearTimeout(typingClearTimer)
             typingClearTimer = null
         }
     }
 
-    /** Ochiq chatdagi suhbatdosh yozmoqda-mi */
     const isPeerTyping = computed(
         () =>
             !!peerTypingChatId.value &&
             peerTypingChatId.value === currentChat.value?._id,
     )
 
-    /** Socket: suhbatdosh onlayn/oxirgi kirish */
     const onPeerPresence = (data: { peerUserId: string; presence: any }) => {
         if (!currentChat.value || currentChat.value.peer?.userId !== data.peerUserId) return
         peerPresence.value = data.presence
     }
 
-    /** Socket: yozmoqda... (signal kelmasa 6s dan keyin o'chadi) */
     const onPeerTyping = (data: { chatId: string; typing: boolean }) => {
         if (!data?.chatId) return
         if (!data.typing) {
@@ -120,16 +219,18 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }, 6000)
     }
 
-    /** Yangi xabar kelganda typing indikatorini o'chirish */
     const clearTypingForChat = (chatId: string) => {
         if (peerTypingChatId.value === chatId) peerTypingChatId.value = null
     }
 
     return {
         connect,
+        primeFromChat,
+        isChatLikelyReady,
         fetchPresence,
         resetConnection,
         isPeerTyping,
+        onChatConnect,
         onPeerPresence,
         onPeerTyping,
         clearTypingForChat,

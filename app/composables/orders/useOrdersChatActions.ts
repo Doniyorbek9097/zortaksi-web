@@ -73,6 +73,8 @@ export function useOrdersChatActions(options: {
 
     beforeNavigate?.()
     if (existing?._id) {
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
         query: {
@@ -176,6 +178,8 @@ export function useOrdersChatActions(options: {
     const name = interestedUserName(user)
     const existing = findDirectChatWithUser(String(user.userId), orderId)
     if (existing?._id) {
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
         query: { name },
@@ -201,6 +205,8 @@ export function useOrdersChatActions(options: {
 
     beforeNavigate?.()
     if (existing?._id) {
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
         query: { name },
@@ -226,6 +232,8 @@ export function useOrdersChatActions(options: {
 
     beforeNavigate?.()
     if (existing?._id) {
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(existing._id, { silent: true })
       return navigateTo({
         path: `/driver/chat/${existing._id}`,
         query: { name },

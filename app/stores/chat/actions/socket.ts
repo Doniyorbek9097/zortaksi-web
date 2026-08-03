@@ -1,5 +1,5 @@
 import type { IChat, IChatMessage } from '~/types'
-import { useChatMedia } from '~/composables/useVoiceMedia'
+import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { lastMessagePreview } from '../helpers/message-preview'
 import {
     applyMessagesRead,
@@ -127,6 +127,18 @@ export function createSocketActions(
         )
     }
 
+    /** Socket: xabar(lar) o'chirildi */
+    const onMessagesDeleted = (data: { chatId: string; messageIds: string[] }) => {
+        if (!data?.chatId || !Array.isArray(data.messageIds) || !data.messageIds.length) return
+        const idSet = new Set(data.messageIds.map(String))
+        if (currentChat.value?._id === data.chatId) {
+            messages.value = messages.value.filter((m) => !idSet.has(String(m._id)))
+        }
+        if (import.meta.client) {
+            invalidateChatMediaCaches([...idSet])
+        }
+    }
+
     const onNewMessageWithTyping = (msg: IChatMessage) => {
         clearTypingForChat(msg.chatId)
         onNewMessage(msg)
@@ -137,5 +149,6 @@ export function createSocketActions(
         onNewMessage: onNewMessageWithTyping,
         onChatUpdate,
         onMessagesRead,
+        onMessagesDeleted,
     }
 }

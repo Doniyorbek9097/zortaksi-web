@@ -7,7 +7,7 @@
     ]"
   >
     <div
-      class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden"
+      class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
       :class="[
         paymentCards || paymentRequest
           ? (out
@@ -22,8 +22,24 @@
             : '!border-sky-300 dark:!border-sky-700')
           : '',
         type === 'photo' ? '!p-1.5' : '',
+        isMediaSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
+      @pointerdown="onSelectPointerDown"
+      @pointerup="onSelectPointerUp"
+      @pointercancel="onSelectPointerUp"
+      @pointerleave="onSelectPointerCancel"
+      @click.capture="onBubbleClickCapture"
     >
+      <div
+        v-if="isMediaSelectable && selectionMode"
+        class="absolute top-2 left-2 z-10 w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors"
+        :class="selected
+          ? 'bg-indigo-500 border-indigo-500 text-white'
+          : 'border-white/80 bg-black/20 text-transparent'"
+      >
+        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+      </div>
+
       <!-- Voice player -->
       <div v-if="type === 'voice'" class="flex items-center gap-2.5 min-w-[180px] px-2 py-0.5">
         <button
@@ -266,6 +282,9 @@ interface Props {
   highlight?: boolean
   /** Tomoshabin rejimi — telefon raqamlar yashiriladi */
   maskPhones?: boolean
+  /** Ovoz/rasm tanlash rejimi */
+  selectionMode?: boolean
+  selected?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -283,7 +302,43 @@ const props = withDefaults(defineProps<Props>(), {
   locationTitle: '',
   highlight: false,
   maskPhones: false,
+  selectionMode: false,
+  selected: false,
 })
+
+const emit = defineEmits<{ 'long-press': []; 'toggle-select': [] }>()
+
+const isMediaSelectable = computed(() => props.type === 'voice' || props.type === 'photo')
+
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+
+const clearLongPress = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+const onSelectPointerDown = (e: PointerEvent) => {
+  if (!isMediaSelectable.value || props.selectionMode) return
+  clearLongPress()
+  longPressTimer = setTimeout(() => {
+    longPressTimer = null
+    emit('long-press')
+  }, 3000)
+}
+
+const onSelectPointerUp = () => clearLongPress()
+const onSelectPointerCancel = () => clearLongPress()
+
+const onBubbleClickCapture = (e: Event) => {
+  if (!isMediaSelectable.value || !props.selectionMode) return
+  e.preventDefault()
+  e.stopPropagation()
+  emit('toggle-select')
+}
+
+onBeforeUnmount(() => clearLongPress())
 
 const mapsUrl = computed(() => {
   const lat = Number(props.locationLat)
@@ -551,6 +606,10 @@ const playAudio = async () => {
 }
 
 const toggle = async () => {
+  if (props.selectionMode && isMediaSelectable.value) {
+    emit('toggle-select')
+    return
+  }
   const a = audioEl.value
   if (playing.value && a) {
     stopLocalVoice()
@@ -588,6 +647,10 @@ const toggle = async () => {
 }
 
 const openLightbox = async () => {
+  if (props.selectionMode && isMediaSelectable.value) {
+    emit('toggle-select')
+    return
+  }
   if (!src.value) {
     loading.value = true
     try {

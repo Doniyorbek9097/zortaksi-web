@@ -232,6 +232,10 @@ usePullToRefresh(refresh)
 
 const openChat = (chat: IChat) => {
   saveScroll()
+  chatStore.primeFromChat(chat)
+  if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {
+    void chatStore.connect(chat._id, { silent: true })
+  }
   navigateTo({
     path: `/driver/chat/${chat._id}`,
     query: {

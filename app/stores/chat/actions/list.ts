@@ -252,6 +252,43 @@ export function createListActions(
         return res
     }
 
+    /** Ovoz/rasm xabarlarini o'chirish */
+    const deleteMessages = async (chatId: string, ids: string[]) => {
+        const uniqueIds = [...new Set(ids.map(String).filter(Boolean))]
+        if (!uniqueIds.length) return { success: false }
+
+        const res = await useApi(`/chats/${chatId}/messages`, {
+            method: 'DELETE',
+            body: { ids: uniqueIds },
+        })
+
+        if (res.success) {
+            const idSet = new Set(uniqueIds)
+            messages.value = messages.value.filter((m) => !idSet.has(String(m._id)))
+
+            if (import.meta.client) {
+                invalidateChatMediaCaches(uniqueIds)
+            }
+
+            const chat = chats.value.find((c) => c._id === chatId)
+            if (chat && currentChat.value?._id === chatId) {
+                const last = messages.value.at(-1)
+                if (last) {
+                    const preview =
+                        last.type === 'voice'
+                            ? `🎤 Ovozli xabar${last.duration ? ` (${last.duration}s)` : ''}`
+                            : last.type === 'photo'
+                              ? (last.text?.trim() || '📷 Rasm')
+                              : (last.text || '')
+                    patchChat(chatId, { lastMessage: preview, lastMessageAt: last.date })
+                } else {
+                    patchChat(chatId, { lastMessage: '', lastMessageAt: new Date().toISOString() })
+                }
+            }
+        }
+        return res
+    }
+
     return {
         hasMore,
         hasMoreMessages,
@@ -267,5 +304,6 @@ export function createListActions(
         markRead,
         markAllRead,
         deleteChats,
+        deleteMessages,
     }
 }
