@@ -440,10 +440,21 @@ const applySrc = (url: string) => {
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
+  const id = String(props.messageId)
+  if (id.startsWith('temp-')) {
+    const local = peekUrl(id)
+    if (local) applySrc(local)
+    return
+  }
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
   } else if (src.value) {
+    return
+  }
+  const cached = peekUrl(props.messageId, props.mediaPath || 'remote')
+  if (cached && !opts.force) {
+    applySrc(cached)
     return
   }
   loading.value = true
@@ -471,7 +482,7 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
         err: String((e as any)?.message || e),
       },
     })
-    if (props.messageId) invalidateMedia(props.messageId)
+    if (opts.force && props.messageId) invalidateMedia(props.messageId)
     applySrc('')
   } finally {
     loading.value = false
@@ -641,9 +652,19 @@ watch(
     if (!id || id !== prevId) {
       applySrc('')
       if (!id) return
+      if (id.startsWith('temp-')) {
+        const local = peekUrl(id)
+        if (local) applySrc(local)
+        return
+      }
       const cached = peekUrl(id, props.mediaPath)
-      if (cached) applySrc(cached)
-      else void ensureSrc()
+      if (cached) {
+        applySrc(cached)
+        return
+      }
+      if (props.type === 'photo') {
+        void ensureSrc()
+      }
     }
   },
   { immediate: true },
@@ -672,9 +693,13 @@ watch(
   () => props.status,
   async (status, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId) return
-    if (prev === 'sending' && status !== 'sending') {
-      applySrc('')
+    if (!props.messageId || prev !== 'sending' || status === 'sending') return
+    const cached = peekUrl(props.messageId, props.mediaPath)
+    if (cached) {
+      applySrc(cached)
+      return
+    }
+    if (!src.value) {
       await ensureSrc()
     }
   },

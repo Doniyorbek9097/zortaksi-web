@@ -177,9 +177,8 @@ async function fetchMediaBlobFromNetwork(
 function idbPathMatches(stored?: string, expected?: string | null): boolean {
   const exp = String(expected || '').trim()
   const got = String(stored || '').trim()
-  // Hali remote yoki noma'lum — keshdagi faylni ishlatish mumkin
+  if (got === 'local') return true
   if (!exp || exp === 'remote') return true
-  // Kesh remote paytda yuklangan — disk path kelguncha ham yaroqli
   if (!got || got === 'remote') return true
   return got === exp
 }
@@ -256,9 +255,10 @@ export function useChatMedia() {
     const id = normalizeMessageId(messageId)
     const url = cache.get(id) || ''
     if (!url) return ''
+    const stored = cacheMediaPath.get(id)
+    if (stored === 'local') return url
     const expected = String(mediaPath || '').trim()
     if (expected && expected !== 'remote') {
-      const stored = cacheMediaPath.get(id)
       if (stored && stored !== expected) return ''
     }
     return url
@@ -270,6 +270,7 @@ export function useChatMedia() {
     revokeCachedUrl(id)
     const url = URL.createObjectURL(blob)
     cache.set(id, url)
+    cacheMediaPath.set(id, 'local')
     touchCacheOrder(id)
     localOnly.add(id)
   }
@@ -287,6 +288,9 @@ export function useChatMedia() {
     if (fi >= 0) cacheOrder.splice(fi, 1)
     cache.set(to, url)
     touchCacheOrder(to)
+    const pathTag = cacheMediaPath.get(from)
+    if (pathTag) cacheMediaPath.set(to, pathTag)
+    else cacheMediaPath.set(to, 'local')
     if (keepLocal) localOnly.add(to)
 
     void (async () => {
@@ -325,9 +329,13 @@ export function useChatMedia() {
 
     const cached = cache.get(id)
     if (cached && !opts.forceNetwork) {
+      const stored = cacheMediaPath.get(id)
+      if (stored === 'local') {
+        touchCacheOrder(id)
+        return cached
+      }
       const expected = String(mediaPath || '').trim()
       if (expected && expected !== 'remote') {
-        const stored = cacheMediaPath.get(id)
         if (stored && stored !== expected) {
           revokeCachedUrl(id)
         } else {

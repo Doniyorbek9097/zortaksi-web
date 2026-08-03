@@ -89,10 +89,11 @@ export function createMessagingActions(
     const sendVoice = async (chatId: string, blob: Blob, duration: number) => {
         const tempId = createTempId()
         const temp = createTempVoiceMessage(chatId, duration, tempId)
-        messages.value.push(temp)
 
         const { setLocalUrl } = useChatMedia()
         if (import.meta.client) setLocalUrl(tempId, blob)
+
+        messages.value.push(temp)
 
         try {
             isSending.value = true
@@ -132,10 +133,11 @@ export function createMessagingActions(
     const sendPhoto = async (chatId: string, file: File, caption = '') => {
         const tempId = createTempId()
         const temp = createTempPhotoMessage(chatId, caption, tempId)
-        messages.value.push(temp)
 
         const { setLocalUrl } = useChatMedia()
         if (import.meta.client) setLocalUrl(tempId, file)
+
+        messages.value.push(temp)
 
         try {
             isSending.value = true
