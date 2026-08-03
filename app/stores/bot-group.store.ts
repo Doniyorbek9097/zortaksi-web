@@ -5,6 +5,12 @@ export interface BotGroupRow {
   username: string
   keywords: string[]
   active: boolean
+  hasBotToken?: boolean
+  tokenMasked?: string
+  botUsername?: string
+  botRunning?: boolean
+  botLastError?: string
+  launching?: boolean
   telegramChatId?: string
   title?: string
   botIsAdmin?: boolean
@@ -12,26 +18,10 @@ export interface BotGroupRow {
   lastError?: string
 }
 
-export interface BotConfigRow {
-  active: boolean
-  running: boolean
-  hasToken: boolean
-  tokenMasked: string
-  username?: string
-  botId?: string
-  lastError?: string
-  launching?: boolean
-  updatedAt?: string
-}
-
 export type BotGroupPayload = {
   username: string
   keywords: string
-  active?: boolean
-}
-
-export type BotConfigPayload = {
-  token?: string
+  botToken?: string
   active?: boolean
 }
 
@@ -40,6 +30,12 @@ const toRow = (g: any): BotGroupRow => ({
   username: g.username,
   keywords: Array.isArray(g.keywords) ? g.keywords : [],
   active: !!g.active,
+  hasBotToken: !!g.hasBotToken,
+  tokenMasked: g.tokenMasked || '',
+  botUsername: g.botUsername,
+  botRunning: !!g.botRunning,
+  botLastError: g.botLastError,
+  launching: !!g.launching,
   telegramChatId: g.telegramChatId,
   title: g.title,
   botIsAdmin: g.botIsAdmin,
@@ -47,74 +43,14 @@ const toRow = (g: any): BotGroupRow => ({
   lastError: g.lastError,
 })
 
-const toConfig = (c: any): BotConfigRow => ({
-  active: !!c.active,
-  running: !!c.running,
-  hasToken: !!c.hasToken,
-  tokenMasked: c.tokenMasked || '',
-  username: c.username,
-  botId: c.botId,
-  lastError: c.lastError,
-  launching: !!c.launching,
-  updatedAt: c.updatedAt,
-})
-
 async function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-async function pollBotRunningAfterSave(fetchConfig: () => Promise<unknown>, getConfig: () => BotConfigRow | null) {
-  for (let i = 0; i < 8; i++) {
-    await wait(2000)
-    try {
-      await fetchConfig()
-      const cfg = getConfig()
-      if (cfg?.running) return
-      if (cfg?.lastError && !cfg?.launching) return
-    } catch { /* ignore */ }
-  }
-}
-
 export const useBotGroupStore = defineStore('botGroup', () => {
   const groups = ref<BotGroupRow[]>([])
-  const botConfig = ref<BotConfigRow | null>(null)
   const isLoading = ref(false)
   const isSaving = ref(false)
-  const isConfigSaving = ref(false)
-
-  const fetchBotConfig = async () => {
-    const response = await useApi('/bot-groups/config')
-    if (response.success) {
-      botConfig.value = toConfig(response.data)
-    }
-    return response
-  }
-
-  const saveBotConfig = async (payload: BotConfigPayload) => {
-    try {
-      isConfigSaving.value = true
-      const body: BotConfigPayload = { active: payload.active }
-      if (payload.token?.trim()) body.token = payload.token.trim()
-
-      const response = await useApi('/bot-groups/config', {
-        method: 'PUT',
-        body,
-        timeout: 45_000,
-      })
-      if (response.success) {
-        botConfig.value = toConfig(response.data)
-        if (response.data?.launching) {
-          void pollBotRunningAfterSave(fetchBotConfig, () => botConfig.value)
-        }
-      }
-      return response
-    } catch (error) {
-      console.error('SaveBotConfig error:', error)
-      throw error
-    } finally {
-      isConfigSaving.value = false
-    }
-  }
 
   const fetchGroups = async () => {
     try {
@@ -132,6 +68,18 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     }
   }
 
+  const pollGroupRunning = async (id: string, attempts = 8) => {
+    for (let i = 0; i < attempts; i++) {
+      await wait(2000)
+      try {
+        await fetchGroups()
+        const row = groups.value.find(g => g.id === id)
+        if (row?.botRunning) return
+        if (row?.botLastError && !row?.launching) return
+      } catch { /* ignore */ }
+    }
+  }
+
   const createGroup = async (payload: BotGroupPayload) => {
     try {
       isSaving.value = true
@@ -140,11 +88,15 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         body: {
           username: payload.username.trim(),
           keywords: payload.keywords.trim(),
+          botToken: payload.botToken?.trim(),
           active: payload.active !== false,
         },
+        timeout: 45_000,
       })
       if (response.success) {
-        groups.value.unshift(toRow(response.data))
+        const row = toRow(response.data)
+        groups.value.unshift(row)
+        if (row.launching) void pollGroupRunning(row.id)
       }
       return response
     } catch (error) {
@@ -158,18 +110,23 @@ export const useBotGroupStore = defineStore('botGroup', () => {
   const updateGroup = async (id: string, payload: BotGroupPayload) => {
     try {
       isSaving.value = true
+      const body: Record<string, unknown> = {
+        username: payload.username.trim(),
+        keywords: payload.keywords.trim(),
+        active: payload.active !== false,
+      }
+      if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
+
       const response = await useApi(`/bot-groups/${id}`, {
         method: 'PUT',
-        body: {
-          username: payload.username.trim(),
-          keywords: payload.keywords.trim(),
-          active: payload.active !== false,
-        },
+        body,
+        timeout: 45_000,
       })
       if (response.success) {
         const row = toRow(response.data)
         const idx = groups.value.findIndex(g => g.id === id)
         if (idx !== -1) groups.value[idx] = row
+        if (row.launching) void pollGroupRunning(row.id)
       }
       return response
     } catch (error) {
@@ -199,11 +156,15 @@ export const useBotGroupStore = defineStore('botGroup', () => {
   const refreshGroup = async (id: string) => {
     try {
       isSaving.value = true
-      const response = await useApi(`/bot-groups/${id}/refresh`, { method: 'POST' })
+      const response = await useApi(`/bot-groups/${id}/refresh`, {
+        method: 'POST',
+        timeout: 45_000,
+      })
       if (response.success) {
         const row = toRow(response.data)
         const idx = groups.value.findIndex(g => g.id === id)
         if (idx !== -1) groups.value[idx] = row
+        if (row.launching) void pollGroupRunning(row.id)
       }
       return response
     } catch (error) {
@@ -216,12 +177,8 @@ export const useBotGroupStore = defineStore('botGroup', () => {
 
   return {
     groups,
-    botConfig,
     isLoading,
     isSaving,
-    isConfigSaving,
-    fetchBotConfig,
-    saveBotConfig,
     fetchGroups,
     createGroup,
     updateGroup,
