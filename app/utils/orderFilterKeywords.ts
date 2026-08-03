@@ -26,12 +26,17 @@ export function parseKeywords(raw: string): string[] {
 export function toLatin(input: string): string {
   let s = String(input || '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/[’‘ʻ`´]/g, "'")
+    .replace(/['''‛ʻʼ`´ʹ]/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase()
   for (const [re, rep] of CYRILLIC_TO_LATIN) s = s.replace(re, rep)
   return s
+}
+
+/** Qidiruv: lotin/kirill + o'/g' → o/g (katta-kichik farqsiz) */
+export function normalizeMatchText(input: string): string {
+  return toLatin(input).replace(/o'/g, 'o').replace(/g'/g, 'g')
 }
 
 /** Maydonlar ichidan kamida bitta kalit so'z topilsa true */
@@ -41,9 +46,9 @@ export function matchesKeywords(
 ): boolean {
   const kws = parseKeywords(raw)
   if (!kws.length) return true
-  const blob = toLatin(fields.filter(Boolean).join(' '))
+  const blob = normalizeMatchText(fields.filter(Boolean).join(' '))
   return kws.some((kw) => {
-    const n = toLatin(kw)
+    const n = normalizeMatchText(kw)
     return n.length > 0 && blob.includes(n)
   })
 }
