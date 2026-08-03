@@ -1,5 +1,7 @@
 /** Buyurtmalar / E'lon — umumiy kalit so'z filtri (localStorage) */
 
+import { distance } from 'fastest-levenshtein'
+
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
@@ -39,6 +41,56 @@ export function normalizeMatchText(input: string): string {
   return toLatin(input).replace(/o'/g, 'o').replace(/g'/g, 'g')
 }
 
+/** Bo'shliq, _, -, ' ni olib tashlaydi — baliqkol ≈ Baliq_kol */
+export function compactMatchText(input: string): string {
+  return normalizeMatchText(input).replace(/[\s_'\-]+/g, '')
+}
+
+function maxLevenshteinDistance(len: number): number {
+  if (len <= 3) return 1
+  if (len <= 6) return 2
+  return Math.min(4, Math.ceil(len / 3))
+}
+
+function tokenizeForFuzzy(text: string): string[] {
+  return String(text || '')
+    .split(/[\s,;|/\\.+!?()[\]{}#@\-]+/)
+    .map((t) => compactMatchText(t))
+    .filter((t) => t.length >= 2)
+}
+
+function fuzzyInCompact(compactHay: string, kw: string, maxDist: number): boolean {
+  if (!compactHay || !kw) return false
+  if (compactHay.includes(kw)) return true
+  const minLen = Math.max(1, kw.length - maxDist)
+  const maxLen = kw.length + maxDist
+  for (let len = minLen; len <= maxLen; len++) {
+    if (len > compactHay.length) continue
+    for (let i = 0; i <= compactHay.length - len; i++) {
+      if (distance(kw, compactHay.slice(i, i + len)) <= maxDist) return true
+    }
+  }
+  return false
+}
+
+/** Kalit so'z matnda — lotin/kirill, ajratgich va typo (Levenshtein) */
+export function keywordMatchesText(haystack: string, keyword: string): boolean {
+  const kw = compactMatchText(keyword)
+  if (!kw || kw.length < 2) return false
+  const hay = String(haystack || '')
+  if (!hay.trim()) return false
+
+  const compactHay = compactMatchText(hay)
+  if (compactHay.includes(kw)) return true
+
+  const maxDist = maxLevenshteinDistance(kw.length)
+  for (const token of tokenizeForFuzzy(hay)) {
+    if (Math.abs(token.length - kw.length) > maxDist) continue
+    if (distance(kw, token) <= maxDist) return true
+  }
+  return fuzzyInCompact(compactHay, kw, maxDist)
+}
+
 /** Maydonlar ichidan kamida bitta kalit so'z topilsa true */
 export function matchesKeywords(
   fields: Array<string | undefined | null>,
@@ -46,11 +98,8 @@ export function matchesKeywords(
 ): boolean {
   const kws = parseKeywords(raw)
   if (!kws.length) return true
-  const blob = normalizeMatchText(fields.filter(Boolean).join(' '))
-  return kws.some((kw) => {
-    const n = normalizeMatchText(kw)
-    return n.length > 0 && blob.includes(n)
-  })
+  const blob = fields.filter(Boolean).join(' ')
+  return kws.some((kw) => keywordMatchesText(blob, kw))
 }
 
 export function loadOrderFilterKeywords(): string {

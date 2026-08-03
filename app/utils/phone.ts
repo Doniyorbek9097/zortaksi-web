@@ -86,6 +86,9 @@ export function normalizeTo998(raw: string | null | undefined): string | null {
   return null
 }
 
+/** Backend bilan mos alias — telegramLinks va boshqa importlar uchun */
+export const normalizePhoneDigits = normalizeTo998
+
 function normalizeCandidate(raw: string): string | null {
   if (raw.includes('■')) return null
   const digits = (raw.match(/\d/g) || []).join('')
