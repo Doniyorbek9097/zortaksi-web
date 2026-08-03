@@ -414,6 +414,11 @@ const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
 const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
 
+const isRemoteMedia = (path?: string | null) => {
+  const p = String(path || '').trim()
+  return !p || p === 'remote'
+}
+
 // #region agent log
 if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
   agentDebugLog({
@@ -435,6 +440,7 @@ const applySrc = (url: string) => {
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
+  if (!opts.force && isRemoteMedia(props.mediaPath)) return
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
@@ -446,7 +452,7 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
     const url = await getUrl(
       props.messageId,
       mediaKind.value,
-      { forceNetwork: !!opts.force },
+      { forceNetwork: !!opts.force, mediaPath: props.mediaPath },
     )
     if (url) applySrc(url)
   } catch (e) {
@@ -632,27 +638,30 @@ watch(
     if (props.type !== 'voice' && props.type !== 'photo') return
     if (!id || id !== prevId) {
       applySrc('')
-      if (id) {
-        const cached = peekUrl(id)
-        if (cached) applySrc(cached)
-        else if (props.type === 'photo' && props.mediaPath && props.mediaPath !== 'remote') {
-          void ensureSrc()
-        }
+      if (!id || isRemoteMedia(props.mediaPath)) return
+      const cached = peekUrl(id, props.mediaPath)
+      if (cached) applySrc(cached)
+      else if (props.type === 'photo') {
+        void ensureSrc()
       }
     }
   },
   { immediate: true },
 )
 
-/** Telegram: remote → disk (mediaPath yangilanganda IDB ga yuklash) */
+/** Telegram: remote → disk (mediaPath yangilanganda qayta yuklash) */
 watch(
   () => props.mediaPath,
   async (path, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId || !path || path === prev) return
-    if (path === 'remote') return
+    if (!props.messageId || path === prev) return
+    if (isRemoteMedia(path)) {
+      applySrc('')
+      return
+    }
+    const force = isRemoteMedia(prev) || (!!prev && prev !== path)
     applySrc('')
-    await ensureSrc({ force: path !== prev && !!prev })
+    await ensureSrc({ force })
   },
 )
 
@@ -673,6 +682,9 @@ watch(mediaCacheEpoch, () => {
   if (props.type !== 'voice' && props.type !== 'photo') return
   stopLocalVoice()
   applySrc('')
+  if (!isRemoteMedia(props.mediaPath)) {
+    void ensureSrc({ force: true })
+  }
 })
 
 onBeforeUnmount(() => {

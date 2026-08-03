@@ -1,7 +1,8 @@
-import { idbClearMedia } from '~/utils/mediaIdb'
+import { idbClearMedia, idbPurgeInvalid } from '~/utils/mediaIdb'
+import { isValidMediaBlob } from '~/utils/mediaBlobValidate'
 
 /** O'zgarganda eski IndexedDB + Workbox tozalanadi (auth saqlanadi) */
-export const MEDIA_CACHE_SCHEMA_VERSION = '6'
+export const MEDIA_CACHE_SCHEMA_VERSION = '7'
 
 const LS_KEY = 'zt_media_cache_schema'
 
@@ -36,9 +37,13 @@ export function ensureMediaCacheReady(): Promise<void> {
     readyPromise = (async () => {
       try {
         const prev = localStorage.getItem(LS_KEY)
-        if (prev === MEDIA_CACHE_SCHEMA_VERSION) return
-        localStorage.setItem(LS_KEY, MEDIA_CACHE_SCHEMA_VERSION)
-        await Promise.all([idbClearMedia(), clearWorkboxCaches(), refreshServiceWorker()])
+        if (prev !== MEDIA_CACHE_SCHEMA_VERSION) {
+          localStorage.setItem(LS_KEY, MEDIA_CACHE_SCHEMA_VERSION)
+          await Promise.all([idbClearMedia(), clearWorkboxCaches(), refreshServiceWorker()])
+          return
+        }
+        // Schema bir xil — yaroqsiz bloblarni tozalash (qo'lda kesh tozalash shart emas)
+        await idbPurgeInvalid(isValidMediaBlob)
       } catch {
         /* */
       }

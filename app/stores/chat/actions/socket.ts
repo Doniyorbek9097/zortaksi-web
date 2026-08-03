@@ -41,18 +41,24 @@ export function createSocketActions(
     const onMessageUpdate = (msg: IChatMessage) => {
         if (!msg?._id) return
         const idx = messages.value.findIndex((m) => m._id === msg._id)
+        const prev = idx !== -1 ? messages.value[idx] : null
         if (idx !== -1) {
             messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
         }
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            (msg.mediaPath || msg.tgMessageId)
+            msg.mediaPath &&
+            msg.mediaPath !== 'remote'
         ) {
             const kind = msg.type === 'voice' ? 'voice' : 'photo'
-            const force = !msg.mediaPath || msg.mediaPath === 'remote'
+            const prevPath = prev?.mediaPath
+            const wasRemote = !prevPath || prevPath === 'remote'
             useChatMedia()
-                .getUrl(msg._id, kind, { forceNetwork: force })
+                .getUrl(msg._id, kind, {
+                    forceNetwork: wasRemote,
+                    mediaPath: msg.mediaPath,
+                })
                 .catch(() => {})
         }
     }
@@ -68,13 +74,12 @@ export function createSocketActions(
         if (
             import.meta.client &&
             (msg.type === 'voice' || msg.type === 'photo') &&
-            (msg.mediaPath || msg.tgMessageId)
+            msg.mediaPath &&
+            msg.mediaPath !== 'remote'
         ) {
             const kind = msg.type === 'voice' ? 'voice' : 'photo'
             useChatMedia()
-                .getUrl(msg._id, kind, {
-                    forceNetwork: !msg.mediaPath || msg.mediaPath === 'remote',
-                })
+                .getUrl(msg._id, kind, { mediaPath: msg.mediaPath })
                 .catch(() => {})
         }
 

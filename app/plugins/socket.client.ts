@@ -109,6 +109,22 @@ export default defineNuxtPlugin(() => {
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
     })
+    socket.on('order:update', (order) => {
+      const kw = loadOrderFilterKeywords().trim()
+      if (
+        kw &&
+        !matchesKeywords(
+          [order?.group?.title, order?.group?.username, order?.message?.text],
+          kw,
+        )
+      ) {
+        return
+      }
+      orderStore.applyOrderUpdate(order)
+    })
+    socket.on('order:cancelled', (data: { orderId?: string }) => {
+      if (data?.orderId) orderStore.removeOrderById(String(data.orderId))
+    })
     socket.on('connect', () => {
       catchUpAll()
     })

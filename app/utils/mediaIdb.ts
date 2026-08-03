@@ -4,13 +4,15 @@
  */
 
 const DB_NAME = 'zortaksi-media'
-const DB_VERSION = 2
+const DB_VERSION = 3
 const STORE = 'blobs'
 
-type MediaRecord = {
+export type MediaRecord = {
   id: string
   blob: Blob
   kind: 'voice' | 'photo'
+  /** mediaPath o'zgarganda eski blob ishlatilmasin */
+  mediaPath?: string
   updatedAt: number
 }
 
@@ -43,8 +45,8 @@ function idbReq<T>(req: IDBRequest<T>): Promise<T> {
   })
 }
 
-/** Keshdan blob olish */
-export async function idbGetMedia(messageId: string): Promise<Blob | null> {
+/** Keshdan yozuv olish */
+export async function idbGetMediaRecord(messageId: string): Promise<MediaRecord | null> {
   const id = String(messageId || '').trim()
   if (!id) return null
   try {
@@ -52,10 +54,16 @@ export async function idbGetMedia(messageId: string): Promise<Blob | null> {
     const tx = db.transaction(STORE, 'readonly')
     const row = await idbReq<MediaRecord | undefined>(tx.objectStore(STORE).get(id))
     db.close()
-    return row?.blob || null
+    return row?.blob ? row : null
   } catch {
     return null
   }
+}
+
+/** Keshdan blob olish */
+export async function idbGetMedia(messageId: string): Promise<Blob | null> {
+  const row = await idbGetMediaRecord(messageId)
+  return row?.blob || null
 }
 
 /** Keshga yozish */
@@ -63,9 +71,11 @@ export async function idbPutMedia(
   messageId: string,
   blob: Blob,
   kind: 'voice' | 'photo',
+  mediaPath?: string | null,
 ): Promise<void> {
   const id = String(messageId || '').trim()
   if (!id || !blob?.size) return
+  const path = String(mediaPath || '').trim()
   try {
     const db = await openDb()
     const tx = db.transaction(STORE, 'readwrite')
@@ -74,6 +84,7 @@ export async function idbPutMedia(
         id,
         blob,
         kind,
+        mediaPath: path || undefined,
         updatedAt: Date.now(),
       } satisfies MediaRecord),
     )

@@ -363,6 +363,38 @@ export const useOrderStore = defineStore('order', () => {
         newOrdersCount.value = Math.max(0, newOrdersCount.value + delta)
     }
 
+    /** Socket order:update — band qilish / bot «Shofyor topildi» */
+    const applyOrderUpdate = (order: IOrder) => {
+        if (!order?._id) return
+        const idx = orders.value.findIndex((o) => String(o._id) === String(order._id))
+        const prev = idx !== -1 ? orders.value[idx] : null
+        if (idx !== -1) {
+            orders.value[idx] = { ...orders.value[idx], ...order } as IOrder
+        } else {
+            orders.value = [order, ...orders.value]
+            total.value = (total.value || 0) + 1
+        }
+        if (prev?.status === 'new' && order.status === 'booked') {
+            bumpNewCount(-1)
+            bumpScopeNewCount(scopeForOrder(prev), -1)
+        }
+    }
+
+    /** Socket order:cancelled — bot bekor qildi */
+    const removeOrderById = (orderId: string) => {
+        const id = String(orderId || '')
+        if (!id) return
+        const prev = orders.value.find((o) => String(o._id) === id)
+        orders.value = orders.value.filter((o) => String(o._id) !== id)
+        if (prev) {
+            total.value = Math.max(0, total.value - 1)
+            if (prev.status === 'new') {
+                bumpNewCount(-1)
+                bumpScopeNewCount(scopeForOrder(prev), -1)
+            }
+        }
+    }
+
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
@@ -630,6 +662,8 @@ export const useOrderStore = defineStore('order', () => {
         loadMore,
         syncLatest,
         prependOrder,
+        applyOrderUpdate,
+        removeOrderById,
         fetchOrderById,
         bookOrder,
         unbookOrder,

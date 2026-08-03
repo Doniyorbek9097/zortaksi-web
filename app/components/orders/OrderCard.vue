@@ -142,22 +142,14 @@
             <span class="truncate">Band qilish</span>
           </button>
 
-          <!-- Boshqalar: band qilgan haydovchi → chat -->
-          <button
+          <!-- Boshqalar: band holat -->
+          <div
             v-if="isBooked && !isBookedByMe"
-            type="button"
-            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-between gap-2 px-3 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 active:scale-[0.98] transition-all"
-            @click.stop="$emit('booked-chat')"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[12px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-400/20"
           >
-            <span class="inline-flex items-center gap-2 min-w-0 overflow-hidden">
-              <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm text-emerald-500 shrink-0" />
-              <span class="truncate">
-                <span class="text-emerald-600 dark:text-emerald-400">Band qildi</span>
-                · {{ bookedByName }}
-              </span>
-            </span>
-            <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-sm text-slate-400 shrink-0" />
-          </button>
+            <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm shrink-0" />
+            <span>Band qilindi</span>
+          </div>
 
           <!-- Band qilgan / admin: bekor -->
           <button

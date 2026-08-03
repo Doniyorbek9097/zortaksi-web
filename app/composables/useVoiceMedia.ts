@@ -5,7 +5,7 @@
  * 3) server / Telegram on-demand
  */
 import {
-  idbGetMedia,
+  idbGetMediaRecord,
   idbPutMedia,
   idbDeleteMedia,
   idbMediaStats,
@@ -29,11 +29,14 @@ export const chatMediaUrlKey: InjectionKey<ChatMediaUrlBuilder> = Symbol('ztChat
 export type GetMediaUrlOpts = {
   forceNetwork?: boolean
   urlBuilder?: ChatMediaUrlBuilder | null
+  /** Serverdagi mediaPath — o'zgarganda eski IDB ishlatilmaydi */
+  mediaPath?: string | null
 }
 
 const MAX_MEMORY_ENTRIES = 96
 /** Sessiya blob URL — barcha bubble lar ulashadi, unmount da revoke qilinmaydi */
 const cache = new Map<string, string>()
+const cacheMediaPath = new Map<string, string>()
 const cacheOrder: string[] = []
 const inflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
@@ -67,6 +70,7 @@ function revokeCachedUrl(messageId: string) {
   const prev = cache.get(id)
   if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
   cache.delete(id)
+  cacheMediaPath.delete(id)
   localOnly.delete(id)
   const i = cacheOrder.indexOf(id)
   if (i >= 0) cacheOrder.splice(i, 1)
@@ -170,9 +174,31 @@ async function fetchMediaBlobFromNetwork(
   return blob
 }
 
-async function loadFromIdb(id: string, kind: 'voice' | 'photo'): Promise<Blob | null> {
-  const idbBlob = await idbGetMedia(id)
+function isRemoteMediaPath(mediaPath?: string | null): boolean {
+  const p = String(mediaPath || '').trim()
+  return !p || p === 'remote'
+}
+
+function idbPathMatches(stored?: string, expected?: string | null): boolean {
+  const exp = String(expected || '').trim()
+  if (!exp || exp === 'remote') return true
+  const got = String(stored || '').trim()
+  if (!got) return false
+  return got === exp
+}
+
+async function loadFromIdb(
+  id: string,
+  kind: 'voice' | 'photo',
+  mediaPath?: string | null,
+): Promise<Blob | null> {
+  const row = await idbGetMediaRecord(id)
+  const idbBlob = row?.blob
   if (!idbBlob?.size) return null
+  if (!idbPathMatches(row?.mediaPath, mediaPath)) {
+    void idbDeleteMedia(id)
+    return null
+  }
   if (!(await isValidMediaBlob(idbBlob, kind))) {
     void idbDeleteMedia(id)
     return null
@@ -185,14 +211,15 @@ async function blobToObjectUrl(
   blob: Blob,
   kind: 'voice' | 'photo',
   persistIdb: boolean,
+  mediaPath?: string | null,
 ): Promise<string> {
   if (await isCorruptMediaBlob(blob, kind)) {
     void idbDeleteMedia(messageId)
     throw new Error('Media buzilgan')
   }
 
-  if (persistIdb && !messageId.startsWith('temp-')) {
-    void idbPutMedia(messageId, blob, kind)
+  if (persistIdb && !messageId.startsWith('temp-') && !isRemoteMediaPath(mediaPath)) {
+    void idbPutMedia(messageId, blob, kind, mediaPath)
   }
 
   const existing = cache.get(messageId)
@@ -205,6 +232,9 @@ async function blobToObjectUrl(
     URL.revokeObjectURL(existing)
   }
   cache.set(messageId, url)
+  if (mediaPath && !isRemoteMediaPath(mediaPath)) {
+    cacheMediaPath.set(messageId, String(mediaPath).trim())
+  }
   touchCacheOrder(messageId)
   localOnly.delete(messageId)
   return url
@@ -227,8 +257,17 @@ export function useChatMedia() {
     return injectedUrlBuilder
   }
 
-  const peekUrl = (messageId: string): string =>
-    cache.get(normalizeMessageId(messageId)) || ''
+  const peekUrl = (messageId: string, mediaPath?: string | null): string => {
+    const id = normalizeMessageId(messageId)
+    const url = cache.get(id) || ''
+    if (!url) return ''
+    const expected = String(mediaPath || '').trim()
+    if (expected && expected !== 'remote') {
+      const stored = cacheMediaPath.get(id)
+      if (stored && stored !== expected) return ''
+    }
+    return url
+  }
 
   const setLocalUrl = (messageId: string, blob: Blob) => {
     const id = normalizeMessageId(messageId)
@@ -278,6 +317,11 @@ export function useChatMedia() {
     const id = normalizeMessageId(messageId)
     if (!id) return ''
     const builder = resolveBuilder(opts.urlBuilder)
+    const mediaPath = opts.mediaPath
+
+    if (isRemoteMediaPath(mediaPath)) {
+      return ''
+    }
 
     if (opts.forceNetwork) {
       if (!localOnly.has(id)) revokeCachedUrl(id)
@@ -290,8 +334,19 @@ export function useChatMedia() {
 
     const cached = cache.get(id)
     if (cached && !opts.forceNetwork) {
-      touchCacheOrder(id)
-      return cached
+      const expected = String(mediaPath || '').trim()
+      if (expected && expected !== 'remote') {
+        const stored = cacheMediaPath.get(id)
+        if (stored && stored !== expected) {
+          revokeCachedUrl(id)
+        } else {
+          touchCacheOrder(id)
+          return cached
+        }
+      } else {
+        touchCacheOrder(id)
+        return cached
+      }
     }
 
     if (!opts.forceNetwork) {
@@ -307,20 +362,20 @@ export function useChatMedia() {
 
     const job = (async () => {
       if (!opts.forceNetwork) {
-        const idbBlob = await loadFromIdb(id, kind)
+        const idbBlob = await loadFromIdb(id, kind, mediaPath)
         if (idbBlob) {
-          return blobToObjectUrl(id, idbBlob, kind, false)
+          return blobToObjectUrl(id, idbBlob, kind, false, mediaPath)
         }
       }
 
       try {
         const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
-        return blobToObjectUrl(id, blob, kind, true)
+        return blobToObjectUrl(id, blob, kind, true, mediaPath)
       } catch (err) {
         if (!opts.forceNetwork) {
-          const idbBlob = await loadFromIdb(id, kind)
+          const idbBlob = await loadFromIdb(id, kind, mediaPath)
           if (idbBlob) {
-            return blobToObjectUrl(id, idbBlob, kind, false)
+            return blobToObjectUrl(id, idbBlob, kind, false, mediaPath)
           }
         }
         throw err
@@ -346,7 +401,7 @@ export function useChatMedia() {
       try {
         const blob = await fetchMediaBlobFromNetwork(id, kind, injectedUrlBuilder)
         if (!localOnly.has(id)) return
-        await blobToObjectUrl(id, blob, kind, true)
+        await blobToObjectUrl(id, blob, kind, true, undefined)
       } catch {
         const url = cache.get(id)
         if (!url) return
@@ -363,7 +418,7 @@ export function useChatMedia() {
     })()
   }
 
-  /** Fon: IDB ga oldindan yozish (Telegram remote → disk) */
+  /** Fon: IDB ga oldindan yozish (faqat diskda tayyor media) */
   const prefetch = (
     messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
     urlBuilder?: ChatMediaUrlBuilder | null,
@@ -374,18 +429,10 @@ export function useChatMedia() {
       const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
       if (!isVoice && !isPhoto) continue
-      if (!m.mediaPath && !m.tgMessageId) continue
+      if (isRemoteMediaPath(m.mediaPath) && !m.tgMessageId) continue
+      if (isRemoteMediaPath(m.mediaPath)) continue
       const kind = isVoice ? 'voice' : 'photo'
-      const opts: GetMediaUrlOpts = { urlBuilder }
-      getUrl(id, kind, opts)
-        .then(() => {
-          if (!m.mediaPath || m.mediaPath === 'remote') {
-            getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
-          }
-        })
-        .catch(() => {
-          getUrl(id, kind, { ...opts, forceNetwork: true }).catch(() => {})
-        })
+      getUrl(id, kind, { urlBuilder, mediaPath: m.mediaPath }).catch(() => {})
     }
   }
 
@@ -394,6 +441,7 @@ export function useChatMedia() {
       if (url.startsWith('blob:')) URL.revokeObjectURL(url)
     }
     cache.clear()
+    cacheMediaPath.clear()
     cacheOrder.length = 0
     inflight.clear()
     localOnly.clear()
