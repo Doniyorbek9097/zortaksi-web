@@ -187,7 +187,7 @@
         <template v-if="out">
           <font-awesome-icon v-if="status === 'sending'" icon="fa-solid fa-clock" class="text-[9px]" />
           <font-awesome-icon
-            v-else-if="status === 'failed'"
+            v-else-if="status === 'failed' && !mediaPath"
             icon="fa-solid fa-exclamation-triangle"
             class="text-[9px] text-amber-200"
             title="Yuborilmadi"
@@ -693,7 +693,12 @@ watch(
   () => props.status,
   async (status, prev) => {
     if (props.type !== 'voice' && props.type !== 'photo') return
-    if (!props.messageId || prev !== 'sending' || status === 'sending') return
+    if (!props.messageId) return
+    if (status === 'failed' && props.mediaPath && !src.value) {
+      await ensureSrc()
+      return
+    }
+    if (prev !== 'sending' || status === 'sending') return
     const cached = peekUrl(props.messageId, props.mediaPath)
     if (cached) {
       applySrc(cached)
