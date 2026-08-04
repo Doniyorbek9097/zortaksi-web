@@ -6,18 +6,20 @@ import {
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
+  filterOrdersByKeywords,
+  ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
 import {
   ORDERS_SCOPE_STORAGE_KEY,
   type OrdersScope,
 } from '~/utils/ordersScope'
 
-const LIMIT = 10
+const LIMIT = ORDERS_PAGE_LIMIT
 
 export type { OrdersScope }
 
 /**
- * Buyurtmalar filtri — kalit so'zlar serverda (search yoki botGroupId).
+ * Buyurtmalar filtri — server (search/botGroupId) + client qo'shimcha filter.
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const showFilter = ref(false)
@@ -51,8 +53,12 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     ...buildFilterParams(),
   })
 
-  /** API natijasi — qayta client filter yo'q */
-  const displayOrders = computed(() => orderStore.orders)
+  /** Server natijasi + client qo'shimcha filter (aniqlik) */
+  const displayOrders = computed(() => {
+    const raw = appliedKeywords.value.trim()
+    if (!raw) return orderStore.orders
+    return filterOrdersByKeywords(orderStore.orders, raw)
+  })
 
   const refreshScopeCounts = () =>
     orderStore.refreshScopeCounts(

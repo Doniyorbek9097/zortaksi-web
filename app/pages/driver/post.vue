@@ -279,6 +279,7 @@ import {
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
+  filterGroupsByKeywords,
 } from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
@@ -336,7 +337,11 @@ const onCancelFilter = () => {
   showFilter.value = false
 }
 
-const filtered = computed(() => store.groups)
+const filtered = computed(() => {
+  const raw = appliedKeywords.value.trim()
+  if (!raw) return store.groups
+  return filterGroupsByKeywords(store.groups, raw)
+})
 
 const emptyTitle = computed(() => {
   if (store.tab === 'mine') {

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords } from '~/utils/orderFilterKeywords'
 
 export interface FetchOrdersParams {
     page?: number
@@ -423,7 +423,8 @@ export const useOrderStore = defineStore('order', () => {
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
-        if (hasActiveListFilter()) return false
+        const kw = loadOrderFilterKeywords().trim()
+        if (hasActiveListFilter() && kw && !orderMatchesRegionFilter(order, kw)) return false
         const incomingKey = orderContentKey(order)
         const list = orders.value
         const isDup = list.some((o) => {
@@ -452,10 +453,14 @@ export const useOrderStore = defineStore('order', () => {
             }
             const response = await useApi('/orders', {
                 method: 'GET',
-                params: { ...params, limit: params.limit ?? 40, page: 1 },
+                params: { ...params, limit: params.limit ?? 5, page: 1 },
             })
             if (!response.success) return response
             let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            const clientKw = loadOrderFilterKeywords().trim()
+            if (clientKw && (params.search || params.botGroupId || listSearch.value || listBotGroupId.value)) {
+                list = filterOrdersByKeywords(list, clientKw)
+            }
             const prevIds = new Set(orders.value.map((o) => String(o._id)))
             if (page.value <= 1) {
                 orders.value = list
@@ -497,6 +502,10 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (response.success) {
                 let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+                const clientKw = loadOrderFilterKeywords().trim()
+                if (clientKw && (params.search || params.botGroupId)) {
+                    list = filterOrdersByKeywords(list, clientKw)
+                }
                 if (opts.append) {
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged

@@ -8,6 +8,8 @@ import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
+  orderMatchesRegionFilter,
+  ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
 import { readOrdersScope } from '~/utils/ordersScope'
 
@@ -33,16 +35,12 @@ export default defineNuxtPlugin(() => {
     const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
     const scope = readOrdersScope(orderStore.listScope)
     return {
-      limit: 40,
+      limit: ORDERS_PAGE_LIMIT,
       scope,
       ...(botGroupId ? { botGroupId } : search ? { search } : {}),
     }
   }
 
-  const hasOrderListFilter = () =>
-    !!loadOrderFilterBotGroupId().trim() || !!loadOrderFilterKeywords().trim()
-
-  /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
   const catchUpOrders = () => {
     if (!currentToken()) return
     void orderStore.syncLatest(orderSearchParams())
@@ -93,6 +91,10 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
+      const kw = loadOrderFilterKeywords().trim()
+      const hasFilter = !!kw || !!loadOrderFilterBotGroupId().trim()
+      if (hasFilter && kw && !orderMatchesRegionFilter(order, kw)) return
+
       if ((order?.status || 'new') === 'new') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
@@ -103,7 +105,7 @@ export default defineNuxtPlugin(() => {
         if (scope === 'mine' && !mine) return
         if (scope === 'others' && mine) return
       }
-      if (hasOrderListFilter()) {
+      if (hasFilter && !kw) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
@@ -111,12 +113,13 @@ export default defineNuxtPlugin(() => {
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
-      if (hasOrderListFilter()) {
+      const kw = loadOrderFilterKeywords().trim()
+      const hasFilter = !!kw || !!loadOrderFilterBotGroupId().trim()
+      if (hasFilter && kw && !orderMatchesRegionFilter(order, kw)) {
         const inList = orderStore.orders.some(
           (o) => o._id && order?._id && String(o._id) === String(order._id),
         )
-        if (inList) orderStore.applyOrderUpdate(order)
-        else orderStore.scheduleSyncLatest(orderSearchParams())
+        if (inList) orderStore.removeOrderById(String(order._id))
         return
       }
       orderStore.applyOrderUpdate(order)

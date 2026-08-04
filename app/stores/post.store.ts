@@ -22,7 +22,8 @@ export interface PostGroup {
 
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
-export const GROUPS_PAGE_SIZE = 10
+/** Guruhlar ro'yxati — bir sahifada */
+export const GROUPS_PAGE_SIZE = 5
 
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()

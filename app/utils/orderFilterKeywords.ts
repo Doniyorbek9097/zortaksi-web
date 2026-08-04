@@ -2,6 +2,8 @@
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
+/** Buyurtmalar ro'yxati — bir sahifada */
+export const ORDERS_PAGE_LIMIT = 5
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
   [/ё/g, 'yo'], [/ж/g, 'j'], [/ц/g, 'ts'], [/ч/g, 'ch'],
@@ -129,8 +131,17 @@ export function clearOrderFilterBotGroupId(): void {
   saveOrderFilterBotGroupId('')
 }
 
-/** Mavjud filtrga yangi kalit so'zlarni qo'shish (takrorlanmas) */
-export function mergeFilterKeywords(current: string, add: string[]): string {
+/** Guruh katalogi — client qo'shimcha filter */
+export function filterGroupsByKeywords<T extends { title?: string; username?: string }>(
+  groups: T[],
+  raw: string,
+): T[] {
+  const kws = parseKeywords(raw)
+  if (!kws.length) return groups
+  return groups.filter((g) =>
+    matchesKeywords([g.title, g.username], raw),
+  )
+}
   const existing = parseKeywords(current)
   const seen = new Set(existing.map((k) => k.toLowerCase()))
   for (const raw of add) {
