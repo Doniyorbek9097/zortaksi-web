@@ -117,8 +117,9 @@ export type BotGroupFilterPreset = {
 }
 
 const keywords = defineModel<string>({ default: '' })
+const botGroupId = defineModel<string | null>('botGroupId', { default: null })
 
-const emit = defineEmits<{ save: [value: string]; cancel: [] }>()
+const emit = defineEmits<{ save: []; cancel: [] }>()
 
 const open = ref(true)
 const presets = ref<BotGroupFilterPreset[]>([])
@@ -157,10 +158,12 @@ const onPresetClick = (preset: BotGroupFilterPreset) => {
   if (!preset.keywords?.length) return
   keywords.value = keywordsFromPreset(preset)
   selectedPresetId.value = preset.id
+  botGroupId.value = preset.id
 }
 
 watch(keywords, () => {
   if (presets.value.length) syncSelectedPresetFromKeywords()
+  botGroupId.value = selectedPresetId.value
 })
 
 const onCancel = () => {
@@ -170,7 +173,7 @@ const onCancel = () => {
 
 const onSave = () => {
   open.value = false
-  emit('save', keywords.value)
+  emit('save')
 }
 
 useHistoryBackClose(
@@ -184,7 +187,11 @@ useHistoryBackClose(
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'
-  void loadPresets()
+  void loadPresets().then(() => {
+    if (botGroupId.value) {
+      selectedPresetId.value = botGroupId.value
+    }
+  })
 })
 
 onBeforeUnmount(() => {

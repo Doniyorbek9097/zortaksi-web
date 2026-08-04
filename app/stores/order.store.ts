@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, orderMatchesRegionFilter } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId } from '~/utils/orderFilterKeywords'
 
 export interface FetchOrdersParams {
     page?: number
@@ -9,9 +9,10 @@ export interface FetchOrdersParams {
     status?: string
     ownerId?: string
     search?: string
+    botGroupId?: string
     text?: string
-    /** mine = a'zo guruhlar; others = a'zo bo'lmagan; all = ikkalasi */
     scope?: 'all' | 'mine' | 'others'
+    sinceHours?: number
 }
 
 export const useOrderStore = defineStore('order', () => {
@@ -30,6 +31,8 @@ export const useOrderStore = defineStore('order', () => {
     const ordersListScrollY = ref(0)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
+    /** Yo'nalish — bot guruh ID (kalit so'zlar serverda) */
+    const listBotGroupId = ref('')
     /** Oxirgi fetchOrders scope */
     const listScope = ref<'all' | 'mine' | 'others'>('all')
     /** A'zo guruh IDlari — socket order:new filtri */
@@ -65,10 +68,24 @@ export const useOrderStore = defineStore('order', () => {
     }
 
     const rememberListFilter = (params: FetchOrdersParams) => {
-        listSearch.value = String(params.search || '').trim()
+        listBotGroupId.value = String(params.botGroupId || '').trim()
+        listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
         if (params.scope === 'all' || params.scope === 'mine' || params.scope === 'others') {
             listScope.value = params.scope
         }
+    }
+
+    const hasActiveListFilter = () =>
+        !!listBotGroupId.value.trim() || !!listSearch.value.trim()
+
+    let syncLatestTimer: ReturnType<typeof setTimeout> | null = null
+    const scheduleSyncLatest = (params: FetchOrdersParams = {}) => {
+        if (!import.meta.client) return
+        if (syncLatestTimer) clearTimeout(syncLatestTimer)
+        syncLatestTimer = setTimeout(() => {
+            syncLatestTimer = null
+            void syncLatest(params)
+        }, 1200)
     }
 
     const applyListFilter = (params: FetchOrdersParams) => {
@@ -269,11 +286,17 @@ export const useOrderStore = defineStore('order', () => {
         () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
     )
 
-    const refreshScopeCounts = async (search?: string) => {
-        const s =
-            search !== undefined
-                ? String(search || '').trim() || undefined
-                : loadOrderFilterKeywords().trim() || undefined
+    const refreshScopeCounts = async (search?: string, botGroupId?: string) => {
+        const gid =
+            botGroupId !== undefined
+                ? String(botGroupId || '').trim() || undefined
+                : listBotGroupId.value.trim() || undefined
+        const s = gid
+            ? undefined
+            : search !== undefined
+              ? String(search || '').trim() || undefined
+              : listSearch.value.trim() || undefined
+        const filterParams = gid ? { botGroupId: gid } : s ? { search: s } : {}
         try {
             const [mineRes, othersRes] = await Promise.all([
                 useApi('/orders', {
@@ -283,7 +306,7 @@ export const useOrderStore = defineStore('order', () => {
                         page: 1,
                         limit: 1,
                         scope: 'mine',
-                        search: s,
+                        ...filterParams,
                         sinceHours: 1,
                     },
                 }),
@@ -294,7 +317,7 @@ export const useOrderStore = defineStore('order', () => {
                         page: 1,
                         limit: 1,
                         scope: 'others',
-                        search: s,
+                        ...filterParams,
                         sinceHours: 1,
                     },
                 }),
@@ -348,7 +371,9 @@ export const useOrderStore = defineStore('order', () => {
                     page: 1,
                     limit: 1,
                     scope: listScope.value,
-                    search: listSearch.value || undefined,
+                    ...(listBotGroupId.value
+                        ? { botGroupId: listBotGroupId.value }
+                        : { search: listSearch.value || undefined }),
                 },
             })
             if (response.success) {
@@ -398,8 +423,7 @@ export const useOrderStore = defineStore('order', () => {
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
-        const search = listSearch.value.trim()
-        if (search && !orderMatchesRegionFilter(order, search)) return false
+        if (hasActiveListFilter()) return false
         const incomingKey = orderContentKey(order)
         const list = orders.value
         const isDup = list.some((o) => {
@@ -448,7 +472,7 @@ export const useOrderStore = defineStore('order', () => {
             noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
-            void refreshScopeCounts(params.search)
+            void refreshScopeCounts(params.search, params.botGroupId)
             return response
         } catch (error) {
             console.warn('syncLatest error:', error)
@@ -653,8 +677,11 @@ export const useOrderStore = defineStore('order', () => {
         ordersTabBadge,
         ordersListScrollY,
         listSearch,
+        listBotGroupId,
         listScope,
         applyListFilter,
+        hasActiveListFilter,
+        scheduleSyncLatest,
         memberGroupIds,
         isMemberGroup,
         refreshMemberGroupIds,

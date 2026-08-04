@@ -37,6 +37,7 @@
     <OrdersFilterPanel
       v-if="showFilter"
       v-model="draftKeywords"
+      v-model:bot-group-id="draftBotGroupId"
       @save="onSaveFilter"
       @cancel="onCancelFilter"
     />
@@ -274,7 +275,10 @@ import { usePostStore, type PostGroup, ADS_BROADCAST_PRICE } from '~/stores/post
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
+  loadOrderFilterBotGroupId,
   saveOrderFilterKeywords,
+  saveOrderFilterBotGroupId,
+  clearOrderFilterBotGroupId,
 } from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
@@ -288,8 +292,12 @@ const success = ref('')
 const groupQuery = ref('')
 const showFilter = ref(false)
 const draftKeywords = ref('')
+const draftBotGroupId = ref<string | null>(null)
 const appliedKeywords = ref('')
-const filterActive = computed(() => !!appliedKeywords.value.trim())
+const appliedBotGroupId = ref('')
+const filterActive = computed(
+  () => !!appliedBotGroupId.value.trim() || !!appliedKeywords.value.trim(),
+)
 const showJoinDialog = ref(false)
 const showLeaveDialog = ref(false)
 const membershipTarget = ref<PostGroup | null>(null)
@@ -309,16 +317,22 @@ const leaveMessage = computed(() => (
   `Baribir tark etasizmi?`
 ))
 
-const onSaveFilter = async (value: string) => {
-  draftKeywords.value = value
-  appliedKeywords.value = value
-  saveOrderFilterKeywords(value)
+const onSaveFilter = async () => {
+  appliedKeywords.value = draftKeywords.value
+  appliedBotGroupId.value = String(draftBotGroupId.value || '').trim()
+  saveOrderFilterKeywords(draftKeywords.value)
+  if (appliedBotGroupId.value) {
+    saveOrderFilterBotGroupId(appliedBotGroupId.value)
+  } else {
+    clearOrderFilterBotGroupId()
+  }
   showFilter.value = false
-  await store.setSearch(value)
+  await store.setSearch(draftKeywords.value, appliedBotGroupId.value)
 }
 
 const onCancelFilter = () => {
   draftKeywords.value = appliedKeywords.value
+  draftBotGroupId.value = appliedBotGroupId.value || null
   showFilter.value = false
 }
 
@@ -424,9 +438,13 @@ let observer: IntersectionObserver | null = null
 
 onMounted(async () => {
   const saved = loadOrderFilterKeywords()
+  const savedGroup = loadOrderFilterBotGroupId()
   draftKeywords.value = saved
   appliedKeywords.value = saved
-  store.search = saved.trim()
+  draftBotGroupId.value = savedGroup || null
+  appliedBotGroupId.value = savedGroup
+  store.search = savedGroup ? '' : saved.trim()
+  store.botGroupId = savedGroup
 
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }

@@ -1,6 +1,7 @@
 /** Buyurtmalar / E'lon — umumiy kalit so'z filtri (localStorage) */
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
+export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
   [/ё/g, 'yo'], [/ж/g, 'j'], [/ц/g, 'ts'], [/ч/g, 'ch'],
@@ -104,6 +105,28 @@ export function saveOrderFilterKeywords(raw: string): void {
   try {
     localStorage.setItem(ORDER_FILTER_STORAGE_KEY, raw)
   } catch { /* private mode */ }
+}
+
+export function loadOrderFilterBotGroupId(): string {
+  if (!import.meta.client) return ''
+  try {
+    return localStorage.getItem(ORDER_FILTER_BOT_GROUP_KEY) || ''
+  } catch {
+    return ''
+  }
+}
+
+export function saveOrderFilterBotGroupId(id: string): void {
+  if (!import.meta.client) return
+  try {
+    const clean = String(id || '').trim()
+    if (clean) localStorage.setItem(ORDER_FILTER_BOT_GROUP_KEY, clean)
+    else localStorage.removeItem(ORDER_FILTER_BOT_GROUP_KEY)
+  } catch { /* private mode */ }
+}
+
+export function clearOrderFilterBotGroupId(): void {
+  saveOrderFilterBotGroupId('')
 }
 
 /** Mavjud filtrga yangi kalit so'zlarni qo'shish (takrorlanmas) */

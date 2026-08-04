@@ -14,7 +14,7 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
-import { loadOrderFilterKeywords } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId } from '~/utils/orderFilterKeywords'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
@@ -24,7 +24,10 @@ const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
   if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 20 })
   await orderStore.refreshMemberGroupIds()
-  void orderStore.refreshScopeCounts(loadOrderFilterKeywords().trim() || undefined)
+  void orderStore.refreshScopeCounts(
+    loadOrderFilterBotGroupId() ? undefined : loadOrderFilterKeywords().trim() || undefined,
+    loadOrderFilterBotGroupId().trim() || undefined,
+  )
 }
 
 onMounted(() => {

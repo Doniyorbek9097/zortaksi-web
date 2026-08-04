@@ -44,8 +44,9 @@ export const usePostStore = defineStore('post', () => {
   const adsTotal = ref(0)
   const mineHasMore = ref(false)
   const adsHasMore = ref(false)
-  /** Hudud kalit so'zlari — server `search` */
+  /** Hudud kalit so'zlari — server `search` yoki `botGroupId` */
   const search = ref('')
+  const botGroupId = ref('')
   /** Guruh nomi / username qidiruvi — server `q` */
   const query = ref('')
 
@@ -74,10 +75,11 @@ export const usePostStore = defineStore('post', () => {
   })
 
   const searchParams = () => {
+    const gid = botGroupId.value.trim()
     const s = search.value.trim()
     const q = query.value.trim()
     return {
-      ...(s ? { search: s } : {}),
+      ...(gid ? { botGroupId: gid } : s ? { search: s } : {}),
       ...(q ? { q } : {}),
     }
   }
@@ -173,8 +175,9 @@ export const usePostStore = defineStore('post', () => {
   }
 
   /** Hudud filtri o'zgarganda — serverdan qayta */
-  const setSearch = async (value: string) => {
+  const setSearch = async (value: string, groupId = '') => {
     search.value = String(value || '').trim()
+    botGroupId.value = String(groupId || '').trim()
     await load(false)
   }
 

@@ -7,7 +7,7 @@ import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   loadOrderFilterKeywords,
-  orderMatchesRegionFilter,
+  loadOrderFilterBotGroupId,
 } from '~/utils/orderFilterKeywords'
 import { readOrdersScope } from '~/utils/ordersScope'
 
@@ -29,10 +29,18 @@ export default defineNuxtPlugin(() => {
   const currentToken = () => resolveAuthToken(cookie.value)
 
   const orderSearchParams = () => {
-    const search = loadOrderFilterKeywords().trim() || undefined
+    const botGroupId = loadOrderFilterBotGroupId().trim() || undefined
+    const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
     const scope = readOrdersScope(orderStore.listScope)
-    return { limit: 40, search, scope }
+    return {
+      limit: 40,
+      scope,
+      ...(botGroupId ? { botGroupId } : search ? { search } : {}),
+    }
   }
+
+  const hasOrderListFilter = () =>
+    !!loadOrderFilterBotGroupId().trim() || !!loadOrderFilterKeywords().trim()
 
   /** Socket uzilganda yoki tab qaytganda Mongo'dan catch-up */
   const catchUpOrders = () => {
@@ -55,7 +63,6 @@ export default defineNuxtPlugin(() => {
   const connect = () => {
     const t = currentToken()
     if (!t) return
-    // Account switch: eski socketni yopib qayta ulash
     if (socket) {
       socket.disconnect()
       socket = null
@@ -86,28 +93,30 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
-      // Faol filtr bo'lsa — live order ham kalit so'zga mos kelmasa qo'shilmasin
-      const kw = loadOrderFilterKeywords().trim()
-      if (kw && !orderMatchesRegionFilter(order, kw)) {
-        return
-      }
       if ((order?.status || 'new') === 'new') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
       }
-      // Meniki / Boshqalar — a'zolik (Barchasi: hammasi)
       const scope = readOrdersScope(orderStore.listScope)
       if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
         if (scope === 'mine' && !mine) return
         if (scope === 'others' && mine) return
       }
+      if (hasOrderListFilter()) {
+        orderStore.scheduleSyncLatest(orderSearchParams())
+        return
+      }
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
-      const kw = loadOrderFilterKeywords().trim()
-      if (kw && !orderMatchesRegionFilter(order, kw)) {
+      if (hasOrderListFilter()) {
+        const inList = orderStore.orders.some(
+          (o) => o._id && order?._id && String(o._id) === String(order._id),
+        )
+        if (inList) orderStore.applyOrderUpdate(order)
+        else orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
       orderStore.applyOrderUpdate(order)

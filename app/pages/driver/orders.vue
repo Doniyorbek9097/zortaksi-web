@@ -103,6 +103,7 @@
     <OrdersFilterPanel
       v-if="showFilter"
       v-model="draftKeywords"
+      v-model:bot-group-id="draftBotGroupId"
       @save="onSaveFilter"
       @cancel="onCancelFilter"
     />
@@ -241,6 +242,7 @@ const {
   isAdmin,
   showFilter,
   draftKeywords,
+  draftBotGroupId,
   appliedKeywords,
   filterActive,
   scope,

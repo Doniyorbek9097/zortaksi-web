@@ -77,11 +77,13 @@ export function useOrdersListSync(options: {
 
     const q = queryParams()
     const wantSearch = String(q.search || '').trim()
+    const wantBotGroup = String((q as { botGroupId?: string }).botGroupId || '').trim()
     const wantScope =
       q.scope === 'others' ? 'others' : q.scope === 'mine' ? 'mine' : 'all'
     const hasCachedList = orderStore.orders.length > 0
     const sameServerFilter =
       String(orderStore.listSearch || '') === wantSearch &&
+      String(orderStore.listBotGroupId || '') === wantBotGroup &&
       String(orderStore.listScope || 'all') === wantScope
 
     if (hasCachedList && sameServerFilter) {

@@ -83,7 +83,9 @@ export function useDriverOrdersPage() {
     // Filter
     showFilter: filter.showFilter,
     draftKeywords: filter.draftKeywords,
+    draftBotGroupId: filter.draftBotGroupId,
     appliedKeywords: filter.appliedKeywords,
+    appliedBotGroupId: filter.appliedBotGroupId,
     filterActive: filter.filterActive,
     scope: filter.scope,
     scopeLoading: filter.scopeLoading,
