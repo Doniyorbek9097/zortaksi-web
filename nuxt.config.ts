@@ -1,5 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 const isProd = process.env.NODE_ENV === 'production'
+const apiProxyTarget =
+  process.env.NUXT_API_PROXY_TARGET ||
+  (isProd
+    ? 'https://api.zortaksi.uz'
+    : process.env.NUXT_DEV_API_BACKEND || 'http://127.0.0.1:5000')
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
@@ -21,6 +26,10 @@ export default defineNuxtConfig({
     preset: process.env.VERCEL || process.env.NITRO_PRESET === 'vercel' ? 'vercel' : undefined,
   },
   routeRules: {
+    /** Production + dev: brauzer same-origin /api/v1 → backend (Telegram WebView CORS muammosiz) */
+    '/api/v1/**': {
+      proxy: `${apiProxyTarget}/api/v1/**`,
+    },
     '/': {
       ssr: true,
       headers: {
@@ -58,16 +67,6 @@ export default defineNuxtConfig({
       headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
     },
   },
-
-  /** Lokal dev: /api/v1 → backend :5000 (CORS muammosiz) */
-  $development: {
-    routeRules: {
-      '/api/v1/**': {
-        proxy: `${process.env.NUXT_DEV_API_BACKEND || 'http://127.0.0.1:5000'}/api/v1/**`,
-      },
-    },
-  },
-
 
   app: {
     head: {
@@ -154,10 +153,9 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      // Nuxt env: NUXT_PUBLIC_BASE_URL → public.baseUrl (baseURL emas!)
-      // Debug: lokal :5000 media disk/session Render bilan conflict — production API
+      // Same-origin proxy (/api/v1) — Telegram WebView CORS muammosiz; SSR to'g'ridan backend
       baseUrl:
-        process.env.NUXT_PUBLIC_BASE_URL || 'https://api.zortaksi.uz/api/v1',
+        process.env.NUXT_PUBLIC_BASE_URL || '/api/v1',
       socketUrl:
         process.env.NUXT_PUBLIC_SOCKET_URL || 'https://api.zortaksi.uz',
       appUrl: process.env.NUXT_PUBLIC_APP_URL || 'http://localhost:3000',

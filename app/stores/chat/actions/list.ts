@@ -201,7 +201,7 @@ export function createListActions(
     const startChatFromOrder = async (orderId: string) => {
         const res = await useApi(`/chats/from-order/${orderId}`, {
             method: 'POST',
-            timeout: 90_000,
+            timeout: 15_000,
         })
         return res
     }

@@ -128,9 +128,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
                 }
                 return
             }
-            if (isProtectedPath(to.path) && !authStore.user) {
+            // Tarmoq/CORS xatosi — SessionGate qotib qolmasin
+            if (!authStore.user) {
                 markReady()
-                return navigateTo('/auth')
+                if (isProtectedPath(to.path)) {
+                    return navigateTo('/auth')
+                }
+                return
             }
         }
     }

@@ -211,6 +211,7 @@ import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks } from '~/utils/orderChatQuery'
 import { isAdminUser } from '~/utils/userRole'
+import { isChatLikelyReady } from '~/stores/chat/actions/connection'
 
 definePageMeta({
   layout: false,
@@ -400,11 +401,10 @@ const syncViewport = () => {
 const conn = computed(() => chatStore.connectionStatus)
 const connReason = computed(() => chatStore.connectionReason)
 
-/** Oldin muvaffaqiyatli bog'langan — "ulanmoqda" ko'rsatilmasin, yozish ochiq */
-const wasLinkedBefore = computed(() => {
-  const peer = chatStore.currentChat?.peer
-  return !!(peer?.viaUserbotId || peer?.accessHash)
-})
+/** Oldin muvaffaqiyatli bog'langan — viaUserbotId + accessHash ikkalasi kerak */
+const wasLinkedBefore = computed(() =>
+  isChatLikelyReady(chatStore.currentChat),
+)
 
 const canSendTelegram = computed(
   () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
@@ -657,6 +657,7 @@ const bootstrapOpenChat = async (seq: number) => {
       const chat = res.data as import('~/types').IChat
       chatStore.primeFromChat(chat)
       chatStore.currentChat = chat
+      chatStore.isLoadingMessages = false
       const idx = chatStore.chats.findIndex((c) => c._id === chat._id)
       if (idx >= 0) {
         chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }

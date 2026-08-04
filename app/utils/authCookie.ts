@@ -4,12 +4,19 @@ export function getAuthCookieOptions() {
     ? window.location.protocol === 'https:'
     : process.env.NODE_ENV === 'production'
 
+  const hostname = import.meta.client ? window.location.hostname : ''
+  const onZortaksi =
+    hostname === 'zortaksi.uz' ||
+    hostname === 'www.zortaksi.uz' ||
+    hostname.endsWith('.zortaksi.uz')
+
   return {
     maxAge: 30 * 24 * 60 * 60,
     path: '/',
     watch: true as const,
     sameSite: 'lax' as const,
     secure: isHttps,
+    ...(onZortaksi ? { domain: '.zortaksi.uz' as const } : {}),
   }
 }
 
