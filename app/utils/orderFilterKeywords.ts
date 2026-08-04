@@ -1,7 +1,5 @@
 /** Buyurtmalar / E'lon — umumiy kalit so'z filtri (localStorage) */
 
-import { distance } from 'fastest-levenshtein'
-
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
@@ -46,47 +44,13 @@ export function compactMatchText(input: string): string {
   return normalizeMatchText(input).replace(/[\s_'\-]+/g, '')
 }
 
-function maxLevenshteinDistance(len: number): number {
-  if (len <= 3) return 1
-  if (len <= 6) return 2
-  return Math.min(4, Math.ceil(len / 3))
-}
-
-function tokenizeForFuzzy(text: string): string[] {
-  return String(text || '')
-    .split(/[\s,;|/\\.+!?()[\]{}#@\-]+/)
-    .map((t) => compactMatchText(t))
-    .filter((t) => t.length >= 2)
-}
-
-function matchesShortKeyword(hay: string, kw: string): boolean {
-  const maxDist = maxLevenshteinDistance(kw.length)
-  for (const token of tokenizeForFuzzy(hay)) {
-    if (token === kw || token.startsWith(kw)) return true
-    if (Math.abs(token.length - kw.length) > maxDist) continue
-    if (distance(kw, token) <= maxDist) return true
-  }
-  return false
-}
-
-/** Kalit so'z matnda — lotin/kirill, ajratgich va typo (Levenshtein) */
+/** Kalit so'z matnda — lotin/kirill, o'/g' va ajratgichlar normalizatsiyasi */
 export function keywordMatchesText(haystack: string, keyword: string): boolean {
   const kw = compactMatchText(keyword)
   if (!kw || kw.length < 2) return false
   const hay = String(haystack || '')
   if (!hay.trim()) return false
-
-  const compactHay = compactMatchText(hay)
-  if (compactHay.includes(kw)) return true
-
-  if (kw.length <= 3) return matchesShortKeyword(hay, kw)
-
-  const maxDist = maxLevenshteinDistance(kw.length)
-  for (const token of tokenizeForFuzzy(hay)) {
-    if (Math.abs(token.length - kw.length) > maxDist) continue
-    if (distance(kw, token) <= maxDist) return true
-  }
-  return false
+  return compactMatchText(hay).includes(kw)
 }
 
 /** Maydonlar ichidan kamida bitta kalit so'z topilsa true */
