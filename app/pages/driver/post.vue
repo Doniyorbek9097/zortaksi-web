@@ -34,11 +34,6 @@
       </div>
     </header>
 
-    <OrdersRegionChips
-      :keywords="appliedKeywords"
-      @remove="onRemoveRegion"
-    />
-
     <OrdersFilterPanel
       v-if="showFilter"
       v-model="draftKeywords"
@@ -279,7 +274,6 @@ import { usePostStore, type PostGroup, ADS_BROADCAST_PRICE } from '~/stores/post
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
-  parseKeywords,
   saveOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
 
@@ -326,13 +320,6 @@ const onSaveFilter = async (value: string) => {
 const onCancelFilter = () => {
   draftKeywords.value = appliedKeywords.value
   showFilter.value = false
-}
-
-const onRemoveRegion = (chip: string) => {
-  const next = parseKeywords(appliedKeywords.value)
-    .filter((k) => k !== chip)
-    .join(', ')
-  void onSaveFilter(next)
 }
 
 const filtered = computed(() => store.groups)

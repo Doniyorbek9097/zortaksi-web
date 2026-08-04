@@ -45,14 +45,14 @@
 
             <div v-else-if="presets.length" class="space-y-2">
               <p class="px-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                Bot guruhlari — bosilsa kalit so'zlar qo'shiladi
+                Yo'nalish tanlang
               </p>
               <ul class="flex flex-wrap gap-2">
                 <li v-for="preset in presets" :key="preset.id">
                   <button
                     type="button"
                     class="inline-flex items-center gap-1.5 max-w-full px-3 py-2 rounded-xl border text-left text-[12px] font-bold transition-all active:scale-[0.98]"
-                    :class="selectedPresetIds.has(preset.id)
+                    :class="selectedPresetId === preset.id
                       ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                       : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-600'"
                     @click="onPresetClick(preset)"
@@ -96,8 +96,6 @@
 </template>
 
 <script setup lang="ts">
-import { mergeFilterKeywords } from '~/utils/orderFilterKeywords'
-
 export type BotGroupFilterPreset = {
   id: string
   username: string
@@ -112,7 +110,7 @@ const emit = defineEmits<{ save: [value: string]; cancel: [] }>()
 const open = ref(true)
 const presets = ref<BotGroupFilterPreset[]>([])
 const presetsLoading = ref(false)
-const selectedPresetIds = ref<Set<string>>(new Set())
+const selectedPresetId = ref<string | null>(null)
 
 const loadPresets = async () => {
   presetsLoading.value = true
@@ -120,6 +118,7 @@ const loadPresets = async () => {
     const res = await useApi('/bot-groups/filter-presets')
     if (res.success) {
       presets.value = (res.data?.presets ?? []) as BotGroupFilterPreset[]
+      syncSelectedPresetFromKeywords()
     }
   } catch (err) {
     console.error('Filter presets load error:', err)
@@ -128,13 +127,28 @@ const loadPresets = async () => {
   }
 }
 
+const keywordsFromPreset = (preset: BotGroupFilterPreset) =>
+  (preset.keywords || []).map((k) => String(k).trim()).filter(Boolean).join(', ')
+
+const syncSelectedPresetFromKeywords = () => {
+  const current = String(keywords.value || '').trim()
+  if (!current) {
+    selectedPresetId.value = null
+    return
+  }
+  const match = presets.value.find((p) => keywordsFromPreset(p) === current)
+  selectedPresetId.value = match?.id ?? null
+}
+
 const onPresetClick = (preset: BotGroupFilterPreset) => {
   if (!preset.keywords?.length) return
-  keywords.value = mergeFilterKeywords(keywords.value, preset.keywords)
-  const next = new Set(selectedPresetIds.value)
-  next.add(preset.id)
-  selectedPresetIds.value = next
+  keywords.value = keywordsFromPreset(preset)
+  selectedPresetId.value = preset.id
 }
+
+watch(keywords, () => {
+  if (presets.value.length) syncSelectedPresetFromKeywords()
+})
 
 const onCancel = () => {
   open.value = false

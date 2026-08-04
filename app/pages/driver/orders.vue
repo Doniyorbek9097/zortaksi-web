@@ -7,12 +7,6 @@
       @toggle="showFilter = !showFilter"
     />
 
-    <!-- Tanlangan hududlar -->
-    <OrdersRegionChips
-      :keywords="appliedKeywords"
-      @remove="onRemoveRegion"
-    />
-
     <!-- Tabs: Barchasi / Meniki / Boshqalar -->
     <div class="grid grid-cols-3 gap-1.5">
       <button
@@ -257,7 +251,6 @@ const {
   displayOrders,
   onSaveFilter,
   onCancelFilter,
-  onRemoveRegion,
   sentinel,
   listRoot,
   showBookDialog,
