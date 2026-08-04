@@ -91,9 +91,25 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
+      const botGroupId = loadOrderFilterBotGroupId().trim()
       const kw = loadOrderFilterKeywords().trim()
-      const hasFilter = !!kw || !!loadOrderFilterBotGroupId().trim()
-      if (hasFilter && kw && !orderMatchesRegionFilter(order, kw)) return
+
+      if (botGroupId) {
+        if ((order?.status || 'new') === 'new') {
+          const mine = orderStore.isMemberGroup(order?.group?.groupId)
+          orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
+        }
+        const scope = readOrdersScope(orderStore.listScope)
+        if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
+          const mine = orderStore.isMemberGroup(order?.group?.groupId)
+          if (scope === 'mine' && !mine) return
+          if (scope === 'others' && mine) return
+        }
+        orderStore.scheduleSyncLatest(orderSearchParams())
+        return
+      }
+
+      if (kw && !orderMatchesRegionFilter(order, kw)) return
 
       if ((order?.status || 'new') === 'new') {
         const mine = orderStore.isMemberGroup(order?.group?.groupId)
@@ -105,17 +121,17 @@ export default defineNuxtPlugin(() => {
         if (scope === 'mine' && !mine) return
         if (scope === 'others' && mine) return
       }
-      if (hasFilter && !kw) {
-        orderStore.scheduleSyncLatest(orderSearchParams())
-        return
-      }
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
+      const botGroupId = loadOrderFilterBotGroupId().trim()
       const kw = loadOrderFilterKeywords().trim()
-      const hasFilter = !!kw || !!loadOrderFilterBotGroupId().trim()
-      if (hasFilter && kw && !orderMatchesRegionFilter(order, kw)) {
+      if (botGroupId) {
+        orderStore.scheduleSyncLatest(orderSearchParams())
+        return
+      }
+      if (kw && !orderMatchesRegionFilter(order, kw)) {
         const inList = orderStore.orders.some(
           (o) => o._id && order?._id && String(o._id) === String(order._id),
         )

@@ -423,8 +423,12 @@ export const useOrderStore = defineStore('order', () => {
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
-        const kw = loadOrderFilterKeywords().trim()
-        if (hasActiveListFilter() && kw && !orderMatchesRegionFilter(order, kw)) return false
+        if (listBotGroupId.value.trim()) {
+            // Bot guruh — server kalit so'zlari to'liq; client qo'shimcha kesmaydi
+        } else {
+            const kw = loadOrderFilterKeywords().trim()
+            if (hasActiveListFilter() && kw && !orderMatchesRegionFilter(order, kw)) return false
+        }
         const incomingKey = orderContentKey(order)
         const list = orders.value
         const isDup = list.some((o) => {
@@ -458,8 +462,9 @@ export const useOrderStore = defineStore('order', () => {
             if (!response.success) return response
             let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
             const hasServerFilter = Boolean(params.search || params.botGroupId)
-            const clientKw = hasServerFilter ? loadOrderFilterKeywords().trim() : ''
-            if (clientKw && hasServerFilter) {
+            const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
+            const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
+            if (clientKw) {
                 list = filterOrdersByKeywords(list, clientKw)
             }
             const prevIds = new Set(orders.value.map((o) => String(o._id)))
@@ -504,8 +509,9 @@ export const useOrderStore = defineStore('order', () => {
             if (response.success) {
                 let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
                 const hasServerFilter = Boolean(params.search || params.botGroupId)
-                const clientKw = hasServerFilter ? loadOrderFilterKeywords().trim() : ''
-                if (clientKw && hasServerFilter) {
+                const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
+                const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
+                if (clientKw) {
                     list = filterOrdersByKeywords(list, clientKw)
                 }
                 if (opts.append) {

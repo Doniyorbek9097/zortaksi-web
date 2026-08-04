@@ -89,6 +89,7 @@ export function useDriverOrdersPage() {
     filterActive: filter.filterActive,
     scope: filter.scope,
     scopeLoading: filter.scopeLoading,
+    filterLoading: filter.filterLoading,
     scopeNewCounts: filter.scopeNewCounts,
     allNewCount: filter.allNewCount,
     setScope: filter.setScope,

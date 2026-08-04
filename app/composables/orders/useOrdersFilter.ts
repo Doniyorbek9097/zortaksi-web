@@ -30,6 +30,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const appliedBotGroupId = ref('')
   const scope = ref<OrdersScope>('all')
   const scopeLoading = ref(false)
+  const filterLoading = ref(false)
   const scopeNewCounts = computed(() => orderStore.scopeNewCounts)
   const allNewCount = computed(
     () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
@@ -54,8 +55,9 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     ...buildFilterParams(),
   })
 
-  /** Server natijasi + client qo'shimcha filter (aniqlik) */
+  /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi (DB kalit so'zlari to'liq) */
   const displayOrders = computed(() => {
+    if (appliedBotGroupId.value.trim()) return orderStore.orders
     const raw = appliedKeywords.value.trim()
     if (!raw) return orderStore.orders
     return filterOrdersByKeywords(orderStore.orders, raw)
@@ -76,9 +78,15 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   const loadMore = () => orderStore.loadMore(queryParams())
 
-  const onSaveFilter = () => {
+  const beginFilterReload = () => {
+    orderStore.ordersListScrollY = 0
+    orderStore.orders = []
+    orderStore.applyListFilter({ page: 1, ...queryParams() })
+  }
+
+  const onSaveFilter = async () => {
     const kw = draftKeywords.value.trim()
-    const gid = kw ? draftBotGroupId.value.trim() : ''
+    const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
 
     appliedKeywords.value = kw
     appliedBotGroupId.value = gid
@@ -91,14 +99,14 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     if (gid) saveOrderFilterBotGroupId(gid)
     else clearOrderFilterBotGroupId()
 
-    orderStore.applyListFilter({
-      page: 1,
-      limit: LIMIT,
-      scope: scope.value,
-    })
-
     showFilter.value = false
-    void load()
+    beginFilterReload()
+    filterLoading.value = true
+    try {
+      await load()
+    } finally {
+      filterLoading.value = false
+    }
   }
 
   const onCancelFilter = () => {
@@ -107,7 +115,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     showFilter.value = false
   }
 
-  const onRemoveRegion = (chip: string) => {
+  const onRemoveRegion = async (chip: string) => {
     clearOrderFilterBotGroupId()
     appliedBotGroupId.value = ''
     draftBotGroupId.value = ''
@@ -117,7 +125,13 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftKeywords.value = next
     appliedKeywords.value = next
     saveOrderFilterKeywords(next)
-    void load()
+    beginFilterReload()
+    filterLoading.value = true
+    try {
+      await load()
+    } finally {
+      filterLoading.value = false
+    }
   }
 
   const setScope = async (next: OrdersScope) => {
@@ -169,6 +183,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedBotGroupId,
     scope,
     scopeLoading,
+    filterLoading,
     scopeNewCounts,
     allNewCount,
     filterActive,

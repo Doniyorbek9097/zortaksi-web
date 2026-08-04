@@ -45,7 +45,8 @@ export function useHistoryBackClose(
       if (!import.meta.client) return
       if (val) {
         if (!pushed) {
-          history.pushState({ [key]: true, t: Date.now() }, '')
+          const url = window.location.pathname + window.location.search + window.location.hash
+          history.pushState({ [key]: true, t: Date.now() }, '', url)
           pushed = true
           window.dispatchEvent(new Event('zt-history-layer'))
         }
@@ -71,13 +72,8 @@ export function useHistoryBackClose(
 
   onBeforeUnmount(() => {
     window.removeEventListener('popstate', onPopState)
-    if (pushed && toValue(open) && !closingViaPop) {
-      pushed = false
-      const st = history.state as Record<string, unknown> | null
-      if (st && st[key]) {
-        history.back()
-      }
-    }
+    // Route o'zgaganda history.back() — router bilan race, URL ga "undefined" qo'shilishi mumkin
+    pushed = false
   })
 
   return { disarm }

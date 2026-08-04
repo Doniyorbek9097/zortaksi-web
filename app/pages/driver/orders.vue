@@ -15,7 +15,7 @@
         :class="scope === 'all'
           ? 'border-indigo-400 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400'
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-        :disabled="scopeLoading"
+        :disabled="scopeLoading || filterLoading"
         @click="setScope('all')"
       >
         <font-awesome-icon icon="fa-solid fa-layer-group" class="text-[10px] shrink-0" />
@@ -36,7 +36,7 @@
         :class="scope === 'mine'
           ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-        :disabled="scopeLoading"
+        :disabled="scopeLoading || filterLoading"
         @click="setScope('mine')"
       >
         <font-awesome-icon icon="fa-solid fa-check" class="text-[10px] shrink-0" />
@@ -57,7 +57,7 @@
         :class="scope === 'others'
           ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
           : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-        :disabled="scopeLoading"
+        :disabled="scopeLoading || filterLoading"
         @click="setScope('others')"
       >
         <font-awesome-icon icon="fa-solid fa-users" class="text-[10px] shrink-0" />
@@ -108,8 +108,8 @@
       @cancel="onCancelFilter"
     />
 
-    <!-- Loading (birinchi yuklash yoki tab almashish) -->
-    <div v-if="scopeLoading || (orderStore.isLoading && !displayOrders.length)" class="pt-2">
+    <!-- Loading (birinchi yuklash, tab yoki filter almashish) -->
+    <div v-if="scopeLoading || filterLoading || (orderStore.isLoading && !displayOrders.length)" class="pt-2">
       <OrdersOrderCardSkeleton />
     </div>
 
@@ -247,6 +247,7 @@ const {
   filterActive,
   scope,
   scopeLoading,
+  filterLoading,
   scopeNewCounts,
   allNewCount,
   setScope,

@@ -169,20 +169,9 @@ watch(keywords, () => {
     return
   }
   if (presets.value.length) syncSelectedPresetFromKeywords()
-  botGroupId.value = selectedPresetId.value
 })
 
-const onCancel = () => {
-  open.value = false
-  emit('cancel')
-}
-
-const onSave = () => {
-  open.value = false
-  emit('save')
-}
-
-useHistoryBackClose(
+const { disarm } = useHistoryBackClose(
   open,
   () => {
     open.value = false
@@ -190,6 +179,18 @@ useHistoryBackClose(
   },
   { key: 'ztFilterPanel' },
 )
+
+const onCancel = () => {
+  disarm()
+  open.value = false
+  emit('cancel')
+}
+
+const onSave = () => {
+  disarm()
+  open.value = false
+  emit('save')
+}
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'

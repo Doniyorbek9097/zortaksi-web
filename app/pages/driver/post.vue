@@ -344,6 +344,7 @@ const onCancelFilter = () => {
 }
 
 const filtered = computed(() => {
+  if (appliedBotGroupId.value.trim()) return store.groups
   const raw = appliedKeywords.value.trim()
   if (!raw) return store.groups
   return filterGroupsByKeywords(store.groups, raw)
