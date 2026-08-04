@@ -457,8 +457,9 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (!response.success) return response
             let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
-            const clientKw = loadOrderFilterKeywords().trim()
-            if (clientKw && (params.search || params.botGroupId || listSearch.value || listBotGroupId.value)) {
+            const hasServerFilter = Boolean(params.search || params.botGroupId)
+            const clientKw = hasServerFilter ? loadOrderFilterKeywords().trim() : ''
+            if (clientKw && hasServerFilter) {
                 list = filterOrdersByKeywords(list, clientKw)
             }
             const prevIds = new Set(orders.value.map((o) => String(o._id)))
@@ -502,8 +503,9 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (response.success) {
                 let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
-                const clientKw = loadOrderFilterKeywords().trim()
-                if (clientKw && (params.search || params.botGroupId)) {
+                const hasServerFilter = Boolean(params.search || params.botGroupId)
+                const clientKw = hasServerFilter ? loadOrderFilterKeywords().trim() : ''
+                if (clientKw && hasServerFilter) {
                     list = filterOrdersByKeywords(list, clientKw)
                 }
                 if (opts.append) {

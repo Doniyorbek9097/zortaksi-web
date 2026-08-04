@@ -177,8 +177,10 @@ export const usePostStore = defineStore('post', () => {
 
   /** Hudud filtri o'zgarganda — serverdan qayta */
   const setSearch = async (value: string, groupId = '') => {
-    search.value = String(value || '').trim()
-    botGroupId.value = String(groupId || '').trim()
+    const kw = String(value || '').trim()
+    const gid = kw ? String(groupId || '').trim() : ''
+    search.value = kw
+    botGroupId.value = gid
     await load(false)
   }
 

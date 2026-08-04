@@ -279,7 +279,7 @@ import {
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
-  filterGroupsByKeywords,
+  clearOrderFilterKeywords,
 } from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
@@ -319,16 +319,22 @@ const leaveMessage = computed(() => (
 ))
 
 const onSaveFilter = async () => {
-  appliedKeywords.value = draftKeywords.value
-  appliedBotGroupId.value = String(draftBotGroupId.value || '').trim()
-  saveOrderFilterKeywords(draftKeywords.value)
-  if (appliedBotGroupId.value) {
-    saveOrderFilterBotGroupId(appliedBotGroupId.value)
-  } else {
-    clearOrderFilterBotGroupId()
-  }
+  const kw = draftKeywords.value.trim()
+  const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
+
+  appliedKeywords.value = kw
+  appliedBotGroupId.value = gid
+  draftKeywords.value = kw
+  draftBotGroupId.value = gid || null
+
+  if (kw) saveOrderFilterKeywords(kw)
+  else clearOrderFilterKeywords()
+
+  if (gid) saveOrderFilterBotGroupId(gid)
+  else clearOrderFilterBotGroupId()
+
   showFilter.value = false
-  await store.setSearch(draftKeywords.value, appliedBotGroupId.value)
+  await store.setSearch(kw, gid)
 }
 
 const onCancelFilter = () => {

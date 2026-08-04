@@ -6,6 +6,7 @@ import {
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
+  clearOrderFilterKeywords,
   filterOrdersByKeywords,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
@@ -76,14 +77,26 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const loadMore = () => orderStore.loadMore(queryParams())
 
   const onSaveFilter = () => {
-    appliedKeywords.value = draftKeywords.value
-    appliedBotGroupId.value = draftBotGroupId.value.trim()
-    saveOrderFilterKeywords(draftKeywords.value)
-    if (appliedBotGroupId.value) {
-      saveOrderFilterBotGroupId(appliedBotGroupId.value)
-    } else {
-      clearOrderFilterBotGroupId()
-    }
+    const kw = draftKeywords.value.trim()
+    const gid = kw ? draftBotGroupId.value.trim() : ''
+
+    appliedKeywords.value = kw
+    appliedBotGroupId.value = gid
+    draftKeywords.value = kw
+    draftBotGroupId.value = gid
+
+    if (kw) saveOrderFilterKeywords(kw)
+    else clearOrderFilterKeywords()
+
+    if (gid) saveOrderFilterBotGroupId(gid)
+    else clearOrderFilterBotGroupId()
+
+    orderStore.applyListFilter({
+      page: 1,
+      limit: LIMIT,
+      scope: scope.value,
+    })
+
     showFilter.value = false
     void load()
   }

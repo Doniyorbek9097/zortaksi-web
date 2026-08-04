@@ -162,6 +162,12 @@ const onPresetClick = (preset: BotGroupFilterPreset) => {
 }
 
 watch(keywords, () => {
+  const current = String(keywords.value || '').trim()
+  if (!current) {
+    selectedPresetId.value = null
+    botGroupId.value = null
+    return
+  }
   if (presets.value.length) syncSelectedPresetFromKeywords()
   botGroupId.value = selectedPresetId.value
 })

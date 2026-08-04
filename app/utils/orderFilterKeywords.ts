@@ -105,8 +105,14 @@ export function loadOrderFilterKeywords(): string {
 export function saveOrderFilterKeywords(raw: string): void {
   if (!import.meta.client) return
   try {
-    localStorage.setItem(ORDER_FILTER_STORAGE_KEY, raw)
+    const clean = String(raw || '').trim()
+    if (clean) localStorage.setItem(ORDER_FILTER_STORAGE_KEY, clean)
+    else localStorage.removeItem(ORDER_FILTER_STORAGE_KEY)
   } catch { /* private mode */ }
+}
+
+export function clearOrderFilterKeywords(): void {
+  saveOrderFilterKeywords('')
 }
 
 export function loadOrderFilterBotGroupId(): string {
@@ -131,6 +137,12 @@ export function clearOrderFilterBotGroupId(): void {
   saveOrderFilterBotGroupId('')
 }
 
+/** Hudud filtri — to'liq tozalash */
+export function clearAllOrderFilterStorage(): void {
+  clearOrderFilterKeywords()
+  clearOrderFilterBotGroupId()
+}
+
 /** Guruh katalogi — client qo'shimcha filter */
 export function filterGroupsByKeywords<T extends { title?: string; username?: string }>(
   groups: T[],
@@ -142,6 +154,9 @@ export function filterGroupsByKeywords<T extends { title?: string; username?: st
     matchesKeywords([g.title, g.username], raw),
   )
 }
+
+/** Mavjud filtrga yangi kalit so'zlarni qo'shish (takrorlanmas) */
+export function mergeFilterKeywords(current: string, add: string[]): string {
   const existing = parseKeywords(current)
   const seen = new Set(existing.map((k) => k.toLowerCase()))
   for (const raw of add) {
