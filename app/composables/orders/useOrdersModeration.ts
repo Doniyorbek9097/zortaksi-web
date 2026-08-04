@@ -13,10 +13,17 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
   const blocking = ref(false)
   const actionError = ref('')
   const showActionError = ref(false)
+  const actionSuccess = ref('')
+  const showActionSuccess = ref(false)
 
   const showError = (msg: string) => {
     actionError.value = msg
     showActionError.value = true
+  }
+
+  const showSuccess = (msg: string) => {
+    actionSuccess.value = msg
+    showActionSuccess.value = true
   }
 
   /** Dialog matni uchun sender nomi */
@@ -87,7 +94,10 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     blocking,
     actionError,
     showActionError,
+    actionSuccess,
+    showActionSuccess,
     showError,
+    showSuccess,
     senderLabel,
     onStopGroup,
     onStopUser,

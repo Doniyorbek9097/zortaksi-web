@@ -27,6 +27,7 @@
             @delete="$emit('delete', order)"
             @join-group="$emit('join-group', order)"
             @leave-group="$emit('leave-group', order)"
+            @add-to-bot="$emit('add-to-bot', order)"
           />
         </div>
       </template>
@@ -66,6 +67,7 @@
             @delete="$emit('delete', order)"
             @join-group="$emit('join-group', order)"
             @leave-group="$emit('leave-group', order)"
+            @add-to-bot="$emit('add-to-bot', order)"
           />
         </div>
       </template>
@@ -97,6 +99,7 @@
           @delete="$emit('delete', order)"
           @join-group="$emit('join-group', order)"
           @leave-group="$emit('leave-group', order)"
+          @add-to-bot="$emit('add-to-bot', order)"
         />
       </div>
     </template>
@@ -151,6 +154,7 @@ defineEmits<{
   delete: [order: IOrder]
   'join-group': [order: IOrder]
   'leave-group': [order: IOrder]
+  'add-to-bot': [order: IOrder]
 }>()
 
 const seen = (order: IOrder) => props.isOrderSeen?.(order) ?? false

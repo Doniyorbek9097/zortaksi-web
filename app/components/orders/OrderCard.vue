@@ -184,6 +184,15 @@
               <span class="truncate">User</span>
             </button>
           </div>
+          <button
+            v-if="canAddToBot"
+            type="button"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/15 active:scale-[0.98] transition-all"
+            @click.stop="$emit('add-to-bot')"
+          >
+            <font-awesome-icon icon="fa-solid fa-robot" class="text-sm shrink-0" />
+            <span class="truncate">Botga qo'sh</span>
+          </button>
           <a
             v-if="groupViewUrl"
             :href="groupViewUrl"
@@ -240,6 +249,7 @@ const emit = defineEmits<{
   unlock: []
   'join-group': []
   'leave-group': []
+  'add-to-bot': []
 }>()
 
 const isAdmin = computed(() => props.role === 'admin')
@@ -274,6 +284,10 @@ const bookedByName = computed(() => {
 })
 
 const group = computed(() => props.order.group)
+
+const canAddToBot = computed(
+  () => isAdmin.value && !!String(group.value?.username || '').trim().replace(/^@/, ''),
+)
 
 /** Admin: Telegram guruhidagi xabarni ochish */
 const groupViewUrl = computed(() => {

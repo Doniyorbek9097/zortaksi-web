@@ -175,6 +175,27 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     }
   }
 
+  const appendKeyword = async (id: string, keyword: string) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/bot-groups/${id}/keywords`, {
+        method: 'POST',
+        body: { keyword: keyword.trim() },
+      })
+      if (response.success) {
+        const row = toRow(response.data)
+        const idx = groups.value.findIndex(g => g.id === id)
+        if (idx !== -1) groups.value[idx] = row
+      }
+      return response
+    } catch (error) {
+      console.error('AppendBotKeyword error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   return {
     groups,
     isLoading,
@@ -184,5 +205,6 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     updateGroup,
     deleteGroup,
     refreshGroup,
+    appendKeyword,
   }
 })

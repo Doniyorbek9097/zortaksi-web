@@ -152,6 +152,28 @@
       @delete="onDelete"
       @join-group="onJoinGroup"
       @leave-group="onLeaveGroup"
+      @add-to-bot="onAddToBot"
+    />
+
+    <DriverOrdersAddToBotDialog
+      v-model="showAddToBotDialog"
+      :message="addToBotMessage"
+      :source-username="sourceGroupUsername"
+      :groups="botGroups"
+      :loading="addToBotLoading"
+      :saving="addToBotSaving"
+      @select="selectBotGroup"
+      @cancel="cancelAddToBot"
+    />
+
+    <BaseConfirmDialog
+      v-model="showActionSuccess"
+      title="Tayyor"
+      :message="actionSuccess"
+      confirm-text="OK"
+      cancel-text="Yopish"
+      variant="success"
+      @confirm="showActionSuccess = false"
     />
 
     <DriverOrdersDialogs
@@ -272,6 +294,8 @@ const {
   blocking,
   actionError,
   showActionError,
+  actionSuccess,
+  showActionSuccess,
   senderLabel,
   onStopGroup,
   onStopUser,
@@ -295,5 +319,14 @@ const {
   unreadCount,
   isOrderSeen,
   markAllAsRead,
+  showAddToBotDialog,
+  addToBotMessage,
+  sourceGroupUsername,
+  botGroups,
+  addToBotLoading,
+  addToBotSaving,
+  onAddToBot,
+  cancelAddToBot,
+  selectBotGroup,
 } = useDriverOrdersPage()
 </script>

@@ -8,6 +8,7 @@ import { useOrdersBooking } from './useOrdersBooking'
 import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
 import { useOrdersMembership } from './useOrdersMembership'
+import { useOrdersAddToBot } from './useOrdersAddToBot'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
@@ -56,6 +57,11 @@ export function useDriverOrdersPage() {
       void filter.load()
       void filter.refreshScopeCounts()
     },
+  })
+
+  const addToBot = useOrdersAddToBot({
+    showError: moderation.showError,
+    showSuccess: moderation.showSuccess,
   })
 
   const onUnlock = () => navigateTo('/driver/payment')
@@ -111,6 +117,8 @@ export function useDriverOrdersPage() {
     confirmJoin: membership.confirmJoin,
     confirmLeave: membership.confirmLeave,
     cancelMembership: membership.cancelMembership,
+    // Botga qo'shish (admin)
+    ...addToBot,
     onUnlock,
     unreadCount,
     isOrderSeen,
