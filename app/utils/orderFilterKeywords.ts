@@ -105,3 +105,18 @@ export function saveOrderFilterKeywords(raw: string): void {
     localStorage.setItem(ORDER_FILTER_STORAGE_KEY, raw)
   } catch { /* private mode */ }
 }
+
+/** Mavjud filtrga yangi kalit so'zlarni qo'shish (takrorlanmas) */
+export function mergeFilterKeywords(current: string, add: string[]): string {
+  const existing = parseKeywords(current)
+  const seen = new Set(existing.map((k) => k.toLowerCase()))
+  for (const raw of add) {
+    const kw = String(raw || '').trim()
+    if (!kw) continue
+    const key = kw.toLowerCase()
+    if (seen.has(key)) continue
+    existing.push(kw)
+    seen.add(key)
+  }
+  return existing.join(', ')
+}

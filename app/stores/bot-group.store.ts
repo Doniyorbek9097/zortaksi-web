@@ -13,6 +13,7 @@ export interface BotGroupRow {
   launching?: boolean
   telegramChatId?: string
   title?: string
+  telegramTitle?: string
   botIsAdmin?: boolean
   lastPostAt?: string
   lastError?: string
@@ -23,6 +24,7 @@ export type BotGroupPayload = {
   keywords: string
   botToken?: string
   active?: boolean
+  title?: string
 }
 
 const toRow = (g: any): BotGroupRow => ({
@@ -38,6 +40,7 @@ const toRow = (g: any): BotGroupRow => ({
   launching: !!g.launching,
   telegramChatId: g.telegramChatId,
   title: g.title,
+  telegramTitle: g.telegramTitle,
   botIsAdmin: g.botIsAdmin,
   lastPostAt: g.lastPostAt,
   lastError: g.lastError,
@@ -90,6 +93,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
           keywords: payload.keywords.trim(),
           botToken: payload.botToken?.trim(),
           active: payload.active !== false,
+          title: payload.title?.trim() || undefined,
         },
         timeout: 45_000,
       })
@@ -114,6 +118,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         username: payload.username.trim(),
         keywords: payload.keywords.trim(),
         active: payload.active !== false,
+        title: payload.title?.trim() || '',
       }
       if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
 

@@ -53,10 +53,10 @@
                   @click="$emit('select', g)"
                 >
                   <p class="text-[14px] font-black text-indigo-600 dark:text-indigo-400 truncate">
-                    @{{ g.username }}
+                    {{ g.title || `@${g.username}` }}
                   </p>
-                  <p v-if="g.title" class="text-[12px] font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    {{ g.title }}
+                  <p class="text-[12px] font-semibold text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    @{{ g.username }}
                   </p>
                   <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 line-clamp-2">
                     {{ (g.keywords || []).join(', ') || 'Kalit so\'z yo\'q' }}

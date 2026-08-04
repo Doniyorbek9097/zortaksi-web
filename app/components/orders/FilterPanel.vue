@@ -39,6 +39,34 @@
               class="w-full min-h-[96px] px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm leading-relaxed text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 dark:focus:border-indigo-500/60 focus:ring-4 focus:ring-indigo-500/5 transition-all resize-y whitespace-pre-wrap break-words"
             />
 
+            <div v-if="presetsLoading" class="flex justify-center py-3">
+              <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-indigo-500" />
+            </div>
+
+            <div v-else-if="presets.length" class="space-y-2">
+              <p class="px-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                Bot guruhlari — bosilsa kalit so'zlar qo'shiladi
+              </p>
+              <ul class="flex flex-wrap gap-2">
+                <li v-for="preset in presets" :key="preset.id">
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 max-w-full px-3 py-2 rounded-xl border text-left text-[12px] font-bold transition-all active:scale-[0.98]"
+                    :class="selectedPresetIds.has(preset.id)
+                      ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                      : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-600'"
+                    @click="onPresetClick(preset)"
+                  >
+                    <font-awesome-icon
+                      icon="fa-solid fa-bullhorn"
+                      class="text-[10px] shrink-0 opacity-70"
+                    />
+                    <span class="truncate">{{ preset.title }}</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
+
             <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
               Hudud nomlarini vergul yoki yangi qator bilan ajrating. Faqat buyurtma matni qidiriladi.
             </p>
@@ -68,11 +96,45 @@
 </template>
 
 <script setup lang="ts">
+import { mergeFilterKeywords } from '~/utils/orderFilterKeywords'
+
+export type BotGroupFilterPreset = {
+  id: string
+  username: string
+  title: string
+  keywords: string[]
+}
+
 const keywords = defineModel<string>({ default: '' })
 
 const emit = defineEmits<{ save: [value: string]; cancel: [] }>()
 
 const open = ref(true)
+const presets = ref<BotGroupFilterPreset[]>([])
+const presetsLoading = ref(false)
+const selectedPresetIds = ref<Set<string>>(new Set())
+
+const loadPresets = async () => {
+  presetsLoading.value = true
+  try {
+    const res = await useApi('/bot-groups/filter-presets')
+    if (res.success) {
+      presets.value = (res.data?.presets ?? []) as BotGroupFilterPreset[]
+    }
+  } catch (err) {
+    console.error('Filter presets load error:', err)
+  } finally {
+    presetsLoading.value = false
+  }
+}
+
+const onPresetClick = (preset: BotGroupFilterPreset) => {
+  if (!preset.keywords?.length) return
+  keywords.value = mergeFilterKeywords(keywords.value, preset.keywords)
+  const next = new Set(selectedPresetIds.value)
+  next.add(preset.id)
+  selectedPresetIds.value = next
+}
 
 const onCancel = () => {
   open.value = false
@@ -95,6 +157,7 @@ useHistoryBackClose(
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'
+  void loadPresets()
 })
 
 onBeforeUnmount(() => {

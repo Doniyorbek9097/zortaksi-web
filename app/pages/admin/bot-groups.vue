@@ -39,6 +39,17 @@
         </label>
 
         <label class="block space-y-1">
+          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Nom (ixtiyoriy)</span>
+          <input
+            v-model="form.title"
+            type="text"
+            placeholder="Masalan: Samarqand taksi"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-rose-500/30"
+          />
+          <span class="text-[10px] text-slate-400">Faqat admin panelda ko'rinish uchun</span>
+        </label>
+
+        <label class="block space-y-1">
           <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Guruh username</span>
           <input
             v-model="form.username"
@@ -107,12 +118,15 @@
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0">
             <p class="text-[14px] font-black text-slate-900 dark:text-white truncate">
-              @{{ g.username }}
+              {{ g.title || `@${g.username}` }}
+            </p>
+            <p class="text-[11px] text-slate-500 truncate">@{{ g.username }}</p>
+            <p v-if="g.telegramTitle" class="text-[10px] text-slate-400 truncate">
+              Telegram: {{ g.telegramTitle }}
             </p>
             <p v-if="g.botUsername" class="text-[11px] text-violet-600 dark:text-violet-400 font-bold truncate">
               Bot: @{{ g.botUsername }}
             </p>
-            <p v-if="g.title" class="text-[11px] text-slate-500 truncate">{{ g.title }}</p>
           </div>
           <div class="flex flex-col items-end gap-1 shrink-0">
             <span
@@ -203,6 +217,7 @@ const store = useBotGroupStore()
 
 const emptyForm = () => ({
   botToken: '',
+  title: '',
   username: '',
   keywords: '',
   active: true,
@@ -231,6 +246,7 @@ const onSubmit = async () => {
   }
 
   const payload = {
+    title: form.value.title.trim(),
     username: form.value.username.trim(),
     keywords: form.value.keywords.trim(),
     active: form.value.active,
@@ -255,6 +271,7 @@ const startEdit = (g: BotGroupRow) => {
   editingTokenMasked.value = g.tokenMasked || ''
   form.value = {
     botToken: '',
+    title: g.title || '',
     username: g.username,
     keywords: g.keywords.join(', '),
     active: g.active,
