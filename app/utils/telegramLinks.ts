@@ -14,7 +14,7 @@ export function buildTelegramContactUrl(input: {
     return ''
 }
 
-/** Guruhdagi buyurtma xabarini Telegramda ochish */
+/** Guruhdagi buyurtma xabarini yoki guruhni Telegramda ochish */
 export function buildGroupViewUrl(input: {
     groupUsername?: string
     groupId?: string
@@ -25,6 +25,7 @@ export function buildGroupViewUrl(input: {
         .replace(/^@/, '')
     const mid = Number(input.messageId || 0)
     if (username && mid) return `https://t.me/${username}/${mid}`
+    if (username) return `https://t.me/${username}`
 
     const gid = String(input.groupId || '').trim()
     if (!gid || !mid) return ''

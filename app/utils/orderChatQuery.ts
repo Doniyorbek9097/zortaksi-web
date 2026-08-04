@@ -1,6 +1,7 @@
 import type { IChat } from '~/types/chat'
 import type { IOrder } from '~/types'
 import { resolveOrderPhone } from '~/utils/phone'
+import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
 
 const cleanUsername = (raw?: string | null) =>
   String(raw || '').replace(/^@/, '').trim()
@@ -83,6 +84,42 @@ export function pickQuickLinkQuery(
     if (v != null && String(v).trim()) out[k] = String(v)
   }
   return out
+}
+
+/** Chat tezkor tugmalar — avval route query (order dan), keyin chat peer */
+export function resolveQuickLinks(
+  query: Record<string, unknown>,
+  chat?: IChat | null,
+) {
+  const p = chat?.peer
+
+  const username =
+    cleanUsername(String(query.username || '')) ||
+    cleanUsername(p?.username) ||
+    ''
+  const phone =
+    String(query.phone || '').trim() ||
+    String(p?.phone || '').trim() ||
+    ''
+
+  const groupUsername =
+    cleanUsername(String(query.groupUsername || '')) ||
+    cleanUsername(p?.fromGroupUsername) ||
+    ''
+  const groupId =
+    String(query.groupId || '').trim() ||
+    String(p?.fromPeerId || '').trim() ||
+    ''
+  const msgId = Number(query.msgId || 0) || Number(p?.fromMsgId || 0) || 0
+
+  return {
+    telegramHref: buildTelegramContactUrl({ username, phone }),
+    groupHref: buildGroupViewUrl({
+      groupUsername,
+      groupId,
+      messageId: msgId > 0 ? msgId : undefined,
+    }),
+  }
 }
 
 /** Order → chat: sender + guruh havolasi (yuklanishni kutmasdan) */

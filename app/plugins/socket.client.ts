@@ -90,10 +90,7 @@ export default defineNuxtPlugin(() => {
       const kw = loadOrderFilterKeywords().trim()
       if (
         kw &&
-        !matchesKeywords(
-          [order?.group?.title, order?.group?.username, order?.message?.text],
-          kw,
-        )
+        !matchesKeywords([order?.message?.text], kw)
       ) {
         return
       }
@@ -115,10 +112,7 @@ export default defineNuxtPlugin(() => {
       const kw = loadOrderFilterKeywords().trim()
       if (
         kw &&
-        !matchesKeywords(
-          [order?.group?.title, order?.group?.username, order?.message?.text],
-          kw,
-        )
+        !matchesKeywords([order?.message?.text], kw)
       ) {
         return
       }

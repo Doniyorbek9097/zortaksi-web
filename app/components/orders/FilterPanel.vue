@@ -40,7 +40,7 @@
             />
 
             <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
-              Hudud nomlarini vergul bilan ajrating. Buyurtma guruh nomi, username va matndan qidiriladi.
+              Hudud nomlarini vergul yoki yangi qator bilan ajrating. Faqat buyurtma matni qidiriladi.
             </p>
 
             <div class="flex items-center gap-2" :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }">

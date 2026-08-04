@@ -17,10 +17,10 @@ const CYRILLIC_TO_LATIN: [RegExp, string][] = [
   [/ы/g, 'i'],
 ]
 
-/** Vergul bilan ajratilgan kalit so'zlar */
+/** Vergul, nuqta-vergul yoki yangi qator bilan ajratilgan kalit so'zlar */
 export function parseKeywords(raw: string): string[] {
   return String(raw || '')
-    .split(',')
+    .split(/[,;\n]+/)
     .map((s) => s.trim())
     .filter(Boolean)
 }
@@ -59,16 +59,12 @@ function tokenizeForFuzzy(text: string): string[] {
     .filter((t) => t.length >= 2)
 }
 
-function fuzzyInCompact(compactHay: string, kw: string, maxDist: number): boolean {
-  if (!compactHay || !kw) return false
-  if (compactHay.includes(kw)) return true
-  const minLen = Math.max(1, kw.length - maxDist)
-  const maxLen = kw.length + maxDist
-  for (let len = minLen; len <= maxLen; len++) {
-    if (len > compactHay.length) continue
-    for (let i = 0; i <= compactHay.length - len; i++) {
-      if (distance(kw, compactHay.slice(i, i + len)) <= maxDist) return true
-    }
+function matchesShortKeyword(hay: string, kw: string): boolean {
+  const maxDist = maxLevenshteinDistance(kw.length)
+  for (const token of tokenizeForFuzzy(hay)) {
+    if (token === kw || token.startsWith(kw)) return true
+    if (Math.abs(token.length - kw.length) > maxDist) continue
+    if (distance(kw, token) <= maxDist) return true
   }
   return false
 }
@@ -83,12 +79,14 @@ export function keywordMatchesText(haystack: string, keyword: string): boolean {
   const compactHay = compactMatchText(hay)
   if (compactHay.includes(kw)) return true
 
+  if (kw.length <= 3) return matchesShortKeyword(hay, kw)
+
   const maxDist = maxLevenshteinDistance(kw.length)
   for (const token of tokenizeForFuzzy(hay)) {
     if (Math.abs(token.length - kw.length) > maxDist) continue
     if (distance(kw, token) <= maxDist) return true
   }
-  return fuzzyInCompact(compactHay, kw, maxDist)
+  return false
 }
 
 /** Maydonlar ichidan kamida bitta kalit so'z topilsa true */

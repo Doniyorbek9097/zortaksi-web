@@ -203,8 +203,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
-import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
-import { pickQuickLinkQuery, resolveOrderTextHint } from '~/utils/orderChatQuery'
+import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks } from '~/utils/orderChatQuery'
 import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
@@ -494,33 +493,13 @@ const callPhone = computed(() => {
   }) || extractPhoneFromText(orderText.value) || ''
 })
 
-const senderUsername = computed(() => {
-  const fromQuery = String(route.query.username || '').replace(/^@/, '').trim()
-  if (fromQuery) return fromQuery
-  return String(chatStore.currentChat?.peer?.username || '').replace(/^@/, '').trim()
-})
+const quickLinks = computed(() =>
+  resolveQuickLinks(route.query as Record<string, unknown>, chatStore.currentChat),
+)
 
-const telegramContactUrl = computed(() => {
-  const phone =
-    callPhone.value ||
-    chatStore.currentChat?.peer?.phone ||
-    String(route.query.phone || '')
-  return buildTelegramContactUrl({
-    username: senderUsername.value,
-    phone,
-  })
-})
+const telegramContactUrl = computed(() => quickLinks.value.telegramHref)
 
-const groupViewUrl = computed(() => {
-  const p = chatStore.currentChat?.peer
-  const q = route.query
-  const msgId = p?.fromMsgId || Number(q.msgId || 0) || undefined
-  return buildGroupViewUrl({
-    groupUsername: p?.fromGroupUsername || String(q.groupUsername || ''),
-    groupId: p?.fromPeerId || String(q.groupId || ''),
-    messageId: msgId,
-  })
-})
+const groupViewUrl = computed(() => quickLinks.value.groupHref)
 
 /** Buyurtmachi bilan chat — tezkor tugmalar (support/direct emas) */
 const showQuickActions = computed(
