@@ -3,7 +3,6 @@ import {
   loadOrderFilterKeywords,
   parseKeywords,
   saveOrderFilterKeywords,
-  filterOrdersByKeywords,
 } from '~/utils/orderFilterKeywords'
 import {
   ORDERS_SCOPE_STORAGE_KEY,
@@ -38,12 +37,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     scope: scope.value,
   })
 
-  /** Server + client qo'shimcha filtr — faqat mos keladigan buyurtmalar */
-  const displayOrders = computed(() => {
-    const raw = appliedKeywords.value.trim()
-    if (!raw) return orderStore.orders
-    return filterOrdersByKeywords(orderStore.orders, raw)
-  })
+  /** API natijasi — qayta client filter yo'q (pagination buzilmasin) */
+  const displayOrders = computed(() => orderStore.orders)
 
   const refreshScopeCounts = () =>
     orderStore.refreshScopeCounts(appliedKeywords.value.trim() || undefined)

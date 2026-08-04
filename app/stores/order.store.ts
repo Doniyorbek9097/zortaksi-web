@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, filterOrdersByKeywords, orderMatchesRegionFilter } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, orderMatchesRegionFilter } from '~/utils/orderFilterKeywords'
 
 export interface FetchOrdersParams {
     page?: number
@@ -432,8 +432,6 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (!response.success) return response
             let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
-            const searchRaw = String(params.search || '').trim()
-            if (searchRaw) list = filterOrdersByKeywords(list, searchRaw)
             const prevIds = new Set(orders.value.map((o) => String(o._id)))
             if (page.value <= 1) {
                 orders.value = list
@@ -475,8 +473,6 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (response.success) {
                 let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
-                const searchRaw = String(params.search || '').trim()
-                if (searchRaw) list = filterOrdersByKeywords(list, searchRaw)
                 if (opts.append) {
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
