@@ -183,10 +183,6 @@ export function chatPeerQuickLinkQuery(
   if (username && !extra.username) q.username = username
 
   const groupUsername = cleanUsername(p?.fromGroupUsername)
-  const groupTitle =
-    String(query.groupTitle || '').trim() ||
-    String(p?.fromGroupTitle || '').trim() ||
-    ''
   if (groupUsername) q.groupUsername = groupUsername
   if (p?.fromGroupTitle) q.groupTitle = String(p.fromGroupTitle)
   if (p?.fromPeerId) q.groupId = String(p.fromPeerId)
