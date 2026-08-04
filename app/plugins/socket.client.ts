@@ -7,7 +7,7 @@ import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   loadOrderFilterKeywords,
-  matchesKeywords,
+  orderMatchesRegionFilter,
 } from '~/utils/orderFilterKeywords'
 import { readOrdersScope } from '~/utils/ordersScope'
 
@@ -88,10 +88,7 @@ export default defineNuxtPlugin(() => {
     socket.on('order:new', (order) => {
       // Faol filtr bo'lsa — live order ham kalit so'zga mos kelmasa qo'shilmasin
       const kw = loadOrderFilterKeywords().trim()
-      if (
-        kw &&
-        !matchesKeywords([order?.message?.text], kw)
-      ) {
+      if (kw && !orderMatchesRegionFilter(order, kw)) {
         return
       }
       if ((order?.status || 'new') === 'new') {
@@ -110,10 +107,7 @@ export default defineNuxtPlugin(() => {
     })
     socket.on('order:update', (order) => {
       const kw = loadOrderFilterKeywords().trim()
-      if (
-        kw &&
-        !matchesKeywords([order?.message?.text], kw)
-      ) {
+      if (kw && !orderMatchesRegionFilter(order, kw)) {
         return
       }
       orderStore.applyOrderUpdate(order)

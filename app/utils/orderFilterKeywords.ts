@@ -100,6 +100,26 @@ export function matchesKeywords(
   return kws.some((kw) => keywordMatchesText(blob, kw))
 }
 
+/** Faol hudud filtri — buyurtma matni kalit so'zlardan biriga mos kelmasa false */
+export function orderMatchesRegionFilter(
+  order: { message?: { text?: string } | null },
+  raw: string,
+): boolean {
+  const kws = parseKeywords(raw)
+  if (!kws.length) return true
+  return matchesKeywords([order?.message?.text], raw)
+}
+
+/** Ro'yxatni faol kalit so'zlar bo'yicha kesish (server/socket sizdiruvlarini ushlab qolish) */
+export function filterOrdersByKeywords<T extends { message?: { text?: string } | null }>(
+  orders: T[],
+  raw: string,
+): T[] {
+  const kws = parseKeywords(raw)
+  if (!kws.length) return orders
+  return orders.filter((o) => orderMatchesRegionFilter(o, raw))
+}
+
 export function loadOrderFilterKeywords(): string {
   if (!import.meta.client) return ''
   try {

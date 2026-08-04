@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, filterOrdersByKeywords, orderMatchesRegionFilter } from '~/utils/orderFilterKeywords'
 
 export interface FetchOrdersParams {
     page?: number
@@ -398,6 +398,8 @@ export const useOrderStore = defineStore('order', () => {
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
+        const search = listSearch.value.trim()
+        if (search && !orderMatchesRegionFilter(order, search)) return false
         const incomingKey = orderContentKey(order)
         const list = orders.value
         const isDup = list.some((o) => {
@@ -429,7 +431,9 @@ export const useOrderStore = defineStore('order', () => {
                 params: { ...params, limit: params.limit ?? 40, page: 1 },
             })
             if (!response.success) return response
-            const list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            const searchRaw = String(params.search || '').trim()
+            if (searchRaw) list = filterOrdersByKeywords(list, searchRaw)
             const prevIds = new Set(orders.value.map((o) => String(o._id)))
             if (page.value <= 1) {
                 orders.value = list
@@ -470,7 +474,9 @@ export const useOrderStore = defineStore('order', () => {
                 params,
             })
             if (response.success) {
-                const list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+                let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+                const searchRaw = String(params.search || '').trim()
+                if (searchRaw) list = filterOrdersByKeywords(list, searchRaw)
                 if (opts.append) {
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
