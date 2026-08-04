@@ -141,7 +141,7 @@ const emit = defineEmits<{
 
 const inputPlaceholder = computed(() => {
   if (props.placeholder) return props.placeholder
-  if (props.disabled) return 'Yozish uchun ulanish kutilmoqda...'
+  if (props.disabled) return 'Ulanish kutilmoqda...'
   return 'Xabar yozing...'
 })
 

@@ -197,9 +197,12 @@ export function createListActions(
         }
     }
 
-    /** Orderdan chat ochish (sender) */
+    /** Orderdan chat ochish (sender) — server connect qiladi */
     const startChatFromOrder = async (orderId: string) => {
-        const res = await useApi(`/chats/from-order/${orderId}`, { method: 'POST' })
+        const res = await useApi(`/chats/from-order/${orderId}`, {
+            method: 'POST',
+            timeout: 90_000,
+        })
         return res
     }
 

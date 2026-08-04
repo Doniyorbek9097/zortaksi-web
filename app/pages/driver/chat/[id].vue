@@ -431,7 +431,7 @@ const composerDisabled = computed(
 const composerPlaceholder = computed(() => {
   if (composerBusy.value) return 'Biroz kuting...'
   if (!isInAppChat.value && !wasLinkedBefore.value && conn.value !== 'ready') {
-    return 'Yozish uchun ulanish kutilmoqda...'
+    return 'Ulanish kutilmoqda...'
   }
   return 'Xabar yozing...'
 })
@@ -654,6 +654,15 @@ const bootstrapOpenChat = async (seq: number) => {
     if (seq !== loadSeq) return
 
     if (res?.success && res.data?._id) {
+      const chat = res.data as import('~/types').IChat
+      chatStore.primeFromChat(chat)
+      chatStore.currentChat = chat
+      const idx = chatStore.chats.findIndex((c) => c._id === chat._id)
+      if (idx >= 0) {
+        chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
+      } else {
+        chatStore.chats.unshift(chat)
+      }
       await navigateTo({
         path: `/driver/chat/${res.data._id}`,
         query: pickQuickLinkQuery(route.query as Record<string, unknown>),
