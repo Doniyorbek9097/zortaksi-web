@@ -46,6 +46,12 @@
           >
             {{ orderBannerLabel }}
           </p>
+          <p
+            v-if="orderGroupTitle && !isDirect"
+            class="text-[14px] font-bold text-slate-800 dark:text-slate-100 mb-1.5"
+          >
+            {{ orderGroupTitle }}
+          </p>
           <p class="text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
             <ChatLinkifiedText :text="displayOrderText" />
           </p>
@@ -294,6 +300,12 @@ const showOrderBanner = computed(() => isDirect.value || !!orderText.value)
 const orderBannerLabel = computed(() =>
   isDirect.value ? 'Haydovchi' : "Buyurtma e'loni"
 )
+
+const orderGroupTitle = computed(() => {
+  const fromQuery = String(route.query.groupTitle || '').trim()
+  if (fromQuery) return fromQuery
+  return String(chatStore.currentChat?.peer?.fromGroupTitle || '').trim()
+})
 
 const displayOrderText = computed(() => {
   if (isDirect.value) return "Bu Haydovchi bilan suhbat qurishingiz mumkin"

@@ -12,6 +12,7 @@ export const QUICK_LINK_QUERY_KEYS = [
   'phone',
   'username',
   'groupUsername',
+  'groupTitle',
   'groupId',
   'msgId',
   'orderId',
@@ -111,6 +112,10 @@ export function resolveQuickLinks(
     String(p?.fromPeerId || '').trim() ||
     ''
   const msgId = Number(query.msgId || 0) || Number(p?.fromMsgId || 0) || 0
+  const groupTitle =
+    String(query.groupTitle || '').trim() ||
+    String(p?.fromGroupTitle || '').trim() ||
+    ''
 
   return {
     telegramHref: buildTelegramContactUrl({ username, phone }),
@@ -119,6 +124,7 @@ export function resolveQuickLinks(
       groupId,
       messageId: msgId > 0 ? msgId : undefined,
     }),
+    groupTitle,
   }
 }
 
@@ -148,7 +154,9 @@ export function orderQuickLinkQuery(
   const groupUsername = cleanUsername(order.group?.username)
   const groupId = String(order.group?.groupId || '').trim()
   const msgId = Number(order.message?.messageId || 0)
+  const groupTitle = String(order.group?.title || '').trim()
   if (groupUsername) q.groupUsername = groupUsername
+  if (groupTitle) q.groupTitle = groupTitle
   if (groupId) q.groupId = groupId
   if (msgId > 0) q.msgId = String(msgId)
 
@@ -175,7 +183,12 @@ export function chatPeerQuickLinkQuery(
   if (username && !extra.username) q.username = username
 
   const groupUsername = cleanUsername(p?.fromGroupUsername)
+  const groupTitle =
+    String(query.groupTitle || '').trim() ||
+    String(p?.fromGroupTitle || '').trim() ||
+    ''
   if (groupUsername) q.groupUsername = groupUsername
+  if (p?.fromGroupTitle) q.groupTitle = String(p.fromGroupTitle)
   if (p?.fromPeerId) q.groupId = String(p.fromPeerId)
   if (p?.fromMsgId) q.msgId = String(p.fromMsgId)
 

@@ -10,6 +10,7 @@ export interface IChatPeer {
     fromPeerId?: string
     fromMsgId?: number
     fromGroupUsername?: string
+    fromGroupTitle?: string
     /** Oldin muvaffaqiyatli bog'langan userbot — loadingsiz ochish uchun */
     viaUserbotId?: string
 }

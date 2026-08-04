@@ -100,14 +100,20 @@ export function matchesKeywords(
   return kws.some((kw) => keywordMatchesText(blob, kw))
 }
 
-/** Faol hudud filtri — buyurtma matni kalit so'zlardan biriga mos kelmasa false */
+/** Faol hudud filtri — xabar matni yoki manba guruh nomi kalit so'zlarga mos kelmasa false */
 export function orderMatchesRegionFilter(
-  order: { message?: { text?: string } | null },
+  order: {
+    message?: { text?: string } | null
+    group?: { title?: string; username?: string } | null
+  },
   raw: string,
 ): boolean {
   const kws = parseKeywords(raw)
   if (!kws.length) return true
-  return matchesKeywords([order?.message?.text], raw)
+  return matchesKeywords(
+    [order?.message?.text, order?.group?.title, order?.group?.username],
+    raw,
+  )
 }
 
 /** Ro'yxatni faol kalit so'zlar bo'yicha kesish (server/socket sizdiruvlarini ushlab qolish) */
