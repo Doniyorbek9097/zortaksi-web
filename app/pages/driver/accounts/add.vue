@@ -192,7 +192,7 @@ import { useAccountStore } from '~/stores/account.store'
 import BaseSmsInput from '~/components/base/SmsInput.vue'
 import BasePasswordInput from '~/components/base/PasswordInput.vue'
 import BasePhoneInput from '~/components/base/PhoneInput.vue'
-import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
+import { getAuthPhoneValidationError, isValidIntlPhone, normalizeAuthPhoneDigits } from '~/utils/phone'
 import { getApiErrorMessage } from '~/utils/apiError'
 import TermsConsent from '~/components/legal/TermsConsent.vue'
 
@@ -273,23 +273,40 @@ const stepDotClass = (key: Step) => {
 
 const phoneDigits = computed(() => {
   const raw = phoneLocal.value.replace(/\D/g, '')
-  return normalizeTo998(raw) || raw
+  return normalizeAuthPhoneDigits(raw) || raw
 })
-const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
+const isPhoneValid = computed(() => {
+  const parsed = normalizeAuthPhoneDigits(phoneLocal.value)
+  if (parsed) return getAuthPhoneValidationError(parsed) === null
+  return isValidIntlPhone(phoneDigits.value)
+})
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
 const handleSendCode = async (opts?: { forceSms?: boolean }) => {
-  if (loading.value || !isPhoneValid.value || !termsAccepted.value) return
+  if (loading.value || !termsAccepted.value) return
   error.value = ''
+
+  const parsed = normalizeAuthPhoneDigits(phoneLocal.value)
+  if (!parsed) {
+    error.value =
+      getAuthPhoneValidationError(phoneLocal.value.replace(/\D/g, '')) ||
+      `Telefon raqami noto'g'ri. Mamlakat kodi bilan kiriting (masalan: 998901234567).`
+    return
+  }
+  const phoneErr = getAuthPhoneValidationError(parsed)
+  if (phoneErr) {
+    error.value = phoneErr
+    return
+  }
   if (!opts?.forceSms) deliveryHint.value = ''
   accountStore.load()
-  if (accountStore.hasAccount({ phone: phoneDigits.value })) {
+  if (accountStore.hasAccount({ phone: parsed })) {
     error.value = 'Bu hisob allaqachon qo\'shilgan'
     return
   }
   loading.value = true
   try {
-    const res = await accountStore.sendCode(phoneDigits.value, opts)
+    const res = await accountStore.sendCode(parsed, opts)
     if (res.success) {
       deliveryHint.value =
         res.data?.message ||

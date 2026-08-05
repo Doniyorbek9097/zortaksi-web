@@ -7,7 +7,8 @@ export const PHONE_MASK = '■■■'
 
 /** O'zbekiston mobil operator kodlari (998 dan keyin 2 raqam) */
 export const UZ_MOBILE_PREFIXES = [
-  '90', '91', '93', '94', '95', '97', '88', '50', '33', '20', '67',
+  '20', '33', '50', '67', '70', '77', '80', '87', '88',
+  '90', '91', '92', '93', '94', '95', '97', '98', '99',
 ] as const
 
 const UZ_MOBILE_LOCAL_RE = new RegExp(
@@ -24,6 +25,29 @@ export function isValidUzMobile998(twelveDigits: string): boolean {
   const d = String(twelveDigits || '')
   if (!d.startsWith('998') || d.length !== 12) return false
   return isValidUzMobileLocal(d.slice(3))
+}
+
+/** Auth xato matni — backend validateAuthPhone bilan bir xil */
+export function formatUzMobilePrefixHint(max = 6): string {
+  const list = UZ_MOBILE_PREFIXES.slice(0, max).join(', ')
+  return UZ_MOBILE_PREFIXES.length > max ? `${list}…` : list
+}
+
+/** Auth / account: backend normalizeAuthPhone bilan bir xil */
+export function normalizeAuthPhoneDigits(raw: string): string | null {
+  return normalizePhoneDigits(String(raw || '').replace(/\D/g, ''))
+}
+
+/** Auth / account: backend validateAuthPhone bilan bir xil */
+export function getAuthPhoneValidationError(digits: string): string | null {
+  const d = String(digits || '').replace(/\D/g, '')
+  if (!/^\d{8,15}$/.test(d)) {
+    return `Telefon raqami noto'g'ri. Mamlakat kodi bilan kiriting (masalan: 998901234567).`
+  }
+  if (d.startsWith('998') && !isValidUzMobile998(d)) {
+    return `O'zbekiston mobil raqami noto'g'ri. Operator kodi: ${formatUzMobilePrefixHint()}. Masalan: 998901234567`
+  }
+  return null
 }
 
 /** 2024-12-31 / 12.31.2024 kabi sanalarni telefon emas deb qoldirish */

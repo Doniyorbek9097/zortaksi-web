@@ -198,7 +198,7 @@ import { useAccountStore } from '../stores/account.store'
 import BaseSmsInput from './base/SmsInput.vue'
 import BasePasswordInput from './base/PasswordInput.vue'
 import BasePhoneInput from './base/PhoneInput.vue'
-import { isValidIntlPhone, normalizeTo998 } from '~/utils/phone'
+import { getAuthPhoneValidationError, isValidIntlPhone, normalizeAuthPhoneDigits } from '~/utils/phone'
 import { resolvePostAuthPath } from '~/utils/userRole'
 import { getApiErrorMessage } from '~/utils/apiError'
 import TermsConsent from './legal/TermsConsent.vue'
@@ -301,9 +301,13 @@ const canResendSms = ref(false)
 
 const phoneDigits = computed(() => {
   const raw = form.phoneLocal.replace(/\D/g, '')
-  return normalizeTo998(raw) || raw
+  return normalizeAuthPhoneDigits(raw) || raw
 })
-const isPhoneValid = computed(() => isValidIntlPhone(phoneDigits.value))
+const isPhoneValid = computed(() => {
+  const parsed = normalizeAuthPhoneDigits(form.phoneLocal)
+  if (parsed) return getAuthPhoneValidationError(parsed) === null
+  return isValidIntlPhone(phoneDigits.value)
+})
 const formattedPhoneDisplay = computed(() => (phoneDigits.value ? `+${phoneDigits.value}` : ''))
 
 const clearReferral = () => {
@@ -324,16 +328,29 @@ const adoptFreshSession = (user: any) => {
 }
 
 const handleSendCode = async (opts?: { forceSms?: boolean }) => {
-  if (authStore.isLoading || !isPhoneValid.value || !canProceedAuth.value) return
+  if (authStore.isLoading || !canProceedAuth.value) return
   form.error = ''
+
+  const parsed = normalizeAuthPhoneDigits(form.phoneLocal)
+  if (!parsed) {
+    form.error =
+      getAuthPhoneValidationError(form.phoneLocal.replace(/\D/g, '')) ||
+      `Telefon raqami noto'g'ri. Mamlakat kodi bilan kiriting (masalan: 998901234567).`
+    return
+  }
+  const phoneErr = getAuthPhoneValidationError(parsed)
+  if (phoneErr) {
+    form.error = phoneErr
+    return
+  }
   if (!opts?.forceSms) deliveryHint.value = ''
   try {
-    const response = await authStore.sendCode(phoneDigits.value, opts)
+    const response = await authStore.sendCode(parsed, opts)
     if (response.success) {
       if (termsAccepted.value) storeTermsConsent()
       deliveryHint.value =
         response.data?.message ||
-        `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`
+        `Kod +${parsed} raqamidagi Telegram ilovangizga yuborildi`
       canResendSms.value = !!response.data?.canResendSms
       if (!opts?.forceSms) currentStep.value = 'verify'
     } else {
