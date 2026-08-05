@@ -46,6 +46,43 @@ export function readStashedOrderText(orderId: string): string {
   }
 }
 
+/** Route query dan darhol chat konteksti (Mijozni olish / order Xabar) */
+export function hasOrderQueryContext(query: Record<string, unknown>): boolean {
+  return !!(String(query.orderId || '').trim() || String(query.orderText || '').trim())
+}
+
+/** Query dan minimal chat — header, banner, tezkor tugmalar kutmasdan */
+export function buildChatStubFromOrderQuery(
+  query: Record<string, unknown>,
+): Partial<IChat> | null {
+  if (!hasOrderQueryContext(query)) return null
+
+  const orderId = String(query.orderId || '').trim()
+  const orderText = resolveOrderTextHint(query, null)
+  const phone = String(query.phone || '').trim()
+  const username = cleanUsername(String(query.username || ''))
+  const userId = String(query.userId || '').trim()
+  const name = String(query.name || '').trim()
+
+  return {
+    orderId: orderId || undefined,
+    orderText: orderText || undefined,
+    kind: 'normal',
+    peer: {
+      userId: userId || '0',
+      firstName: name || username || 'Buyurtmachi',
+      lastName: undefined,
+      username: username || undefined,
+      phone: phone || undefined,
+      isBot: false,
+      fromGroupTitle: String(query.groupTitle || '').trim() || undefined,
+      fromGroupUsername: cleanUsername(String(query.groupUsername || '')) || undefined,
+      fromPeerId: String(query.groupId || '').trim() || undefined,
+      fromMsgId: Number(query.msgId || 0) || undefined,
+    },
+  }
+}
+
 /** Order → chat oldidan kontekstni saqlash */
 export function primeOrderContext(order: IOrder) {
   const id = String(order._id || '')
