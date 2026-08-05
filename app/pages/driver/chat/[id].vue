@@ -805,7 +805,8 @@ const loadChat = async (id: string) => {
 
   try {
     if (!inApp) {
-      void chatStore.connect(id, { silent: wasLinked })
+      const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
+      void chatStore.connect(id, { silent: wasLinked || !!orderChat })
     }
     await chatStore.fetchMessages(id)
     chatStore.primeFromChat(chatStore.currentChat)

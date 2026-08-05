@@ -6,13 +6,28 @@ export function isChatLikelyReady(
     chat: {
         kind?: string
         inAppOnly?: boolean
-        peer?: { viaUserbotId?: string; accessHash?: string }
+        orderId?: string
+        peer?: {
+            viaUserbotId?: string
+            accessHash?: string
+            phone?: string
+            username?: string
+        }
     } | null
     | undefined,
 ): boolean {
     if (!chat) return false
     if (chat.kind === 'support' || chat.kind === 'direct' || chat.inAppOnly) return true
-    return !!(chat.peer?.viaUserbotId && chat.peer?.accessHash)
+    if (chat.peer?.viaUserbotId && chat.peer?.accessHash) return true
+    // Order chat: telefon/username bor — connect fonda, composer ochiq
+    if (
+        chat.orderId &&
+        (String(chat.peer?.phone || '').replace(/\D/g, '').length >= 7 ||
+            String(chat.peer?.username || '').trim())
+    ) {
+        return true
+    }
+    return false
 }
 
 /**
@@ -71,8 +86,11 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             accessHash?: string
         },
     ) => {
-        if (activeConnectChatId && activeConnectChatId !== chatId) return
-        if (currentChat.value?._id && currentChat.value._id !== chatId) return
+        const isRelevant =
+            !currentChat.value?._id ||
+            currentChat.value._id === chatId ||
+            activeConnectChatId === chatId
+        if (!isRelevant) return
 
         const next = (data.status || 'unreachable') as ConnStatus
         connectionStatus.value = next
@@ -97,9 +115,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
     }
 
     const runConnect = async (chatId: string, opts: { silent?: boolean } = {}) => {
-        const maxAttempts = opts.silent ? 1 : 2
+        const maxAttempts = 1
         if (!opts.silent && !isChatLikelyReady(currentChat.value)) {
             connectionStatus.value = 'connecting'
+            connectionReason.value = ''
+        } else if (opts.silent && isChatLikelyReady(currentChat.value)) {
+            connectionStatus.value = 'ready'
             connectionReason.value = ''
         }
         activeConnectChatId = chatId
@@ -176,6 +197,11 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         accessHash?: string
     }) => {
         if (!data?.chatId) return
+        // Joriy chat yoki ochilayotgan chat — HTTP kutmasdan yangilash
+        const isRelevant =
+            currentChat.value?._id === data.chatId ||
+            activeConnectChatId === data.chatId
+        if (!isRelevant && currentChat.value?._id) return
         applyConnectResult(data.chatId, data)
         if (data.status === 'ready') {
             void fetchPresence(data.chatId)
