@@ -53,10 +53,10 @@
         Haydovchi
       </button>
 
-      <button
-        v-if="canCall"
-        type="button"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-black shrink-0 whitespace-nowrap leading-none active:scale-95 transition-all"
+      <a
+        v-if="canCall && callHref"
+        :href="callHref"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-black shrink-0 whitespace-nowrap leading-none active:scale-95 transition-all no-underline"
         :class="support
           ? 'text-white bg-white/15 hover:bg-white/25'
           : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'"
@@ -64,7 +64,7 @@
       >
         <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
         Qo'ng'iroq
-      </button>
+      </a>
     </div>
 
     <slot name="actions" />
@@ -79,6 +79,8 @@ interface Props {
   avatar?: string
   userId?: string
   canCall?: boolean
+  /** tel:+998... — native qo'ng'iroq uchun */
+  callHref?: string
   support?: boolean
   /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
@@ -88,6 +90,7 @@ withDefaults(defineProps<Props>(), {
   status: '',
   online: false,
   canCall: false,
+  callHref: '',
   support: false,
   showDriverPage: false,
 })

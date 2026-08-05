@@ -144,6 +144,30 @@ export function normalizeTelHref(phone: string): string {
   return `tel:+${digits}`
 }
 
+/** Mobil / Telegram WebView — tel: ni native <a> orqali ochish (location.href ishonchsiz) */
+export function openTelCall(phone: string): boolean {
+  if (!import.meta.client) return false
+  const href = normalizeTelHref(phone)
+  if (!href) return false
+
+  try {
+    const a = document.createElement('a')
+    a.href = href
+    a.style.display = 'none'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    return true
+  } catch {
+    try {
+      window.location.assign(href)
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
 /**
  * Order uchun qo'ng'iroq raqami:
  * 1) callPhone (server) yoki message.text ichidagi oxirgi telefon

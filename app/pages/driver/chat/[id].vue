@@ -17,8 +17,8 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!!callPhone"
+      :call-href="callTelHref"
       @back="goBack"
-      @call="onCall"
     />
 
     <ChatQuickActions
@@ -240,7 +240,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
-import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
+import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
@@ -546,14 +546,24 @@ const goBack = () => {
 
 const callPhone = computed(() => {
   const qPhone = String(route.query.phone || '').trim()
-  if (qPhone.replace(/\D/g, '').length >= 7) return qPhone.replace(/\D/g, '')
+  if (qPhone.replace(/\D/g, '').length >= 7) {
+    return normalizeTo998(qPhone) || qPhone.replace(/\D/g, '')
+  }
 
-  return resolveChatPhone({
-    messages: chatStore.messages,
-    peerPhone: chatStore.currentChat?.peer?.phone,
-    fallbackPhone: route.query.phone as string | undefined,
-  }) || extractPhoneFromText(orderText.value) || ''
+  return (
+    resolveChatPhone({
+      messages: chatStore.messages,
+      peerPhone: chatStore.currentChat?.peer?.phone,
+      fallbackPhone: route.query.phone as string | undefined,
+    }) ||
+    extractPhoneFromText(orderText.value) ||
+    ''
+  )
 })
+
+const callTelHref = computed(() =>
+  callPhone.value ? normalizeTelHref(callPhone.value) : '',
+)
 
 const quickLinks = computed(() =>
   resolveQuickLinks(route.query as Record<string, unknown>, chatStore.currentChat),
@@ -567,11 +577,6 @@ const groupViewUrl = computed(() => quickLinks.value.groupHref)
 const showQuickActions = computed(
   () => !isSupport.value && !isDirect.value,
 )
-
-const onCall = () => {
-  if (!callPhone.value || !import.meta.client) return
-  window.location.href = normalizeTelHref(callPhone.value)
-}
 
 // Yangi xabar pastga qo'shilganda scroll (prepend da emas)
 watch(
