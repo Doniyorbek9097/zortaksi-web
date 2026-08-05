@@ -17,6 +17,7 @@ export const QUICK_LINK_QUERY_KEYS = [
   'msgId',
   'orderId',
   'orderText',
+  'fromGroup',
 ] as const
 
 const ORDER_TEXT_STORAGE_PREFIX = 'zt:order-text:'
@@ -77,6 +78,11 @@ export function resolveChatFromOpenQuery(
     return chats.find((c) => String(c.orderId || '') === orderId)
   }
   return undefined
+}
+
+/** Guruh «Mijozni olish» tugmasidan kelgan ochilish */
+export function isFromGroupTakeClient(query: Record<string, unknown>): boolean {
+  return String(query.fromGroup || '').trim() === '1'
 }
 
 /** Query dan minimal chat — header, banner, tezkor tugmalar kutmasdan */

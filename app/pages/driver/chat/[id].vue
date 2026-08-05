@@ -271,7 +271,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery } from '~/utils/orderChatQuery'
+import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -663,9 +663,12 @@ const syncQuickLinkQueryFromChat = async () => {
   })
 }
 
-/** Buyurtmachi bilan chat — tezkor tugmalar (support/direct emas) */
+/** Guruh «Mijozni olish» dan kelganda — Telegramda yozish / Guruhda ko'rish */
 const showQuickActions = computed(
-  () => !isSupport.value && !isDirect.value,
+  () =>
+    isFromGroupTakeClient(route.query as Record<string, unknown>) &&
+    !isSupport.value &&
+    !isDirect.value,
 )
 
 // Yangi xabar pastga qo'shilganda scroll (prepend da emas)
