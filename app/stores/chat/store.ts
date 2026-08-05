@@ -30,6 +30,7 @@ export const useChatStore = defineStore('chat', () => {
     const totalPages = ref(1)
     const messagesPage = ref(1)
     const messagesTotalPages = ref(1)
+    const messagesChatId = ref<string | null>(null)
     /** Chats ro'yxati scroll — profil/chatdan qaytganda tiklash */
     const chatsListScrollY = ref(0)
 
@@ -57,6 +58,7 @@ export const useChatStore = defineStore('chat', () => {
         totalPages,
         messagesPage,
         messagesTotalPages,
+        messagesChatId,
         connectionStatus,
         connectionReason,
         peerPresence,
@@ -78,6 +80,7 @@ export const useChatStore = defineStore('chat', () => {
     const releaseTabMemory = () => {
         messages.value = []
         currentChat.value = null
+        messagesChatId.value = null
         connection.resetConnection()
         list.resetMessagesPagination()
         clearMessagesCache()
@@ -106,6 +109,7 @@ export const useChatStore = defineStore('chat', () => {
         totalPages,
         messagesPage,
         messagesTotalPages,
+        messagesChatId,
         chatsListScrollY,
         hasMore: list.hasMore,
         hasMoreMessages: list.hasMoreMessages,
@@ -123,6 +127,7 @@ export const useChatStore = defineStore('chat', () => {
         fetchChats: list.fetchChats,
         loadMoreChats: list.loadMoreChats,
         fetchMessages: list.fetchMessages,
+        invalidateMessagesFetch: list.invalidateMessagesFetch,
         hydrateMessagesFromCache: list.hydrateMessagesFromCache,
         persistCurrentMessagesCache: list.persistCurrentMessagesCache,
         loadOlderMessages: list.loadOlderMessages,

@@ -130,9 +130,9 @@
           />
         </div>
 
-        <!-- Loading — faqat cache/query yo'q bo'lsa skeleton -->
-        <div v-if="showMessageSkeleton" class="space-y-2">
-          <div v-for="n in 6" :key="n" class="h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-1/2' : 'w-2/3 ml-auto'" />
+        <!-- Loading — chat almashtirish yoki birinchi yuklash -->
+        <div v-if="showMessageSkeleton" class="space-y-2 flex-1">
+          <div v-for="n in 8" :key="n" class="h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto'" />
         </div>
 
         <!-- Empty — darhol ko'rinsin (order konteksti bo'lsa) -->
@@ -143,6 +143,7 @@
           class="!min-h-0 flex-1"
         />
 
+        <template v-else-if="messagesMatchChat">
         <ChatMessageBubble
           v-for="msg in chatStore.messages"
           :key="String(msg._id)"
@@ -166,10 +167,11 @@
           @long-press="onMessageLongPress(String(msg._id), chatMediaType(msg))"
           @toggle-select="toggleMessageSelect(String(msg._id), chatMediaType(msg))"
         />
+        </template>
 
         <!-- Admin yozmoqda... -->
         <div
-          v-if="chatStore.isPeerTyping"
+          v-if="chatStore.isPeerTyping && messagesMatchChat && !showMessageSkeleton"
           class="flex justify-start"
         >
           <div
@@ -335,9 +337,16 @@ const isInAppOnly = computed(() => !!chatStore.currentChat?.inAppOnly)
 const isInAppChat = computed(() => isSupport.value || isDirect.value || isInAppOnly.value)
 const needsTelegramConnect = computed(() => !isInAppChat.value)
 
-/** Peer ismi — haydovchi ham oddiy foydalanuvchi kabi (haqiqiy ism) */
+/** Peer ismi — faqat joriy chatId uchun */
+const activeChatMeta = computed(() => {
+  const id = chatId.value
+  if (!id || id === 'open') return chatStore.currentChat
+  if (String(chatStore.currentChat?._id || '') === id) return chatStore.currentChat
+  return chatStore.chats.find((c) => String(c._id) === id) || chatStore.currentChat
+})
+
 const name = computed(() => {
-  const p = chatStore.currentChat?.peer
+  const p = activeChatMeta.value?.peer
   if (p) {
     const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
     if (full) return full
@@ -351,11 +360,41 @@ const name = computed(() => {
   return 'Buyurtmachi'
 })
 
-const peerAvatar = computed(() => chatStore.currentChat?.peer?.avatar)
-const peerUserId = computed(() => chatStore.currentChat?.peer?.userId)
+const peerAvatar = computed(() => activeChatMeta.value?.peer?.avatar)
+const peerUserId = computed(() => activeChatMeta.value?.peer?.userId)
+
+const orderText = computed(() => {
+  const fromChat = String(activeChatMeta.value?.orderText || '').trim()
+  if (fromChat) return fromChat
+  return resolveOrderTextHint(
+    route.query as Record<string, unknown>,
+    activeChatMeta.value,
+  )
+})
+
+/** Buyurtma banneri yoki cache — skeletonsiz darhol UI */
+const hasInstantContext = computed(
+  () => !!orderText.value || !!route.query.orderId,
+)
+
+/** Joriy chat xabarlari yuklangan/yuklanmoqda */
+const messagesMatchChat = computed(
+  () => chatStore.messagesChatId === chatId.value,
+)
+
+const showMessageSkeleton = computed(() => {
+  if (isOpening.value || chatId.value === 'open') return false
+  if (!messagesMatchChat.value) return true
+  return (
+    chatStore.isLoadingMessages &&
+    !chatStore.messages.length &&
+    !hasInstantContext.value
+  )
+})
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
+  if (showMessageSkeleton.value) return 'yuklanmoqda...'
   if ((isOpening.value || chatStore.isLoadingMessages) && !hasInstantContext.value) {
     return 'ochilmoqda...'
   }
@@ -366,33 +405,17 @@ const statusText = computed(() => {
   return '...'
 })
 
-const orderText = computed(() => {
-  const fromChat = String(chatStore.currentChat?.orderText || '').trim()
-  if (fromChat) return fromChat
-  return resolveOrderTextHint(
-    route.query as Record<string, unknown>,
-    chatStore.currentChat,
-  )
-})
-
-/** Buyurtma banneri yoki cache — skeletonsiz darhol UI */
-const hasInstantContext = computed(
-  () => !!orderText.value || !!route.query.orderId,
-)
-
-const showMessageSkeleton = computed(
-  () =>
-    chatStore.isLoadingMessages &&
-    !chatStore.messages.length &&
-    !hasInstantContext.value,
-)
-
 const showReadyEmpty = computed(
-  () => !chatStore.isLoadingMessages || hasInstantContext.value,
+  () =>
+    messagesMatchChat.value &&
+    (!chatStore.isLoadingMessages || hasInstantContext.value),
 )
 
 /** Direct chatda buyurtma matni o'rniga fixed kontekst xabari */
-const showOrderBanner = computed(() => isDirect.value || !!orderText.value)
+const showOrderBanner = computed(() => {
+  if (showMessageSkeleton.value && !hasInstantContext.value) return false
+  return isDirect.value || !!orderText.value
+})
 
 const orderBannerLabel = computed(() =>
   isDirect.value ? 'Haydovchi' : "Buyurtma e'loni"
@@ -748,9 +771,11 @@ const clearPresenceTimer = () => {
 
 const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean }) => {
   chatStore.persistCurrentMessagesCache()
+  chatStore.invalidateMessagesFetch()
   clearPresenceTimer()
   exitSelectionMode()
   chatStore.messages = []
+  chatStore.messagesChatId = null
   chatStore.resetMessagesPagination()
   chatStore.currentChat = null
   if (!opts?.preserveConnection) {

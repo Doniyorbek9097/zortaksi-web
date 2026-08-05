@@ -44,4 +44,6 @@ export interface ChatStoreRefs {
     messagesPage: Ref<number>
     messagesTotalPages: Ref<number>
     isLoadingOlderMessages: Ref<boolean>
+    /** messages[] qaysi chatId ga tegishli */
+    messagesChatId: Ref<string | null>
 }

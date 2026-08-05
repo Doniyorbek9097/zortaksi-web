@@ -29,7 +29,14 @@ export function createListActions(
         totalPages,
         messagesPage,
         messagesTotalPages,
+        messagesChatId,
     } = refs
+
+    let messagesFetchGen = 0
+
+    const invalidateMessagesFetch = () => {
+        messagesFetchGen += 1
+    }
 
     const hasMore = computed(() => page.value < totalPages.value)
     const hasMoreMessages = computed(
@@ -98,7 +105,9 @@ export function createListActions(
      * Cache bo'lsa skeleton ko'rsatilmaydi — fon da yangilanadi.
      */
     const fetchMessages = async (chatId: string) => {
-        const hadCached = messages.value.length > 0
+        const gen = messagesFetchGen
+        const hadCached =
+            messagesChatId.value === chatId && messages.value.length > 0
         try {
             if (!hadCached) {
                 isLoadingMessages.value = true
@@ -109,9 +118,12 @@ export function createListActions(
                 method: 'GET',
                 params: { page: 1, limit: MESSAGES_PAGE_LIMIT },
             })
+            if (gen !== messagesFetchGen) return res
+
             if (res.success) {
                 currentChat.value = res.data.chat
                 messages.value = mapMessages(res.data.messages || [])
+                messagesChatId.value = chatId
                 messagesPage.value = res.data.pagination?.page ?? 1
                 messagesTotalPages.value = res.data.pagination?.totalPages ?? 1
                 patchChat(chatId, { unreadCount: 0 })
@@ -129,7 +141,9 @@ export function createListActions(
             console.error('fetchMessages error:', error)
             throw error
         } finally {
-            isLoadingMessages.value = false
+            if (gen === messagesFetchGen) {
+                isLoadingMessages.value = false
+            }
         }
     }
 
@@ -138,6 +152,7 @@ export function createListActions(
         const cached = restoreMessagesCache(chatId)
         if (!cached) return false
         messages.value = cached.messages
+        messagesChatId.value = chatId
         messagesPage.value = cached.page
         messagesTotalPages.value = cached.totalPages
         isLoadingMessages.value = false
@@ -358,6 +373,7 @@ export function createListActions(
         fetchChats,
         loadMoreChats,
         fetchMessages,
+        invalidateMessagesFetch,
         hydrateMessagesFromCache,
         persistCurrentMessagesCache,
         loadOlderMessages,
