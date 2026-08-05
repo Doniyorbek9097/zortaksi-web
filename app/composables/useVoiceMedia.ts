@@ -42,6 +42,18 @@ const inflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
 const localOnly = new Set<string>()
 
+/** Tab almashganda blob URL xotirasini bo'shatish */
+export function releaseSessionMediaCache() {
+  for (const url of cache.values()) {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+  }
+  cache.clear()
+  cacheMediaPath.clear()
+  cacheOrder.length = 0
+  inflight.clear()
+  localOnly.clear()
+}
+
 function normalizeMessageId(messageId: string): string {
   return String(messageId || '').trim()
 }
@@ -430,14 +442,7 @@ export function useChatMedia() {
   }
 
   const revokeAll = () => {
-    for (const url of cache.values()) {
-      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
-    }
-    cache.clear()
-    cacheMediaPath.clear()
-    cacheOrder.length = 0
-    inflight.clear()
-    localOnly.clear()
+    releaseSessionMediaCache()
   }
 
   const clearDeviceCache = async () => {

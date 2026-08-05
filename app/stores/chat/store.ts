@@ -5,6 +5,7 @@ import { createListActions } from './actions/list'
 import { createLocalStateActions } from './actions/local-state'
 import { createMessagingActions } from './actions/messaging'
 import { createSocketActions } from './actions/socket'
+import { clearMessagesCache } from './helpers/message-cache'
 import type { ChatStoreRefs, ConnStatus, FetchChatsParams, PeerPresence } from './types'
 
 export type { FetchChatsParams }
@@ -73,6 +74,24 @@ export const useChatStore = defineStore('chat', () => {
         clearTypingForChat: connection.clearTypingForChat,
     })
 
+    /** Tabbar boshqa tabga o'tganda — chat sessiya xotirasi */
+    const releaseTabMemory = () => {
+        messages.value = []
+        currentChat.value = null
+        connection.resetConnection()
+        list.resetMessagesPagination()
+        clearMessagesCache()
+        chatsListScrollY.value = 0
+        chats.value = []
+        total.value = 0
+        page.value = 1
+        totalPages.value = 1
+        isLoading.value = false
+        isLoadingMore.value = false
+        isLoadingMessages.value = false
+        isLoadingOlderMessages.value = false
+    }
+
     return {
         chats,
         currentChat,
@@ -127,5 +146,6 @@ export const useChatStore = defineStore('chat', () => {
         onChatConnect: connection.onChatConnect,
         onPeerPresence: connection.onPeerPresence,
         onPeerTyping: connection.onPeerTyping,
+        releaseTabMemory,
     }
 })

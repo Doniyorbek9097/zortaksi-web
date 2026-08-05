@@ -681,6 +681,22 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    /** Tabbar boshqa tabga o'tganda — ro'yxat xotirasini bo'shatish (badge saqlanadi) */
+    const releaseListMemory = () => {
+        if (syncLatestTimer) {
+            clearTimeout(syncLatestTimer)
+            syncLatestTimer = null
+        }
+        orders.value = []
+        currentOrder.value = null
+        total.value = 0
+        page.value = 1
+        totalPages.value = 1
+        ordersListScrollY.value = 0
+        isLoading.value = false
+        isLoadingMore.value = false
+    }
+
     return {
         orders,
         currentOrder,
@@ -731,5 +747,6 @@ export const useOrderStore = defineStore('order', () => {
         unreadOrdersCount,
         markAllOrdersAsRead,
         startRecentMinuteTicker,
+        releaseListMemory,
     }
 })

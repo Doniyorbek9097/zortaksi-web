@@ -426,6 +426,21 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  /** Tabbar boshqa tabga o'tganda — guruhlar ro'yxati xotirasi */
+  const releaseTabMemory = () => {
+    mineGroups.value = []
+    adsGroups.value = []
+    selected.value = new Set()
+    minePage.value = 1
+    adsPage.value = 1
+    mineTotal.value = 0
+    adsTotal.value = 0
+    mineHasMore.value = false
+    adsHasMore.value = false
+    isLoading.value = false
+    isLoadingMore.value = false
+  }
+
   return {
     tab,
     mineGroups,
@@ -464,5 +479,6 @@ export const usePostStore = defineStore('post', () => {
     leaveGroup,
     broadcast,
     blockGroups,
+    releaseTabMemory,
   }
 })
