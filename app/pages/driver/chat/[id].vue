@@ -28,35 +28,65 @@
     />
 
     <!-- Xabarlar -->
-    <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-10 text-center gap-4">
-      <div class="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 inline-flex items-center justify-center">
-        <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="text-2xl" />
-      </div>
-      <div class="space-y-1">
-        <p class="text-base font-black text-slate-900 dark:text-white">Chat ochilmadi</p>
-        <p class="text-[13px] font-medium text-slate-500 dark:text-slate-400 leading-snug">
-          {{ openError }}
-        </p>
-      </div>
-      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-xs">
-        <button
-          type="button"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[12px] font-black active:scale-95"
-          @click="goBackFromOpen"
+    <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
+      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-4 flex-1">
+        <div
+          v-if="fallbackOrderText"
+          class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
         >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" />
-          Orqaga
-        </button>
-        <a
-          v-if="telegramContactUrl"
-          :href="telegramContactUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 text-white text-[12px] font-black active:scale-95"
-        >
-          <font-awesome-icon icon="fa-brands fa-telegram" />
-          Telegram orqali
-        </a>
+          <p class="text-[10px] font-black uppercase tracking-[0.16em] mb-1.5 text-amber-600 dark:text-amber-400">
+            Buyurtma e'loni
+          </p>
+          <p
+            v-if="orderGroupTitle"
+            class="text-[14px] font-bold text-slate-800 dark:text-slate-100 mb-1.5"
+          >
+            {{ orderGroupTitle }}
+          </p>
+          <p class="text-[15px] leading-relaxed text-slate-700 dark:text-slate-200">
+            <ChatLinkifiedText :text="fallbackOrderText" />
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center justify-center px-3 py-6 text-center gap-4">
+          <div class="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 inline-flex items-center justify-center">
+            <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="text-2xl" />
+          </div>
+          <div class="space-y-1">
+            <p class="text-base font-black text-slate-900 dark:text-white">Chat ochilmadi</p>
+            <p class="text-[13px] font-medium text-slate-500 dark:text-slate-400 leading-snug">
+              {{ openError }}
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-xs">
+            <button
+              type="button"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[12px] font-black active:scale-95"
+              @click="goBackFromOpen"
+            >
+              <font-awesome-icon icon="fa-solid fa-arrow-left" />
+              Orqaga
+            </button>
+            <a
+              v-if="telegramContactUrl"
+              :href="telegramContactUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 text-white text-[12px] font-black active:scale-95"
+            >
+              <font-awesome-icon icon="fa-brands fa-telegram" />
+              Telegram orqali
+            </a>
+            <a
+              v-if="callTelHref"
+              :href="callTelHref"
+              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[12px] font-black active:scale-95"
+            >
+              <font-awesome-icon icon="fa-solid fa-phone" />
+              Qo'ng'iroq
+            </a>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -355,6 +385,12 @@ const selectedMessageIds = ref<string[]>([])
 const isDeletingMessages = ref(false)
 const openFailed = ref(false)
 const openError = ref('')
+
+/** Chat ochilmasa ham query/stash dan buyurtma matni */
+const fallbackOrderText = computed(() => {
+  if (!isOpening.value || !openFailed.value) return ''
+  return resolveOrderTextHint(route.query as Record<string, unknown>, null)
+})
 
 const isSelectableMedia = (type: string) => type === 'voice' || type === 'photo'
 
@@ -689,8 +725,6 @@ const bootstrapOpenChat = async (seq: number) => {
     const raw = message || 'Chat ochib bo\'lmadi'
     if (/order topilmadi/i.test(raw)) {
       openError.value = 'Buyurtma muddati tugagan yoki o\'chirilgan. Telegram orqali bog\'laning.'
-    } else if (/bot bilan chat/i.test(raw)) {
-      openError.value = 'Bu buyurtma botdan — chat ochib bo\'lmaydi.'
     } else {
       openError.value = raw
     }
