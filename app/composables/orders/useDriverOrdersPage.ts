@@ -8,6 +8,7 @@ import { useOrdersBooking } from './useOrdersBooking'
 import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
 import { useOrdersAddToBot } from './useOrdersAddToBot'
+import { useOrdersPreconnect } from './useOrdersPreconnect'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
@@ -45,6 +46,11 @@ export function useDriverOrdersPage() {
     chatStore,
     showError: moderation.showError,
     beforeNavigate: saveScroll,
+  })
+
+  useOrdersPreconnect({
+    chatStore,
+    displayOrders: filter.displayOrders,
   })
 
   const addToBot = useOrdersAddToBot({

@@ -271,7 +271,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext } from '~/utils/orderChatQuery'
+import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady } from '~/stores/chat/actions/connection'
@@ -487,8 +487,10 @@ const canSendTelegram = computed(
   () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
 )
 
-/** Loading / open — faqat bootstrap; xabarlar fon yuklanadi */
-const composerBusy = computed(() => isOpening.value)
+/** Loading / open — faqat bootstrap va kontekst yo'q bo'lsa */
+const composerBusy = computed(
+  () => isOpening.value && !wasLinkedBefore.value && !hasInstantContext.value,
+)
 
 const showComposer = computed(
   () =>
@@ -624,6 +626,26 @@ const telegramContactUrl = computed(() => quickLinks.value.telegramHref)
 
 const groupViewUrl = computed(() => quickLinks.value.groupHref)
 
+/** Xabarlar yuklangach guruh havolasini query ga qo'shish (chat ro'yxatidan ochilganda) */
+const syncQuickLinkQueryFromChat = async () => {
+  const chat = chatStore.currentChat
+  if (!chat?.orderId) return
+
+  const merged = chatPeerQuickLinkQuery(chat)
+  const q = route.query as Record<string, string | undefined>
+  const hasGroupLink =
+    !!String(q.groupId || '').trim() ||
+    !!String(q.groupUsername || '').trim() ||
+    !!String(q.msgId || '').trim()
+  if (hasGroupLink) return
+  if (!merged.groupId && !merged.groupUsername) return
+
+  await router.replace({
+    path: route.path,
+    query: { ...q, ...merged },
+  })
+}
+
 /** Buyurtmachi bilan chat — tezkor tugmalar (support/direct emas) */
 const showQuickActions = computed(
   () => !isSupport.value && !isDirect.value,
@@ -651,14 +673,16 @@ const clearPresenceTimer = () => {
   }
 }
 
-const resetChatUi = (nextChatId?: string) => {
+const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean }) => {
   chatStore.persistCurrentMessagesCache()
   clearPresenceTimer()
   exitSelectionMode()
   chatStore.messages = []
   chatStore.resetMessagesPagination()
   chatStore.currentChat = null
-  chatStore.resetConnection()
+  if (!opts?.preserveConnection) {
+    chatStore.resetConnection()
+  }
   chatStore.isLoadingMessages = true
   draft.value = ''
   focusId.value = String(route.query.focus || '')
@@ -843,7 +867,9 @@ const bootstrapOpenChat = async (seq: number) => {
 
 const loadChat = async (id: string) => {
   const seq = ++loadSeq
-  resetChatUi(id)
+  const listedEarly = chatStore.chats.find((c) => c._id === id)
+  const preserveConnection = !!(listedEarly && isChatLikelyReady(listedEarly))
+  resetChatUi(id, { preserveConnection })
   primeInstantOrderUi()
 
   if (id === 'open') {
@@ -853,7 +879,7 @@ const loadChat = async (id: string) => {
     return
   }
 
-  const listed = chatStore.chats.find((c) => c._id === id)
+  const listed = listedEarly || chatStore.chats.find((c) => c._id === id)
   if (listed) chatStore.currentChat = listed
 
   chatStore.primeFromChat(listed || chatStore.currentChat)
@@ -873,6 +899,7 @@ const loadChat = async (id: string) => {
     }
     await chatStore.fetchMessages(id)
     chatStore.primeFromChat(chatStore.currentChat)
+    syncQuickLinkQueryFromChat()
   } catch (err) {
     console.error('loadChat error:', err)
   }

@@ -115,7 +115,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
     }
 
     const runConnect = async (chatId: string, opts: { silent?: boolean } = {}) => {
-        const maxAttempts = 1
+        const maxAttempts = opts.silent ? 2 : 2
         if (!opts.silent && !isChatLikelyReady(currentChat.value)) {
             connectionStatus.value = 'connecting'
             connectionReason.value = ''
@@ -135,7 +135,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 if (res.success) {
                     const next = (res.data?.status ?? 'unreachable') as ConnStatus
 
-                    if (next === 'unreachable' && attempt < maxAttempts && !opts.silent) {
+                    if (next === 'unreachable' && attempt < maxAttempts) {
                         continue
                     }
 
@@ -162,7 +162,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             } catch (error: any) {
                 lastError = error
                 console.error('connect error:', error)
-                if (attempt < maxAttempts && !opts.silent) continue
+                if (attempt < maxAttempts) continue
                 if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
                     connectionReason.value = error?.response?.data?.message ?? ''

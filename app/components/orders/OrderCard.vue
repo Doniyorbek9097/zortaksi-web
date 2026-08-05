@@ -195,6 +195,7 @@
 <script setup lang="ts">
 import type { IOrder } from '~/types'
 import { hidePhoneNumbers, normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
+import { buildGroupViewUrl } from '~/utils/telegramLinks'
 
 interface Props {
   order: IOrder
@@ -262,21 +263,13 @@ const canAddToBot = computed(
 )
 
 /** Admin: Telegram guruhidagi xabarni ochish */
-const groupViewUrl = computed(() => {
-  const username = String(group.value?.username || '')
-    .trim()
-    .replace(/^@/, '')
-  if (username) return `https://t.me/${username}/${props.order.message?.messageId}`
-
-  const gid = String(group.value?.groupId || '').trim()
-  const mid = Number(props.order.message?.messageId || 0)
-  if (!gid || !mid) return ''
-
-  // Private supergroup: t.me/c/<id>/<msgId> (−100 prefikssiz)
-  const channelId = gid.replace(/^-100/, '')
-  if (!/^\d+$/.test(channelId)) return ''
-  return `https://t.me/c/${channelId}/${mid}`
-})
+const groupViewUrl = computed(() =>
+  buildGroupViewUrl({
+    groupUsername: group.value?.username,
+    groupId: group.value?.groupId,
+    messageId: props.order.message?.messageId,
+  }),
+)
 
 const interestCount = computed(() => Math.max(0, Number(props.order.interestCount || 0)))
 
