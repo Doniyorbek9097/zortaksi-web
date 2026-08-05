@@ -15,7 +15,7 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, isOrderFilterConfigured } from '~/utils/orderFilterKeywords'
+import { isOrderFilterConfigured } from '~/utils/orderFilterKeywords'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
@@ -30,11 +30,7 @@ const mandatoryFilterOpen = computed(() => {
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
   if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 20 })
-  await orderStore.refreshMemberGroupIds()
-  void orderStore.refreshScopeCounts(
-    loadOrderFilterBotGroupId() ? undefined : loadOrderFilterKeywords().trim() || undefined,
-    loadOrderFilterBotGroupId().trim() || undefined,
-  )
+  void orderStore.refreshNewCount()
 }
 
 onMounted(() => {

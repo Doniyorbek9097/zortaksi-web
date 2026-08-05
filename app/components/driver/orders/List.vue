@@ -12,7 +12,6 @@
             :role="role"
             :active="active"
             :current-user-id="currentUserId"
-            :is-member="isMember?.(order) ?? false"
             unread
             @unlock="$emit('unlock')"
             @book="$emit('book', order)"
@@ -25,8 +24,6 @@
             @stop-group="$emit('stop-group', order)"
             @stop-user="$emit('stop-user', order)"
             @delete="$emit('delete', order)"
-            @join-group="$emit('join-group', order)"
-            @leave-group="$emit('leave-group', order)"
             @add-to-bot="$emit('add-to-bot', order)"
           />
         </div>
@@ -52,7 +49,6 @@
             :role="role"
             :active="active"
             :current-user-id="currentUserId"
-            :is-member="isMember?.(order) ?? false"
             :unread="false"
             @unlock="$emit('unlock')"
             @book="$emit('book', order)"
@@ -65,8 +61,6 @@
             @stop-group="$emit('stop-group', order)"
             @stop-user="$emit('stop-user', order)"
             @delete="$emit('delete', order)"
-            @join-group="$emit('join-group', order)"
-            @leave-group="$emit('leave-group', order)"
             @add-to-bot="$emit('add-to-bot', order)"
           />
         </div>
@@ -85,7 +79,6 @@
           :role="role"
           :active="active"
           :current-user-id="currentUserId"
-          :is-member="isMember?.(order) ?? false"
           @unlock="$emit('unlock')"
           @book="$emit('book', order)"
           @unbook="$emit('unbook', order)"
@@ -97,8 +90,6 @@
           @stop-group="$emit('stop-group', order)"
           @stop-user="$emit('stop-user', order)"
           @delete="$emit('delete', order)"
-          @join-group="$emit('join-group', order)"
-          @leave-group="$emit('leave-group', order)"
           @add-to-bot="$emit('add-to-bot', order)"
         />
       </div>
@@ -134,7 +125,6 @@ const props = defineProps<{
   currentUserId?: string
   loadingMore: boolean
   hasMore: boolean
-  isMember?: (order: IOrder) => boolean
   isOrderSeen?: (order: IOrder) => boolean
   /** Haydovchi: o'qilgan/o'qilmagan bo'linishi */
   showReadDivider?: boolean
@@ -152,8 +142,6 @@ defineEmits<{
   'stop-group': [order: IOrder]
   'stop-user': [order: IOrder]
   delete: [order: IOrder]
-  'join-group': [order: IOrder]
-  'leave-group': [order: IOrder]
   'add-to-bot': [order: IOrder]
 }>()
 

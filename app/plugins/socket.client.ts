@@ -11,7 +11,6 @@ import {
   orderMatchesRegionFilter,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
-import { readOrdersScope } from '~/utils/ordersScope'
 
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
@@ -33,11 +32,11 @@ export default defineNuxtPlugin(() => {
   const orderSearchParams = () => {
     const botGroupId = loadOrderFilterBotGroupId().trim() || undefined
     const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
-    const scope = readOrdersScope(orderStore.listScope)
+    const text = orderStore.listText.trim() || undefined
     return {
       limit: ORDERS_PAGE_LIMIT,
-      scope,
       ...(botGroupId ? { botGroupId } : search ? { search } : {}),
+      ...(text ? { text } : {}),
     }
   }
 
@@ -93,41 +92,23 @@ export default defineNuxtPlugin(() => {
     socket.on('order:new', (order) => {
       const botGroupId = loadOrderFilterBotGroupId().trim()
       const kw = loadOrderFilterKeywords().trim()
+      const textQuery = orderStore.listText.trim()
 
-      if (botGroupId) {
-        if ((order?.status || 'new') === 'new') {
-          const mine = orderStore.isMemberGroup(order?.group?.groupId)
-          orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
-        }
-        const scope = readOrdersScope(orderStore.listScope)
-        if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
-          const mine = orderStore.isMemberGroup(order?.group?.groupId)
-          if (scope === 'mine' && !mine) return
-          if (scope === 'others' && mine) return
-        }
+      if (botGroupId || textQuery) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
 
       if (kw && !orderMatchesRegionFilter(order, kw)) return
 
-      if ((order?.status || 'new') === 'new') {
-        const mine = orderStore.isMemberGroup(order?.group?.groupId)
-        orderStore.bumpScopeNewCount(mine ? 'mine' : 'others', 1)
-      }
-      const scope = readOrdersScope(orderStore.listScope)
-      if (orderStore.memberGroupIds.size > 0 && scope !== 'all') {
-        const mine = orderStore.isMemberGroup(order?.group?.groupId)
-        if (scope === 'mine' && !mine) return
-        if (scope === 'others' && mine) return
-      }
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
       const botGroupId = loadOrderFilterBotGroupId().trim()
       const kw = loadOrderFilterKeywords().trim()
-      if (botGroupId) {
+      const textQuery = orderStore.listText.trim()
+      if (botGroupId || textQuery) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }

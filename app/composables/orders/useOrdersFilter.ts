@@ -11,14 +11,8 @@ import {
   markOrderFilterConfigured,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
-import {
-  ORDERS_SCOPE_STORAGE_KEY,
-  type OrdersScope,
-} from '~/utils/ordersScope'
 
 const LIMIT = ORDERS_PAGE_LIMIT
-
-export type { OrdersScope }
 
 /**
  * Buyurtmalar filtri — server (search/botGroupId) + client qo'shimcha filter.
@@ -29,16 +23,13 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const draftBotGroupId = ref('')
   const appliedKeywords = ref('')
   const appliedBotGroupId = ref('')
-  const scope = ref<OrdersScope>('all')
-  const scopeLoading = ref(false)
   const filterLoading = ref(false)
-  const scopeNewCounts = computed(() => orderStore.scopeNewCounts)
-  const allNewCount = computed(
-    () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
-  )
+  const orderQuery = ref('')
+  const appliedOrderQuery = ref('')
   const filterActive = computed(
     () => !!appliedBotGroupId.value.trim() || !!appliedKeywords.value.trim(),
   )
+  const orderSearchActive = computed(() => !!appliedOrderQuery.value.trim())
 
   const buildFilterParams = () => {
     const botGroupId = appliedBotGroupId.value.trim()
@@ -49,14 +40,14 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     return search ? { search } : {}
   }
 
-  /** API so'rovlari uchun query (limit + filter + scope) */
+  /** API so'rovlari uchun query (limit + filter + matn qidiruvi) */
   const queryParams = () => ({
     limit: LIMIT,
-    scope: scope.value,
     ...buildFilterParams(),
+    ...(appliedOrderQuery.value.trim() ? { text: appliedOrderQuery.value.trim() } : {}),
   })
 
-  /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi (DB kalit so'zlari to'liq) */
+  /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi */
   const displayOrders = computed(() => {
     if (appliedBotGroupId.value.trim()) return orderStore.orders
     const raw = appliedKeywords.value.trim()
@@ -64,17 +55,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     return filterOrdersByKeywords(orderStore.orders, raw)
   })
 
-  const refreshScopeCounts = () =>
-    orderStore.refreshScopeCounts(
-      appliedBotGroupId.value ? undefined : appliedKeywords.value.trim() || undefined,
-      appliedBotGroupId.value.trim() || undefined,
-    )
-
   const load = async () => {
-    const res = await orderStore.fetchOrders({ page: 1, ...queryParams() })
-    await refreshScopeCounts()
-    orderStore.reconcileScopeCountsAfterLoad()
-    return res
+    return orderStore.fetchOrders({ page: 1, ...queryParams() })
   }
 
   const loadMore = () => orderStore.loadMore(queryParams())
@@ -83,6 +65,20 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     orderStore.ordersListScrollY = 0
     orderStore.orders = []
     orderStore.applyListFilter({ page: 1, ...queryParams() })
+  }
+
+  /** Buyurtma matni — server `text` (debounce orders.vue dan) */
+  const applyOrderQuery = async (value: string) => {
+    const next = String(value || '').trim()
+    if (next === appliedOrderQuery.value) return
+    appliedOrderQuery.value = next
+    beginFilterReload()
+    filterLoading.value = true
+    try {
+      await load()
+    } finally {
+      filterLoading.value = false
+    }
   }
 
   const onSaveFilter = async () => {
@@ -137,26 +133,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     }
   }
 
-  const setScope = async (next: OrdersScope) => {
-    if (scope.value === next) return
-    scope.value = next
-    if (import.meta.client) {
-      try {
-        sessionStorage.setItem(ORDERS_SCOPE_STORAGE_KEY, next)
-      } catch { /* ignore */ }
-    }
-    orderStore.ordersListScrollY = 0
-    orderStore.orders = []
-    orderStore.applyListFilter({ page: 1, ...queryParams() })
-    scopeLoading.value = true
-    try {
-      await orderStore.refreshMemberGroupIds()
-      await load()
-    } finally {
-      scopeLoading.value = false
-    }
-  }
-
   const hydrateFilter = () => {
     const saved = loadOrderFilterKeywords()
     const savedGroup = loadOrderFilterBotGroupId()
@@ -164,16 +140,9 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedKeywords.value = saved
     draftBotGroupId.value = savedGroup
     appliedBotGroupId.value = savedGroup
-    if (import.meta.client) {
-      try {
-        const s = sessionStorage.getItem(ORDERS_SCOPE_STORAGE_KEY)
-        if (s === 'all' || s === 'mine' || s === 'others') scope.value = s
-      } catch { /* ignore */ }
-    }
     orderStore.applyListFilter({
       page: 1,
       limit: LIMIT,
-      scope: scope.value,
       ...(savedGroup ? { botGroupId: savedGroup } : { search: saved.trim() || undefined }),
     })
   }
@@ -184,12 +153,12 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftBotGroupId,
     appliedKeywords,
     appliedBotGroupId,
-    scope,
-    scopeLoading,
     filterLoading,
-    scopeNewCounts,
-    allNewCount,
     filterActive,
+    orderQuery,
+    orderSearchActive,
+    appliedOrderQuery,
+    applyOrderQuery,
     displayOrders,
     queryParams,
     load,
@@ -197,8 +166,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     onSaveFilter,
     onCancelFilter,
     onRemoveRegion,
-    setScope,
     hydrateFilter,
-    refreshScopeCounts,
   }
 }

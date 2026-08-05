@@ -11,7 +11,6 @@ export interface FetchOrdersParams {
     search?: string
     botGroupId?: string
     text?: string
-    scope?: 'all' | 'mine' | 'others'
     sinceHours?: number
 }
 
@@ -25,54 +24,19 @@ export const useOrderStore = defineStore('order', () => {
     const totalPages = ref(1)
     /** Tab badge — status=new buyurtmalar soni */
     const newOrdersCount = ref(0)
-    /** Meniki / Boshqalar — yangi buyurtmalar (tab + tabbar badge) */
-    const scopeNewCounts = ref({ mine: 0, others: 0 })
     /** Orders scroll — chatdan qaytganda tiklash */
     const ordersListScrollY = ref(0)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
     /** Yo'nalish — bot guruh ID (kalit so'zlar serverda) */
     const listBotGroupId = ref('')
-    /** Oxirgi fetchOrders scope */
-    const listScope = ref<'all' | 'mine' | 'others'>('all')
-    /** A'zo guruh IDlari — socket order:new filtri */
-    const memberGroupIds = ref<Set<string>>(new Set())
-
-    const normalizeGroupId = (id: string) => String(id || '').replace(/[^\d]/g, '')
-
-    const isMemberGroup = (groupId?: string | null) => {
-        const raw = String(groupId || '').trim()
-        if (!raw || !memberGroupIds.value.size) return false
-        if (memberGroupIds.value.has(raw)) return true
-        const digits = normalizeGroupId(raw)
-        return !!digits && memberGroupIds.value.has(digits)
-    }
-
-    const refreshMemberGroupIds = async () => {
-        try {
-            const res = await useApi('/groups/mine/ids', { timeout: 120_000 })
-            if (!res.success) return
-            const ids = Array.isArray(res.data?.ids) ? res.data.ids : []
-            const next = new Set<string>()
-            for (const id of ids) {
-                const s = String(id || '').trim()
-                if (!s) continue
-                next.add(s)
-                const digits = normalizeGroupId(s)
-                if (digits) next.add(digits)
-            }
-            memberGroupIds.value = next
-        } catch {
-            /* socket filtri ixtiyoriy — server sync asosiy */
-        }
-    }
+    /** Buyurtma matni qidiruvi */
+    const listText = ref('')
 
     const rememberListFilter = (params: FetchOrdersParams) => {
         listBotGroupId.value = String(params.botGroupId || '').trim()
         listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
-        if (params.scope === 'all' || params.scope === 'mine' || params.scope === 'others') {
-            listScope.value = params.scope
-        }
+        listText.value = String(params.text || '').trim()
     }
 
     const hasActiveListFilter = () =>
@@ -184,33 +148,15 @@ export const useOrderStore = defineStore('order', () => {
     }
 
     /** Buyurtma ko'rildi — badge dan chiqarish */
-    const decScopeCountForOrder = (order: IOrder) => {
-        if ((order.status || 'new') !== 'new') return
-        if (!isWithinUnreadWindow(order)) return
-        if (isMemberGroup(order.group?.groupId)) {
-            scopeNewCounts.value = {
-                ...scopeNewCounts.value,
-                mine: Math.max(0, scopeNewCounts.value.mine - 1),
-            }
-        } else {
-            scopeNewCounts.value = {
-                ...scopeNewCounts.value,
-                others: Math.max(0, scopeNewCounts.value.others - 1),
-            }
-        }
-    }
-
     const markOrderSeen = (orderId?: string | null) => {
         const id = orderId ? String(orderId) : ''
         if (!id || seenOrderIds.value[id]) return
-        const order = orders.value.find((o) => String(o._id) === id)
         seenOrderIds.value = { ...seenOrderIds.value, [id]: true }
         if (recentArrivals.value[id]) {
             const next = { ...recentArrivals.value }
             delete next[id]
             recentArrivals.value = next
         }
-        if (order) decScopeCountForOrder(order)
         recentTick.value += 1
         persistSeen()
     }
@@ -225,8 +171,6 @@ export const useOrderStore = defineStore('order', () => {
             seenNext[id] = true
             if (recentNext[id]) delete recentNext[id]
             changed = true
-            const order = orders.value.find((o) => String(o._id) === id)
-            if (order) decScopeCountForOrder(order)
         }
         if (!changed) return
         seenOrderIds.value = seenNext
@@ -281,75 +225,6 @@ export const useOrderStore = defineStore('order', () => {
         return n
     })
 
-    /** Pastki tabbar — Meniki + Boshqalar yangi buyurtmalar */
-    const ordersTabBadge = computed(
-        () => scopeNewCounts.value.mine + scopeNewCounts.value.others,
-    )
-
-    const refreshScopeCounts = async (search?: string, botGroupId?: string) => {
-        const gid =
-            botGroupId !== undefined
-                ? String(botGroupId || '').trim() || undefined
-                : listBotGroupId.value.trim() || undefined
-        const s = gid
-            ? undefined
-            : search !== undefined
-              ? String(search || '').trim() || undefined
-              : listSearch.value.trim() || undefined
-        const filterParams = gid ? { botGroupId: gid } : s ? { search: s } : {}
-        try {
-            const [mineRes, othersRes] = await Promise.all([
-                useApi('/orders', {
-                    method: 'GET',
-                    params: {
-                        status: 'new',
-                        page: 1,
-                        limit: 1,
-                        scope: 'mine',
-                        ...filterParams,
-                        sinceHours: 1,
-                    },
-                }),
-                useApi('/orders', {
-                    method: 'GET',
-                    params: {
-                        status: 'new',
-                        page: 1,
-                        limit: 1,
-                        scope: 'others',
-                        ...filterParams,
-                        sinceHours: 1,
-                    },
-                }),
-            ])
-            scopeNewCounts.value = {
-                mine: mineRes.success ? Number(mineRes.data?.pagination?.total ?? 0) : 0,
-                others: othersRes.success ? Number(othersRes.data?.pagination?.total ?? 0) : 0,
-            }
-        } catch {
-            /* badge ixtiyoriy */
-        }
-    }
-
-    /** Server 1 soat count dan ro'yxatdagi ko'rilganlarni ayirish */
-    const reconcileScopeCountsAfterLoad = () => {
-        for (const o of orders.value) {
-            const id = o?._id ? String(o._id) : ''
-            if (!id || !seenOrderIds.value[id]) continue
-            decScopeCountForOrder(o)
-        }
-    }
-
-    const bumpScopeNewCount = (scope: 'mine' | 'others', delta = 1) => {
-        scopeNewCounts.value = {
-            ...scopeNewCounts.value,
-            [scope]: Math.max(0, scopeNewCounts.value[scope] + delta),
-        }
-    }
-
-    const scopeForOrder = (order: IOrder): 'mine' | 'others' =>
-        isMemberGroup(order?.group?.groupId) ? 'mine' : 'others'
-
     const startRecentMinuteTicker = () => {
         if (!import.meta.client || recentTicker) return
         loadSeenFromStorage()
@@ -370,7 +245,6 @@ export const useOrderStore = defineStore('order', () => {
                     status: 'new',
                     page: 1,
                     limit: 1,
-                    scope: listScope.value,
                     ...(listBotGroupId.value
                         ? { botGroupId: listBotGroupId.value }
                         : { search: listSearch.value || undefined }),
@@ -401,7 +275,6 @@ export const useOrderStore = defineStore('order', () => {
         }
         if (prev?.status === 'new' && order.status === 'booked') {
             bumpNewCount(-1)
-            bumpScopeNewCount(scopeForOrder(prev), -1)
         }
     }
 
@@ -415,7 +288,6 @@ export const useOrderStore = defineStore('order', () => {
             total.value = Math.max(0, total.value - 1)
             if (prev.status === 'new') {
                 bumpNewCount(-1)
-                bumpScopeNewCount(scopeForOrder(prev), -1)
             }
         }
     }
@@ -451,10 +323,6 @@ export const useOrderStore = defineStore('order', () => {
      */
     const syncLatest = async (params: FetchOrdersParams = {}) => {
         try {
-            const incomingScope = params.scope ?? 'all'
-            if (incomingScope !== listScope.value) {
-                return null
-            }
             const response = await useApi('/orders', {
                 method: 'GET',
                 params: { ...params, limit: params.limit ?? 5, page: 1 },
@@ -483,7 +351,6 @@ export const useOrderStore = defineStore('order', () => {
             noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
-            void refreshScopeCounts(params.search, params.botGroupId)
             return response
         } catch (error) {
             console.warn('syncLatest error:', error)
@@ -571,12 +438,8 @@ export const useOrderStore = defineStore('order', () => {
                 }
                 if (prev?.status === 'new' || response.data?.order?.status === 'booked') {
                     bumpNewCount(-1)
-                    if (prev?.status === 'new') {
-                        bumpScopeNewCount(scopeForOrder(prev), -1)
-                    }
                 }
             }
-            void refreshScopeCounts()
             return response
         } catch (error: any) {
             // 402 va boshqa xatolarni caller ko'rsatadi
@@ -593,7 +456,6 @@ export const useOrderStore = defineStore('order', () => {
             }
             if (response.data?.order?.status === 'new') bumpNewCount(1)
         }
-        void refreshScopeCounts()
         return response
     }
 
@@ -605,10 +467,8 @@ export const useOrderStore = defineStore('order', () => {
             total.value = Math.max(0, total.value - 1)
             if (prev?.status === 'new') {
                 bumpNewCount(-1)
-                bumpScopeNewCount(scopeForOrder(prev), -1)
             }
         }
-        void refreshScopeCounts()
         return response
     }
 
@@ -621,7 +481,6 @@ export const useOrderStore = defineStore('order', () => {
             } else {
                 orders.value = orders.value.filter((o) => o._id !== orderId)
             }
-            void refreshScopeCounts()
         }
         return response
     }
@@ -635,7 +494,6 @@ export const useOrderStore = defineStore('order', () => {
             } else {
                 orders.value = orders.value.filter((o) => o._id !== orderId)
             }
-            void refreshScopeCounts()
         }
         return response
     }
@@ -706,18 +564,13 @@ export const useOrderStore = defineStore('order', () => {
         page,
         totalPages,
         newOrdersCount,
-        scopeNewCounts,
-        ordersTabBadge,
         ordersListScrollY,
         listSearch,
         listBotGroupId,
-        listScope,
+        listText,
         applyListFilter,
         hasActiveListFilter,
         scheduleSyncLatest,
-        memberGroupIds,
-        isMemberGroup,
-        refreshMemberGroupIds,
         recentMinuteCount,
         hasMore,
         fetchOrders,
@@ -735,9 +588,6 @@ export const useOrderStore = defineStore('order', () => {
         markInterest,
         fetchInterest,
         refreshNewCount,
-        refreshScopeCounts,
-        reconcileScopeCountsAfterLoad,
-        bumpScopeNewCount,
         bumpNewCount,
         noteRecentOrder,
         markOrderSeen,

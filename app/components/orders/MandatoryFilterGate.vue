@@ -23,7 +23,6 @@ import {
   isOrderFilterConfigured,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
-import { ORDERS_SCOPE_STORAGE_KEY, type OrdersScope } from '~/utils/ordersScope'
 
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
@@ -38,14 +37,6 @@ const showGate = computed(() => {
   return !isOrderFilterConfigured()
 })
 
-const readScope = (): OrdersScope => {
-  try {
-    const s = sessionStorage.getItem(ORDERS_SCOPE_STORAGE_KEY)
-    if (s === 'mine' || s === 'others' || s === 'all') return s
-  } catch { /* ignore */ }
-  return 'all'
-}
-
 const onSave = async () => {
   const kw = draftKeywords.value.trim()
   const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
@@ -58,11 +49,9 @@ const onSave = async () => {
 
   markOrderFilterConfigured()
 
-  const scope = readScope()
   orderStore.applyListFilter({
     page: 1,
     limit: ORDERS_PAGE_LIMIT,
-    scope,
     ...(gid ? { botGroupId: gid } : { search: kw || undefined }),
   })
 
@@ -70,10 +59,8 @@ const onSave = async () => {
   void orderStore.fetchOrders({
     page: 1,
     limit: ORDERS_PAGE_LIMIT,
-    scope,
     ...(gid ? { botGroupId: gid } : { search: kw || undefined }),
   })
-  void orderStore.refreshScopeCounts(gid ? undefined : kw || undefined, gid || undefined)
   void postStore.setSearch(kw, gid)
 }
 

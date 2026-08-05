@@ -7,19 +7,16 @@ import { useOrdersListSync } from './useOrdersListSync'
 import { useOrdersBooking } from './useOrdersBooking'
 import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
-import { useOrdersMembership } from './useOrdersMembership'
 import { useOrdersAddToBot } from './useOrdersAddToBot'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
- * Sahifa fayli faqat UI ulash uchun qoladi.
  */
 export function useDriverOrdersPage() {
   const authStore = useAuthStore()
   const orderStore = useOrderStore()
   const chatStore = useChatStore()
 
-  // Rol va aktivlik — tugmalarni ko'rsatishni boshqaradi
   const role = computed(() => authStore.user?.role)
   const active = computed(() => authStore.tariffActive)
   const isAdmin = computed(() => role.value === 'admin')
@@ -50,15 +47,6 @@ export function useDriverOrdersPage() {
     beforeNavigate: saveScroll,
   })
 
-  const membership = useOrdersMembership({
-    orderStore,
-    showError: moderation.showError,
-    onMembershipChanged: () => {
-      void filter.load()
-      void filter.refreshScopeCounts()
-    },
-  })
-
   const addToBot = useOrdersAddToBot({
     showError: moderation.showError,
     showSuccess: moderation.showSuccess,
@@ -74,53 +62,43 @@ export function useDriverOrdersPage() {
 
   usePullToRefresh(() => filter.load())
 
+  let orderQueryTimer: ReturnType<typeof setTimeout> | null = null
+  watch(filter.orderQuery, (val) => {
+    if (orderQueryTimer) clearTimeout(orderQueryTimer)
+    orderQueryTimer = setTimeout(() => {
+      if (val.trim() === filter.appliedOrderQuery.value) return
+      void filter.applyOrderQuery(val)
+    }, 350)
+  })
+
+  onBeforeUnmount(() => {
+    if (orderQueryTimer) clearTimeout(orderQueryTimer)
+  })
+
   return {
     authStore,
     orderStore,
     role,
     active,
     isAdmin,
-    // Filter
     showFilter: filter.showFilter,
     draftKeywords: filter.draftKeywords,
     draftBotGroupId: filter.draftBotGroupId,
     appliedKeywords: filter.appliedKeywords,
     appliedBotGroupId: filter.appliedBotGroupId,
     filterActive: filter.filterActive,
-    scope: filter.scope,
-    scopeLoading: filter.scopeLoading,
     filterLoading: filter.filterLoading,
-    scopeNewCounts: filter.scopeNewCounts,
-    allNewCount: filter.allNewCount,
-    setScope: filter.setScope,
+    orderQuery: filter.orderQuery,
+    orderSearchActive: filter.orderSearchActive,
     displayOrders: filter.displayOrders,
     onSaveFilter: filter.onSaveFilter,
     onCancelFilter: filter.onCancelFilter,
     onRemoveRegion: filter.onRemoveRegion,
-    // List sync
     sentinel,
     listRoot,
-    // Booking
     ...booking,
-    // Chat
     ...chat,
-    // Moderation
     ...moderation,
-    // Membership
-    showJoinDialog: membership.showJoinDialog,
-    showLeaveDialog: membership.showLeaveDialog,
-    membershipLoading: membership.membershipLoading,
-    joinMessage: membership.joinMessage,
-    leaveMessage: membership.leaveMessage,
-    groupTitle: membership.groupTitle,
-    membershipGroup: membership.membershipGroup,
-    isMemberOfOrder: membership.isMemberOfOrder,
-    onJoinGroup: membership.onJoinGroup,
-    onLeaveGroup: membership.onLeaveGroup,
-    confirmJoin: membership.confirmJoin,
-    confirmLeave: membership.confirmLeave,
-    cancelMembership: membership.cancelMembership,
-    // Botga qo'shish (admin)
     ...addToBot,
     onUnlock,
     unreadCount,
