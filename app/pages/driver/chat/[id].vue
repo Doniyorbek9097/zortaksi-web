@@ -271,7 +271,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
+import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -785,14 +785,50 @@ const ensureTariffForOrderTake = async (): Promise<boolean> => {
   return false
 }
 
+/** Silent connect + xabar prefetch — orders preconnect bilan bir xil */
+const preconnectChatOpen = (id: string, chat?: import('~/types').IChat | null) => {
+  if (!id) return
+  if (chat) chatStore.primeFromChat(chat)
+  void chatStore.connect(id, { silent: true })
+  void chatStore.fetchMessages(id)
+}
+
+/** Chat topildi — ro'yxatga qo'shish va real chatId ga o'tish */
+const finalizeOpenChat = async (chat: import('~/types').IChat) => {
+  const newId = String(chat._id || '')
+  if (!newId) return false
+
+  chatStore.primeFromChat(chat)
+  chatStore.currentChat = chat
+  chatStore.isLoadingMessages = false
+  openFailed.value = false
+  openError.value = ''
+
+  const idx = chatStore.chats.findIndex((c) => c._id === newId)
+  if (idx >= 0) {
+    chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
+  } else {
+    chatStore.chats.unshift(chat)
+  }
+
+  preconnectChatOpen(newId, chat)
+
+  await navigateTo({
+    path: `/driver/chat/${newId}`,
+    query: pickQuickLinkQuery(route.query as Record<string, unknown>),
+    replace: true,
+  })
+  return true
+}
+
 /** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
 const bootstrapOpenChat = async (seq: number) => {
   primeInstantOrderUi()
 
-  const mode = String(route.query.open || '')
-  const orderId = String(route.query.orderId || '')
-  const userId = String(route.query.userId || '')
-  const existingChatId = String(route.query.chatId || '').trim()
+  const q = route.query as Record<string, unknown>
+  const mode = String(q.open || '')
+  const orderId = String(q.orderId || '')
+  const userId = String(q.userId || '')
 
   if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
     const ok = await ensureTariffForOrderTake()
@@ -812,25 +848,16 @@ const bootstrapOpenChat = async (seq: number) => {
   }
 
   try {
-    if (existingChatId && mode === 'order' && orderId) {
-      const listed = chatStore.chats.find((c) => c._id === existingChatId)
-      if (listed) {
-        chatStore.primeFromChat(listed)
-        chatStore.currentChat = {
-          ...listed,
-          ...chatStore.currentChat,
-          peer: { ...listed.peer, ...chatStore.currentChat?.peer },
-        } as import('~/types').IChat
-      }
-      chatStore.isLoadingMessages = false
-      openFailed.value = false
-      openError.value = ''
-      void chatStore.connect(existingChatId, { silent: true })
-      await navigateTo({
-        path: `/driver/chat/${existingChatId}`,
-        query: pickQuickLinkQuery(route.query as Record<string, unknown>),
-        replace: true,
-      })
+    const localChat = resolveChatFromOpenQuery(q, chatStore.chats)
+    if (localChat?._id) {
+      const stub = buildChatStubFromOrderQuery(q)
+      chatStore.currentChat = {
+        ...localChat,
+        ...(stub || {}),
+        peer: { ...localChat.peer, ...(stub?.peer || {}) },
+      } as import('~/types').IChat
+      if (seq !== loadSeq) return
+      await finalizeOpenChat(chatStore.currentChat)
       return
     }
 
@@ -852,27 +879,9 @@ const bootstrapOpenChat = async (seq: number) => {
 
     if (res?.success && res.data?._id) {
       const chat = res.data as import('~/types').IChat
-      const newId = String(chat._id || '')
-      if (!newId) {
+      if (!(await finalizeOpenChat(chat))) {
         await fail('Chat identifikatori topilmadi')
-        return
       }
-      chatStore.primeFromChat(chat)
-      chatStore.currentChat = chat
-      chatStore.isLoadingMessages = false
-      openFailed.value = false
-      openError.value = ''
-      const idx = chatStore.chats.findIndex((c) => c._id === newId)
-      if (idx >= 0) {
-        chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
-      } else {
-        chatStore.chats.unshift(chat)
-      }
-      await navigateTo({
-        path: `/driver/chat/${newId}`,
-        query: pickQuickLinkQuery(route.query as Record<string, unknown>),
-        replace: true,
-      })
       return
     }
     await fail(res?.message || 'Chat ochib bo\'lmadi')
@@ -892,6 +901,11 @@ const loadChat = async (id: string) => {
   if (id === 'open') {
     openFailed.value = false
     openError.value = ''
+    const early = resolveChatFromOpenQuery(route.query as Record<string, unknown>, chatStore.chats)
+    if (early?._id) {
+      chatStore.primeFromChat(early)
+      preconnectChatOpen(String(early._id), early)
+    }
     await bootstrapOpenChat(seq)
     return
   }

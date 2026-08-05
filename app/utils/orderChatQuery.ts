@@ -51,6 +51,34 @@ export function hasOrderQueryContext(query: Record<string, unknown>): boolean {
   return !!(String(query.orderId || '').trim() || String(query.orderText || '').trim())
 }
 
+/** /chat/open query dan mavjud chatni topish — preconnect uchun */
+export function resolveChatFromOpenQuery(
+  query: Record<string, unknown>,
+  chats: IChat[],
+): IChat | undefined {
+  const chatId = String(query.chatId || '').trim()
+  if (chatId) return chats.find((c) => String(c._id) === chatId)
+
+  const mode = String(query.open || '').trim()
+  const orderId = String(query.orderId || '').trim()
+  const userId = String(query.userId || '').trim()
+
+  if (mode === 'order' && orderId) {
+    return chats.find((c) => String(c.orderId || '') === orderId)
+  }
+  if (mode === 'user' && userId) {
+    return chats.find((c) => {
+      if (String(c.peer?.userId || '') !== userId) return false
+      if (orderId && String(c.orderId || '') !== orderId) return false
+      return true
+    })
+  }
+  if ((mode === 'booked' || mode === 'agent') && orderId) {
+    return chats.find((c) => String(c.orderId || '') === orderId)
+  }
+  return undefined
+}
+
 /** Query dan minimal chat — header, banner, tezkor tugmalar kutmasdan */
 export function buildChatStubFromOrderQuery(
   query: Record<string, unknown>,
