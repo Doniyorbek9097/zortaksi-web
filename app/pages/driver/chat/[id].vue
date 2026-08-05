@@ -16,7 +16,7 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :can-call="!!callPhone"
+      :can-call="!!callPhone && !showQuickActions"
       @back="goBack"
       @call="onCall"
     />
@@ -25,6 +25,8 @@
       :show="showQuickActions"
       :telegram-href="telegramContactUrl"
       :group-href="groupViewUrl"
+      :can-call="!!callPhone"
+      @call="onCall"
     />
 
     <!-- Xabarlar -->

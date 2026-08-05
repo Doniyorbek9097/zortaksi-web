@@ -100,7 +100,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     if (gid) saveOrderFilterBotGroupId(gid)
     else clearOrderFilterBotGroupId()
 
-    if (kw) markOrderFilterConfigured()
+    markOrderFilterConfigured()
 
     showFilter.value = false
     beginFilterReload()

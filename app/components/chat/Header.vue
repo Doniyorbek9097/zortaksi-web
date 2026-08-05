@@ -56,13 +56,13 @@
       <button
         v-if="canCall"
         type="button"
-        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black shrink-0 active:scale-95 transition-all"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-black shrink-0 whitespace-nowrap leading-none active:scale-95 transition-all"
         :class="support
           ? 'text-white bg-white/15 hover:bg-white/25'
           : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'"
         @click="$emit('call')"
       >
-        <font-awesome-icon icon="fa-solid fa-phone" />
+        <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
         Qo'ng'iroq
       </button>
     </div>

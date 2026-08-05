@@ -334,7 +334,7 @@ const onSaveFilter = async () => {
   if (gid) saveOrderFilterBotGroupId(gid)
   else clearOrderFilterBotGroupId()
 
-  if (kw) markOrderFilterConfigured()
+  markOrderFilterConfigured()
 
   showFilter.value = false
   await store.setSearch(kw, gid)

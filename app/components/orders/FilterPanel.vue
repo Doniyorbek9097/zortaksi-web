@@ -80,23 +80,27 @@
                     </button>
                   </li>
                 </ul>
-
-                <button
-                  type="button"
-                  class="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-[12px] font-black transition-all active:scale-[0.98] hover:border-emerald-400 dark:hover:border-emerald-600"
-                  @click="onSelectAllPresets"
-                >
-                  <font-awesome-icon icon="fa-solid fa-globe" class="text-[11px]" />
-                  Barcha joylar
-                </button>
               </div>
+
+              <button
+                v-if="!presetsLoading"
+                type="button"
+                class="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl border text-[12px] font-black transition-all active:scale-[0.98]"
+                :class="allRegionsSelected
+                  ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
+                  : 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:border-emerald-400 dark:hover:border-emerald-600'"
+                @click="onSelectAllRegions"
+              >
+                <font-awesome-icon icon="fa-solid fa-globe" class="text-[11px]" />
+                Barcha joylar
+              </button>
 
               <p v-if="saveError" class="px-0.5 text-[11px] font-bold text-red-500">
                 {{ saveError }}
               </p>
 
               <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
-                Hudud nomlarini vergul yoki yangi qator bilan ajrating. Faqat buyurtma matni qidiriladi.
+                «Barcha joylar» — hudud filtri yo'q, barcha buyurtmalar ko'rinadi. Yoki alohida yo'nalish tanlang.
               </p>
             </div>
 
@@ -130,10 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  mergeAllPresetKeywords,
-  parseKeywords,
-} from '~/utils/orderFilterKeywords'
+import { parseKeywords } from '~/utils/orderFilterKeywords'
 
 export type BotGroupFilterPreset = {
   id: string
@@ -157,6 +158,8 @@ const presets = ref<BotGroupFilterPreset[]>([])
 const presetsLoading = ref(false)
 const selectedPresetId = ref<string | null>(null)
 const saveError = ref('')
+/** Barcha joylar — kalit so'zsiz, filtrsiz rejim */
+const allRegionsSelected = ref(false)
 
 const loadPresets = async () => {
   presetsLoading.value = true
@@ -189,19 +192,16 @@ const syncSelectedPresetFromKeywords = () => {
 const onPresetClick = (preset: BotGroupFilterPreset) => {
   if (!preset.keywords?.length) return
   saveError.value = ''
+  allRegionsSelected.value = false
   keywords.value = keywordsFromPreset(preset)
   selectedPresetId.value = preset.id
   botGroupId.value = preset.id
 }
 
-const onSelectAllPresets = () => {
-  const merged = mergeAllPresetKeywords(presets.value)
-  if (!merged) {
-    saveError.value = 'Yo\'nalishlar topilmadi'
-    return
-  }
+const onSelectAllRegions = () => {
   saveError.value = ''
-  keywords.value = merged
+  allRegionsSelected.value = true
+  keywords.value = ''
   selectedPresetId.value = null
   botGroupId.value = null
 }
@@ -214,6 +214,7 @@ watch(keywords, () => {
     botGroupId.value = null
     return
   }
+  allRegionsSelected.value = false
   if (presets.value.length) syncSelectedPresetFromKeywords()
 })
 
@@ -243,8 +244,9 @@ const onBackdropClick = () => {
 }
 
 const onSave = () => {
-  if (props.mandatory && !parseKeywords(keywords.value).length) {
-    saveError.value = 'Kamida bitta yo\'nalish tanlang yoki «Barcha joylar» ni bosing'
+  const hasKeywords = parseKeywords(keywords.value).length > 0
+  if (props.mandatory && !hasKeywords && !allRegionsSelected.value) {
+    saveError.value = 'Yo\'nalish tanlang yoki «Barcha joylar» ni bosing'
     return
   }
   saveError.value = ''

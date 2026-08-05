@@ -168,25 +168,6 @@ export function isOrderFilterConfigured(): boolean {
   }
 }
 
-/** Barcha bot guruh preset kalit so'zlarini birlashtirish */
-export function mergeAllPresetKeywords(
-  presets: Array<{ keywords?: string[] }>,
-): string {
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const preset of presets) {
-    for (const raw of preset.keywords || []) {
-      const kw = String(raw || '').trim()
-      if (!kw) continue
-      const key = kw.toLowerCase()
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(kw)
-    }
-  }
-  return out.join(', ')
-}
-
 /** Guruh katalogi — client qo'shimcha filter */
 export function filterGroupsByKeywords<T extends { title?: string; username?: string }>(
   groups: T[],
