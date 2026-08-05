@@ -274,7 +274,7 @@ import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromTex
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
-import { isChatLikelyReady } from '~/stores/chat/actions/connection'
+import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 
 definePageMeta({
   layout: false,
@@ -478,18 +478,23 @@ const syncViewport = () => {
 const conn = computed(() => chatStore.connectionStatus)
 const connReason = computed(() => chatStore.connectionReason)
 
-/** Oldin muvaffaqiyatli bog'langan — viaUserbotId + accessHash ikkalasi kerak */
-const wasLinkedBefore = computed(() =>
+/** Optimistik composer — telefon/username yoki in-app */
+const composerLikelyReady = computed(() =>
   isChatLikelyReady(chatStore.currentChat),
 )
 
+/** Haqiqiy Telegram yuborish tayyorligi */
+const hasPeerLink = computed(() =>
+  hasTelegramPeerLink(chatStore.currentChat),
+)
+
 const canSendTelegram = computed(
-  () => isInAppChat.value || wasLinkedBefore.value || conn.value === 'ready',
+  () => isInAppChat.value || hasPeerLink.value || conn.value === 'ready',
 )
 
 /** Loading / open — faqat bootstrap va kontekst yo'q bo'lsa */
 const composerBusy = computed(
-  () => isOpening.value && !wasLinkedBefore.value && !hasInstantContext.value,
+  () => isOpening.value && !composerLikelyReady.value && !hasInstantContext.value,
 )
 
 const showComposer = computed(
@@ -498,19 +503,19 @@ const showComposer = computed(
     (isOpening.value ||
     composerBusy.value ||
     isInAppChat.value ||
-    wasLinkedBefore.value ||
+    composerLikelyReady.value ||
     conn.value === 'ready' ||
     conn.value === 'connecting' ||
     conn.value === 'idle'),
 )
 
 const composerDisabled = computed(
-  () => composerBusy.value || (!isInAppChat.value && !wasLinkedBefore.value && conn.value !== 'ready'),
+  () => composerBusy.value || (!isInAppChat.value && !hasPeerLink.value && conn.value !== 'ready'),
 )
 
 const composerPlaceholder = computed(() => {
   if (composerBusy.value) return 'Biroz kuting...'
-  if (!isInAppChat.value && !wasLinkedBefore.value && conn.value !== 'ready') {
+  if (!isInAppChat.value && !hasPeerLink.value && conn.value !== 'ready') {
     return 'Ulanish kutilmoqda...'
   }
   return 'Xabar yozing...'
@@ -555,18 +560,30 @@ const scrollToFocus = () => {
 
 const onSend = async (text: string) => {
   if (isOpening.value || !canSendTelegram.value) return
+  if (needsTelegramConnect.value) {
+    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    if (!ok) return
+  }
   await chatStore.sendMessage(chatId.value, text)
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
   if (isOpening.value || !canSendTelegram.value) return
+  if (needsTelegramConnect.value) {
+    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    if (!ok) return
+  }
   await chatStore.sendVoice(chatId.value, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
   if (isOpening.value || !canSendTelegram.value) return
+  if (needsTelegramConnect.value) {
+    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    if (!ok) return
+  }
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
 }

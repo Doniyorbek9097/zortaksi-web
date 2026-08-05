@@ -1,6 +1,31 @@
 import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 
+/** In-app chat — Telegram peer link shart emas */
+export function isInAppChatLike(
+    chat: { kind?: string; inAppOnly?: boolean } | null | undefined,
+): boolean {
+    if (!chat) return false
+    return chat.kind === 'support' || chat.kind === 'direct' || !!chat.inAppOnly
+}
+
+/** Haqiqiy Telegram yuborish tayyorligi — viaUserbotId + accessHash */
+export function hasTelegramPeerLink(
+    chat: {
+        kind?: string
+        inAppOnly?: boolean
+        peer?: {
+            viaUserbotId?: string
+            accessHash?: string
+        }
+    } | null
+    | undefined,
+): boolean {
+    if (!chat) return false
+    if (isInAppChatLike(chat)) return true
+    return !!(chat.peer?.viaUserbotId && chat.peer?.accessHash)
+}
+
 /** Chat allaqachon Telegramga ulanishi mumkinmi (optimistik ready) */
 export function isChatLikelyReady(
     chat: {
@@ -188,6 +213,26 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         return job
     }
 
+    const findChatById = (chatId: string) =>
+        currentChat.value?._id === chatId
+            ? currentChat.value
+            : chats.value.find((c) => c._id === chatId) ?? null
+
+    /**
+     * Yuborishdan oldin Telegram peer link tayyor bo'lishini kutadi.
+     * Mavjud connect inflight promise qayta ishlatiladi.
+     */
+    const ensureTelegramReady = async (chatId: string): Promise<boolean> => {
+        const chat = findChatById(chatId)
+        if (!chat || isInAppChatLike(chat)) return true
+        if (hasTelegramPeerLink(chat) || connectionStatus.value === 'ready') return true
+
+        await connect(chatId, { silent: true })
+
+        const updated = findChatById(chatId)
+        return hasTelegramPeerLink(updated) || connectionStatus.value === 'ready'
+    }
+
     /** Socket: chat:connect — HTTP kutmasdan UI yangilanadi */
     const onChatConnect = (data: {
         chatId: string
@@ -251,8 +296,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
     return {
         connect,
+        ensureTelegramReady,
         primeFromChat,
         isChatLikelyReady,
+        hasTelegramPeerLink,
         fetchPresence,
         resetConnection,
         isPeerTyping,

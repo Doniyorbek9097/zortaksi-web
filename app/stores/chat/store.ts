@@ -116,6 +116,7 @@ export const useChatStore = defineStore('chat', () => {
         peerTypingChatId,
         isPeerTyping: connection.isPeerTyping,
         connect: connection.connect,
+        ensureTelegramReady: connection.ensureTelegramReady,
         primeFromChat: connection.primeFromChat,
         fetchPresence: connection.fetchPresence,
         resetConnection: connection.resetConnection,
