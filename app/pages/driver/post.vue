@@ -280,6 +280,7 @@ import {
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
   clearOrderFilterKeywords,
+  markOrderFilterConfigured,
 } from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
@@ -332,6 +333,8 @@ const onSaveFilter = async () => {
 
   if (gid) saveOrderFilterBotGroupId(gid)
   else clearOrderFilterBotGroupId()
+
+  if (kw) markOrderFilterConfigured()
 
   showFilter.value = false
   await store.setSearch(kw, gid)

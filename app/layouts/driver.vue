@@ -6,7 +6,8 @@
       </div>
     </BasePullToRefresh>
     <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin -->
-    <DriverBottomNavigation />
+    <DriverBottomNavigation v-if="!mandatoryFilterOpen" />
+    <OrdersMandatoryFilterGate />
   </AuthSessionGate>
 </template>
 
@@ -14,11 +15,17 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, isOrderFilterConfigured } from '~/utils/orderFilterKeywords'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
+
+const mandatoryFilterOpen = computed(() => {
+  if (!import.meta.client || !authStore.sessionReady) return false
+  if (authStore.user?.role === 'admin') return false
+  return !isOrderFilterConfigured()
+})
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return

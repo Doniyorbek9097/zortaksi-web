@@ -1,5 +1,6 @@
 import type { IChatMessage } from '~/types'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
+import { getApiErrorMessage } from '~/utils/apiError'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import {
     restoreMessagesCache,
@@ -199,34 +200,58 @@ export function createListActions(
 
     /** Orderdan chat ochish (sender) — server connect qiladi */
     const startChatFromOrder = async (orderId: string) => {
-        const res = await useApi(`/chats/from-order/${orderId}`, {
-            method: 'POST',
-            timeout: 15_000,
-        })
-        return res
+        try {
+            return await useApi(`/chats/from-order/${orderId}`, {
+                method: 'POST',
+                timeout: 30_000,
+            })
+        } catch (error) {
+            return {
+                success: false,
+                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+            }
+        }
     }
 
     /** Agent: order egasi (owner) bilan chat */
     const startChatWithOrderOwner = async (orderId: string) => {
-        const res = await useApi(`/chats/from-order/${orderId}/agent`, { method: 'POST' })
-        return res
+        try {
+            return await useApi(`/chats/from-order/${orderId}/agent`, { method: 'POST' })
+        } catch (error) {
+            return {
+                success: false,
+                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+            }
+        }
     }
 
     /** Foydalanuvchi bilan to'g'ridan-to'g'ri chat */
     const startChatWithUser = async (userId: string, orderId?: string) => {
-        const res = await useApi('/chats/with-user', {
-            method: 'POST',
-            body: { userId, orderId: orderId || undefined },
-        })
-        return res
+        try {
+            return await useApi('/chats/with-user', {
+                method: 'POST',
+                body: { userId, orderId: orderId || undefined },
+            })
+        } catch (error) {
+            return {
+                success: false,
+                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+            }
+        }
     }
 
     /** Band qilgan haydovchi bilan chat */
     const startChatWithBookedDriver = async (orderId: string) => {
-        const res = await useApi(`/chats/from-order/${orderId}/booked-driver`, {
-            method: 'POST',
-        })
-        return res
+        try {
+            return await useApi(`/chats/from-order/${orderId}/booked-driver`, {
+                method: 'POST',
+            })
+        } catch (error) {
+            return {
+                success: false,
+                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+            }
+        }
     }
 
     /** O'qilgan deb belgilash */

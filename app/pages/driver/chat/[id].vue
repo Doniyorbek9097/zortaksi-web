@@ -17,7 +17,7 @@
       :avatar="peerAvatar"
       :user-id="peerUserId"
       :can-call="!!callPhone"
-      @back="goChats"
+      @back="goBack"
       @call="onCall"
     />
 
@@ -28,7 +28,39 @@
     />
 
     <!-- Xabarlar -->
-    <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
+    <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-10 text-center gap-4">
+      <div class="w-14 h-14 rounded-2xl bg-red-500/10 text-red-500 inline-flex items-center justify-center">
+        <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="text-2xl" />
+      </div>
+      <div class="space-y-1">
+        <p class="text-base font-black text-slate-900 dark:text-white">Chat ochilmadi</p>
+        <p class="text-[13px] font-medium text-slate-500 dark:text-slate-400 leading-snug">
+          {{ openError }}
+        </p>
+      </div>
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-xs">
+        <button
+          type="button"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[12px] font-black active:scale-95"
+          @click="goBackFromOpen"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" />
+          Orqaga
+        </button>
+        <a
+          v-if="telegramContactUrl"
+          :href="telegramContactUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 text-white text-[12px] font-black active:scale-95"
+        >
+          <font-awesome-icon icon="fa-brands fa-telegram" />
+          Telegram orqali
+        </a>
+      </div>
+    </div>
+
+    <div v-else ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
@@ -210,6 +242,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks } from '~/utils/orderChatQuery'
+import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady } from '~/stores/chat/actions/connection'
 
@@ -218,6 +251,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
 
@@ -319,6 +353,8 @@ const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
 const isDeletingMessages = ref(false)
+const openFailed = ref(false)
+const openError = ref('')
 
 const isSelectableMedia = (type: string) => type === 'voice' || type === 'photo'
 
@@ -415,13 +451,14 @@ const composerBusy = computed(() => isOpening.value)
 
 const showComposer = computed(
   () =>
-    isOpening.value ||
+    !openFailed.value &&
+    (isOpening.value ||
     composerBusy.value ||
     isInAppChat.value ||
     wasLinkedBefore.value ||
     conn.value === 'ready' ||
     conn.value === 'connecting' ||
-    conn.value === 'idle',
+    conn.value === 'idle'),
 )
 
 const composerDisabled = computed(
@@ -493,6 +530,19 @@ const onPhoto = async (file: File) => {
 
 const goChats = () => navigateTo('/driver/chats')
 const goOrders = () => navigateTo('/driver/orders')
+
+const goBackFromOpen = () => {
+  if (import.meta.client && window.history.length > 1) {
+    router.back()
+    return
+  }
+  void navigateTo('/driver/orders')
+}
+
+const goBack = () => {
+  if (isOpening.value || openFailed.value) goBackFromOpen()
+  else goChats()
+}
 
 const callPhone = computed(() => {
   const qPhone = String(route.query.phone || '').trim()
@@ -627,13 +677,18 @@ const bootstrapOpenChat = async (seq: number) => {
     if (!ok || seq !== loadSeq) return
   }
 
-  const fail = async () => {
+  const fail = async (message?: string) => {
     if (seq !== loadSeq) return
     chatStore.isLoadingMessages = false
-    if (username && (mode === 'order' || mode === 'agent')) {
-      if (import.meta.client) window.open(`https://t.me/${username}`, '_blank')
+    openFailed.value = true
+    const raw = message || 'Chat ochib bo\'lmadi'
+    if (/order topilmadi/i.test(raw)) {
+      openError.value = 'Buyurtma muddati tugagan yoki o\'chirilgan. Telegram orqali bog\'laning.'
+    } else if (/bot bilan chat/i.test(raw)) {
+      openError.value = 'Bu buyurtma botdan — chat ochib bo\'lmaydi.'
+    } else {
+      openError.value = raw
     }
-    await navigateTo('/driver/orders')
   }
 
   try {
@@ -655,26 +710,33 @@ const bootstrapOpenChat = async (seq: number) => {
 
     if (res?.success && res.data?._id) {
       const chat = res.data as import('~/types').IChat
+      const newId = String(chat._id || '')
+      if (!newId) {
+        await fail('Chat identifikatori topilmadi')
+        return
+      }
       chatStore.primeFromChat(chat)
       chatStore.currentChat = chat
       chatStore.isLoadingMessages = false
-      const idx = chatStore.chats.findIndex((c) => c._id === chat._id)
+      openFailed.value = false
+      openError.value = ''
+      const idx = chatStore.chats.findIndex((c) => c._id === newId)
       if (idx >= 0) {
         chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
       } else {
         chatStore.chats.unshift(chat)
       }
       await navigateTo({
-        path: `/driver/chat/${res.data._id}`,
+        path: `/driver/chat/${newId}`,
         query: pickQuickLinkQuery(route.query as Record<string, unknown>),
         replace: true,
       })
       return
     }
-    await fail()
+    await fail(res?.message || 'Chat ochib bo\'lmadi')
   } catch (err) {
     console.error('bootstrapOpenChat error:', err)
-    await fail()
+    await fail(getApiErrorMessage(err, 'Chat ochib bo\'lmadi'))
   }
 }
 
@@ -683,6 +745,8 @@ const loadChat = async (id: string) => {
   resetChatUi(id)
 
   if (id === 'open') {
+    openFailed.value = false
+    openError.value = ''
     await bootstrapOpenChat(seq)
     return
   }

@@ -2,6 +2,8 @@
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
+/** Birinchi marta yo'nalish tanlangan — majburiy onboarding */
+export const ORDER_FILTER_CONFIGURED_KEY = 'zt_order_filter_configured'
 /** Buyurtmalar ro'yxati — bir sahifada */
 export const ORDERS_PAGE_LIMIT = 5
 
@@ -141,6 +143,48 @@ export function clearOrderFilterBotGroupId(): void {
 export function clearAllOrderFilterStorage(): void {
   clearOrderFilterKeywords()
   clearOrderFilterBotGroupId()
+}
+
+export function markOrderFilterConfigured(): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(ORDER_FILTER_CONFIGURED_KEY, '1')
+  } catch { /* private mode */ }
+}
+
+/** Foydalanuvchi kamida bir marta yo'nalish tanlaganmi */
+export function isOrderFilterConfigured(): boolean {
+  if (!import.meta.client) return true
+  try {
+    if (localStorage.getItem(ORDER_FILTER_CONFIGURED_KEY) === '1') return true
+    // Eski foydalanuvchilar — saqlangan filtr bor
+    if (loadOrderFilterKeywords().trim() || loadOrderFilterBotGroupId().trim()) {
+      markOrderFilterConfigured()
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+/** Barcha bot guruh preset kalit so'zlarini birlashtirish */
+export function mergeAllPresetKeywords(
+  presets: Array<{ keywords?: string[] }>,
+): string {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const preset of presets) {
+    for (const raw of preset.keywords || []) {
+      const kw = String(raw || '').trim()
+      if (!kw) continue
+      const key = kw.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(kw)
+    }
+  }
+  return out.join(', ')
 }
 
 /** Guruh katalogi — client qo'shimcha filter */

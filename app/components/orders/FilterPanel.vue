@@ -3,8 +3,9 @@
     <Transition name="fp-fade">
       <div
         v-if="open"
-        class="fixed inset-0 z-[9998] flex items-end justify-center md:items-center bg-black/40 dark:bg-black/70 backdrop-blur-sm p-0 md:p-4"
-        @click.self="onCancel"
+        class="fixed inset-0 flex items-end justify-center md:items-center bg-black/40 dark:bg-black/70 backdrop-blur-sm p-0 md:p-4"
+        :class="mandatory ? 'z-[10000]' : 'z-[9998]'"
+        @click.self="onBackdropClick"
       >
         <Transition name="fp-sheet" appear>
           <div
@@ -18,12 +19,17 @@
                   <font-awesome-icon icon="fa-solid fa-location-dot" />
                 </span>
                 <div class="min-w-0 flex-1 leading-none">
-                  <p class="text-sm font-black text-slate-900 dark:text-white">Hudud belgilash</p>
+                  <p class="text-sm font-black text-slate-900 dark:text-white">
+                    {{ mandatory ? 'Yo\'nalish tanlang' : 'Hudud belgilash' }}
+                  </p>
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-                    Qaysi shahar/tuman buyurtmalarini ko‘rmoqchisiz?
+                    {{ mandatory
+                      ? 'Davom etish uchun qaysi yo\'nalish buyurtmalarini ko\'rmoqchiligingizni belgilang'
+                      : 'Qaysi shahar/tuman buyurtmalarini ko‘rmoqchisiz?' }}
                   </p>
                 </div>
                 <button
+                  v-if="!mandatory"
                   type="button"
                   class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:bg-black/5 dark:hover:bg-white/5"
                   aria-label="Yopish"
@@ -74,7 +80,20 @@
                     </button>
                   </li>
                 </ul>
+
+                <button
+                  type="button"
+                  class="w-full inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 text-[12px] font-black transition-all active:scale-[0.98] hover:border-emerald-400 dark:hover:border-emerald-600"
+                  @click="onSelectAllPresets"
+                >
+                  <font-awesome-icon icon="fa-solid fa-globe" class="text-[11px]" />
+                  Barcha joylar
+                </button>
               </div>
+
+              <p v-if="saveError" class="px-0.5 text-[11px] font-bold text-red-500">
+                {{ saveError }}
+              </p>
 
               <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
                 Hudud nomlarini vergul yoki yangi qator bilan ajrating. Faqat buyurtma matni qidiriladi.
@@ -86,6 +105,7 @@
               :style="{ paddingBottom: 'calc(1rem + var(--zt-safe-bottom, 0px))' }"
             >
               <button
+                v-if="!mandatory"
                 type="button"
                 class="flex-1 py-3 rounded-xl text-sm font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
                 @click="onCancel"
@@ -94,11 +114,12 @@
               </button>
               <button
                 type="button"
-                class="flex-1 py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
+                class="py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all inline-flex items-center justify-center gap-2"
+                :class="mandatory ? 'flex-1' : 'flex-1'"
                 @click="onSave"
               >
                 <font-awesome-icon icon="fa-solid fa-floppy-disk" />
-                Saqlash
+                {{ mandatory ? 'Davom etish' : 'Saqlash' }}
               </button>
             </div>
           </div>
@@ -109,12 +130,22 @@
 </template>
 
 <script setup lang="ts">
+import {
+  mergeAllPresetKeywords,
+  parseKeywords,
+} from '~/utils/orderFilterKeywords'
+
 export type BotGroupFilterPreset = {
   id: string
   username: string
   title: string
   keywords: string[]
 }
+
+const props = withDefaults(
+  defineProps<{ mandatory?: boolean }>(),
+  { mandatory: false },
+)
 
 const keywords = defineModel<string>({ default: '' })
 const botGroupId = defineModel<string | null>('botGroupId', { default: null })
@@ -125,6 +156,7 @@ const open = ref(true)
 const presets = ref<BotGroupFilterPreset[]>([])
 const presetsLoading = ref(false)
 const selectedPresetId = ref<string | null>(null)
+const saveError = ref('')
 
 const loadPresets = async () => {
   presetsLoading.value = true
@@ -156,12 +188,26 @@ const syncSelectedPresetFromKeywords = () => {
 
 const onPresetClick = (preset: BotGroupFilterPreset) => {
   if (!preset.keywords?.length) return
+  saveError.value = ''
   keywords.value = keywordsFromPreset(preset)
   selectedPresetId.value = preset.id
   botGroupId.value = preset.id
 }
 
+const onSelectAllPresets = () => {
+  const merged = mergeAllPresetKeywords(presets.value)
+  if (!merged) {
+    saveError.value = 'Yo\'nalishlar topilmadi'
+    return
+  }
+  saveError.value = ''
+  keywords.value = merged
+  selectedPresetId.value = null
+  botGroupId.value = null
+}
+
 watch(keywords, () => {
+  saveError.value = ''
   const current = String(keywords.value || '').trim()
   if (!current) {
     selectedPresetId.value = null
@@ -171,23 +217,38 @@ watch(keywords, () => {
   if (presets.value.length) syncSelectedPresetFromKeywords()
 })
 
-const { disarm } = useHistoryBackClose(
-  open,
-  () => {
-    open.value = false
-    emit('cancel')
-  },
-  { key: 'ztFilterPanel' },
-)
+let disarmHistory: (() => void) | undefined
+
+if (!props.mandatory) {
+  const { disarm } = useHistoryBackClose(
+    open,
+    () => {
+      open.value = false
+      emit('cancel')
+    },
+    { key: 'ztFilterPanel' },
+  )
+  disarmHistory = disarm
+}
 
 const onCancel = () => {
-  disarm()
+  if (props.mandatory) return
+  disarmHistory?.()
   open.value = false
   emit('cancel')
 }
 
+const onBackdropClick = () => {
+  if (!props.mandatory) onCancel()
+}
+
 const onSave = () => {
-  disarm()
+  if (props.mandatory && !parseKeywords(keywords.value).length) {
+    saveError.value = 'Kamida bitta yo\'nalish tanlang yoki «Barcha joylar» ni bosing'
+    return
+  }
+  saveError.value = ''
+  disarmHistory?.()
   open.value = false
   emit('save')
 }

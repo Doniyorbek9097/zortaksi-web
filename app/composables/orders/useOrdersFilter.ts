@@ -8,6 +8,7 @@ import {
   clearOrderFilterBotGroupId,
   clearOrderFilterKeywords,
   filterOrdersByKeywords,
+  markOrderFilterConfigured,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
 import {
@@ -98,6 +99,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
     if (gid) saveOrderFilterBotGroupId(gid)
     else clearOrderFilterBotGroupId()
+
+    if (kw) markOrderFilterConfigured()
 
     showFilter.value = false
     beginFilterReload()

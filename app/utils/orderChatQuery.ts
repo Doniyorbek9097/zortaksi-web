@@ -150,6 +150,9 @@ export function orderQuickLinkQuery(
     const username = cleanUsername(s?.username)
     if (username) q.username = username
   }
+  if (!extra.userId && s?.userId) {
+    q.userId = String(s.userId)
+  }
 
   const groupUsername = cleanUsername(order.group?.username)
   const groupId = String(order.group?.groupId || '').trim()
