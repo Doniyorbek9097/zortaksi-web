@@ -1,8 +1,8 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden flex flex-col items-center px-4 py-4 text-slate-900 dark:text-slate-100">
+  <div class="relative min-h-[100dvh] w-full max-w-[100vw] overflow-x-hidden flex flex-col items-center px-4 py-4 text-slate-900 dark:text-slate-100">
     <div class="pointer-events-none absolute inset-0 bg-slate-50 dark:bg-slate-950" />
-    <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[420px] h-[420px] rounded-full bg-[#2AABEE]/15 dark:bg-[#2AABEE]/10 blur-3xl" />
-    <div class="pointer-events-none absolute bottom-0 right-0 w-[220px] h-[220px] rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-3xl" />
+    <div class="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[min(420px,100vw)] h-[min(420px,100vw)] rounded-full bg-[#2AABEE]/15 dark:bg-[#2AABEE]/10 blur-3xl" />
+    <div class="pointer-events-none absolute bottom-0 right-0 w-[min(220px,55vw)] h-[min(220px,55vw)] rounded-full bg-emerald-400/10 dark:bg-emerald-500/5 blur-3xl" />
 
     <header class="relative z-10 w-full max-w-[400px]">
       <button
@@ -58,7 +58,7 @@
           </p>
         </div>
 
-        <div class="flex items-center justify-center gap-1.5">
+        <div class="flex items-center justify-center gap-1.5 max-w-full overflow-hidden flex-wrap">
           <template v-for="(s, i) in visibleSteps" :key="s.key">
             <div
               class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all"

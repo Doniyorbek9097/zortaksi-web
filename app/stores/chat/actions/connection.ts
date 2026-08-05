@@ -139,9 +139,15 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
     }
 
-    const runConnect = async (chatId: string, opts: { silent?: boolean } = {}) => {
+    const runConnect = async (
+        chatId: string,
+        opts: { silent?: boolean; viaProxy?: boolean } = {},
+    ) => {
         const maxAttempts = opts.silent ? 2 : 2
-        if (!opts.silent && !isChatLikelyReady(currentChat.value)) {
+        if (!opts.silent && !opts.viaProxy && !isChatLikelyReady(currentChat.value)) {
+            connectionStatus.value = 'connecting'
+            connectionReason.value = ''
+        } else if (opts.viaProxy) {
             connectionStatus.value = 'connecting'
             connectionReason.value = ''
         } else if (opts.silent && isChatLikelyReady(currentChat.value)) {
@@ -155,6 +161,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             try {
                 const res = await useApi(`/chats/${chatId}/connect`, {
                     method: 'POST',
+                    body: opts.viaProxy ? { viaProxy: true } : undefined,
                     timeout: 45000,
                 })
                 if (res.success) {
@@ -201,15 +208,19 @@ export function createConnectionActions(refs: ChatStoreRefs) {
      * Senderga ulanish — duplicate so'rovlar bitta inflight ga birlashtiriladi.
      * Ro'yxatdan oldin silent preconnect mumkin.
      */
-    const connect = async (chatId: string, opts: { silent?: boolean } = {}) => {
-        const inflight = connectInflight.get(chatId)
+    const connect = async (
+        chatId: string,
+        opts: { silent?: boolean; viaProxy?: boolean } = {},
+    ) => {
+        const key = `${chatId}:${opts.viaProxy ? 'proxy' : 'own'}`
+        const inflight = connectInflight.get(key)
         if (inflight) return inflight
 
         const job = runConnect(chatId, opts).finally(() => {
-            connectInflight.delete(chatId)
+            connectInflight.delete(key)
             if (activeConnectChatId === chatId) activeConnectChatId = null
         })
-        connectInflight.set(chatId, job)
+        connectInflight.set(key, job)
         return job
     }
 
