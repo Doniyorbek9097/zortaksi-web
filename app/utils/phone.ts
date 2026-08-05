@@ -5,6 +5,27 @@ const MIN_DIGITS = 7
 
 export const PHONE_MASK = '■■■'
 
+/** O'zbekiston mobil operator kodlari (998 dan keyin 2 raqam) */
+export const UZ_MOBILE_PREFIXES = [
+  '90', '91', '93', '94', '95', '97', '88', '50', '33', '20', '67',
+] as const
+
+const UZ_MOBILE_LOCAL_RE = new RegExp(
+  `^(${UZ_MOBILE_PREFIXES.join('|')})\\d{7}$`,
+)
+
+/** 9 xonali: 901234567 */
+export function isValidUzMobileLocal(nineDigits: string): boolean {
+  return UZ_MOBILE_LOCAL_RE.test(String(nineDigits || ''))
+}
+
+/** 12 xonali: 998901234567 */
+export function isValidUzMobile998(twelveDigits: string): boolean {
+  const d = String(twelveDigits || '')
+  if (!d.startsWith('998') || d.length !== 12) return false
+  return isValidUzMobileLocal(d.slice(3))
+}
+
 /** 2024-12-31 / 12.31.2024 kabi sanalarni telefon emas deb qoldirish */
 function looksLikeDate(raw: string, digits: string): boolean {
   if (digits.length !== 8) return false
@@ -62,7 +83,11 @@ export function isValidIntlPhone(phone: string): boolean {
   const raw = phone.replace(/\D/g, '')
   const d = normalizeTo998(raw) || raw
   if (!/^\d{8,15}$/.test(d)) return false
+  if (d.startsWith('998')) {
+    return d.length === 12 && isValidUzMobile998(d)
+  }
   for (const [prefix, exactLen] of INTL_PHONE_RULES) {
+    if (prefix === '998') continue
     if (!d.startsWith(prefix)) continue
     if (prefix === '49') return d.length >= 11 && d.length <= 15
     return d.length === exactLen
@@ -75,13 +100,15 @@ export function normalizeTo998(raw: string | null | undefined): string | null {
   const digits = String(raw || '').replace(/\D/g, '')
   if (!digits) return null
 
-  if (digits.length === 12 && digits.startsWith('998')) return digits
-  if (digits.length === 9 && /^(9\d|33|88|77)\d{7}$/.test(digits)) return `998${digits}`
+  if (digits.length === 12 && digits.startsWith('998')) {
+    return isValidUzMobile998(digits) ? digits : null
+  }
+  if (digits.length === 9 && isValidUzMobileLocal(digits)) return `998${digits}`
   if (digits.length === 10 && digits.startsWith('0')) {
     const rest = digits.slice(1)
-    if (/^(9\d|33|88|77)\d{7}$/.test(rest)) return `998${rest}`
+    if (isValidUzMobileLocal(rest)) return `998${rest}`
   }
-  // Xalqaro / boshqa — o'z holicha (8–15)
+  // Boshqa davlatlar — o'z holicha (8–15)
   if (digits.length >= MIN_DIGITS && digits.length <= 15) return digits
   return null
 }
