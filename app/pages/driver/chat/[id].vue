@@ -270,7 +270,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
-import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText } from '~/utils/phone'
+import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
@@ -374,7 +374,11 @@ const orderGroupTitle = computed(() => {
 
 const displayOrderText = computed(() => {
   if (isDirect.value) return "Bu Haydovchi bilan suhbat qurishingiz mumkin"
-  return orderText.value.replace(/^\[Buyurtma\]\s*/i, '').trim() || orderText.value
+  const raw = orderText.value.replace(/^\[Buyurtma\]\s*/i, '').trim() || orderText.value
+  const phoneHint =
+    String(route.query.phone || '').trim() ||
+    String(chatStore.currentChat?.peer?.phone || '').trim()
+  return revealOrderTextPhones(raw, phoneHint)
 })
 
 const draft = ref('')
@@ -389,7 +393,8 @@ const openError = ref('')
 /** Chat ochilmasa ham query/stash dan buyurtma matni */
 const fallbackOrderText = computed(() => {
   if (!isOpening.value || !openFailed.value) return ''
-  return resolveOrderTextHint(route.query as Record<string, unknown>, null)
+  const raw = resolveOrderTextHint(route.query as Record<string, unknown>, null)
+  return revealOrderTextPhones(raw, String(route.query.phone || ''))
 })
 
 const isSelectableMedia = (type: string) => type === 'voice' || type === 'photo'
@@ -586,13 +591,23 @@ const callPhone = computed(() => {
     return normalizeTo998(qPhone) || qPhone.replace(/\D/g, '')
   }
 
+  const peerPhone = String(chatStore.currentChat?.peer?.phone || '').trim()
+  if (peerPhone.replace(/\D/g, '').length >= 7) {
+    return normalizeTo998(peerPhone) || peerPhone.replace(/\D/g, '')
+  }
+
+  const revealed = revealOrderTextPhones(
+    orderText.value,
+    peerPhone || qPhone,
+  )
+
   return (
     resolveChatPhone({
       messages: chatStore.messages,
       peerPhone: chatStore.currentChat?.peer?.phone,
       fallbackPhone: route.query.phone as string | undefined,
     }) ||
-    extractPhoneFromText(orderText.value) ||
+    extractPhoneFromText(revealed) ||
     ''
   )
 })

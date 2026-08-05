@@ -1,6 +1,6 @@
 import type { IChat } from '~/types/chat'
 import type { IOrder } from '~/types'
-import { resolveOrderPhone } from '~/utils/phone'
+import { resolveOrderPhone, revealOrderTextPhones } from '~/utils/phone'
 import { buildGroupViewUrl, buildTelegramContactUrl } from '~/utils/telegramLinks'
 
 const cleanUsername = (raw?: string | null) =>
@@ -58,11 +58,12 @@ export function buildChatStubFromOrderQuery(
   if (!hasOrderQueryContext(query)) return null
 
   const orderId = String(query.orderId || '').trim()
-  const orderText = resolveOrderTextHint(query, null)
-  const phone = String(query.phone || '').trim()
+  const phoneHint = String(query.phone || '').trim()
+  const orderText = revealOrderTextPhones(resolveOrderTextHint(query, null), phoneHint)
   const username = cleanUsername(String(query.username || ''))
   const userId = String(query.userId || '').trim()
   const name = String(query.name || '').trim()
+  const phone = phoneHint
 
   return {
     orderId: orderId || undefined,
@@ -83,10 +84,17 @@ export function buildChatStubFromOrderQuery(
   }
 }
 
+/** Order matni — haydovchi chatida telefon ochiq */
+export function resolveOrderDisplayText(order: IOrder): string {
+  const text = String(order.message?.text || '').trim()
+  const phone = resolveOrderPhone(order)
+  return revealOrderTextPhones(text, phone)
+}
+
 /** Order → chat oldidan kontekstni saqlash */
 export function primeOrderContext(order: IOrder) {
   const id = String(order._id || '')
-  const text = String(order.message?.text || '').trim()
+  const text = resolveOrderDisplayText(order)
   if (id && text) stashOrderText(id, text)
 }
 
@@ -200,7 +208,7 @@ export function orderQuickLinkQuery(
   if (groupId) q.groupId = groupId
   if (msgId > 0) q.msgId = String(msgId)
 
-  const orderText = String(order.message?.text || '').trim()
+  const orderText = resolveOrderDisplayText(order)
   if (orderText) {
     primeOrderContext(order)
     q.orderText = truncateForQuery(orderText)

@@ -61,6 +61,23 @@ function looksLikeDate(raw: string, digits: string): boolean {
   return false
 }
 
+/** Matndagi telefon maskasini haydovchi chatida ochiq raqamga almashtiradi */
+export function revealOrderTextPhones(
+  text: string | null | undefined,
+  phone: string | null | undefined,
+): string {
+  const t = String(text || '')
+  if (!t || !t.includes(PHONE_MASK)) return t
+
+  const digits = phone
+    ? normalizeTo998(phone) || String(phone).replace(/\D/g, '')
+    : ''
+  if (digits.length < MIN_DIGITS) return t
+
+  const escaped = PHONE_MASK.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return t.replace(new RegExp(escaped, 'g'), digits)
+}
+
 /** Matndagi telefon raqamlarini maska bilan almashtiradi (tomoshabin chatlari) */
 export function hidePhoneNumbers(
   text: string | null | undefined,
