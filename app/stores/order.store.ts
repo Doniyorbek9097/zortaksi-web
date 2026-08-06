@@ -35,6 +35,8 @@ export const useOrderStore = defineStore('order', () => {
     const listText = ref('')
     /** Barchasi / Menki tab */
     const listScope = ref<'all' | 'mine'>('all')
+    /** Filtr/tab almashganda eski HTTP javoblarini rad etish */
+    let listFetchSeq = 0
 
     const rememberListFilter = (params: FetchOrdersParams) => {
         listBotGroupId.value = String(params.botGroupId || '').trim()
@@ -58,6 +60,35 @@ export const useOrderStore = defineStore('order', () => {
 
     const applyListFilter = (params: FetchOrdersParams) => {
         rememberListFilter(params)
+    }
+
+    const paramsMatchListFilter = (params: FetchOrdersParams) => {
+        const wantScope = params.scope === 'mine' ? 'mine' : 'all'
+        if (wantScope !== listScope.value) return false
+        const wantBot = String(params.botGroupId || '').trim()
+        const wantSearch = wantBot ? '' : String(params.search || '').trim()
+        if (wantBot !== listBotGroupId.value.trim()) return false
+        if (wantSearch !== listSearch.value.trim()) return false
+        if (String(params.text || '').trim() !== listText.value.trim()) return false
+        return true
+    }
+
+    /** Tab/filtr o'zgarganda ro'yxat va pagination tozalash */
+    const resetListForFilterChange = () => {
+        listFetchSeq += 1
+        if (syncLatestTimer) {
+            clearTimeout(syncLatestTimer)
+            syncLatestTimer = null
+        }
+        orders.value = []
+        total.value = 0
+        page.value = 1
+        totalPages.value = 1
+        ordersListScrollY.value = 0
+        isLoadingMore.value = false
+        if (import.meta.client) {
+            window.scrollTo(0, 0)
+        }
     }
 
     /** Oxirgi 1 daqiqada kelgan buyurtmalar (tabbar badge) — id → kelgan vaqt */
@@ -328,12 +359,14 @@ export const useOrderStore = defineStore('order', () => {
      * page>1: yangilarini boshiga qo'shadi (scroll saqlanadi).
      */
     const syncLatest = async (params: FetchOrdersParams = {}) => {
+        if (!paramsMatchListFilter(params)) return null
         try {
             const response = await useApi('/orders', {
                 method: 'GET',
                 params: { ...params, limit: params.limit ?? 5, page: 1 },
             })
             if (!response.success) return response
+            if (!paramsMatchListFilter(params)) return response
             let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
             const hasServerFilter = Boolean(params.search || params.botGroupId)
             const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
@@ -368,6 +401,8 @@ export const useOrderStore = defineStore('order', () => {
         params: FetchOrdersParams = {},
         opts: { append?: boolean } = {}
     ) => {
+        const isFreshLoad = !opts.append
+        const reqSeq = isFreshLoad ? listFetchSeq : -1
         try {
             if (opts.append) isLoadingMore.value = true
             else {
@@ -380,6 +415,8 @@ export const useOrderStore = defineStore('order', () => {
                 params,
             })
             if (response.success) {
+                if (isFreshLoad && reqSeq !== listFetchSeq) return response
+                if (isFreshLoad && !paramsMatchListFilter(params)) return response
                 let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
                 const hasServerFilter = Boolean(params.search || params.botGroupId)
                 const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
@@ -388,6 +425,7 @@ export const useOrderStore = defineStore('order', () => {
                     list = filterOrdersByKeywords(list, clientKw)
                 }
                 if (opts.append) {
+                    if (!paramsMatchListFilter(params)) return response
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
                 } else {
@@ -576,6 +614,7 @@ export const useOrderStore = defineStore('order', () => {
         listText,
         listScope,
         applyListFilter,
+        resetListForFilterChange,
         hasActiveListFilter,
         scheduleSyncLatest,
         recentMinuteCount,

@@ -79,9 +79,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const loadMore = () => orderStore.loadMore(queryParams())
 
   const beginFilterReload = () => {
-    orderStore.ordersListScrollY = 0
-    orderStore.orders = []
     orderStore.applyListFilter({ page: 1, ...queryParams() })
+    orderStore.resetListForFilterChange()
   }
 
   /** Buyurtma matni — server `text` (debounce orders.vue dan) */
