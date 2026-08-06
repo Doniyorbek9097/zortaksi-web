@@ -11,6 +11,7 @@ export interface FetchOrdersParams {
     search?: string
     botGroupId?: string
     text?: string
+    scope?: 'mine'
     sinceHours?: number
 }
 
@@ -32,11 +33,14 @@ export const useOrderStore = defineStore('order', () => {
     const listBotGroupId = ref('')
     /** Buyurtma matni qidiruvi */
     const listText = ref('')
+    /** Barchasi / Menki tab */
+    const listScope = ref<'all' | 'mine'>('all')
 
     const rememberListFilter = (params: FetchOrdersParams) => {
         listBotGroupId.value = String(params.botGroupId || '').trim()
         listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
         listText.value = String(params.text || '').trim()
+        listScope.value = params.scope === 'mine' ? 'mine' : 'all'
     }
 
     const hasActiveListFilter = () =>
@@ -248,6 +252,7 @@ export const useOrderStore = defineStore('order', () => {
                     ...(listBotGroupId.value
                         ? { botGroupId: listBotGroupId.value }
                         : { search: listSearch.value || undefined }),
+                    ...(listScope.value === 'mine' ? { scope: 'mine' } : {}),
                 },
             })
             if (response.success) {
@@ -295,6 +300,7 @@ export const useOrderStore = defineStore('order', () => {
     /** Socket order:new — race-safe prepend */
     const prependOrder = (order: IOrder) => {
         if (!order) return false
+        if (listScope.value === 'mine') return false
         if (listBotGroupId.value.trim()) {
             // Bot guruh — server kalit so'zlari to'liq; client qo'shimcha kesmaydi
         } else {
@@ -568,6 +574,7 @@ export const useOrderStore = defineStore('order', () => {
         listSearch,
         listBotGroupId,
         listText,
+        listScope,
         applyListFilter,
         hasActiveListFilter,
         scheduleSyncLatest,

@@ -37,6 +37,7 @@ export default defineNuxtPlugin(() => {
       limit: ORDERS_PAGE_LIMIT,
       ...(botGroupId ? { botGroupId } : search ? { search } : {}),
       ...(text ? { text } : {}),
+      ...(orderStore.listScope === 'mine' ? { scope: 'mine' as const } : {}),
     }
   }
 
@@ -94,7 +95,7 @@ export default defineNuxtPlugin(() => {
       const kw = loadOrderFilterKeywords().trim()
       const textQuery = orderStore.listText.trim()
 
-      if (botGroupId || textQuery) {
+      if (botGroupId || textQuery || orderStore.listScope === 'mine') {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
@@ -108,7 +109,7 @@ export default defineNuxtPlugin(() => {
       const botGroupId = loadOrderFilterBotGroupId().trim()
       const kw = loadOrderFilterKeywords().trim()
       const textQuery = orderStore.listText.trim()
-      if (botGroupId || textQuery) {
+      if (botGroupId || textQuery || orderStore.listScope === 'mine') {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }

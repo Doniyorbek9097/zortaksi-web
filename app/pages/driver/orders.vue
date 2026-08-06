@@ -31,6 +31,32 @@
       @cancel="onCancelFilter"
     />
 
+    <!-- Tabs: Barchasi / Menki -->
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        :class="scope === 'all'
+          ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
+          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        @click="setScope('all')"
+      >
+        <font-awesome-icon icon="fa-solid fa-list" class="text-[10px]" />
+        Barchasi
+      </button>
+      <button
+        type="button"
+        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
+        :class="scope === 'mine'
+          ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+        @click="setScope('mine')"
+      >
+        <font-awesome-icon icon="fa-solid fa-user-group" class="text-[10px]" />
+        Menki
+      </button>
+    </div>
+
     <!-- Buyurtma qidiruvi -->
     <div class="relative">
       <font-awesome-icon
@@ -171,6 +197,8 @@ const {
   filterLoading,
   orderQuery,
   orderSearchActive,
+  scope,
+  setScope,
   displayOrders,
   onSaveFilter,
   onCancelFilter,

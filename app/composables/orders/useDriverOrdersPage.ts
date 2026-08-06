@@ -96,6 +96,8 @@ export function useDriverOrdersPage() {
     filterLoading: filter.filterLoading,
     orderQuery: filter.orderQuery,
     orderSearchActive: filter.orderSearchActive,
+    scope: filter.scope,
+    setScope: filter.setScope,
     displayOrders: filter.displayOrders,
     onSaveFilter: filter.onSaveFilter,
     onCancelFilter: filter.onCancelFilter,
