@@ -7,6 +7,34 @@ export type OrderTakeAccessRedirect = {
   query: Record<string, string>
 }
 
+export type OrderTakeAccessPatch = {
+  active?: boolean
+  verified?: boolean
+  tariffExpireAt?: string | Date | null
+}
+
+/** /me/order-take-access javobidan user cache yangilash */
+export function patchUserFromOrderTakeAccess(
+  user: IUser,
+  data: OrderTakeAccessPatch,
+): IUser {
+  const next: IUser = {
+    ...user,
+    ...(data.active != null ? { active: !!data.active } : {}),
+    ...(data.verified != null ? { verified: !!data.verified } : {}),
+    ...(data.tariffExpireAt !== undefined
+      ? { tariffExpireAt: data.tariffExpireAt }
+      : {}),
+  }
+
+  // Server tarif faol deb tasdiqlagan — local isTariffActive uchun stub
+  if (data.active && !next.tariff) {
+    next.tariff = { name: 'Active', price: 0, expireDays: 0 }
+  }
+
+  return next
+}
+
 /** /driver/chat/open — buyurtmadan chat (tarif / ro'yxat talab qilinadi) */
 export function isOrderTakeChatOpen(
   path: string,

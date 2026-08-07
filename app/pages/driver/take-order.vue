@@ -8,12 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth.store'
-
 definePageMeta({ layout: false })
 
 const route = useRoute()
-const authStore = useAuthStore()
+const { ensureAccess } = useOrderTakeAccess()
 
 const orderId = computed(() => String(route.query.orderId || '').trim())
 
@@ -26,48 +24,17 @@ const chatOpenTarget = computed(() => ({
   },
 }))
 
-const patchUserFromAccess = (data: {
-  active?: boolean
-  verified?: boolean
-  tariffExpireAt?: string | Date | null
-}) => {
-  if (!authStore.user) return
-  authStore.user = {
-    ...authStore.user,
-    ...(data.active != null ? { active: !!data.active } : {}),
-    ...(data.verified != null ? { verified: !!data.verified } : {}),
-    ...(data.tariffExpireAt !== undefined ? { tariffExpireAt: data.tariffExpireAt } : {}),
-  }
-}
-
 onMounted(async () => {
   if (!orderId.value) {
-    await navigateTo('/driver/dashboard', { replace: true })
+    await navigateTo('/driver/orders', { replace: true })
     return
   }
 
-  const nextPath = `/driver/chat/open?open=order&orderId=${encodeURIComponent(orderId.value)}&fromGroup=1`
+  const fullPath = `/driver/chat/open?open=order&orderId=${encodeURIComponent(orderId.value)}&fromGroup=1`
 
-  try {
-    const res = await useApi('/me/order-take-access', { timeout: 10_000 })
-
-    if (res?.allowed) {
-      patchUserFromAccess(res)
-      await navigateTo(chatOpenTarget.value, { replace: true })
-      return
-    }
-
-    if (res?.code === 'NOT_VERIFIED') {
-      await navigateTo({ path: '/auth', query: { next: nextPath } }, { replace: true })
-      return
-    }
-
-    await navigateTo(
-      { path: '/driver/payment', query: { tab: 'tariff', next: nextPath } },
-      { replace: true },
-    )
-  } catch {
-    await navigateTo('/driver/dashboard', { replace: true })
+  const allowed = await ensureAccess(fullPath)
+  if (allowed) {
+    await navigateTo(chatOpenTarget.value, { replace: true })
   }
 })
 </script>

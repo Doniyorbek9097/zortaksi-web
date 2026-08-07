@@ -394,7 +394,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
 import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
-import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
@@ -407,6 +407,8 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
+const { ensureAccess: ensureOrderTakeAccessFromApi, redirectIfBlocked: redirectOrderTakeBlocked } =
+  useOrderTakeAccess()
 
 const chatId = computed(() => route.params.id as string)
 /** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
@@ -971,30 +973,6 @@ const startPresenceLoop = (id: string) => {
   }, 45000)
 }
 
-/** Guruh «Mijozni olish» — cache user bilan (getMe yo'q) */
-const ensureOrderTakeAccess = (): boolean => {
-  const blocked = resolveOrderTakeAccessRedirect({
-    user: authStore.user,
-    fullPath: route.fullPath,
-  })
-  if (!blocked) return true
-
-  chatStore.isLoadingMessages = false
-  void navigateTo(blocked, { replace: true })
-  return false
-}
-
-const redirectOrderTakeBlocked = () => {
-  const blocked = resolveOrderTakeAccessRedirect({
-    user: authStore.user,
-    fullPath: route.fullPath,
-  })
-  if (!blocked) return false
-  chatStore.isLoadingMessages = false
-  void navigateTo(blocked, { replace: true })
-  return true
-}
-
 /** Silent connect — xabarlar loadChat da bir marta yuklanadi */
 const preconnectChatOpen = (id: string, chat?: import('~/types').IChat | null) => {
   if (!id) return
@@ -1053,7 +1031,11 @@ const bootstrapOpenChat = async (seq: number) => {
   const userId = String(q.userId || '')
 
   if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
-    if (!ensureOrderTakeAccess() || seq !== loadSeq) return
+    const allowed = await ensureOrderTakeAccessFromApi(route.fullPath)
+    if (!allowed || seq !== loadSeq) {
+      chatStore.isLoadingMessages = false
+      return
+    }
   }
 
   await primeInstantOrderUi()
@@ -1105,7 +1087,8 @@ const bootstrapOpenChat = async (seq: number) => {
       res?.code === 'NOT_VERIFIED' ||
       /tarif faol emas/i.test(String(res?.message || ''))
     ) {
-      if (redirectOrderTakeBlocked() || seq !== loadSeq) return
+      chatStore.isLoadingMessages = false
+      if ((await redirectOrderTakeBlocked(route.fullPath)) || seq !== loadSeq) return
     }
 
     if (res?.success && res.data?._id) {

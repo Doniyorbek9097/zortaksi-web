@@ -124,7 +124,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
             if (statusCode === 401 || statusCode === 403) {
                 clearSession()
                 if (isProtectedPath(to.path) || to.path === '/auth') {
-                    return navigateTo('/auth')
+                    return navigateTo({ path: '/auth', query: { next: to.fullPath } })
                 }
                 return
             }
@@ -132,7 +132,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
             if (!authStore.user) {
                 markReady()
                 if (isProtectedPath(to.path)) {
-                    return navigateTo('/auth')
+                    return navigateTo({ path: '/auth', query: { next: to.fullPath } })
                 }
                 return
             }
@@ -142,7 +142,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
     if (!authStore.user) {
         if (isProtectedPath(to.path)) {
             clearSession()
-            return navigateTo('/auth')
+            return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         markReady()
         return
