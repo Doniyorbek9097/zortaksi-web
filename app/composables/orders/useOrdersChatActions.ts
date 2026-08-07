@@ -65,7 +65,7 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
     return goOpenChat({
       open: 'order',
-      orderId: String(order._id),
+      ...orderQuickLinkQuery(order),
       ...(existing?._id ? { chatId: String(existing._id) } : {}),
     })
   }

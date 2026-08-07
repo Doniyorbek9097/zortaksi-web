@@ -393,7 +393,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, hasOrderSenderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
 import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -900,8 +900,8 @@ const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean 
   }
 }
 
-/** Mijozni olish / order Xabar — minimal UI, keyin API dan to'ldirish */
-const primeInstantOrderUi = async () => {
+/** Query / stash dan darhol chat UI (sync) */
+const applyInstantOrderUiFromQuery = () => {
   const q = route.query as Record<string, unknown>
   const orderId = String(q.orderId || '').trim()
   if (!orderId && !hasOrderQueryContext(q)) return
@@ -927,21 +927,65 @@ const primeInstantOrderUi = async () => {
   }
 
   if (orderId) {
+    const queryStub = buildChatStubFromOrderQuery(q)
+
+    if (hasOrderSenderQueryContext(q) && queryStub) {
+      applyStub(queryStub)
+      return
+    }
+
     applyStub(buildMinimalOrderChatStub(orderId))
-    try {
-      const res = await useApi(`/orders/${orderId}`, { timeout: 10_000 })
-      if (res?.success && res.data) {
-        const fromOrder = buildChatStubFromOrder(res.data as import('~/types').IOrder)
-        if (fromOrder) applyStub(fromOrder)
-      }
-    } catch {
-      /* minimal stub yetarli — startChatFromOrder keyin to'ldiradi */
+    if (!isFromGroupTakeClient(q) && queryStub) {
+      applyStub(queryStub)
     }
     return
   }
 
   const stub = buildChatStubFromOrderQuery(q)
   if (stub) applyStub(stub)
+}
+
+/** Guruh «Mijozni olish» — fon API to'ldirish */
+const enrichOrderUiFromApi = (orderId: string) => {
+  void (async () => {
+    try {
+      const res = await useApi(`/orders/${orderId}`, { timeout: 10_000 })
+      if (!res?.success || !res.data) return
+
+      const fromOrder = buildChatStubFromOrder(res.data as import('~/types').IOrder)
+      if (!fromOrder) return
+
+      const q = route.query as Record<string, unknown>
+      const listedId = String(q.chatId || route.params.id || '')
+      const listed =
+        listedId && listedId !== 'open'
+          ? chatStore.chats.find((c) => c._id === listedId)
+          : undefined
+
+      chatStore.currentChat = {
+        ...(listed || {}),
+        ...(chatStore.currentChat || {}),
+        ...fromOrder,
+        peer: {
+          ...(listed?.peer || {}),
+          ...(chatStore.currentChat?.peer || {}),
+          ...(fromOrder.peer || {}),
+        },
+      } as import('~/types').IChat
+      chatStore.primeFromChat(chatStore.currentChat)
+    } catch {
+      /* minimal stub yetarli */
+    }
+  })()
+}
+
+/** Mijozni olish / order Xabar — query dan darhol UI; guruh uchun API */
+const primeInstantOrderUi = () => {
+  applyInstantOrderUiFromQuery()
+  const orderId = String(route.query.orderId || '').trim()
+  if (orderId && isFromGroupTakeClient(route.query as Record<string, unknown>)) {
+    enrichOrderUiFromApi(orderId)
+  }
 }
 
 /** Tepaga scroll — keyingi 10 ta eski xabar */
@@ -1031,14 +1075,16 @@ const bootstrapOpenChat = async (seq: number) => {
   const userId = String(q.userId || '')
 
   if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
+    primeInstantOrderUi()
+
     const allowed = await ensureOrderTakeAccessFromApi(route.fullPath)
     if (!allowed || seq !== loadSeq) {
       chatStore.isLoadingMessages = false
       return
     }
+  } else {
+    primeInstantOrderUi()
   }
-
-  await primeInstantOrderUi()
 
   const fail = async (message?: string) => {
     if (seq !== loadSeq) return
@@ -1117,6 +1163,7 @@ const loadChat = async (id: string) => {
   if (id === 'open') {
     openFailed.value = false
     openError.value = ''
+    applyInstantOrderUiFromQuery()
     const early = resolveChatFromOpenQuery(route.query as Record<string, unknown>, chatStore.chats)
     if (early?._id) {
       chatStore.primeFromChat(early)

@@ -129,6 +129,20 @@ export function isFromGroupTakeClient(query: Record<string, unknown>): boolean {
   return String(query.fromGroup || '').trim() === '1'
 }
 
+/** Query da sender/order konteksti bor (orders ro'yxatidan — API kerak emas) */
+export function hasOrderSenderQueryContext(
+  query: Record<string, unknown>,
+): boolean {
+  if (isFromGroupTakeClient(query)) return false
+  return !!(
+    String(query.name || '').trim() ||
+    String(query.username || '').trim() ||
+    String(query.phone || '').trim() ||
+    String(query.orderText || '').trim() ||
+    String(query.userId || '').trim()
+  )
+}
+
 /** Query dan minimal chat — faqat orderId (sender API dan keladi) */
 export function buildChatStubFromOrderQuery(
   query: Record<string, unknown>,
