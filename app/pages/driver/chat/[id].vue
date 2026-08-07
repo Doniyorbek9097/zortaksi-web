@@ -393,7 +393,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, hasOrderSenderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, hasOrderSenderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient, mergeOrderChatContext, pickQuickLinkQuery } from '~/utils/orderChatQuery'
 import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -879,7 +879,7 @@ const clearPresenceTimer = () => {
   }
 }
 
-const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean }) => {
+const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean; keepChat?: import('~/types').IChat | null }) => {
   chatStore.persistCurrentMessagesCache()
   chatStore.invalidateMessagesFetch()
   clearPresenceTimer()
@@ -887,7 +887,7 @@ const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean 
   chatStore.messages = []
   chatStore.messagesChatId = null
   chatStore.resetMessagesPagination()
-  chatStore.currentChat = null
+  chatStore.currentChat = opts?.keepChat ?? null
   if (!opts?.preserveConnection) {
     chatStore.resetConnection()
   }
@@ -918,11 +918,11 @@ const applyInstantOrderUiFromQuery = () => {
       : undefined
 
   const applyStub = (stub: Partial<import('~/types').IChat>) => {
-    chatStore.currentChat = {
-      ...(listed || {}),
-      ...stub,
-      peer: { ...(listed?.peer || {}), ...(stub.peer || {}) },
-    } as import('~/types').IChat
+    chatStore.currentChat = mergeOrderChatContext(
+      listed,
+      chatStore.currentChat,
+      stub,
+    ) as import('~/types').IChat
     chatStore.primeFromChat(chatStore.currentChat)
   }
 
@@ -962,16 +962,11 @@ const enrichOrderUiFromApi = (orderId: string) => {
           ? chatStore.chats.find((c) => c._id === listedId)
           : undefined
 
-      chatStore.currentChat = {
-        ...(listed || {}),
-        ...(chatStore.currentChat || {}),
-        ...fromOrder,
-        peer: {
-          ...(listed?.peer || {}),
-          ...(chatStore.currentChat?.peer || {}),
-          ...(fromOrder.peer || {}),
-        },
-      } as import('~/types').IChat
+      chatStore.currentChat = mergeOrderChatContext(
+        listed,
+        chatStore.currentChat,
+        fromOrder,
+      ) as import('~/types').IChat
       chatStore.primeFromChat(chatStore.currentChat)
     } catch {
       /* minimal stub yetarli */
@@ -1029,33 +1024,41 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
   const newId = String(chat._id || '')
   if (!newId) return false
 
-  chatStore.primeFromChat(chat)
-  chatStore.currentChat = chat
+  const q = route.query as Record<string, unknown>
+  const queryStub = buildChatStubFromOrderQuery(q)
+  const merged = mergeOrderChatContext(
+    chatStore.currentChat,
+    queryStub,
+    chat,
+  ) as import('~/types').IChat
+
+  chatStore.primeFromChat(merged)
+  chatStore.currentChat = merged
   chatStore.isLoadingMessages = false
   openFailed.value = false
   openError.value = ''
 
   if (
-    chat.orderId &&
-    !chat.inAppOnly &&
-    chat.kind !== 'support' &&
-    chat.kind !== 'direct' &&
-    !hasTelegramPeerLink(chat)
+    merged.orderId &&
+    !merged.inAppOnly &&
+    merged.kind !== 'support' &&
+    merged.kind !== 'direct' &&
+    !hasTelegramPeerLink(merged)
   ) {
     chatStore.connectionStatus = 'connecting'
   }
 
   const idx = chatStore.chats.findIndex((c) => c._id === newId)
   if (idx >= 0) {
-    chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
+    chatStore.chats[idx] = mergeOrderChatContext(chatStore.chats[idx], merged) as import('~/types').IChat
   } else {
-    chatStore.chats.unshift(chat)
+    chatStore.chats.unshift(merged)
   }
 
-  preconnectChatOpen(newId, chat)
+  preconnectChatOpen(newId, merged)
 
-  const nextQuery: Record<string, string> = {}
-  if (isFromGroupTakeClient(route.query as Record<string, unknown>)) {
+  const nextQuery = pickQuickLinkQuery(q)
+  if (isFromGroupTakeClient(q)) {
     nextQuery.fromGroup = '1'
   }
 
@@ -1155,9 +1158,16 @@ const loadChat = async (id: string) => {
   const seq = ++loadSeq
   const listedEarly = chatStore.chats.find((c) => c._id === id)
   const preserveConnection = !!(listedEarly && hasTelegramPeerLink(listedEarly))
-  resetChatUi(id, { preserveConnection })
+  const queryStub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+  const prevChat = chatStore.currentChat
+  const keepChat =
+    id !== 'open' && (prevChat?.orderId || queryStub?.orderId)
+      ? (mergeOrderChatContext(listedEarly, queryStub, prevChat) as import('~/types').IChat)
+      : null
+
+  resetChatUi(id, { preserveConnection, keepChat })
   if (id !== 'open') {
-    void primeInstantOrderUi()
+    primeInstantOrderUi()
   }
 
   if (id === 'open') {
@@ -1174,9 +1184,16 @@ const loadChat = async (id: string) => {
   }
 
   const listed = listedEarly || chatStore.chats.find((c) => c._id === id)
-  if (listed) chatStore.currentChat = listed
+  if (listed || queryStub?.orderId || prevChat?.orderId) {
+    chatStore.currentChat = mergeOrderChatContext(
+      listed,
+      queryStub,
+      chatStore.currentChat,
+      prevChat,
+    ) as import('~/types').IChat
+  }
 
-  chatStore.primeFromChat(listed || chatStore.currentChat)
+  chatStore.primeFromChat(chatStore.currentChat)
 
   const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
   if (orderChat) {

@@ -215,6 +215,71 @@ function truncateForQuery(text: string): string {
   return `${t.slice(0, ORDER_TEXT_QUERY_MAX)}…`
 }
 
+/** Order chat konteksti — birinchi to'ldirilgan qiymat saqlanadi (flicker yo'q) */
+export function mergeOrderChatContext(
+  ...sources: Array<Partial<IChat> | null | undefined>
+): Partial<IChat> {
+  const merged: Partial<IChat> = {}
+  const peerSources: Array<Partial<IChat['peer']> | undefined> = []
+
+  for (const src of sources) {
+    if (!src) continue
+    Object.assign(merged, src)
+    if (src.peer) peerSources.push(src.peer)
+  }
+
+  const pickPeer = (key: keyof IChat['peer']) => {
+    for (const p of peerSources) {
+      const v = p?.[key]
+      if (v == null) continue
+      if (typeof v === 'boolean') return v
+      if (String(v).trim()) return v
+    }
+    return undefined
+  }
+
+  const userId = pickPeer('userId')
+  merged.peer = {
+    ...(merged.peer || {}),
+    ...(userId ? { userId: String(userId) } : {}),
+    firstName: pickPeer('firstName') as string | undefined,
+    lastName: pickPeer('lastName') as string | undefined,
+    username: pickPeer('username') as string | undefined,
+    phone: pickPeer('phone') as string | undefined,
+    avatar: pickPeer('avatar') as string | undefined,
+    isBot: (pickPeer('isBot') as boolean | undefined) ?? merged.peer?.isBot ?? false,
+    accessHash: pickPeer('accessHash') as string | undefined,
+    fromPeerId: pickPeer('fromPeerId') as string | undefined,
+    fromMsgId: pickPeer('fromMsgId') as number | undefined,
+    fromGroupUsername: pickPeer('fromGroupUsername') as string | undefined,
+    fromGroupTitle: pickPeer('fromGroupTitle') as string | undefined,
+    fromPeerAccessHash: pickPeer('fromPeerAccessHash') as string | undefined,
+    viaUserbotId: pickPeer('viaUserbotId') as string | undefined,
+  }
+
+  if (!String(merged.orderText || '').trim()) {
+    for (const src of sources) {
+      const t = String(src?.orderText || '').trim()
+      if (t) {
+        merged.orderText = t
+        break
+      }
+    }
+  }
+
+  if (!String(merged.orderId || '').trim()) {
+    for (const src of sources) {
+      const id = String(src?.orderId || '').trim()
+      if (id) {
+        merged.orderId = id
+        break
+      }
+    }
+  }
+
+  return merged
+}
+
 export function pickQuickLinkQuery(
   query: Record<string, unknown>,
 ): Record<string, string> {

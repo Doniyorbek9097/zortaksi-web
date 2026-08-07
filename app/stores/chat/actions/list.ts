@@ -1,4 +1,5 @@
-import type { IChatMessage } from '~/types'
+import type { IChat, IChatMessage } from '~/types'
+import { mergeOrderChatContext } from '~/utils/orderChatQuery'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
@@ -121,7 +122,12 @@ export function createListActions(
             if (gen !== messagesFetchGen) return res
 
             if (res.success) {
-                currentChat.value = res.data.chat
+                const incoming = res.data.chat as IChat
+                const prev =
+                    currentChat.value?._id === chatId ? currentChat.value : null
+                currentChat.value = prev
+                    ? (mergeOrderChatContext(prev, incoming) as IChat)
+                    : incoming
                 messages.value = mapMessages(res.data.messages || [])
                 messagesChatId.value = chatId
                 messagesPage.value = res.data.pagination?.page ?? 1
