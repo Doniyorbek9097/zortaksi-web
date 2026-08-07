@@ -188,8 +188,8 @@
       </div>
     </div>
 
-    <!-- Ulanish banneri — faqat BIRINCHI ulanishda (oldingi bog'langan chatda ko'rsatilmaydi) -->
-    <div v-if="needsTelegramConnect && conn === 'connecting'" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <!-- Ulanish banneri — order chatda input placeholder yetarli -->
+    <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         {{ 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
@@ -393,12 +393,8 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-<<<<<<< HEAD
 import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
-=======
-import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
->>>>>>> 9f9780dd1d9b1e5770dfb5275a6359e8382ac414
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
@@ -470,6 +466,14 @@ const hasInstantContext = computed(
   () => !!orderText.value || !!route.query.orderId,
 )
 
+/** Order sender chat — skeleton ko'rsatilmaydi, inputda ulanmoqda */
+const isOrderSenderChat = computed(
+  () =>
+    !!activeChatMeta.value?.orderId ||
+    hasInstantContext.value ||
+    !!route.query.orderId,
+)
+
 /** Joriy chat xabarlari yuklangan/yuklanmoqda */
 const messagesMatchChat = computed(
   () => chatStore.messagesChatId === chatId.value,
@@ -477,6 +481,7 @@ const messagesMatchChat = computed(
 
 const showMessageSkeleton = computed(() => {
   if (isOpening.value || chatId.value === 'open') return false
+  if (isOrderSenderChat.value) return false
   if (!messagesMatchChat.value) return true
   return (
     chatStore.isLoadingMessages &&
@@ -487,6 +492,7 @@ const showMessageSkeleton = computed(() => {
 
 const isOnline = computed(() => !!chatStore.peerPresence?.online)
 const statusText = computed(() => {
+  if (isOrderSenderChat.value && conn.value === 'connecting') return 'ulanmoqda...'
   if (showMessageSkeleton.value) return 'yuklanmoqda...'
   if ((isOpening.value || chatStore.isLoadingMessages) && !hasInstantContext.value) {
     return 'ochilmoqda...'
@@ -500,8 +506,10 @@ const statusText = computed(() => {
 
 const showReadyEmpty = computed(
   () =>
-    messagesMatchChat.value &&
-    (!chatStore.isLoadingMessages || hasInstantContext.value),
+    (messagesMatchChat.value || isOrderSenderChat.value) &&
+    (!chatStore.isLoadingMessages ||
+      hasInstantContext.value ||
+      isOrderSenderChat.value),
 )
 
 /** Direct chatda buyurtma matni o'rniga fixed kontekst xabari */
@@ -700,9 +708,17 @@ const composerDisabled = computed(
 )
 
 const composerPlaceholder = computed(() => {
-  if (composerBusy.value) return 'Biroz kuting...'
+  if (
+    isOrderSenderChat.value &&
+    !isInAppChat.value &&
+    conn.value !== 'ready' &&
+    !hasPeerLink.value
+  ) {
+    return 'Ulanmoqda...'
+  }
+  if (composerBusy.value) return 'Ulanmoqda...'
   if (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value) {
-    return 'Ulanish kutilmoqda...'
+    return 'Ulanmoqda...'
   }
   return 'Xabar yozing...'
 })
@@ -888,6 +904,9 @@ const primeInstantOrderUi = () => {
   if (!hasOrderQueryContext(q)) return
 
   chatStore.isLoadingMessages = false
+  if (!isInAppChat.value && chatStore.connectionStatus === 'idle') {
+    chatStore.connectionStatus = 'connecting'
+  }
   const stub = buildChatStubFromOrderQuery(q)
   if (!stub) return
 
@@ -975,6 +994,16 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
   chatStore.isLoadingMessages = false
   openFailed.value = false
   openError.value = ''
+
+  if (
+    chat.orderId &&
+    !chat.inAppOnly &&
+    chat.kind !== 'support' &&
+    chat.kind !== 'direct' &&
+    !hasTelegramPeerLink(chat)
+  ) {
+    chatStore.connectionStatus = 'connecting'
+  }
 
   const idx = chatStore.chats.findIndex((c) => c._id === newId)
   if (idx >= 0) {
@@ -1101,6 +1130,11 @@ const loadChat = async (id: string) => {
 
   chatStore.primeFromChat(listed || chatStore.currentChat)
 
+  const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
+  if (orderChat) {
+    chatStore.isLoadingMessages = false
+  }
+
   const kind = listed?.kind || chatStore.currentChat?.kind
   const inApp =
     kind === 'support' ||
@@ -1111,7 +1145,6 @@ const loadChat = async (id: string) => {
 
   try {
     if (!inApp) {
-      const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
       if (
         orderChat &&
         !hasTelegramPeerLink(listed || chatStore.currentChat) &&
