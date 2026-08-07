@@ -221,8 +221,10 @@ export function createListActions(
                 timeout: 30_000,
             })
         } catch (error) {
+            const data = (error as { response?: { data?: { code?: string } } })?.response?.data
             return {
                 success: false,
+                code: data?.code,
                 message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
             }
         }
@@ -233,8 +235,10 @@ export function createListActions(
         try {
             return await useApi(`/chats/from-order/${orderId}/agent`, { method: 'POST' })
         } catch (error) {
+            const data = (error as { response?: { data?: { code?: string } } })?.response?.data
             return {
                 success: false,
+                code: data?.code,
                 message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
             }
         }
@@ -248,8 +252,10 @@ export function createListActions(
                 body: { userId, orderId: orderId || undefined },
             })
         } catch (error) {
+            const data = (error as { response?: { data?: { code?: string } } })?.response?.data
             return {
                 success: false,
+                code: data?.code,
                 message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
             }
         }

@@ -178,13 +178,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return
     }
 
-    // Guruh «Mijozni olish» — chat UI ko'rsatilmasdan auth yoki tarif
+    // Guruh «Mijozni olish» — cache dagi user bilan (getMe chaqirilmaydi)
     if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
-        try {
-            await authStore.getMe({ authToken: authToken() || undefined })
-        } catch {
-            /* yuqorida ushlangan */
-        }
         const blocked = resolveOrderTakeAccessRedirect({
             user: authStore.user,
             fullPath: to.fullPath,
