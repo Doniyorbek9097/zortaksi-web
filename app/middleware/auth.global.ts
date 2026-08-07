@@ -13,10 +13,6 @@ import {
     resolveHomePath,
     resolveSafeNextPath,
 } from '~/utils/userRole'
-import {
-    isOrderTakeChatOpen,
-    resolveOrderTakeAccessRedirect,
-} from '~/utils/orderTakeAccess'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -178,15 +174,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return
     }
 
-    // Guruh «Mijozni olish» — cache dagi user bilan (getMe chaqirilmaydi)
-    if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
-        const blocked = resolveOrderTakeAccessRedirect({
-            user: authStore.user,
-            fullPath: to.fullPath,
-        })
-        if (blocked) {
-            return navigateTo(blocked, { replace: true })
-        }
+    // Eski guruh havolalari (/chat/open) → gate sahifasi
+    if (
+        to.path.startsWith('/driver/chat/open') &&
+        String(to.query.fromGroup || '').trim() === '1' &&
+        String(to.query.access || '').trim() !== '1'
+    ) {
+        return navigateTo({ path: '/driver/take-order', query: to.query }, { replace: true })
     }
 
     if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {
