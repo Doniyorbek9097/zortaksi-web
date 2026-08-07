@@ -278,9 +278,9 @@
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
-          {{ callPhone && !showGroupJoinHint && !showGroupMemberHint
+          {{ connReason || (callPhone && !showGroupJoinHint && !showGroupMemberHint
             ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
-            : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.' }}
+            : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.') }}
         </p>
 
         <div
