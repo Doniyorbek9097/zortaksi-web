@@ -192,7 +192,7 @@
     <div v-if="needsTelegramConnect && conn === 'connecting' && !composerLikelyReady" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
-        {{ proxyConnectBusy ? 'Proxy orqali ulanmoqda...' : 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
+        {{ 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
       </div>
     </div>
 
@@ -203,19 +203,6 @@
           {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
         </p>
         <div class="flex flex-col items-center gap-2">
-          <button
-            v-if="canTryProxy"
-            type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
-            :disabled="proxyConnectBusy"
-            @click="onProxyConnect"
-          >
-            <font-awesome-icon
-              :icon="proxyConnectBusy ? 'fa-solid fa-spinner' : 'fa-solid fa-shuffle'"
-              :class="{ 'animate-spin': proxyConnectBusy }"
-            />
-            Proxy orqali ulanish
-          </button>
           <a
             v-if="callPhone"
             :href="normalizeTelHref(callPhone)"
@@ -224,7 +211,7 @@
             <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilishingiz mumkin
           </a>
           <button
-            v-else-if="!canTryProxy"
+            v-else
             type="button"
             class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-amber-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
             @click="goOrders"
@@ -240,25 +227,10 @@
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
           {{ callPhone
-            ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz yoki proxy orqali urinib ko\'rishingiz mumkin.'
-            : (canTryProxy
-              ? 'O\'z hisobingiz orqali bog\'lanib bo\'lmadi. Proxy orqali urinib ko\'ring.'
-              : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.') }}
+            ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
+            : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.' }}
         </p>
         <div class="flex flex-col items-center gap-2">
-          <button
-            v-if="canTryProxy"
-            type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
-            :disabled="proxyConnectBusy"
-            @click="onProxyConnect"
-          >
-            <font-awesome-icon
-              :icon="proxyConnectBusy ? 'fa-solid fa-spinner' : 'fa-solid fa-shuffle'"
-              :class="{ 'animate-spin': proxyConnectBusy }"
-            />
-            Proxy orqali ulanish
-          </button>
           <a
             v-if="callPhone"
             :href="normalizeTelHref(callPhone)"
@@ -267,7 +239,7 @@
             <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilish
           </a>
           <button
-            v-else-if="!canTryProxy"
+            v-else
             type="button"
             class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-red-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
             @click="goOrders"
@@ -575,27 +547,6 @@ const composerPlaceholder = computed(() => {
   }
   return 'Xabar yozing...'
 })
-
-const proxyConnectBusy = ref(false)
-
-/** Order chat — o'z hisob orqali ulanmasa proxy sinov */
-const canTryProxy = computed(
-  () =>
-    needsTelegramConnect.value &&
-    !!(chatStore.currentChat?.orderId || route.query.orderId) &&
-    (conn.value === 'unreachable' || conn.value === 'restricted'),
-)
-
-const onProxyConnect = async () => {
-  const id = chatId.value
-  if (!id || id === 'open' || proxyConnectBusy.value || !canTryProxy.value) return
-  proxyConnectBusy.value = true
-  try {
-    await chatStore.connect(id, { viaProxy: true, silent: false })
-  } finally {
-    proxyConnectBusy.value = false
-  }
-}
 
 /** Voice/photo/document — MessageBubble to'g'ri tip bilan ochilsin */
 const chatMediaType = (msg: { type?: string; mediaPath?: string; duration?: number; locationLat?: number; locationLng?: number }) => {
