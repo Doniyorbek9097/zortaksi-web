@@ -21,7 +21,7 @@ const getSocket = (): Socket | null => {
     return nuxt.$socket?.() ?? null
 }
 
-const waitForSocketConnected = (maxMs = 8000): Promise<Socket | null> => {
+const waitForSocketConnected = (maxMs = 3000): Promise<Socket | null> => {
     const existing = getSocket()
     if (existing?.connected) return Promise.resolve(existing)
     if (!existing) return Promise.resolve(null)
@@ -53,7 +53,7 @@ const requestConnectViaSocket = async (
     if (!socket?.connected) {
         const nuxt = useNuxtApp() as { $reconnectSocket?: () => void }
         nuxt.$reconnectSocket?.()
-        socket = await waitForSocketConnected(5000)
+        socket = await waitForSocketConnected(2500)
     }
     if (!socket?.connected) {
         throw new Error('Socket ulanmagan')
