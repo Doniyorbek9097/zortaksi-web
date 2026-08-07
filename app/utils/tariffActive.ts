@@ -6,9 +6,13 @@ export function isTariffActive(
     tariffExpireAt?: string | Date | null
   } | null,
 ): boolean {
-  if (!user?.active || !user.tariff) return false
-  if (user.tariffExpireAt == null || user.tariffExpireAt === '') return true
-  const end = new Date(user.tariffExpireAt).getTime()
-  if (Number.isNaN(end)) return true
-  return end > Date.now()
+  if (!user?.tariff) return false
+
+  const raw = user.tariffExpireAt
+  if (raw != null && raw !== '') {
+    const end = new Date(raw).getTime()
+    if (!Number.isNaN(end) && end <= Date.now()) return false
+  }
+
+  return !!user.active
 }

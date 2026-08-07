@@ -159,11 +159,28 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // Redirectlar — sessionReady hali false (loading), keyin yangi sahifada true
     if (isAuthEntryPath(to.path)) {
+        const canSkipAuth =
+            !!authStore.user?.verified || isAdminUser(authStore.user)
         if (to.path === '/auth') {
             const next = resolveSafeNextPath(to.query.next, authStore.user)
-            if (next) return navigateTo(next)
+            if (next && canSkipAuth) return navigateTo(next)
+            markReady()
+            return
         }
-        return navigateTo(resolveHomePath(authStore.user))
+        if (canSkipAuth) {
+            return navigateTo(resolveHomePath(authStore.user))
+        }
+        markReady()
+        return
+    }
+
+    // Eski guruh havolalari (/chat/open) → gate sahifasi
+    if (
+        to.path.startsWith('/driver/chat/open') &&
+        String(to.query.fromGroup || '').trim() === '1' &&
+        String(to.query.access || '').trim() !== '1'
+    ) {
+        return navigateTo({ path: '/driver/take-order', query: to.query }, { replace: true })
     }
 
     if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {

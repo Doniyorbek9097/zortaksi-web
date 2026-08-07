@@ -205,32 +205,29 @@
 
         <div
           v-if="showGroupJoinSuccess"
-          class="rounded-xl px-3 py-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold leading-relaxed space-y-1"
+          class="rounded-xl px-4 py-3 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 text-center space-y-1"
         >
-          <p>
+          <p class="text-[15px] font-black leading-snug">
             <font-awesome-icon icon="fa-solid fa-circle-check" class="mr-1" />
             «{{ orderGroupCtx?.groupTitle }}» guruhiga qo'shildingiz!
           </p>
-          <p class="font-semibold opacity-90">{{ joinSuccessMessage }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ joinSuccessMessage }}</p>
         </div>
 
         <div
           v-else-if="showGroupMemberHint"
-          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed"
+          class="rounded-xl px-4 py-3 bg-violet-500/10 text-violet-800 dark:text-violet-200 text-center space-y-1"
         >
-          {{ memberHintMessage }}
+          <p class="text-[15px] font-black leading-snug">{{ groupMemberBannerTitle }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ groupMemberBannerSubtitle }}</p>
         </div>
 
         <div
           v-else-if="showGroupJoinHint"
-          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed space-y-1"
+          class="rounded-xl px-4 py-3 bg-violet-500/10 text-violet-800 dark:text-violet-200 text-center space-y-1"
         >
-          <p>
-            Bu buyurtmachi bilan to'g'ridan-to'g'ri yozib bo'lmaydi.
-            Xabar kelgan «{{ orderGroupCtx?.groupTitle }}» guruhiga a'zo bo'ling —
-            shu guruhdan keladigan yangi buyurtmalarni <strong>100%</strong> olasiz va ular
-            <strong>Meniki</strong> bo'limida ko'rinadi.
-          </p>
+          <p class="text-[15px] font-black leading-snug">{{ groupJoinBannerTitle }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ groupJoinBannerSubtitle }}</p>
         </div>
 
         <div class="flex flex-col items-center gap-2">
@@ -245,7 +242,7 @@
           <button
             v-else-if="showGroupJoinHint"
             type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 py-2 px-5 rounded-lg bg-violet-600 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
             :disabled="joinBusy"
             @click="openJoinDialog()"
           >
@@ -288,32 +285,29 @@
 
         <div
           v-if="showGroupJoinSuccess"
-          class="rounded-xl px-3 py-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold leading-relaxed space-y-1"
+          class="rounded-xl px-4 py-3 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 text-center space-y-1"
         >
-          <p>
+          <p class="text-[15px] font-black leading-snug">
             <font-awesome-icon icon="fa-solid fa-circle-check" class="mr-1" />
             «{{ orderGroupCtx?.groupTitle }}» guruhiga qo'shildingiz!
           </p>
-          <p class="font-semibold opacity-90">{{ joinSuccessMessage }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ joinSuccessMessage }}</p>
         </div>
 
         <div
           v-else-if="showGroupMemberHint"
-          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed"
+          class="rounded-xl px-4 py-3 bg-violet-500/10 text-violet-800 dark:text-violet-200 text-center space-y-1"
         >
-          {{ memberHintMessage }}
+          <p class="text-[15px] font-black leading-snug">{{ groupMemberBannerTitle }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ groupMemberBannerSubtitle }}</p>
         </div>
 
         <div
           v-else-if="showGroupJoinHint"
-          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed space-y-1"
+          class="rounded-xl px-4 py-3 bg-violet-500/10 text-violet-800 dark:text-violet-200 text-center space-y-1"
         >
-          <p>
-            Bu buyurtmachi bilan to'g'ridan-to'g'ri yozib bo'lmaydi.
-            Xabar kelgan «{{ orderGroupCtx?.groupTitle }}» guruhiga a'zo bo'ling —
-            shu guruhdan keladigan yangi buyurtmalarni <strong>100%</strong> olasiz va ular
-            <strong>Meniki</strong> bo'limida ko'rinadi.
-          </p>
+          <p class="text-[15px] font-black leading-snug">{{ groupJoinBannerTitle }}</p>
+          <p class="text-[13px] font-bold opacity-90">{{ groupJoinBannerSubtitle }}</p>
         </div>
 
         <div class="flex flex-col items-center gap-2">
@@ -328,7 +322,7 @@
           <button
             v-else-if="showGroupJoinHint"
             type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
+            class="inline-flex items-center gap-1.5 py-2 px-5 rounded-lg bg-violet-600 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
             :disabled="joinBusy"
             @click="openJoinDialog()"
           >
@@ -399,9 +393,13 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
+<<<<<<< HEAD
 import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+=======
+import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+>>>>>>> 9f9780dd1d9b1e5770dfb5275a6359e8382ac414
 import { getApiErrorMessage } from '~/utils/apiError'
-import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
 
@@ -645,7 +643,10 @@ const {
   joinError,
   joinDialogMessage,
   joinSuccessMessage,
-  memberHintMessage,
+  groupJoinBannerTitle,
+  groupJoinBannerSubtitle,
+  groupMemberBannerTitle,
+  groupMemberBannerSubtitle,
   membershipPreviewGroup,
   openJoinDialog,
   confirmJoin,
@@ -931,36 +932,35 @@ const startPresenceLoop = (id: string) => {
   }, 45000)
 }
 
-/** Guruh «Mijozni olish» — tarif yo'q bo'lsa avval to'lov sahifasi */
-const ensureTariffForOrderTake = async (): Promise<boolean> => {
-  if (!authStore.user) {
-    try {
-      await authStore.getMe()
-    } catch {
-      /* middleware auth */
-    }
-  }
-
-  if (isAdminUser(authStore.user)) return true
-  if (authStore.tariffActive) return true
+/** Guruh «Mijozni olish» — cache user bilan (getMe yo'q) */
+const ensureOrderTakeAccess = (): boolean => {
+  const blocked = resolveOrderTakeAccessRedirect({
+    user: authStore.user,
+    fullPath: route.fullPath,
+  })
+  if (!blocked) return true
 
   chatStore.isLoadingMessages = false
-  await navigateTo(
-    {
-      path: '/driver/payment',
-      query: { tab: 'tariff', next: route.fullPath },
-    },
-    { replace: true },
-  )
+  void navigateTo(blocked, { replace: true })
   return false
 }
 
-/** Silent connect + xabar prefetch — orders preconnect bilan bir xil */
+const redirectOrderTakeBlocked = () => {
+  const blocked = resolveOrderTakeAccessRedirect({
+    user: authStore.user,
+    fullPath: route.fullPath,
+  })
+  if (!blocked) return false
+  chatStore.isLoadingMessages = false
+  void navigateTo(blocked, { replace: true })
+  return true
+}
+
+/** Silent connect — xabarlar loadChat da bir marta yuklanadi */
 const preconnectChatOpen = (id: string, chat?: import('~/types').IChat | null) => {
   if (!id) return
   if (chat) chatStore.primeFromChat(chat)
   void chatStore.connect(id, { silent: true })
-  void chatStore.fetchMessages(id)
 }
 
 /** Chat topildi — ro'yxatga qo'shish va real chatId ga o'tish */
@@ -998,17 +998,16 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
 
 /** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
 const bootstrapOpenChat = async (seq: number) => {
-  primeInstantOrderUi()
-
   const q = route.query as Record<string, unknown>
   const mode = String(q.open || '')
   const orderId = String(q.orderId || '')
   const userId = String(q.userId || '')
 
   if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
-    const ok = await ensureTariffForOrderTake()
-    if (!ok || seq !== loadSeq) return
+    if (!ensureOrderTakeAccess() || seq !== loadSeq) return
   }
+
+  primeInstantOrderUi()
 
   const fail = async (message?: string) => {
     if (seq !== loadSeq) return
@@ -1052,6 +1051,14 @@ const bootstrapOpenChat = async (seq: number) => {
 
     if (seq !== loadSeq) return
 
+    if (
+      res?.code === 'TARIFF_INACTIVE' ||
+      res?.code === 'NOT_VERIFIED' ||
+      /tarif faol emas/i.test(String(res?.message || ''))
+    ) {
+      if (redirectOrderTakeBlocked() || seq !== loadSeq) return
+    }
+
     if (res?.success && res.data?._id) {
       const chat = res.data as import('~/types').IChat
       if (!(await finalizeOpenChat(chat))) {
@@ -1071,7 +1078,9 @@ const loadChat = async (id: string) => {
   const listedEarly = chatStore.chats.find((c) => c._id === id)
   const preserveConnection = !!(listedEarly && isChatLikelyReady(listedEarly))
   resetChatUi(id, { preserveConnection })
-  primeInstantOrderUi()
+  if (id !== 'open') {
+    primeInstantOrderUi()
+  }
 
   if (id === 'open') {
     openFailed.value = false
@@ -1103,7 +1112,13 @@ const loadChat = async (id: string) => {
       const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
       void chatStore.connect(id, { silent: wasLinked || !!orderChat })
     }
-    await chatStore.fetchMessages(id)
+    const hasCachedMessages =
+      chatStore.messagesChatId === id && chatStore.messages.length > 0
+    if (!hasCachedMessages) {
+      await chatStore.fetchMessages(id)
+    } else {
+      void chatStore.fetchMessages(id)
+    }
     chatStore.primeFromChat(chatStore.currentChat)
   } catch (err) {
     console.error('loadChat error:', err)

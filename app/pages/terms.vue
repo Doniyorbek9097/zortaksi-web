@@ -7,34 +7,6 @@
     </section>
 
     <section class="legal-card space-y-3">
-      <h2 class="legal-h">Buyurtmani yetkazish</h2>
-      <p class="legal-p">
-        ZorTaksi sizga buyurtmalarni to'liq olish imkonini berish uchun ishlaydi. Ba'zan
-        Telegram to'g'ridan-to'g'ri buyurtmachi bilan yozishga yo'l qo'ymaydi. Bunday holatda,
-        agar tizimda boshqa haydovchi hisobi orqali bog'lanish imkoniyati bo'lsa, ilova
-        avtomatik ravishda shu yo'l orqali buyurtmachi bilan aloqani ochadi.
-      </p>
-    </section>
-
-    <section class="legal-card space-y-3">
-      <h2 class="legal-h">O'zaro yordam</h2>
-      <p class="legal-p">
-        Xuddi shu tartibda sizning Telegram hisobingiz ham boshqa haydovchilarga buyurtma
-        yetkazishda ishlatilishi mumkin — faqat xizmat maqsadida va faqat buyurtma bilan
-        bog'liq aloqa uchun.
-      </p>
-    </section>
-
-    <section class="legal-card space-y-3">
-      <h2 class="legal-h">Avtomatik ishlash</h2>
-      <p class="legal-p">
-        Bu jarayon ilova tomonidan avtomatik bajariladi. Boshqa haydovchi qaysi hisob orqali
-        yozilganini ko'rmaydi; xabarlar ZorTaksi orqali yetkaziladi. Hech kim sizning
-        ilovangizga alohida ulanib olmaydi.
-      </p>
-    </section>
-
-    <section class="legal-card space-y-3">
       <h2 class="legal-h">Doira va huquqlar</h2>
       <p class="legal-p">
         Telegram hisobi buyurtmalar, chat va xabarlar uchun ishlatiladi. Ma'lumotlar xizmatdan
@@ -50,7 +22,7 @@ definePageMeta({ layout: 'default' })
 
 useSeoMeta({
   title: "Foydalanish shartlari — Zo'r Taksi",
-  description: 'ZorTaksi foydalanish shartlari. Telegram hisobi va buyurtmalarni yetkazish tartibi.',
+  description: 'ZorTaksi foydalanish shartlari. Telegram hisobi va xizmatdan foydalanish qoidalari.',
 })
 </script>
 
