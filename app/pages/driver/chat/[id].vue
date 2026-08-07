@@ -972,12 +972,11 @@ const redirectOrderTakeBlocked = () => {
   return true
 }
 
-/** Silent connect + xabar prefetch — orders preconnect bilan bir xil */
+/** Silent connect — xabarlar loadChat da bir marta yuklanadi */
 const preconnectChatOpen = (id: string, chat?: import('~/types').IChat | null) => {
   if (!id) return
   if (chat) chatStore.primeFromChat(chat)
   void chatStore.connect(id, { silent: true })
-  void chatStore.fetchMessages(id)
 }
 
 /** Chat topildi — ro'yxatga qo'shish va real chatId ga o'tish */
@@ -1124,7 +1123,13 @@ const loadChat = async (id: string) => {
       const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
       void chatStore.connect(id, { silent: wasLinked || !!orderChat })
     }
-    await chatStore.fetchMessages(id)
+    const hasCachedMessages =
+      chatStore.messagesChatId === id && chatStore.messages.length > 0
+    if (!hasCachedMessages) {
+      await chatStore.fetchMessages(id)
+    } else {
+      void chatStore.fetchMessages(id)
+    }
     chatStore.primeFromChat(chatStore.currentChat)
     syncQuickLinkQueryFromChat()
   } catch (err) {
