@@ -1,6 +1,13 @@
 <template>
+  <div
+    v-if="orderTakeChecking"
+    class="fixed inset-0 z-40 flex items-center justify-center bg-slate-50 dark:bg-slate-950"
+  >
+    <font-awesome-icon icon="fa-solid fa-spinner" class="text-2xl animate-spin text-sky-500" />
+  </div>
   <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
   <BasePullToRefresh
+    v-else
     fill
     scroll-selector=".chat-msg-scroll"
     class="fixed left-0 right-0 z-40"
@@ -394,7 +401,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
 import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
-import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+import { resolveOrderTakeAccessRedirect, isOrderTakeChatOpen } from '~/utils/orderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
@@ -411,6 +418,13 @@ const chatStore = useChatStore()
 const chatId = computed(() => route.params.id as string)
 /** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
 const isOpening = computed(() => chatId.value === 'open')
+
+/** Mijozni olish — tarif tekshiruvi tugaguncha chat UI yashirin */
+const orderTakeChecking = ref(
+  import.meta.client &&
+  route.params.id === 'open' &&
+  isOrderTakeChatOpen(route.path, route.query as Record<string, unknown>),
+)
 
 const isSupport = computed(() =>
   chatStore.currentChat?.kind === 'support' || route.query.support === '1'
@@ -950,19 +964,20 @@ const startPresenceLoop = (id: string) => {
 
 /** Guruh «Mijozni olish» — ro'yxat yoki tarif yo'q bo'lsa chat ochilmasin */
 const ensureOrderTakeAccess = async (): Promise<boolean> => {
-  if (!authStore.user) {
-    try {
-      await authStore.getMe()
-    } catch {
-      /* middleware auth */
-    }
+  try {
+    await authStore.getMe()
+  } catch {
+    /* middleware auth */
   }
 
   const blocked = resolveOrderTakeAccessRedirect({
     user: authStore.user,
     fullPath: route.fullPath,
   })
-  if (!blocked) return true
+  if (!blocked) {
+    orderTakeChecking.value = false
+    return true
+  }
 
   chatStore.isLoadingMessages = false
   await navigateTo(blocked, { replace: true })
@@ -1081,7 +1096,13 @@ const loadChat = async (id: string) => {
   const preserveConnection = !!(listedEarly && isChatLikelyReady(listedEarly))
   resetChatUi(id, { preserveConnection })
   if (id !== 'open') {
+    orderTakeChecking.value = false
     primeInstantOrderUi()
+  } else {
+    orderTakeChecking.value = isOrderTakeChatOpen(
+      route.path,
+      route.query as Record<string, unknown>,
+    )
   }
 
   if (id === 'open') {

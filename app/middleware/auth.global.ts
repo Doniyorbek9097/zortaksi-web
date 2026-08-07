@@ -180,6 +180,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // Guruh «Mijozni olish» — chat UI ko'rsatilmasdan auth yoki tarif
     if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
+        try {
+            await authStore.getMe({ authToken: authToken() || undefined })
+        } catch {
+            /* yuqorida ushlangan */
+        }
         const blocked = resolveOrderTakeAccessRedirect({
             user: authStore.user,
             fullPath: to.fullPath,
