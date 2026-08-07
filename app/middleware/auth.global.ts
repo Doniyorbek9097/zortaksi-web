@@ -13,6 +13,10 @@ import {
     resolveHomePath,
     resolveSafeNextPath,
 } from '~/utils/userRole'
+import {
+    isOrderTakeChatOpen,
+    resolveOrderTakeAccessRedirect,
+} from '~/utils/orderTakeAccess'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -159,11 +163,30 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
     // Redirectlar — sessionReady hali false (loading), keyin yangi sahifada true
     if (isAuthEntryPath(to.path)) {
+        const canSkipAuth =
+            !!authStore.user?.verified || isAdminUser(authStore.user)
         if (to.path === '/auth') {
             const next = resolveSafeNextPath(to.query.next, authStore.user)
-            if (next) return navigateTo(next)
+            if (next && canSkipAuth) return navigateTo(next)
+            markReady()
+            return
         }
-        return navigateTo(resolveHomePath(authStore.user))
+        if (canSkipAuth) {
+            return navigateTo(resolveHomePath(authStore.user))
+        }
+        markReady()
+        return
+    }
+
+    // Guruh «Mijozni olish» — chat UI ko'rsatilmasdan auth yoki tarif
+    if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
+        const blocked = resolveOrderTakeAccessRedirect({
+            user: authStore.user,
+            fullPath: to.fullPath,
+        })
+        if (blocked) {
+            return navigateTo(blocked, { replace: true })
+        }
     }
 
     if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {

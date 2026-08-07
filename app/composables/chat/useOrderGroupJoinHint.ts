@@ -4,16 +4,23 @@ import { resolveOrderGroupContext } from '~/utils/orderChatQuery'
 import type { ConnStatus } from '~/stores/chat/types'
 
 const JOIN_HINT_MESSAGE =
-  `Guruhga a'zo bo'lasiz.\n\n` +
-  `• Shu guruhdan keladigan yangi buyurtmalarni 100% olasiz (Meniki bo'limida).\n` +
-  `• E'lon yuborganingizda xabar o'zingizning Telegram nomingizdan ketadi.\n\n` +
+  `Shu guruhdan keladigan yangi buyurtmalarni 100% olasiz — ular Meniki bo'limida ko'rinadi.\n\n` +
   `Davom etasizmi?`
 
 const JOIN_SUCCESS_MESSAGE =
-  `Shu guruhdan keladigan yangi buyurtmalarni 100% olasiz — ular Meniki bo'limida ko'rinadi.`
+  `Yangi buyurtmalar Meniki bo'limida 100% sizniki.`
 
-const MEMBER_HINT_MESSAGE =
-  `Siz allaqachon bu guruhda a'zosiz. Shu guruhdan keladigan yangi buyurtmalar Meniki bo'limida 100% sizga ko'rinadi.`
+const MEMBER_HINT_TITLE = (title: string) =>
+  `Siz «${title}» guruhida a'zosiz`
+
+const MEMBER_HINT_SUBTITLE =
+  `Yangi buyurtmalar Meniki bo'limida 100% sizniki.`
+
+const JOIN_BANNER_TITLE = (title: string) =>
+  `«${title}» guruhiga qo'shiling`
+
+const JOIN_BANNER_SUBTITLE =
+  `Yangi buyurtmalar Meniki bo'limida 100% sizniki`
 
 export function useOrderGroupJoinHint(options: {
   routeQuery: Ref<Record<string, unknown>>
@@ -80,6 +87,20 @@ export function useOrderGroupJoinHint(options: {
   )
 
   const joinDialogMessage = computed(() => JOIN_HINT_MESSAGE)
+
+  const groupJoinBannerTitle = computed(() => {
+    const title = orderGroup.value?.groupTitle
+    return title ? JOIN_BANNER_TITLE(title) : "Guruhga qo'shiling"
+  })
+
+  const groupJoinBannerSubtitle = computed(() => JOIN_BANNER_SUBTITLE)
+
+  const groupMemberBannerTitle = computed(() => {
+    const title = orderGroup.value?.groupTitle || 'Guruh'
+    return MEMBER_HINT_TITLE(title)
+  })
+
+  const groupMemberBannerSubtitle = computed(() => MEMBER_HINT_SUBTITLE)
 
   const fetchMyGroupIds = async () => {
     try {
@@ -159,7 +180,10 @@ export function useOrderGroupJoinHint(options: {
     joinError,
     joinDialogMessage,
     joinSuccessMessage: JOIN_SUCCESS_MESSAGE,
-    memberHintMessage: MEMBER_HINT_MESSAGE,
+    groupJoinBannerTitle,
+    groupJoinBannerSubtitle,
+    groupMemberBannerTitle,
+    groupMemberBannerSubtitle,
     membershipPreviewGroup,
     fetchMyGroupIds,
     openJoinDialog,
