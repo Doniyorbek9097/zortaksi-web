@@ -14,7 +14,7 @@
         @click="onTelegramClick"
       >
         <font-awesome-icon icon="fa-brands fa-telegram" class="text-[16px] shrink-0" />
-        <span>Telegramda yozish</span>
+        <span>Lichkasiga o'tish</span>
       </button>
 
       <button

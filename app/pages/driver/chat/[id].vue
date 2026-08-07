@@ -18,6 +18,7 @@
       :user-id="peerUserId"
       :can-call="!!callPhone"
       :call-href="callTelHref"
+      :telegram-href="showSenderTelegramLink ? telegramContactUrl : ''"
       @back="goBack"
     />
 
@@ -75,7 +76,7 @@
               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-sky-500 text-white text-[12px] font-black active:scale-95"
             >
               <font-awesome-icon icon="fa-brands fa-telegram" />
-              Telegram orqali
+              Lichkasiga o'tish
             </a>
             <a
               v-if="callTelHref"
@@ -849,12 +850,14 @@ const telegramContactUrl = computed(() => quickLinks.value.telegramHref)
 
 const groupViewUrl = computed(() => quickLinks.value.groupHref)
 
-/** Guruh «Mijozni olish» dan kelganda — Telegramda yozish / Guruhda ko'rish */
+/** Guruhdagi tg://user kabi — sender lichkasiga havola */
+const showSenderTelegramLink = computed(
+  () => needsTelegramConnect.value && !!telegramContactUrl.value,
+)
+
+/** Telegram sender chat — Lichkasiga o'tish / Guruhda ko'rish */
 const showQuickActions = computed(
-  () =>
-    isFromGroupTakeClient(route.query as Record<string, unknown>) &&
-    !isSupport.value &&
-    !isDirect.value,
+  () => showSenderTelegramLink.value,
 )
 
 // Yangi xabar pastga qo'shilganda scroll (prepend da emas)

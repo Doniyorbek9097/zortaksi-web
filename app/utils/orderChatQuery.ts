@@ -306,6 +306,10 @@ export function resolveQuickLinks(
     String(query.phone || '').trim() ||
     String(p?.phone || '').trim() ||
     ''
+  const userId =
+    String(query.userId || '').trim() ||
+    String(p?.userId || '').trim() ||
+    ''
 
   const groupUsername =
     cleanUsername(String(query.groupUsername || '')) ||
@@ -322,7 +326,7 @@ export function resolveQuickLinks(
     ''
 
   return {
-    telegramHref: buildTelegramContactUrl({ username, phone }),
+    telegramHref: buildTelegramContactUrl({ userId, username, phone }),
     groupHref: buildGroupViewUrl({
       groupUsername,
       groupId,
