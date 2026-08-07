@@ -5,9 +5,8 @@
         <slot />
       </div>
     </BasePullToRefresh>
-    <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin -->
-    <DriverBottomNavigation v-if="!mandatoryFilterOpen" />
-    <OrdersMandatoryFilterGate />
+    <DriverBottomNavigation v-if="!mandatoryRegionOpen" />
+    <OrdersMandatoryRegionGate />
   </AuthSessionGate>
 </template>
 
@@ -15,16 +14,17 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
-import { isOrderFilterConfigured } from '~/utils/orderFilterKeywords'
+import { isTariffActive } from '~/utils/tariffActive'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
 
-const mandatoryFilterOpen = computed(() => {
+const mandatoryRegionOpen = computed(() => {
   if (!import.meta.client || !authStore.sessionReady) return false
   if (authStore.user?.role === 'admin') return false
-  return !isOrderFilterConfigured()
+  if (!isTariffActive(authStore.user)) return false
+  return !String(authStore.user?.regionSlug || '').trim()
 })
 
 const refreshBadges = async () => {
@@ -48,13 +48,6 @@ watch(
 
 <style scoped>
 .driver-shell {
-  scrollbar-gutter: stable;
-}
-</style>
-
-<style>
-html,
-body {
-  overscroll-behavior-y: contain;
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
 }
 </style>

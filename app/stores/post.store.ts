@@ -76,9 +76,12 @@ export const usePostStore = defineStore('post', () => {
   })
 
   const searchParams = () => {
+    const q = query.value.trim()
+    if (!isAdmin.value) {
+      return q ? { q } : {}
+    }
     const gid = botGroupId.value.trim()
     const s = search.value.trim()
-    const q = query.value.trim()
     return {
       ...(gid ? { botGroupId: gid } : s ? { search: s } : {}),
       ...(q ? { q } : {}),

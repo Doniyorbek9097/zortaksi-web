@@ -1,4 +1,6 @@
 import type { useOrderStore } from '~/stores/order.store'
+import { useAuthStore } from '~/stores/auth.store'
+import { isAdminUser } from '~/utils/userRole'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
@@ -30,6 +32,8 @@ const loadScope = (): OrdersScopeTab => {
  * Buyurtmalar filtri — server (search/botGroupId) + client qo'shimcha filter.
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
+  const authStore = useAuthStore()
+  const isAdmin = computed(() => isAdminUser(authStore.user))
   const showFilter = ref(false)
   const draftKeywords = ref('')
   const draftBotGroupId = ref('')
@@ -45,6 +49,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const orderSearchActive = computed(() => !!appliedOrderQuery.value.trim())
 
   const buildFilterParams = () => {
+    if (!isAdmin.value) return {}
     const botGroupId = appliedBotGroupId.value.trim()
     if (botGroupId) {
       return { botGroupId }
@@ -66,7 +71,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi */
   const displayOrders = computed(() => {
-    if (appliedBotGroupId.value.trim()) return orderStore.orders
+    if (!isAdmin.value || appliedBotGroupId.value.trim()) return orderStore.orders
     const raw = appliedKeywords.value.trim()
     if (!raw) return orderStore.orders
     return filterOrdersByKeywords(orderStore.orders, raw)
@@ -167,6 +172,10 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   }
 
   const hydrateFilter = () => {
+    if (!isAdmin.value) {
+      orderStore.applyListFilter({ page: 1, limit: LIMIT, ...scopeQuery() })
+      return
+    }
     const saved = loadOrderFilterKeywords()
     const savedGroup = loadOrderFilterBotGroupId()
     draftKeywords.value = saved
@@ -182,6 +191,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   }
 
   return {
+    isAdmin,
     showFilter,
     draftKeywords,
     draftBotGroupId,

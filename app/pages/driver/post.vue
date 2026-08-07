@@ -10,6 +10,7 @@
       </div>
       <div class="flex items-center gap-1 shrink-0">
         <button
+          v-if="store.isAdmin"
           type="button"
           class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all active:scale-95 border"
           :class="showFilter || filterActive
@@ -35,7 +36,7 @@
     </header>
 
     <OrdersFilterPanel
-      v-if="showFilter"
+      v-if="store.isAdmin && showFilter"
       v-model="draftKeywords"
       v-model:bot-group-id="draftBotGroupId"
       @save="onSaveFilter"
@@ -452,14 +453,16 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 onMounted(async () => {
-  const saved = loadOrderFilterKeywords()
-  const savedGroup = loadOrderFilterBotGroupId()
-  draftKeywords.value = saved
-  appliedKeywords.value = saved
-  draftBotGroupId.value = savedGroup || null
-  appliedBotGroupId.value = savedGroup
-  store.search = savedGroup ? '' : saved.trim()
-  store.botGroupId = savedGroup
+  if (store.isAdmin) {
+    const saved = loadOrderFilterKeywords()
+    const savedGroup = loadOrderFilterBotGroupId()
+    draftKeywords.value = saved
+    appliedKeywords.value = saved
+    draftBotGroupId.value = savedGroup || null
+    appliedBotGroupId.value = savedGroup
+    store.search = savedGroup ? '' : saved.trim()
+    store.botGroupId = savedGroup
+  }
 
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }

@@ -30,14 +30,20 @@ export default defineNuxtPlugin(() => {
   const currentToken = () => resolveAuthToken(cookie.value)
 
   const orderSearchParams = () => {
-    const botGroupId = loadOrderFilterBotGroupId().trim() || undefined
-    const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
+    const authStore = useAuthStore()
+    const isAdmin = authStore.user?.role === 'admin'
     const text = orderStore.listText.trim() || undefined
-    return {
+    const base = {
       limit: ORDERS_PAGE_LIMIT,
-      ...(botGroupId ? { botGroupId } : search ? { search } : {}),
       ...(text ? { text } : {}),
       ...(orderStore.listScope === 'mine' ? { scope: 'mine' as const } : {}),
+    }
+    if (!isAdmin) return base
+    const botGroupId = loadOrderFilterBotGroupId().trim() || undefined
+    const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
+    return {
+      ...base,
+      ...(botGroupId ? { botGroupId } : search ? { search } : {}),
     }
   }
 
@@ -91,11 +97,13 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
-      const botGroupId = loadOrderFilterBotGroupId().trim()
-      const kw = loadOrderFilterKeywords().trim()
+      const authStore = useAuthStore()
+      const isAdmin = authStore.user?.role === 'admin'
+      const botGroupId = isAdmin ? loadOrderFilterBotGroupId().trim() : ''
+      const kw = isAdmin ? loadOrderFilterKeywords().trim() : ''
       const textQuery = orderStore.listText.trim()
 
-      if (botGroupId || textQuery || orderStore.listScope === 'mine') {
+      if (botGroupId || textQuery || orderStore.listScope === 'mine' || !isAdmin) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
@@ -106,10 +114,12 @@ export default defineNuxtPlugin(() => {
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
-      const botGroupId = loadOrderFilterBotGroupId().trim()
-      const kw = loadOrderFilterKeywords().trim()
+      const authStore = useAuthStore()
+      const isAdmin = authStore.user?.role === 'admin'
+      const botGroupId = isAdmin ? loadOrderFilterBotGroupId().trim() : ''
+      const kw = isAdmin ? loadOrderFilterKeywords().trim() : ''
       const textQuery = orderStore.listText.trim()
-      if (botGroupId || textQuery || orderStore.listScope === 'mine') {
+      if (botGroupId || textQuery || orderStore.listScope === 'mine' || !isAdmin) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }

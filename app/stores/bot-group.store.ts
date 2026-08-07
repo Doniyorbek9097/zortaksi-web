@@ -2,7 +2,10 @@ import { defineStore } from 'pinia'
 
 export interface BotGroupRow {
   id: string
+  regionSlug?: string
+  kind?: 'public' | 'private'
   username: string
+  inviteLink?: string
   keywords: string[]
   active: boolean
   hasBotToken?: boolean
@@ -19,17 +22,36 @@ export interface BotGroupRow {
   lastError?: string
 }
 
-export type BotGroupPayload = {
-  username: string
-  keywords: string
+export interface BotRegionCard {
+  slug: string
+  title: string
+  keywords: string[]
+  active: boolean
+  public?: BotGroupRow
+  private?: BotGroupRow
+}
+
+export type BotRegionSidePayload = {
   botToken?: string
-  active?: boolean
+  username?: string
+  inviteLink?: string
+}
+
+export type BotRegionPayload = {
+  regionSlug: string
   title?: string
+  keywords: string
+  active?: boolean
+  public: BotRegionSidePayload
+  private: BotRegionSidePayload
 }
 
 const toRow = (g: any): BotGroupRow => ({
   id: String(g.id || g._id),
+  regionSlug: g.regionSlug || '',
+  kind: g.kind || 'public',
   username: g.username,
+  inviteLink: g.inviteLink || '',
   keywords: Array.isArray(g.keywords) ? g.keywords : [],
   active: !!g.active,
   hasBotToken: !!g.hasBotToken,
@@ -46,6 +68,28 @@ const toRow = (g: any): BotGroupRow => ({
   lastError: g.lastError,
 })
 
+function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
+  const map = new Map<string, BotRegionCard>()
+  for (const row of rows) {
+    const slug = String(row.regionSlug || '').trim() || row.username
+    if (!map.has(slug)) {
+      map.set(slug, {
+        slug,
+        title: row.title || row.telegramTitle || slug,
+        keywords: row.keywords,
+        active: row.active,
+      })
+    }
+    const card = map.get(slug)!
+    if (row.kind === 'private') card.private = row
+    else card.public = row
+    if (row.title) card.title = row.title
+    if (row.keywords?.length) card.keywords = row.keywords
+    card.active = card.active || row.active
+  }
+  return [...map.values()].sort((a, b) => a.title.localeCompare(b.title, 'uz'))
+}
+
 async function wait(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -54,6 +98,8 @@ export const useBotGroupStore = defineStore('botGroup', () => {
   const groups = ref<BotGroupRow[]>([])
   const isLoading = ref(false)
   const isSaving = ref(false)
+
+  const regionCards = computed(() => buildRegionCards(groups.value))
 
   const fetchGroups = async () => {
     try {
@@ -83,75 +129,86 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     }
   }
 
-  const createGroup = async (payload: BotGroupPayload) => {
+  const createRegion = async (payload: BotRegionPayload) => {
     try {
       isSaving.value = true
-      const response = await useApi('/bot-groups', {
+      const response = await useApi('/bot-groups/region', {
         method: 'POST',
         body: {
-          username: payload.username.trim(),
-          keywords: payload.keywords.trim(),
-          botToken: payload.botToken?.trim(),
-          active: payload.active !== false,
+          regionSlug: payload.regionSlug.trim(),
           title: payload.title?.trim() || undefined,
+          keywords: payload.keywords.trim(),
+          active: payload.active !== false,
+          public: {
+            botToken: payload.public.botToken?.trim(),
+            username: payload.public.username?.trim(),
+          },
+          private: {
+            botToken: payload.private.botToken?.trim(),
+            username: payload.private.username?.trim(),
+            inviteLink: payload.private.inviteLink?.trim(),
+          },
         },
         timeout: 45_000,
       })
-      if (response.success) {
-        const row = toRow(response.data)
-        groups.value.unshift(row)
-        if (row.launching) void pollGroupRunning(row.id)
-      }
+      if (response.success) await fetchGroups()
       return response
     } catch (error) {
-      console.error('CreateBotGroup error:', error)
+      console.error('CreateBotRegion error:', error)
       throw error
     } finally {
       isSaving.value = false
     }
   }
 
-  const updateGroup = async (id: string, payload: BotGroupPayload) => {
+  const updateRegion = async (slug: string, payload: Partial<BotRegionPayload>) => {
     try {
       isSaving.value = true
-      const body: Record<string, unknown> = {
-        username: payload.username.trim(),
-        keywords: payload.keywords.trim(),
-        active: payload.active !== false,
-        title: payload.title?.trim() || '',
+      const body: Record<string, unknown> = {}
+      if (payload.title !== undefined) body.title = payload.title?.trim() || ''
+      if (payload.keywords !== undefined) body.keywords = payload.keywords.trim()
+      if (payload.active !== undefined) body.active = !!payload.active
+      if (payload.public) {
+        body.public = {
+          botToken: payload.public.botToken?.trim() || undefined,
+          username: payload.public.username?.trim(),
+          inviteLink: payload.public.inviteLink?.trim(),
+        }
       }
-      if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
-
-      const response = await useApi(`/bot-groups/${id}`, {
+      if (payload.private) {
+        body.private = {
+          botToken: payload.private.botToken?.trim() || undefined,
+          username: payload.private.username?.trim(),
+          inviteLink: payload.private.inviteLink?.trim(),
+        }
+      }
+      const response = await useApi(`/bot-groups/region/${encodeURIComponent(slug)}`, {
         method: 'PUT',
         body,
         timeout: 45_000,
       })
-      if (response.success) {
-        const row = toRow(response.data)
-        const idx = groups.value.findIndex(g => g.id === id)
-        if (idx !== -1) groups.value[idx] = row
-        if (row.launching) void pollGroupRunning(row.id)
-      }
+      if (response.success) await fetchGroups()
       return response
     } catch (error) {
-      console.error('UpdateBotGroup error:', error)
+      console.error('UpdateBotRegion error:', error)
       throw error
     } finally {
       isSaving.value = false
     }
   }
 
-  const deleteGroup = async (id: string) => {
+  const deleteRegion = async (slug: string) => {
     try {
       isSaving.value = true
-      const response = await useApi(`/bot-groups/${id}`, { method: 'DELETE' })
+      const response = await useApi(`/bot-groups/region/${encodeURIComponent(slug)}`, {
+        method: 'DELETE',
+      })
       if (response.success) {
-        groups.value = groups.value.filter(g => g.id !== id)
+        groups.value = groups.value.filter(g => g.regionSlug !== slug)
       }
       return response
     } catch (error) {
-      console.error('DeleteBotGroup error:', error)
+      console.error('DeleteBotRegion error:', error)
       throw error
     } finally {
       isSaving.value = false
@@ -180,36 +237,15 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     }
   }
 
-  const appendKeyword = async (id: string, keyword: string) => {
-    try {
-      isSaving.value = true
-      const response = await useApi(`/bot-groups/${id}/keywords`, {
-        method: 'POST',
-        body: { keyword: keyword.trim() },
-      })
-      if (response.success) {
-        const row = toRow(response.data)
-        const idx = groups.value.findIndex(g => g.id === id)
-        if (idx !== -1) groups.value[idx] = row
-      }
-      return response
-    } catch (error) {
-      console.error('AppendBotKeyword error:', error)
-      throw error
-    } finally {
-      isSaving.value = false
-    }
-  }
-
   return {
     groups,
+    regionCards,
     isLoading,
     isSaving,
     fetchGroups,
-    createGroup,
-    updateGroup,
-    deleteGroup,
+    createRegion,
+    updateRegion,
+    deleteRegion,
     refreshGroup,
-    appendKeyword,
   }
 })
