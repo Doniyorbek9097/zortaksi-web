@@ -682,11 +682,9 @@ const hasPeerLink = computed(() =>
   hasTelegramPeerLink(chatStore.currentChat),
 )
 
-const canSendTelegram = computed(() => {
-  if (isInAppChat.value) return true
-  if (chatId.value === 'open' || openFailed.value) return false
-  return true
-})
+const canSendTelegram = computed(
+  () => isInAppChat.value || hasPeerLink.value || conn.value === 'ready',
+)
 
 /** Loading / open — faqat bootstrap va kontekst yo'q bo'lsa */
 const composerBusy = computed(
@@ -702,23 +700,26 @@ const showComposer = computed(
     composerLikelyReady.value ||
     conn.value === 'ready' ||
     conn.value === 'connecting' ||
-    conn.value === 'idle' ||
-    conn.value === 'unreachable' ||
-    conn.value === 'restricted'),
+    conn.value === 'idle'),
 )
 
-const composerDisabled = computed(() => composerBusy.value)
+const composerDisabled = computed(
+  () =>
+    composerBusy.value ||
+    (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value),
+)
 
 const composerPlaceholder = computed(() => {
-  if (composerBusy.value) return 'Ulanmoqda...'
   if (
+    isOrderSenderChat.value &&
     !isInAppChat.value &&
     conn.value !== 'ready' &&
     !hasPeerLink.value
   ) {
-    if (conn.value === 'unreachable' || conn.value === 'restricted') {
-      return 'Xabar yozing...'
-    }
+    return 'Ulanmoqda...'
+  }
+  if (composerBusy.value) return 'Ulanmoqda...'
+  if (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value) {
     return 'Ulanmoqda...'
   }
   return 'Xabar yozing...'
@@ -762,7 +763,7 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (composerDisabled.value || !canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
     const ok = await chatStore.ensureTelegramReady(chatId.value)
     if (!ok) return
@@ -772,7 +773,7 @@ const onSend = async (text: string) => {
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (composerDisabled.value || !canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
     const ok = await chatStore.ensureTelegramReady(chatId.value)
     if (!ok) return
@@ -782,7 +783,7 @@ const onVoice = async (blob: Blob, seconds: number) => {
 }
 
 const onPhoto = async (file: File) => {
-  if (composerDisabled.value || !canSendTelegram.value) return
+  if (isOpening.value || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
     const ok = await chatStore.ensureTelegramReady(chatId.value)
     if (!ok) return
