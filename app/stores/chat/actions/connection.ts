@@ -1,5 +1,80 @@
+import type { Socket } from 'socket.io-client'
 import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
+
+const CONNECT_TIMEOUT_MS = 45000
+
+type ConnectAck = {
+    success: boolean
+    data?: {
+        status?: ConnStatus
+        reason?: string
+        viaUserbotId?: string
+        accessHash?: string
+    }
+    message?: string
+}
+
+const getSocket = (): Socket | null => {
+    if (!import.meta.client) return null
+    const nuxt = useNuxtApp() as { $socket?: () => Socket | null }
+    return nuxt.$socket?.() ?? null
+}
+
+const waitForSocketConnected = (maxMs = 8000): Promise<Socket | null> => {
+    const existing = getSocket()
+    if (existing?.connected) return Promise.resolve(existing)
+    if (!existing) return Promise.resolve(null)
+
+    return new Promise((resolve) => {
+        const deadline = Date.now() + maxMs
+        const tick = () => {
+            const s = getSocket()
+            if (s?.connected) {
+                resolve(s)
+                return
+            }
+            if (Date.now() >= deadline) {
+                resolve(null)
+                return
+            }
+            setTimeout(tick, 200)
+        }
+        tick()
+    })
+}
+
+/** Sender ulanish — faqat socket orqali (chat:connect:request → ack + chat:connect push) */
+const requestConnectViaSocket = async (
+    chatId: string,
+    opts: { viaProxy?: boolean } = {},
+): Promise<ConnectAck> => {
+    let socket = await waitForSocketConnected()
+    if (!socket?.connected) {
+        const nuxt = useNuxtApp() as { $reconnectSocket?: () => void }
+        nuxt.$reconnectSocket?.()
+        socket = await waitForSocketConnected(5000)
+    }
+    if (!socket?.connected) {
+        throw new Error('Socket ulanmagan')
+    }
+
+    return new Promise((resolve, reject) => {
+        socket!
+            .timeout(CONNECT_TIMEOUT_MS)
+            .emit(
+                'chat:connect:request',
+                { chatId, viaProxy: !!opts.viaProxy },
+                (err: Error | null, res: ConnectAck) => {
+                    if (err) {
+                        reject(err)
+                        return
+                    }
+                    resolve(res ?? { success: false, message: 'Javob kelmedi' })
+                },
+            )
+    })
+}
 
 /** In-app chat — Telegram peer link shart emas */
 export function isInAppChatLike(
@@ -154,10 +229,8 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         let lastError: unknown = null
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                const res = await useApi(`/chats/${chatId}/connect`, {
-                    method: 'POST',
-                    body: opts.viaProxy ? { viaProxy: true } : undefined,
-                    timeout: 45000,
+                const res = await requestConnectViaSocket(chatId, {
+                    viaProxy: opts.viaProxy,
                 })
                 if (res.success) {
                     const next = (res.data?.status ?? 'unreachable') as ConnStatus
@@ -198,11 +271,11 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 return res
             } catch (error: any) {
                 lastError = error
-                console.error('connect error:', error)
+                console.error('connect error (socket):', error)
                 if (attempt < maxAttempts) continue
                 if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
-                    connectionReason.value = error?.response?.data?.message ?? ''
+                    connectionReason.value = error?.message ?? ''
                 }
             }
         }
@@ -249,7 +322,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         return hasTelegramPeerLink(updated) || connectionStatus.value === 'ready'
     }
 
-    /** Socket: chat:connect — server holati (warm/connect) HTTP dan oldin kelishi mumkin */
+    /** Socket: chat:connect — warm/connect natijasi (push) */
     const onChatConnect = (data: {
         chatId: string
         status: ConnStatus
