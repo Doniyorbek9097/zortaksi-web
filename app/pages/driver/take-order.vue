@@ -15,23 +15,16 @@ definePageMeta({ layout: false })
 const route = useRoute()
 const authStore = useAuthStore()
 
-const chatOpenPath = computed(() => {
-  const q = { ...route.query, access: '1' } as Record<string, string>
-  const params = new URLSearchParams()
-  for (const [key, value] of Object.entries(q)) {
-    if (value != null && String(value).trim()) params.set(key, String(value))
-  }
-  const tail = params.toString()
-  return tail ? `/driver/chat/open?${tail}` : '/driver/chat/open'
-})
+const orderId = computed(() => String(route.query.orderId || '').trim())
 
-const chatOpenTarget = computed(() => {
-  const q = { ...route.query, access: '1' } as Record<string, string>
-  return {
-    path: '/driver/chat/open',
-    query: q,
-  }
-})
+const chatOpenTarget = computed(() => ({
+  path: '/driver/chat/open',
+  query: {
+    open: String(route.query.open || 'order'),
+    orderId: orderId.value,
+    ...(String(route.query.fromGroup || '').trim() === '1' ? { fromGroup: '1' } : {}),
+  },
+}))
 
 const patchUserFromAccess = (data: {
   active?: boolean
@@ -48,7 +41,12 @@ const patchUserFromAccess = (data: {
 }
 
 onMounted(async () => {
-  const next = chatOpenPath.value
+  if (!orderId.value) {
+    await navigateTo('/driver/dashboard', { replace: true })
+    return
+  }
+
+  const nextPath = `/driver/chat/open?open=order&orderId=${encodeURIComponent(orderId.value)}&fromGroup=1`
 
   try {
     const res = await useApi('/me/order-take-access', { timeout: 10_000 })
@@ -60,12 +58,12 @@ onMounted(async () => {
     }
 
     if (res?.code === 'NOT_VERIFIED') {
-      await navigateTo({ path: '/auth', query: { next } }, { replace: true })
+      await navigateTo({ path: '/auth', query: { next: nextPath } }, { replace: true })
       return
     }
 
     await navigateTo(
-      { path: '/driver/payment', query: { tab: 'tariff', next } },
+      { path: '/driver/payment', query: { tab: 'tariff', next: nextPath } },
       { replace: true },
     )
   } catch {

@@ -61,12 +61,11 @@ export function useOrdersChatActions(options: {
 
     const peerId = order.sender?.userId
     const existing = findChatByOrderPeer(order._id, peerId)
-    const linkQ = orderQuickLinkQuery(order)
 
     beforeNavigate?.()
     return goOpenChat({
       open: 'order',
-      ...linkQ,
+      orderId: String(order._id),
       ...(existing?._id ? { chatId: String(existing._id) } : {}),
     })
   }

@@ -393,7 +393,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -898,17 +898,16 @@ const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean 
   }
 }
 
-/** Mijozni olish / order Xabar — query dan darhol banner va tezkor tugmalar */
-const primeInstantOrderUi = () => {
+/** Mijozni olish / order Xabar — minimal UI, keyin API dan to'ldirish */
+const primeInstantOrderUi = async () => {
   const q = route.query as Record<string, unknown>
-  if (!hasOrderQueryContext(q)) return
+  const orderId = String(q.orderId || '').trim()
+  if (!orderId && !hasOrderQueryContext(q)) return
 
   chatStore.isLoadingMessages = false
   if (!isInAppChat.value && chatStore.connectionStatus === 'idle') {
     chatStore.connectionStatus = 'connecting'
   }
-  const stub = buildChatStubFromOrderQuery(q)
-  if (!stub) return
 
   const listedId = String(q.chatId || route.params.id || '')
   const listed =
@@ -916,12 +915,31 @@ const primeInstantOrderUi = () => {
       ? chatStore.chats.find((c) => c._id === listedId)
       : undefined
 
-  chatStore.currentChat = {
-    ...(listed || {}),
-    ...stub,
-    peer: { ...(listed?.peer || {}), ...(stub.peer || {}) },
-  } as import('~/types').IChat
-  chatStore.primeFromChat(chatStore.currentChat)
+  const applyStub = (stub: Partial<import('~/types').IChat>) => {
+    chatStore.currentChat = {
+      ...(listed || {}),
+      ...stub,
+      peer: { ...(listed?.peer || {}), ...(stub.peer || {}) },
+    } as import('~/types').IChat
+    chatStore.primeFromChat(chatStore.currentChat)
+  }
+
+  if (orderId) {
+    applyStub(buildMinimalOrderChatStub(orderId))
+    try {
+      const res = await useApi(`/orders/${orderId}`, { timeout: 10_000 })
+      if (res?.success && res.data) {
+        const fromOrder = buildChatStubFromOrder(res.data as import('~/types').IOrder)
+        if (fromOrder) applyStub(fromOrder)
+      }
+    } catch {
+      /* minimal stub yetarli — startChatFromOrder keyin to'ldiradi */
+    }
+    return
+  }
+
+  const stub = buildChatStubFromOrderQuery(q)
+  if (stub) applyStub(stub)
 }
 
 /** Tepaga scroll — keyingi 10 ta eski xabar */
@@ -1038,7 +1056,7 @@ const bootstrapOpenChat = async (seq: number) => {
     if (!ensureOrderTakeAccess() || seq !== loadSeq) return
   }
 
-  primeInstantOrderUi()
+  await primeInstantOrderUi()
 
   const fail = async (message?: string) => {
     if (seq !== loadSeq) return
@@ -1110,7 +1128,7 @@ const loadChat = async (id: string) => {
   const preserveConnection = !!(listedEarly && hasTelegramPeerLink(listedEarly))
   resetChatUi(id, { preserveConnection })
   if (id !== 'open') {
-    primeInstantOrderUi()
+    void primeInstantOrderUi()
   }
 
   if (id === 'open') {

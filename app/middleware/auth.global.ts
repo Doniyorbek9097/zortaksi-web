@@ -174,13 +174,24 @@ export default defineNuxtRouteMiddleware(async (to) => {
         return
     }
 
-    // Eski guruh havolalari (/chat/open) → gate sahifasi
+    // Eski take-order havolalari — minimal query bilan chat/open ga
     if (
-        to.path.startsWith('/driver/chat/open') &&
-        String(to.query.fromGroup || '').trim() === '1' &&
-        String(to.query.access || '').trim() !== '1'
+        to.path === '/driver/take-order' &&
+        String(to.query.orderId || '').trim()
     ) {
-        return navigateTo({ path: '/driver/take-order', query: to.query }, { replace: true })
+        return navigateTo(
+            {
+                path: '/driver/chat/open',
+                query: {
+                    open: String(to.query.open || 'order'),
+                    orderId: String(to.query.orderId),
+                    ...(String(to.query.fromGroup || '').trim() === '1'
+                        ? { fromGroup: '1' }
+                        : {}),
+                },
+            },
+            { replace: true },
+        )
     }
 
     if (to.path.startsWith('/admin') && !isAdminUser(authStore.user)) {

@@ -49,7 +49,51 @@ export function readStashedOrderText(orderId: string): string {
 
 /** Route query dan darhol chat konteksti (Mijozni olish / order Xabar) */
 export function hasOrderQueryContext(query: Record<string, unknown>): boolean {
-  return !!(String(query.orderId || '').trim() || String(query.orderText || '').trim())
+  return !!String(query.orderId || '').trim()
+}
+
+/** Order API javobidan chat stub (sender/guruh URL query emas) */
+export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
+  const orderId = String(order._id || '').trim()
+  if (!orderId) return null
+
+  const phone = resolveOrderPhone(order) || ''
+  const orderText = resolveOrderDisplayText(order)
+  if (orderText) stashOrderText(orderId, orderText)
+
+  const s = order.sender
+  const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
+
+  return {
+    orderId,
+    orderText: orderText || undefined,
+    kind: 'normal',
+    peer: {
+      userId: String(s?.userId || '0'),
+      firstName: full || s?.username || 'Buyurtmachi',
+      lastName: s?.lastName,
+      username: cleanUsername(s?.username) || undefined,
+      phone: phone || undefined,
+      isBot: !!s?.isBot,
+      fromGroupTitle: String(order.group?.title || '').trim() || undefined,
+      fromGroupUsername: cleanUsername(order.group?.username) || undefined,
+      fromPeerId: String(order.group?.groupId || '').trim() || undefined,
+      fromMsgId: Number(order.message?.messageId || 0) || undefined,
+    },
+  }
+}
+
+/** Query dan minimal stub — faqat orderId (qolgani API dan to'ldiriladi) */
+export function buildMinimalOrderChatStub(orderId: string): Partial<IChat> {
+  return {
+    orderId,
+    kind: 'normal',
+    peer: {
+      userId: '0',
+      firstName: 'Buyurtmachi',
+      isBot: false,
+    },
+  }
 }
 
 /** /chat/open query dan mavjud chatni topish — preconnect uchun */
@@ -85,30 +129,32 @@ export function isFromGroupTakeClient(query: Record<string, unknown>): boolean {
   return String(query.fromGroup || '').trim() === '1'
 }
 
-/** Query dan minimal chat — header, banner, tezkor tugmalar kutmasdan */
+/** Query dan minimal chat — faqat orderId (sender API dan keladi) */
 export function buildChatStubFromOrderQuery(
   query: Record<string, unknown>,
 ): Partial<IChat> | null {
-  if (!hasOrderQueryContext(query)) return null
-
   const orderId = String(query.orderId || '').trim()
+  if (!orderId) return null
+
+  const listedId = String(query.chatId || '').trim()
   const phoneHint = String(query.phone || '').trim()
-  const orderText = revealOrderTextPhones(resolveOrderTextHint(query, null), phoneHint)
+  const orderTextFromQuery = String(query.orderText || '').trim()
+  const orderText = orderTextFromQuery
+    ? revealOrderTextPhones(orderTextFromQuery, phoneHint)
+    : readStashedOrderText(orderId) || undefined
+
   const username = cleanUsername(String(query.username || ''))
   const userId = String(query.userId || '').trim()
   const name = String(query.name || '').trim()
-  const phone = phoneHint
 
   return {
-    orderId: orderId || undefined,
+    ...buildMinimalOrderChatStub(orderId),
     orderText: orderText || undefined,
-    kind: 'normal',
     peer: {
       userId: userId || '0',
       firstName: name || username || 'Buyurtmachi',
-      lastName: undefined,
       username: username || undefined,
-      phone: phone || undefined,
+      phone: phoneHint || undefined,
       isBot: false,
       fromGroupTitle: String(query.groupTitle || '').trim() || undefined,
       fromGroupUsername: cleanUsername(String(query.groupUsername || '')) || undefined,
