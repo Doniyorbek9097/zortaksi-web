@@ -16,6 +16,7 @@ export const MESSAGES_PAGE_LIMIT = 10
 export function createListActions(
     refs: ChatStoreRefs,
     patchChat: (chatId: string, patch: Partial<import('~/types').IChat>) => void,
+    primeFromChat?: (chat: IChat | null | undefined) => void,
 ) {
     const {
         chats,
@@ -128,6 +129,7 @@ export function createListActions(
                 currentChat.value = prev
                     ? (mergeOrderChatContext(prev, incoming) as IChat)
                     : incoming
+                primeFromChat?.(currentChat.value)
                 messages.value = mapMessages(res.data.messages || [])
                 messagesChatId.value = chatId
                 messagesPage.value = res.data.pagination?.page ?? 1

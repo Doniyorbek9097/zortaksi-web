@@ -67,7 +67,7 @@ export const useChatStore = defineStore('chat', () => {
 
     const { patchChat, appendMessage } = createLocalStateActions(refs)
     const connection = createConnectionActions(refs)
-    const list = createListActions(refs, patchChat)
+    const list = createListActions(refs, patchChat, connection.primeFromChat)
     const messaging = createMessagingActions(refs, { patchChat, appendMessage })
     const socket = createSocketActions(refs, {
         appendMessage,
