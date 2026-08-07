@@ -399,7 +399,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, chatPeerQuickLinkQuery, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
+import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, hasOrderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient } from '~/utils/orderChatQuery'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
@@ -828,26 +828,6 @@ const telegramContactUrl = computed(() => quickLinks.value.telegramHref)
 
 const groupViewUrl = computed(() => quickLinks.value.groupHref)
 
-/** Xabarlar yuklangach guruh havolasini query ga qo'shish (chat ro'yxatidan ochilganda) */
-const syncQuickLinkQueryFromChat = async () => {
-  const chat = chatStore.currentChat
-  if (!chat?.orderId) return
-
-  const merged = chatPeerQuickLinkQuery(chat)
-  const q = route.query as Record<string, string | undefined>
-  const hasGroupLink =
-    !!String(q.groupId || '').trim() ||
-    !!String(q.groupUsername || '').trim() ||
-    !!String(q.msgId || '').trim()
-  if (hasGroupLink) return
-  if (!merged.groupId && !merged.groupUsername) return
-
-  await router.replace({
-    path: route.path,
-    query: { ...q, ...merged },
-  })
-}
-
 /** Guruh «Mijozni olish» dan kelganda — Telegramda yozish / Guruhda ko'rish */
 const showQuickActions = computed(
   () =>
@@ -1003,9 +983,14 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
 
   preconnectChatOpen(newId, chat)
 
+  const nextQuery: Record<string, string> = {}
+  if (isFromGroupTakeClient(route.query as Record<string, unknown>)) {
+    nextQuery.fromGroup = '1'
+  }
+
   await navigateTo({
     path: `/driver/chat/${newId}`,
-    query: pickQuickLinkQuery(route.query as Record<string, unknown>),
+    query: nextQuery,
     replace: true,
   })
   return true
@@ -1120,7 +1105,6 @@ const loadChat = async (id: string) => {
     }
     await chatStore.fetchMessages(id)
     chatStore.primeFromChat(chatStore.currentChat)
-    syncQuickLinkQueryFromChat()
   } catch (err) {
     console.error('loadChat error:', err)
   }
