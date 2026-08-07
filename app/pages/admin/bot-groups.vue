@@ -16,7 +16,7 @@
 
     <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
       <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-        Har bir hudud uchun <strong>slug</strong>, kalit so'zlar va ikkita guruh: <strong>public</strong> (qisqa e'lon) va <strong>private</strong> (to'liq buyurtma).
+        Har bir hudud uchun <strong>slug</strong>, kalit so'zlar, <strong>bitta bot token</strong>, public @username va private <strong>invite link</strong>.
       </p>
 
       <form class="space-y-3" @submit.prevent="onSubmit">
@@ -53,16 +53,24 @@
           />
         </label>
 
-        <div class="rounded-xl border border-sky-200 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 p-3 space-y-2">
-          <p class="text-[11px] font-black text-sky-700 dark:text-sky-300">📢 Public guruh</p>
+        <label class="block space-y-1">
+          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Bot token (BotFather)</span>
           <input
-            v-model="form.public.botToken"
+            v-model="form.botToken"
             type="password"
             autocomplete="off"
-            :placeholder="editingPublicHasToken ? 'Yangi token (ixtiyoriy)' : 'Public bot token'"
-            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[12px] font-mono outline-none"
-            :required="!editingSlug && !editingPublicHasToken"
+            :placeholder="editingHasToken ? 'Yangi token (ixtiyoriy)' : '1234567890:AA...'"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-[13px] font-mono font-semibold outline-none focus:ring-2 focus:ring-violet-500/30"
+            :required="!editingSlug && !editingHasToken"
           />
+          <span v-if="editingHasToken && editingTokenMasked" class="text-[10px] text-slate-400">
+            Joriy: {{ editingTokenMasked }}
+          </span>
+          <span class="text-[10px] text-slate-400 block">Bitta bot ikkala guruhga ham admin bo'lishi kerak</span>
+        </label>
+
+        <div class="rounded-xl border border-sky-200 dark:border-sky-900/50 bg-sky-50/50 dark:bg-sky-950/20 p-3 space-y-2">
+          <p class="text-[11px] font-black text-sky-700 dark:text-sky-300">📢 Public guruh</p>
           <input
             v-model="form.public.username"
             type="text"
@@ -73,27 +81,15 @@
         </div>
 
         <div class="rounded-xl border border-violet-200 dark:border-violet-900/50 bg-violet-50/50 dark:bg-violet-950/20 p-3 space-y-2">
-          <p class="text-[11px] font-black text-violet-700 dark:text-violet-300">🔒 Private guruh</p>
-          <input
-            v-model="form.private.botToken"
-            type="password"
-            autocomplete="off"
-            :placeholder="editingPrivateHasToken ? 'Yangi token (ixtiyoriy)' : 'Private bot token'"
-            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[12px] font-mono outline-none"
-            :required="!editingSlug && !editingPrivateHasToken"
-          />
-          <input
-            v-model="form.private.username"
-            type="text"
-            placeholder="@namangan_private (ixtiyoriy)"
-            class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[12px] outline-none"
-          />
+          <p class="text-[11px] font-black text-violet-700 dark:text-violet-300">🔒 Private guruh (faqat invite link)</p>
           <input
             v-model="form.private.inviteLink"
             type="text"
-            placeholder="Invite link (username bo'lmasa)"
+            placeholder="https://t.me/+AbCdEf..."
             class="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-[12px] outline-none"
+            required
           />
+          <span class="text-[10px] text-slate-400 block">Botni shu link orqali guruhga qo'shing va admin qiling</span>
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer">
@@ -159,6 +155,10 @@
         <p class="text-[11px] text-slate-600 dark:text-slate-300">
           <span class="font-bold">Kalit so'zlar:</span> {{ card.keywords.join(', ') }}
         </p>
+        <p v-if="card.public?.botUsername || card.private?.botUsername" class="text-[11px] text-violet-600 dark:text-violet-400 font-bold">
+          Bot: @{{ card.public?.botUsername || card.private?.botUsername }}
+          <span v-if="card.public?.tokenMasked" class="text-slate-400 font-mono font-normal ml-1">{{ card.public.tokenMasked }}</span>
+        </p>
 
         <div class="grid gap-2 sm:grid-cols-2">
           <div
@@ -171,7 +171,12 @@
             >
               {{ side!.kind === 'private' ? 'Private' : 'Public' }}
             </p>
-            <p class="text-[11px] font-bold truncate">@{{ side!.username }}</p>
+            <p class="text-[11px] font-bold truncate">
+              <template v-if="side!.kind === 'private'">
+                {{ side!.inviteLink || 'Invite link yo\'q' }}
+              </template>
+              <template v-else>@{{ side!.username }}</template>
+            </p>
             <p v-if="side!.botUsername" class="text-[10px] text-slate-400">Bot: @{{ side!.botUsername }}</p>
             <span
               class="inline-block text-[10px] font-bold px-2 py-0.5 rounded-full"
@@ -229,15 +234,16 @@ const emptyForm = () => ({
   regionSlug: '',
   title: '',
   keywords: '',
+  botToken: '',
   active: true,
-  public: { botToken: '', username: '' },
-  private: { botToken: '', username: '', inviteLink: '' },
+  public: { username: '' },
+  private: { inviteLink: '' },
 })
 
 const form = ref(emptyForm())
 const editingSlug = ref<string | null>(null)
-const editingPublicHasToken = ref(false)
-const editingPrivateHasToken = ref(false)
+const editingHasToken = ref(false)
+const editingTokenMasked = ref('')
 const deleteOpen = ref(false)
 const deleteTarget = ref<BotRegionCard | null>(null)
 const error = ref('')
@@ -245,8 +251,8 @@ const error = ref('')
 const resetForm = () => {
   form.value = emptyForm()
   editingSlug.value = null
-  editingPublicHasToken.value = false
-  editingPrivateHasToken.value = false
+  editingHasToken.value = false
+  editingTokenMasked.value = ''
 }
 
 const onSubmit = async () => {
@@ -255,14 +261,12 @@ const onSubmit = async () => {
     regionSlug: form.value.regionSlug.trim(),
     title: form.value.title.trim(),
     keywords: form.value.keywords.trim(),
+    botToken: form.value.botToken.trim() || undefined,
     active: form.value.active,
     public: {
-      botToken: form.value.public.botToken.trim() || undefined,
       username: form.value.public.username.trim(),
     },
     private: {
-      botToken: form.value.private.botToken.trim() || undefined,
-      username: form.value.private.username.trim(),
       inviteLink: form.value.private.inviteLink.trim(),
     },
   }
@@ -271,8 +275,12 @@ const onSubmit = async () => {
     if (editingSlug.value) {
       await store.updateRegion(editingSlug.value, payload)
     } else {
-      if (!payload.public.botToken || !payload.private.botToken) {
-        error.value = 'Ikkala guruh uchun bot token kiriting'
+      if (!payload.botToken) {
+        error.value = 'Bot token kiriting'
+        return
+      }
+      if (!payload.private.inviteLink) {
+        error.value = 'Private guruh invite link kiriting'
         return
       }
       await store.createRegion(payload as any)
@@ -285,20 +293,18 @@ const onSubmit = async () => {
 
 const startEdit = (card: BotRegionCard) => {
   editingSlug.value = card.slug
-  editingPublicHasToken.value = !!card.public?.hasBotToken
-  editingPrivateHasToken.value = !!card.private?.hasBotToken
+  editingHasToken.value = !!(card.public?.hasBotToken || card.private?.hasBotToken)
+  editingTokenMasked.value = card.public?.tokenMasked || card.private?.tokenMasked || ''
   form.value = {
     regionSlug: card.slug,
     title: card.title,
     keywords: card.keywords.join(', '),
+    botToken: '',
     active: card.active,
     public: {
-      botToken: '',
       username: card.public?.username || '',
     },
     private: {
-      botToken: '',
-      username: card.private?.username || '',
       inviteLink: card.private?.inviteLink || '',
     },
   }

@@ -32,7 +32,6 @@ export interface BotRegionCard {
 }
 
 export type BotRegionSidePayload = {
-  botToken?: string
   username?: string
   inviteLink?: string
 }
@@ -42,6 +41,8 @@ export type BotRegionPayload = {
   title?: string
   keywords: string
   active?: boolean
+  /** Bitta bot — public va private guruhlar uchun */
+  botToken?: string
   public: BotRegionSidePayload
   private: BotRegionSidePayload
 }
@@ -139,13 +140,11 @@ export const useBotGroupStore = defineStore('botGroup', () => {
           title: payload.title?.trim() || undefined,
           keywords: payload.keywords.trim(),
           active: payload.active !== false,
+          botToken: payload.botToken?.trim(),
           public: {
-            botToken: payload.public.botToken?.trim(),
             username: payload.public.username?.trim(),
           },
           private: {
-            botToken: payload.private.botToken?.trim(),
-            username: payload.private.username?.trim(),
             inviteLink: payload.private.inviteLink?.trim(),
           },
         },
@@ -168,17 +167,14 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       if (payload.title !== undefined) body.title = payload.title?.trim() || ''
       if (payload.keywords !== undefined) body.keywords = payload.keywords.trim()
       if (payload.active !== undefined) body.active = !!payload.active
+      if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
       if (payload.public) {
         body.public = {
-          botToken: payload.public.botToken?.trim() || undefined,
           username: payload.public.username?.trim(),
-          inviteLink: payload.public.inviteLink?.trim(),
         }
       }
       if (payload.private) {
         body.private = {
-          botToken: payload.private.botToken?.trim() || undefined,
-          username: payload.private.username?.trim(),
           inviteLink: payload.private.inviteLink?.trim(),
         }
       }
