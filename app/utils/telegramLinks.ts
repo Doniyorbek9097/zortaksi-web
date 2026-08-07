@@ -8,9 +8,8 @@ export function normalizeTelegramChannelId(groupId?: string | null): string {
     return raw
 }
 
-/** Telegram shaxsiy chat — username / telefon / tg://user?id= */
+/** Telegram shaxsiy chat — faqat username yoki telefon */
 export function buildTelegramContactUrl(input: {
-    userId?: string
     username?: string
     phone?: string
 }): string {
@@ -19,9 +18,6 @@ export function buildTelegramContactUrl(input: {
 
     const digits = normalizePhoneDigits(input.phone)
     if (digits) return `https://t.me/+${digits}`
-
-    const id = String(input.userId || '').replace(/\D/g, '')
-    if (id && id !== '0') return `tg://user?id=${id}`
 
     return ''
 }

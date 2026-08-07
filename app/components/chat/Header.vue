@@ -28,15 +28,7 @@
       <ProfileAvatar v-else :name="name" :src="avatar" :user-id="userId" size="sm" />
 
       <div class="flex-1 min-w-0 leading-none">
-        <a
-          v-if="telegramHref && !support"
-          :href="telegramHref"
-          class="block text-[13px] font-black truncate no-underline active:opacity-80"
-          :class="'text-[#2AABEE]'"
-          @click.prevent="onTelegramClick"
-        >{{ name }}</a>
         <p
-          v-else
           class="text-[13px] font-black truncate"
           :class="support ? 'text-white' : 'text-slate-900 dark:text-white'"
         >{{ name }}</p>
@@ -80,8 +72,6 @@
 </template>
 
 <script setup lang="ts">
-import { openTelegramExternalUrl } from '~/utils/telegramLinks'
-
 interface Props {
   name: string
   status?: string
@@ -91,27 +81,19 @@ interface Props {
   canCall?: boolean
   /** tel:+998... — native qo'ng'iroq uchun */
   callHref?: string
-  /** tg://user yoki t.me — sender lichkasiga */
-  telegramHref?: string
   support?: boolean
   /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   status: '',
   online: false,
   canCall: false,
   callHref: '',
-  telegramHref: '',
   support: false,
   showDriverPage: false,
 })
 
 defineEmits<{ back: []; call: []; 'driver-page': [] }>()
-
-function onTelegramClick() {
-  if (!props.telegramHref) return
-  openTelegramExternalUrl(props.telegramHref)
-}
 </script>
