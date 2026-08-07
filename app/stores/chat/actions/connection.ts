@@ -26,33 +26,19 @@ export function hasTelegramPeerLink(
     return !!(chat.peer?.viaUserbotId && chat.peer?.accessHash)
 }
 
-/** Chat allaqachon Telegramga ulanishi mumkinmi (optimistik ready) */
+/** Chat allaqachon Telegramga ulanishi mumkinmi — faqat haqiqiy peer link yoki in-app */
 export function isChatLikelyReady(
     chat: {
         kind?: string
         inAppOnly?: boolean
-        orderId?: string
         peer?: {
             viaUserbotId?: string
             accessHash?: string
-            phone?: string
-            username?: string
         }
     } | null
     | undefined,
 ): boolean {
-    if (!chat) return false
-    if (chat.kind === 'support' || chat.kind === 'direct' || chat.inAppOnly) return true
-    if (chat.peer?.viaUserbotId && chat.peer?.accessHash) return true
-    // Order chat: telefon/username bor — connect fonda, composer ochiq
-    if (
-        chat.orderId &&
-        (String(chat.peer?.phone || '').replace(/\D/g, '').length >= 7 ||
-            String(chat.peer?.username || '').trim())
-    ) {
-        return true
-    }
-    return false
+    return hasTelegramPeerLink(chat)
 }
 
 /**
@@ -93,10 +79,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
     }
 
-    /** Ro'yxat/API dan — composer darhol ochiladi */
+    /** Ro'yxat/API dan — faqat haqiqiy peer link bo'lsa ready */
     const primeFromChat = (chat: IChat | null | undefined) => {
         if (!chat) return
-        if (isChatLikelyReady(chat)) {
+        if (hasTelegramPeerLink(chat)) {
             connectionStatus.value = 'ready'
             connectionReason.value = ''
         }
@@ -117,16 +103,27 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             activeConnectChatId === chatId
         if (!isRelevant) return
 
-        const next = (data.status || 'unreachable') as ConnStatus
-        connectionStatus.value = next
-        connectionReason.value = data.reason ?? ''
-
         if (data.viaUserbotId || data.accessHash) {
             patchChatPeerLink(chatId, {
                 viaUserbotId: data.viaUserbotId,
                 accessHash: data.accessHash,
             })
         }
+
+        const chat = findChatById(chatId)
+        const next = (data.status || 'unreachable') as ConnStatus
+
+        // Socket/HTTP: tayyor holatni keyinroq unreachable bilan buzmaymiz
+        if (
+            connectionStatus.value === 'ready' &&
+            hasTelegramPeerLink(chat) &&
+            next !== 'ready'
+        ) {
+            return
+        }
+
+        connectionStatus.value = next
+        connectionReason.value = data.reason ?? ''
     }
 
     /** Suhbatdosh onlayn / oxirgi kirishni yuklash */
@@ -144,14 +141,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         opts: { silent?: boolean; viaProxy?: boolean } = {},
     ) => {
         const maxAttempts = opts.silent ? 2 : 2
-        if (!opts.silent && !opts.viaProxy && !isChatLikelyReady(currentChat.value)) {
-            connectionStatus.value = 'connecting'
-            connectionReason.value = ''
-        } else if (opts.viaProxy) {
-            connectionStatus.value = 'connecting'
-            connectionReason.value = ''
-        } else if (opts.silent && isChatLikelyReady(currentChat.value)) {
+        const chat = findChatById(chatId) ?? currentChat.value
+        if (hasTelegramPeerLink(chat)) {
             connectionStatus.value = 'ready'
+            connectionReason.value = ''
+        } else if (!isInAppChatLike(chat)) {
+            connectionStatus.value = 'connecting'
             connectionReason.value = ''
         }
         activeConnectChatId = chatId
@@ -169,6 +164,16 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
                     if (next === 'unreachable' && attempt < maxAttempts) {
                         continue
+                    }
+
+                    if (next !== 'ready') {
+                        const linked = findChatById(chatId)
+                        if (
+                            hasTelegramPeerLink(linked) ||
+                            connectionStatus.value === 'ready'
+                        ) {
+                            return res
+                        }
                     }
 
                     applyConnectResult(chatId, {
@@ -244,7 +249,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         return hasTelegramPeerLink(updated) || connectionStatus.value === 'ready'
     }
 
-    /** Socket: chat:connect — HTTP kutmasdan UI yangilanadi */
+    /** Socket: chat:connect — server holati (warm/connect) HTTP dan oldin kelishi mumkin */
     const onChatConnect = (data: {
         chatId: string
         status: ConnStatus
@@ -253,11 +258,11 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         accessHash?: string
     }) => {
         if (!data?.chatId) return
-        // Joriy chat yoki ochilayotgan chat — HTTP kutmasdan yangilash
         const isRelevant =
             currentChat.value?._id === data.chatId ||
-            activeConnectChatId === data.chatId
-        if (!isRelevant && currentChat.value?._id) return
+            activeConnectChatId === data.chatId ||
+            !currentChat.value?._id
+        if (!isRelevant) return
         applyConnectResult(data.chatId, data)
         if (data.status === 'ready') {
             void fetchPresence(data.chatId)

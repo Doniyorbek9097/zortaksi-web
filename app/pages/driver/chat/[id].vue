@@ -189,7 +189,7 @@
     </div>
 
     <!-- Ulanish banneri — faqat BIRINCHI ulanishda (oldingi bog'langan chatda ko'rsatilmaydi) -->
-    <div v-if="needsTelegramConnect && conn === 'connecting' && !composerLikelyReady" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <div v-if="needsTelegramConnect && conn === 'connecting'" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         {{ 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
@@ -400,7 +400,7 @@ import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatS
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 >>>>>>> 9f9780dd1d9b1e5770dfb5275a6359e8382ac414
 import { getApiErrorMessage } from '~/utils/apiError'
-import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
+import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
 
 definePageMeta({
@@ -662,9 +662,9 @@ watch(
   },
 )
 
-/** Optimistik composer — telefon/username yoki in-app */
+/** Optimistik composer — faqat haqiqiy peer link */
 const composerLikelyReady = computed(() =>
-  isChatLikelyReady(chatStore.currentChat),
+  hasPeerLink.value,
 )
 
 /** Haqiqiy Telegram yuborish tayyorligi */
@@ -694,12 +694,14 @@ const showComposer = computed(
 )
 
 const composerDisabled = computed(
-  () => composerBusy.value || (!isInAppChat.value && !hasPeerLink.value && conn.value !== 'ready'),
+  () =>
+    composerBusy.value ||
+    (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value),
 )
 
 const composerPlaceholder = computed(() => {
   if (composerBusy.value) return 'Biroz kuting...'
-  if (!isInAppChat.value && !hasPeerLink.value && conn.value !== 'ready') {
+  if (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value) {
     return 'Ulanish kutilmoqda...'
   }
   return 'Xabar yozing...'
@@ -1076,7 +1078,7 @@ const bootstrapOpenChat = async (seq: number) => {
 const loadChat = async (id: string) => {
   const seq = ++loadSeq
   const listedEarly = chatStore.chats.find((c) => c._id === id)
-  const preserveConnection = !!(listedEarly && isChatLikelyReady(listedEarly))
+  const preserveConnection = !!(listedEarly && hasTelegramPeerLink(listedEarly))
   resetChatUi(id, { preserveConnection })
   if (id !== 'open') {
     primeInstantOrderUi()
@@ -1110,6 +1112,13 @@ const loadChat = async (id: string) => {
   try {
     if (!inApp) {
       const orderChat = !!(listed?.orderId || chatStore.currentChat?.orderId)
+      if (
+        orderChat &&
+        !hasTelegramPeerLink(listed || chatStore.currentChat) &&
+        chatStore.connectionStatus === 'idle'
+      ) {
+        chatStore.connectionStatus = 'connecting'
+      }
       void chatStore.connect(id, { silent: wasLinked || !!orderChat })
     }
     const hasCachedMessages =
