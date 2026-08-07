@@ -202,7 +202,59 @@
           <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
           {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
         </p>
+
+        <div
+          v-if="showGroupJoinSuccess"
+          class="rounded-xl px-3 py-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold leading-relaxed space-y-1"
+        >
+          <p>
+            <font-awesome-icon icon="fa-solid fa-circle-check" class="mr-1" />
+            «{{ orderGroupCtx?.groupTitle }}» guruhiga qo'shildingiz!
+          </p>
+          <p class="font-semibold opacity-90">{{ joinSuccessMessage }}</p>
+        </div>
+
+        <div
+          v-else-if="showGroupMemberHint"
+          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed"
+        >
+          {{ memberHintMessage }}
+        </div>
+
+        <div
+          v-else-if="showGroupJoinHint"
+          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed space-y-1"
+        >
+          <p>
+            Bu buyurtmachi bilan to'g'ridan-to'g'ri yozib bo'lmaydi.
+            Xabar kelgan «{{ orderGroupCtx?.groupTitle }}» guruhiga a'zo bo'ling —
+            shu guruhdan keladigan yangi buyurtmalarni <strong>100%</strong> olasiz va ular
+            <strong>Meniki</strong> bo'limida ko'rinadi.
+          </p>
+        </div>
+
         <div class="flex flex-col items-center gap-2">
+          <button
+            v-if="showGroupJoinSuccess"
+            type="button"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+            @click="goPostMine"
+          >
+            <font-awesome-icon icon="fa-solid fa-users" /> Meniki bo'limiga o'tish
+          </button>
+          <button
+            v-else-if="showGroupJoinHint"
+            type="button"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
+            :disabled="joinBusy"
+            @click="openJoinDialog()"
+          >
+            <font-awesome-icon
+              :icon="joinBusy ? 'fa-solid fa-spinner' : 'fa-solid fa-user-plus'"
+              :class="{ 'animate-spin': joinBusy }"
+            />
+            Guruhga a'zo bo'lish
+          </button>
           <a
             v-if="callPhone"
             :href="normalizeTelHref(callPhone)"
@@ -211,7 +263,7 @@
             <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilishingiz mumkin
           </a>
           <button
-            v-else
+            v-else-if="!showGroupJoinSuccess"
             type="button"
             class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-amber-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
             @click="goOrders"
@@ -219,6 +271,9 @@
             <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
           </button>
         </div>
+        <p v-if="joinError" class="text-[10px] text-red-600 dark:text-red-400 font-bold">
+          {{ joinError }}
+        </p>
       </div>
     </div>
 
@@ -226,11 +281,63 @@
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
-          {{ callPhone
+          {{ callPhone && !showGroupJoinHint && !showGroupMemberHint
             ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
             : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.' }}
         </p>
+
+        <div
+          v-if="showGroupJoinSuccess"
+          class="rounded-xl px-3 py-2.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold leading-relaxed space-y-1"
+        >
+          <p>
+            <font-awesome-icon icon="fa-solid fa-circle-check" class="mr-1" />
+            «{{ orderGroupCtx?.groupTitle }}» guruhiga qo'shildingiz!
+          </p>
+          <p class="font-semibold opacity-90">{{ joinSuccessMessage }}</p>
+        </div>
+
+        <div
+          v-else-if="showGroupMemberHint"
+          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed"
+        >
+          {{ memberHintMessage }}
+        </div>
+
+        <div
+          v-else-if="showGroupJoinHint"
+          class="rounded-xl px-3 py-2.5 bg-violet-500/10 text-violet-700 dark:text-violet-300 text-[11px] font-bold leading-relaxed space-y-1"
+        >
+          <p>
+            Bu buyurtmachi bilan to'g'ridan-to'g'ri yozib bo'lmaydi.
+            Xabar kelgan «{{ orderGroupCtx?.groupTitle }}» guruhiga a'zo bo'ling —
+            shu guruhdan keladigan yangi buyurtmalarni <strong>100%</strong> olasiz va ular
+            <strong>Meniki</strong> bo'limida ko'rinadi.
+          </p>
+        </div>
+
         <div class="flex flex-col items-center gap-2">
+          <button
+            v-if="showGroupJoinSuccess"
+            type="button"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+            @click="goPostMine"
+          >
+            <font-awesome-icon icon="fa-solid fa-users" /> Meniki bo'limiga o'tish
+          </button>
+          <button
+            v-else-if="showGroupJoinHint"
+            type="button"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-violet-600 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-50"
+            :disabled="joinBusy"
+            @click="openJoinDialog()"
+          >
+            <font-awesome-icon
+              :icon="joinBusy ? 'fa-solid fa-spinner' : 'fa-solid fa-user-plus'"
+              :class="{ 'animate-spin': joinBusy }"
+            />
+            Guruhga a'zo bo'lish
+          </button>
           <a
             v-if="callPhone"
             :href="normalizeTelHref(callPhone)"
@@ -239,7 +346,7 @@
             <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilish
           </a>
           <button
-            v-else
+            v-else-if="!showGroupJoinSuccess"
             type="button"
             class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-red-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
             @click="goOrders"
@@ -247,8 +354,23 @@
             <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
           </button>
         </div>
+        <p v-if="joinError" class="text-[10px] text-red-600 dark:text-red-400 font-bold">
+          {{ joinError }}
+        </p>
       </div>
     </div>
+
+    <PostMembershipDialog
+      v-model="joinDialogOpen"
+      title="Guruhga qo'shilish"
+      :message="joinDialogMessage"
+      confirm-text="Qo'shilish"
+      variant="success"
+      :loading="joinBusy"
+      :group="membershipPreviewGroup"
+      @confirm="confirmJoin()"
+      @cancel="joinDialogOpen = false"
+    />
 
     <!-- Tanlangan xabarlarni o'chirish -->
     <ChatMessageSelectionBar
@@ -281,6 +403,7 @@ import { pickQuickLinkQuery, resolveOrderTextHint, resolveQuickLinks, buildChatS
 import { getApiErrorMessage } from '~/utils/apiError'
 import { isAdminUser } from '~/utils/userRole'
 import { isChatLikelyReady, hasTelegramPeerLink } from '~/stores/chat/actions/connection'
+import { useOrderGroupJoinHint } from '~/composables/chat/useOrderGroupJoinHint'
 
 definePageMeta({
   layout: false,
@@ -505,6 +628,39 @@ const syncViewport = () => {
 const conn = computed(() => chatStore.connectionStatus)
 const connReason = computed(() => chatStore.connectionReason)
 
+const groupJoin = useOrderGroupJoinHint({
+  routeQuery: computed(() => route.query as Record<string, unknown>),
+  currentChat: computed(() => chatStore.currentChat),
+  needsTelegramConnect,
+  connectionStatus: conn,
+})
+
+const {
+  orderGroup: orderGroupCtx,
+  showGroupJoinHint,
+  showGroupMemberHint,
+  showGroupJoinSuccess,
+  joinDialogOpen,
+  joinBusy,
+  joinError,
+  joinDialogMessage,
+  joinSuccessMessage,
+  memberHintMessage,
+  membershipPreviewGroup,
+  openJoinDialog,
+  confirmJoin,
+  fetchMyGroupIds,
+} = groupJoin
+
+watch(
+  () => conn.value,
+  (status) => {
+    if (status === 'unreachable' || status === 'restricted') {
+      void fetchMyGroupIds()
+    }
+  },
+)
+
 /** Optimistik composer — telefon/username yoki in-app */
 const composerLikelyReady = computed(() =>
   isChatLikelyReady(chatStore.currentChat),
@@ -617,6 +773,8 @@ const onPhoto = async (file: File) => {
 
 const goChats = () => navigateTo('/driver/chats')
 const goOrders = () => navigateTo('/driver/orders')
+
+const goPostMine = () => navigateTo('/driver/post')
 
 const goBackFromOpen = () => {
   if (import.meta.client && window.history.length > 1) {

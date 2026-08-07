@@ -207,6 +207,38 @@ export function resolveQuickLinks(
   }
 }
 
+/** Order chat — manba guruh (a'zo bo'lish taklifi uchun) */
+export function resolveOrderGroupContext(
+  query: Record<string, unknown>,
+  chat?: IChat | null,
+) {
+  const links = resolveQuickLinks(query, chat)
+  const p = chat?.peer
+  const groupId =
+    String(query.groupId || '').trim() ||
+    String(p?.fromPeerId || '').trim()
+  const groupUsername =
+    cleanUsername(String(query.groupUsername || '')) ||
+    cleanUsername(p?.fromGroupUsername) ||
+    ''
+  const groupTitle =
+    links.groupTitle ||
+    String(p?.fromGroupTitle || '').trim()
+  const accessHash =
+    String(p?.fromPeerAccessHash || query.groupAccessHash || '').trim() ||
+    undefined
+
+  if (!groupId && !groupUsername) return null
+
+  return {
+    groupId,
+    groupUsername,
+    groupTitle: groupTitle || groupUsername || 'Guruh',
+    groupHref: links.groupHref,
+    accessHash,
+  }
+}
+
 /** Order → chat: sender + guruh havolasi (yuklanishni kutmasdan) */
 export function orderQuickLinkQuery(
   order: IOrder,
