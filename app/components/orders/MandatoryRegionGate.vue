@@ -78,6 +78,7 @@ type RegionRow = { slug: string; title: string; keywordsCount?: number }
 
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
+const { show: showRegionGroupsWelcome } = useRegionGroupsWelcome()
 
 const regions = ref<RegionRow[]>([])
 const selectedSlug = ref('')
@@ -109,11 +110,13 @@ const onSave = async () => {
   saving.value = true
   error.value = ''
   try {
-    await useApi('/me/region', {
+    const res = await useApi('/me/region', {
       method: 'PATCH',
       body: { regionSlug: selectedSlug.value },
     })
     await authStore.getMe()
+    const groups = res?.data?.groups
+    if (groups) showRegionGroupsWelcome(groups)
     orderStore.applyListFilter({ page: 1, limit: ORDERS_PAGE_LIMIT })
     orderStore.orders = []
     void orderStore.fetchOrders({ page: 1, limit: ORDERS_PAGE_LIMIT })
