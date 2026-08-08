@@ -72,7 +72,11 @@ const toRow = (g: any): BotGroupRow => ({
 function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
   const map = new Map<string, BotRegionCard>()
   for (const row of rows) {
-    const slug = String(row.regionSlug || '').trim() || row.username
+    const slug =
+      String(row.regionSlug || '').trim() ||
+      String(row.username || '').replace(/-private$/, '') ||
+      row.username
+    if (!slug) continue
     if (!map.has(slug)) {
       map.set(slug, {
         slug,
