@@ -1077,18 +1077,6 @@ const bootstrapOpenChat = async (seq: number) => {
   const orderId = String(q.orderId || '')
   const userId = String(q.userId || '')
 
-  if ((mode === 'order' && orderId) || (mode === 'user' && userId)) {
-    primeInstantOrderUi()
-
-    const allowed = await ensureOrderTakeAccessFromApi(route.fullPath)
-    if (!allowed || seq !== loadSeq) {
-      chatStore.isLoadingMessages = false
-      return
-    }
-  } else {
-    primeInstantOrderUi()
-  }
-
   const fail = async (message?: string) => {
     if (seq !== loadSeq) return
     chatStore.isLoadingMessages = false
@@ -1100,6 +1088,45 @@ const bootstrapOpenChat = async (seq: number) => {
       openError.value = raw
     }
   }
+
+  const handleStartChatResponse = async (res: any) => {
+    if (seq !== loadSeq) return true
+
+    if (
+      res?.code === 'TARIFF_INACTIVE' ||
+      res?.code === 'NOT_VERIFIED' ||
+      /tarif faol emas/i.test(String(res?.message || ''))
+    ) {
+      chatStore.isLoadingMessages = false
+      if ((await redirectOrderTakeBlocked(route.fullPath)) || seq !== loadSeq) return true
+    }
+
+    if (res?.success && res.data?._id) {
+      const chat = res.data as import('~/types').IChat
+      if (!(await finalizeOpenChat(chat))) {
+        await fail('Chat identifikatori topilmadi')
+      }
+      return true
+    }
+
+    await fail(res?.message || 'Chat ochib bo\'lmadi')
+    return true
+  }
+
+  const startChatApi = () => {
+    if (mode === 'order' && orderId) return chatStore.startChatFromOrder(orderId)
+    if (mode === 'booked' && orderId) return chatStore.startChatWithBookedDriver(orderId)
+    if (mode === 'agent' && orderId) return chatStore.startChatWithOrderOwner(orderId)
+    if (mode === 'user' && userId) {
+      return chatStore.startChatWithUser(userId, orderId || undefined)
+    }
+    return null
+  }
+
+  primeInstantOrderUi()
+
+  const needsAccess = !!(mode === 'order' && orderId) || !!(mode === 'user' && userId)
+  const chatApi = startChatApi()
 
   try {
     const localChat = resolveChatFromOpenQuery(q, chatStore.chats)
@@ -1115,39 +1142,26 @@ const bootstrapOpenChat = async (seq: number) => {
       return
     }
 
-    let res: any
-    if (mode === 'order' && orderId) {
-      res = await chatStore.startChatFromOrder(orderId)
-    } else if (mode === 'booked' && orderId) {
-      res = await chatStore.startChatWithBookedDriver(orderId)
-    } else if (mode === 'agent' && orderId) {
-      res = await chatStore.startChatWithOrderOwner(orderId)
-    } else if (mode === 'user' && userId) {
-      res = await chatStore.startChatWithUser(userId, orderId || undefined)
-    } else {
+    if (!chatApi) {
       await fail()
       return
     }
 
-    if (seq !== loadSeq) return
-
-    if (
-      res?.code === 'TARIFF_INACTIVE' ||
-      res?.code === 'NOT_VERIFIED' ||
-      /tarif faol emas/i.test(String(res?.message || ''))
-    ) {
-      chatStore.isLoadingMessages = false
-      if ((await redirectOrderTakeBlocked(route.fullPath)) || seq !== loadSeq) return
-    }
-
-    if (res?.success && res.data?._id) {
-      const chat = res.data as import('~/types').IChat
-      if (!(await finalizeOpenChat(chat))) {
-        await fail('Chat identifikatori topilmadi')
+    if (needsAccess) {
+      const [allowed, res] = await Promise.all([
+        ensureOrderTakeAccessFromApi(route.fullPath),
+        chatApi,
+      ])
+      if (!allowed || seq !== loadSeq) {
+        chatStore.isLoadingMessages = false
+        return
       }
+      await handleStartChatResponse(res)
       return
     }
-    await fail(res?.message || 'Chat ochib bo\'lmadi')
+
+    const res = await chatApi
+    await handleStartChatResponse(res)
   } catch (err) {
     console.error('bootstrapOpenChat error:', err)
     await fail(getApiErrorMessage(err, 'Chat ochib bo\'lmadi'))

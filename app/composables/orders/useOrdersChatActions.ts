@@ -61,12 +61,22 @@ export function useOrdersChatActions(options: {
 
     const peerId = order.sender?.userId
     const existing = findChatByOrderPeer(order._id, peerId)
+    const linkQ = orderQuickLinkQuery(order)
 
     beforeNavigate?.()
+
+    if (existing?._id) {
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(String(existing._id), { silent: true })
+      return navigateTo({
+        path: `/driver/chat/${existing._id}`,
+        query: linkQ,
+      })
+    }
+
     return goOpenChat({
       open: 'order',
-      ...orderQuickLinkQuery(order),
-      ...(existing?._id ? { chatId: String(existing._id) } : {}),
+      ...linkQ,
     })
   }
 

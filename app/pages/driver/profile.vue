@@ -72,6 +72,15 @@
     <!-- Settings -->
     <ProfileSectionCard title="Sozlamalar" no-padding>
       <div class="divide-y divide-slate-100 dark:divide-slate-800">
+        <!-- Phone -->
+        <ProfileSettingRow
+          title="Telefon raqami"
+          :subtitle="phoneSubtitle"
+          color="sky"
+          clickable
+          @click="showChangePhone = true"
+        />
+
         <!-- Theme -->
         <ProfileSettingRow
           :icon="isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"
@@ -152,6 +161,12 @@
     </ProfileSectionCard>
 
     <!-- Hisobni o'chirish tasdig'i -->
+    <ProfileChangePhoneDialog
+      v-model="showChangePhone"
+      :current-phone="user.phone"
+      @success="onPhoneChanged"
+    />
+
     <BaseConfirmDialog
       v-model="showDeleteAccount"
       title="Hisobni o'chirish"
@@ -194,6 +209,18 @@ const user = computed(() => ({
   balance: authStore.user?.balance ?? 0,
   tariffName: authStore.user?.tariff?.name || 'Kunlik sinov',
 }))
+
+const phoneSubtitle = computed(() => {
+  const digits = String(user.value.phone || '').replace(/\D/g, '')
+  return digits ? `+${digits} · O'zgartirish` : 'Telefon raqamini o\'zgartirish'
+})
+
+const showChangePhone = ref(false)
+
+const onPhoneChanged = async () => {
+  await authStore.getMe().catch(() => {})
+  if (authStore.user) accountStore.ensureCurrent(authStore.user)
+}
 
 // --- Accountlar (localStorage) ---
 const accName = (acc: ILocalAccount) => {
