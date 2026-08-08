@@ -10,6 +10,7 @@ export type DriverRegionGroupSide = {
   isMember: boolean
   canJoinViaApp: boolean
   manualJoinUrl?: string
+  canJoinManually: boolean
   canJoin: boolean
 }
 
@@ -75,10 +76,11 @@ export function useRegionGroupsWelcome() {
     if (!canShow.value) return
     const data = groups.value ?? (await fetchGroups())
     if (!data) return
-    const needsPrivateJoin = !!(data.private?.canJoin || data.private?.manualJoinUrl)
-    const needsPublicManual =
-      !data.telegramSessionOk && !!data.public?.openUrl && !data.public?.isMember
-    if (needsPrivateJoin || needsPublicManual) {
+    const needsJoin =
+      !!data.private?.canJoin ||
+      !!data.public?.canJoinManually ||
+      !!data.private?.canJoinManually
+    if (needsJoin || data.telegramSessionOk === false) {
       show(data)
     }
   }
@@ -98,7 +100,7 @@ export function useRegionGroupsWelcome() {
   const joinPrivateGroup = async () => {
     if (joiningPrivate.value) return
 
-    if (groups.value?.private?.manualJoinUrl) {
+    if (groups.value?.private?.canJoinManually && groups.value.private.manualJoinUrl) {
       openPrivateGroupManually()
       return
     }

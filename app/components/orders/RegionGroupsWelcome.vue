@@ -18,10 +18,10 @@
                 </span>
                 <div class="min-w-0 flex-1 leading-none">
                   <p class="text-sm font-black text-slate-900 dark:text-white">
-                    Guruhlarga qo'shildingiz
+                    {{ groups.telegramSessionOk === false ? 'Guruhlarga qo\'shiling' : 'Guruhlarga qo\'shildingiz' }}
                   </p>
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-                    {{ groups.regionTitle }} — public va private guruhlar tayyor
+                    {{ groups.regionTitle }} — public va private guruhlar
                   </p>
                 </div>
               </div>
@@ -32,13 +32,18 @@
                 v-if="groups.telegramSessionOk === false"
                 class="text-[11px] font-bold text-amber-600 dark:text-amber-400 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-3 py-2"
               >
-                Telegram session eskirgan — guruhlarga avtomatik qo'shilmadi.
+                Telegram session yo'q — guruhlarga avtomatik qo'shilmadi.
                 Quyidagi tugmalar orqali Telegramda o'zingiz qo'shiling.
               </p>
 
               <p class="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed px-0.5">
-                Sizga hudud guruhi qo'shildi. Public guruhda e'lon berishingiz mumkin,
-                private guruhdan esa buyurtmalar olasiz.
+                <template v-if="groups.telegramSessionOk === false">
+                  Public guruhda e'lon bering, private guruhdan buyurtmalar oling.
+                </template>
+                <template v-else>
+                  Sizga hudud guruhi qo'shildi. Public guruhda e'lon berishingiz mumkin,
+                  private guruhdan esa buyurtmalar olasiz.
+                </template>
               </p>
 
               <button
@@ -60,7 +65,13 @@
                     </p>
                   </div>
                   <span class="shrink-0 text-sky-500 text-[11px] font-black mt-1">
-                    {{ groups.public.isMember ? 'Ochish →' : "Qo'shilish →" }}
+                    {{
+                      groups.public.isMember
+                        ? 'Ochish →'
+                        : groups.public.canJoinManually
+                          ? "Telegramda qo'shilish →"
+                          : "Qo'shilish →"
+                    }}
                   </span>
                 </div>
               </button>
@@ -89,7 +100,7 @@
                   {{
                     joiningPrivate
                       ? "Qo'shilmoqda…"
-                      : groups.private.manualJoinUrl
+                      : groups.private.canJoinManually
                         ? "Telegramda qo'shilish"
                         : "Guruhga qo'shilish"
                   }}

@@ -35,6 +35,8 @@
       @buy="onBuyTariff"
     />
 
+    <DashboardRegionCard v-if="tariffActive" />
+
     <!-- Platform statistics -->
     <section class="space-y-3">
       <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
