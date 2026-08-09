@@ -374,6 +374,27 @@ export const useAccountStore = defineStore('account', () => {
     // Boshqa hisob yo'q — faol sessiya saqlanadi
   }
 
+  /** Hisob yangi Telegramga ko'chirilgach — eski yozuvni olib, yangisini faol qilish */
+  const completeMigration = (fromUserId: string, user: any, authToken: string) => {
+    if (!import.meta.client || !user?.userId || !authToken) return
+    load()
+    const from = String(fromUserId)
+    const to = String(user.userId)
+    accounts.value = accounts.value.filter((a) => String(a.userId) !== from)
+    upsert({
+      userId: to,
+      token: authToken,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      username: user.username,
+      phoneNumber: user.phoneNumber,
+      avatar: user.avatar,
+      role: user.role != null ? normalizeUserRole(user.role) : 'driver',
+    })
+    applyToken(authToken, to)
+    persist()
+  }
+
   return {
     accounts,
     isLoading,
@@ -388,5 +409,6 @@ export const useAccountStore = defineStore('account', () => {
     verifyPassword,
     switchAccount,
     removeAccount,
+    completeMigration,
   }
 })

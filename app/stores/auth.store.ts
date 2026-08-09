@@ -237,6 +237,68 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    const sendAccountMigrateCode = async (phone: string, opts?: { forceSms?: boolean }) => {
+        try {
+            isLoading.value = true
+            return await useApi('/me/migrate/send-code', {
+                method: 'POST',
+                body: { phone, forceSms: opts?.forceSms || undefined },
+                timeout: AUTH_API_TIMEOUT_MS,
+            })
+        } catch (error) {
+            console.error('SendAccountMigrateCode error:', error)
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Kod yuborib bo\'lmadi'),
+            })
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const verifyAccountMigrateCode = async (phone: string, code: string) => {
+        try {
+            isLoading.value = true
+            const response = await useApi('/me/migrate/verify-code', {
+                method: 'POST',
+                body: { phone, code },
+                timeout: AUTH_API_TIMEOUT_MS,
+            })
+            if (response.success && response.data?.authToken && response.data?.user) {
+                persistSession(response.data.authToken, response.data.user)
+            }
+            return response
+        } catch (error) {
+            console.error('VerifyAccountMigrateCode error:', error)
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Kod tasdiqlanmadi'),
+            })
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const verifyAccountMigratePassword = async (phone: string, password: string) => {
+        try {
+            isLoading.value = true
+            const response = await useApi('/me/migrate/verify-password', {
+                method: 'POST',
+                body: { phone, password },
+                timeout: AUTH_API_TIMEOUT_MS,
+            })
+            if (response.success && response.data?.authToken && response.data?.user) {
+                persistSession(response.data.authToken, response.data.user)
+            }
+            return response
+        } catch (error) {
+            console.error('VerifyAccountMigratePassword error:', error)
+            throw Object.assign(error as object, {
+                userMessage: getApiErrorMessage(error, 'Parol tasdiqlanmadi'),
+            })
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     const logout = async () => {
         try {
             isLoading.value = true
@@ -277,6 +339,9 @@ export const useAuthStore = defineStore('auth', () => {
         sendPhoneChangeCode,
         verifyPhoneChangeCode,
         verifyPhoneChangePassword,
+        sendAccountMigrateCode,
+        verifyAccountMigrateCode,
+        verifyAccountMigratePassword,
         logout,
     }
 })

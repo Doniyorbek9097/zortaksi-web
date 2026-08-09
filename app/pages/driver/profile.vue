@@ -74,11 +74,22 @@
       <div class="divide-y divide-slate-100 dark:divide-slate-800">
         <!-- Phone -->
         <ProfileSettingRow
+          icon="fa-solid fa-phone"
           title="Telefon raqami"
           :subtitle="phoneSubtitle"
           color="sky"
           clickable
           @click="showChangePhone = true"
+        />
+
+        <!-- Account migration -->
+        <ProfileSettingRow
+          icon="fa-solid fa-right-left"
+          title="Hisobni ko'chirish"
+          subtitle="Spam hisobdan yangi Telegramga"
+          color="violet"
+          clickable
+          @click="showMigrateAccount = true"
         />
 
         <!-- Theme -->
@@ -167,6 +178,12 @@
       @success="onPhoneChanged"
     />
 
+    <ProfileMigrateAccountDialog
+      v-model="showMigrateAccount"
+      :from-user-id="user.userId"
+      @success="onAccountMigrated"
+    />
+
     <BaseConfirmDialog
       v-model="showDeleteAccount"
       title="Hisobni o'chirish"
@@ -216,8 +233,14 @@ const phoneSubtitle = computed(() => {
 })
 
 const showChangePhone = ref(false)
+const showMigrateAccount = ref(false)
 
 const onPhoneChanged = async () => {
+  await authStore.getMe().catch(() => {})
+  if (authStore.user) accountStore.ensureCurrent(authStore.user)
+}
+
+const onAccountMigrated = async () => {
   await authStore.getMe().catch(() => {})
   if (authStore.user) accountStore.ensureCurrent(authStore.user)
 }
