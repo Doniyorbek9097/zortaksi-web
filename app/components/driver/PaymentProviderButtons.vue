@@ -21,21 +21,14 @@
         class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-white bg-[#00ADEF] hover:bg-[#0096d1] shadow-md shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
         @click="$emit('pay-click')"
       >
-        <span class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden p-1">
-          <!-- Click brand mark -->
-          <svg viewBox="0 0 120 40" class="w-9 h-6" aria-hidden="true">
-            <rect width="120" height="40" rx="8" fill="#00ADEF" />
-            <text
-              x="60"
-              y="27"
-              text-anchor="middle"
-              font-size="18"
-              font-weight="800"
-              font-family="Arial Black, Arial, sans-serif"
-              fill="#fff"
-              letter-spacing="-0.5"
-            >Click</text>
-          </svg>
+        <span class="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
+          <img
+            :src="clickLogo"
+            alt="Click"
+            class="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          >
         </span>
         <span class="flex-1 min-w-0">
           <span class="block text-[13px] font-black leading-tight">Click orqali to'lash</span>
@@ -54,33 +47,27 @@
         v-if="paymeEnabled"
         type="button"
         :disabled="disabled || loading === 'payme'"
-        class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-white bg-[#00C2C2] hover:bg-[#00a8a8] shadow-md shadow-teal-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
+        class="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-left text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 dark:border-slate-700 shadow-md active:scale-[0.98] transition-all disabled:opacity-50 dark:bg-slate-900 dark:text-white"
         @click="$emit('pay-payme')"
       >
-        <span class="w-10 h-10 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden p-1">
-          <!-- Payme brand mark -->
-          <svg viewBox="0 0 120 40" class="w-9 h-6" aria-hidden="true">
-            <rect width="120" height="40" rx="8" fill="#00C2C2" />
-            <text
-              x="60"
-              y="27"
-              text-anchor="middle"
-              font-size="16"
-              font-weight="800"
-              font-family="Arial Black, Arial, sans-serif"
-              fill="#fff"
-            >Payme</text>
-          </svg>
+        <span class="w-11 h-11 rounded-xl bg-white flex items-center justify-center shrink-0 shadow-sm overflow-hidden border border-slate-100 dark:border-slate-700">
+          <img
+            :src="paymeLogo"
+            alt="Payme"
+            class="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          >
         </span>
         <span class="flex-1 min-w-0">
           <span class="block text-[13px] font-black leading-tight">Payme orqali to'lash</span>
-          <span class="block text-[11px] font-semibold text-white/85 mt-0.5">
+          <span class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
             {{ amountLabel }} · to'lovdan keyin darhol
           </span>
         </span>
         <font-awesome-icon
           :icon="loading === 'payme' ? 'fa-solid fa-spinner' : 'fa-solid fa-chevron-right'"
-          class="text-sm opacity-90"
+          class="text-sm text-slate-400"
           :class="{ 'animate-spin': loading === 'payme' }"
         />
       </button>
@@ -125,6 +112,9 @@
 </template>
 
 <script setup lang="ts">
+import clickLogo from '~/assets/click-logo.png'
+import paymeLogo from '~/assets/payme-logo.jpg'
+
 const props = withDefaults(
   defineProps<{
     amount: number

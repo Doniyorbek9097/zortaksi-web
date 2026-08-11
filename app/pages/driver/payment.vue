@@ -140,40 +140,36 @@
             <font-awesome-icon v-if="savingBuy" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
             Tarifga ulanish — {{ formatMoney(selected.price) }} so'm
           </button>
-          <p class="text-center text-[11px] font-bold text-slate-400 pt-1">
-            Yoki boshqa usulda to'lov
-          </p>
         </template>
 
         <template v-else>
           <p class="text-center text-[13px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-xl py-2">
             Yetishmaydi: {{ formatMoney(shortage) }} so'm
           </p>
+
+          <DriverPaymentProviderButtons
+            :amount="shortage"
+            :click-enabled="methods.click"
+            :payme-enabled="methods.payme"
+            :show-admin="true"
+            :admin-label="`Yetishmagan ${formatMoney(shortage)} so'm — adminga`"
+            online-hint="Faqat yetishmayotgan summa to'lanadi. To'lovdan so'ng tarif darhol faol bo'ladi."
+            :loading="payingProvider"
+            :admin-loading="savingRequest"
+            :disabled="!selectedId || savingBuy"
+            @pay-click="payOnline('click')"
+            @pay-payme="payOnline('payme')"
+            @pay-admin="sendTariffRequest"
+          />
+
+          <button
+            type="button"
+            class="w-full py-2.5 text-[12px] font-bold text-sky-500 hover:underline"
+            @click="switchToTopup(shortage)"
+          >
+            Faqat balans to'ldirish ({{ formatMoney(shortage) }} so'm)
+          </button>
         </template>
-
-        <DriverPaymentProviderButtons
-          :amount="selected.price"
-          :click-enabled="methods.click"
-          :payme-enabled="methods.payme"
-          :show-admin="true"
-          :admin-label="`«${selected.name}» — adminga so'rov`"
-          online-hint="Click yoki Payme orqali to'lovdan so'ng tarif darhol faol bo'ladi."
-          :loading="payingProvider"
-          :admin-loading="savingRequest"
-          :disabled="!selectedId || savingBuy"
-          @pay-click="payOnline('click')"
-          @pay-payme="payOnline('payme')"
-          @pay-admin="sendTariffRequest"
-        />
-
-        <button
-          v-if="shortage > 0"
-          type="button"
-          class="w-full py-2.5 text-[12px] font-bold text-sky-500 hover:underline"
-          @click="switchToTopup(shortage)"
-        >
-          Faqat balans to'ldirish ({{ formatMoney(shortage) }} so'm)
-        </button>
       </section>
     </template>
 
@@ -361,7 +357,7 @@ const openSupportChat = async (res: { success?: boolean; data?: { chatId?: strin
 
 const sendTariffRequest = async () => {
   if (!selected.value) return
-  const amount = Math.max(shortage.value, selected.value.price)
+  const amount = shortage.value > 0 ? shortage.value : selected.value.price
   savingRequest.value = true
   error.value = ''
   try {
