@@ -133,13 +133,16 @@
           </p>
           <button
             type="button"
-            :disabled="savingBuy || !selectedId"
+            :disabled="savingBuy || !selectedId || !!payingProvider"
             class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
             @click="buyTariff"
           >
             <font-awesome-icon v-if="savingBuy" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
             Tarifga ulanish — {{ formatMoney(selected.price) }} so'm
           </button>
+          <p class="text-center text-[11px] font-bold text-slate-400 pt-1">
+            Yoki boshqa usulda to'lov
+          </p>
         </template>
 
         <template v-else>
@@ -148,57 +151,29 @@
           </p>
         </template>
 
-        <!-- Online to'lov: Click / Payme -->
-        <div v-if="methods.click || methods.payme" class="space-y-2 pt-1">
-          <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 text-center">
-            {{ shortage <= 0 ? 'Yoki online to\'lov' : 'Online to\'lov' }}
-          </p>
-          <button
-            v-if="methods.click"
-            type="button"
-            :disabled="!!payingProvider || !selectedId"
-            class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-[#00ADEF] hover:bg-[#0099d6] shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            @click="payOnline('click')"
-          >
-            <font-awesome-icon
-              :icon="payingProvider === 'click' ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'"
-              :class="{ 'animate-spin': payingProvider === 'click' }"
-            />
-            Click — {{ formatMoney(selected.price) }} so'm
-          </button>
-          <button
-            v-if="methods.payme"
-            type="button"
-            :disabled="!!payingProvider || !selectedId"
-            class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-[#00CCCC] hover:bg-[#00b3b3] shadow-lg shadow-teal-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            @click="payOnline('payme')"
-          >
-            <font-awesome-icon
-              :icon="payingProvider === 'payme' ? 'fa-solid fa-spinner' : 'fa-solid fa-credit-card'"
-              :class="{ 'animate-spin': payingProvider === 'payme' }"
-            />
-            Payme — {{ formatMoney(selected.price) }} so'm
-          </button>
-        </div>
+        <DriverPaymentProviderButtons
+          :amount="selected.price"
+          :click-enabled="methods.click"
+          :payme-enabled="methods.payme"
+          :show-admin="true"
+          :admin-label="`«${selected.name}» — adminga so'rov`"
+          online-hint="Click yoki Payme orqali to'lovdan so'ng tarif darhol faol bo'ladi."
+          :loading="payingProvider"
+          :admin-loading="savingRequest"
+          :disabled="!selectedId || savingBuy"
+          @pay-click="payOnline('click')"
+          @pay-payme="payOnline('payme')"
+          @pay-admin="sendTariffRequest"
+        />
 
-        <template v-if="shortage > 0">
-          <button
-            type="button"
-            :disabled="savingRequest || !!payingProvider"
-            class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-            @click="sendTariffRequest"
-          >
-            <font-awesome-icon v-if="savingRequest" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
-            «{{ selected.name }}» uchun admin so'rovi
-          </button>
-          <button
-            type="button"
-            class="w-full py-2.5 text-[12px] font-bold text-sky-500 hover:underline"
-            @click="switchToTopup(shortage)"
-          >
-            Faqat balans to'ldirish ({{ formatMoney(shortage) }} so'm)
-          </button>
-        </template>
+        <button
+          v-if="shortage > 0"
+          type="button"
+          class="w-full py-2.5 text-[12px] font-bold text-sky-500 hover:underline"
+          @click="switchToTopup(shortage)"
+        >
+          Faqat balans to'ldirish ({{ formatMoney(shortage) }} so'm)
+        </button>
       </section>
     </template>
 
@@ -211,7 +186,7 @@
           Balans to'ldirish
         </p>
         <p class="text-[13px] font-medium text-slate-600 dark:text-slate-300 leading-snug">
-          Summa adminga yuboriladi. To'lovdan keyin tarifni o'zingiz ulashingiz mumkin.
+          Click yoki Payme orqali to'lov — balans darhol qo'shiladi. Admin orqali — admin to'lov xabarini ko'rib faollashtiradi.
         </p>
       </section>
 
@@ -244,15 +219,20 @@
           </button>
         </div>
 
-        <button
-          type="button"
-          :disabled="savingRequest || topupAmount <= 0"
-          class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-          @click="sendTopupRequest"
-        >
-          <font-awesome-icon v-if="savingRequest" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
-          Balans to'ldirish so'rovi — {{ formatMoney(topupAmount) }} so'm
-        </button>
+        <DriverPaymentProviderButtons
+          :amount="topupAmount > 0 ? topupAmount : 0"
+          :click-enabled="methods.click"
+          :payme-enabled="methods.payme"
+          :show-admin="true"
+          admin-label="Balans to'ldirish — adminga so'rov"
+          online-hint="Click yoki Payme orqali to'lovdan so'ng balans darhol qo'shiladi."
+          :loading="payingProvider"
+          :admin-loading="savingRequest"
+          :disabled="topupAmount <= 0"
+          @pay-click="payTopupOnline('click')"
+          @pay-payme="payTopupOnline('payme')"
+          @pay-admin="sendTopupRequest"
+        />
       </section>
     </template>
 
@@ -439,6 +419,18 @@ const fetchPaymentMethods = async () => {
   }
 }
 
+const openPayUrl = (res: { success?: boolean; data?: { payUrl?: string }; message?: string }) => {
+  const payUrl = String(res?.data?.payUrl || '').trim()
+  if (!res.success || !payUrl) {
+    error.value = res.message || 'To\'lov havolasi olinmadi'
+    return false
+  }
+  if (import.meta.client) {
+    window.location.assign(payUrl)
+  }
+  return true
+}
+
 const payOnline = async (provider: 'click' | 'payme') => {
   if (!selected.value) return
   payingProvider.value = provider
@@ -450,14 +442,30 @@ const payOnline = async (provider: 'click' | 'payme') => {
       body: { tariffId: selected.value.id },
       timeout: 30000,
     })
-    const payUrl = String(res?.data?.payUrl || '').trim()
-    if (!res.success || !payUrl) {
-      error.value = res.message || 'To\'lov havolasi olinmadi'
-      return
-    }
-    if (import.meta.client) {
-      window.location.assign(payUrl)
-    }
+    openPayUrl(res)
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || e?.message || 'To\'lov boshlanmadi'
+  } finally {
+    payingProvider.value = null
+  }
+}
+
+const payTopupOnline = async (provider: 'click' | 'payme') => {
+  const amount = topupAmount.value
+  if (amount <= 0) {
+    error.value = 'Summani kiriting'
+    return
+  }
+  payingProvider.value = provider
+  error.value = ''
+  try {
+    const path = provider === 'click' ? '/me/balance/pay-click' : '/me/balance/pay-payme'
+    const res = await useApi(path, {
+      method: 'POST',
+      body: { amount },
+      timeout: 30000,
+    })
+    openPayUrl(res)
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.message || 'To\'lov boshlanmadi'
   } finally {
