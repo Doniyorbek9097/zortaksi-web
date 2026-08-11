@@ -146,14 +146,50 @@
           <p class="text-center text-[13px] font-black text-amber-500 bg-amber-50 dark:bg-amber-950/30 rounded-xl py-2">
             Yetishmaydi: {{ formatMoney(shortage) }} so'm
           </p>
+        </template>
+
+        <!-- Online to'lov: Click / Payme -->
+        <div v-if="methods.click || methods.payme" class="space-y-2 pt-1">
+          <p class="text-[11px] font-bold text-slate-400 dark:text-slate-500 text-center">
+            {{ shortage <= 0 ? 'Yoki online to\'lov' : 'Online to\'lov' }}
+          </p>
+          <button
+            v-if="methods.click"
+            type="button"
+            :disabled="!!payingProvider || !selectedId"
+            class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-[#00ADEF] hover:bg-[#0099d6] shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            @click="payOnline('click')"
+          >
+            <font-awesome-icon
+              :icon="payingProvider === 'click' ? 'fa-solid fa-spinner' : 'fa-solid fa-wallet'"
+              :class="{ 'animate-spin': payingProvider === 'click' }"
+            />
+            Click — {{ formatMoney(selected.price) }} so'm
+          </button>
+          <button
+            v-if="methods.payme"
+            type="button"
+            :disabled="!!payingProvider || !selectedId"
+            class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-[#00CCCC] hover:bg-[#00b3b3] shadow-lg shadow-teal-500/20 active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            @click="payOnline('payme')"
+          >
+            <font-awesome-icon
+              :icon="payingProvider === 'payme' ? 'fa-solid fa-spinner' : 'fa-solid fa-credit-card'"
+              :class="{ 'animate-spin': payingProvider === 'payme' }"
+            />
+            Payme — {{ formatMoney(selected.price) }} so'm
+          </button>
+        </div>
+
+        <template v-if="shortage > 0">
           <button
             type="button"
-            :disabled="savingRequest"
+            :disabled="savingRequest || !!payingProvider"
             class="w-full py-3.5 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
             @click="sendTariffRequest"
           >
             <font-awesome-icon v-if="savingRequest" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
-            «{{ selected.name }}» uchun to'lov so'rovi
+            «{{ selected.name }}» uchun admin so'rovi
           </button>
           <button
             type="button"
@@ -246,8 +282,10 @@ const selectedId = ref<string | null>(null)
 const topupText = ref('')
 const savingBuy = ref(false)
 const savingRequest = ref(false)
+const payingProvider = ref<'click' | 'payme' | null>(null)
 const error = ref('')
 const amountPresets = [50000, 100000, 150000, 200000]
+const methods = ref<{ click: boolean; payme: boolean }>({ click: false, payme: false })
 
 const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
 const balance = computed(() => authStore.user?.balance ?? 0)
@@ -387,6 +425,46 @@ const switchToTopup = (amount: number) => {
   topupText.value = formatMoney(amount)
 }
 
+const fetchPaymentMethods = async () => {
+  try {
+    const res = await useApi('/me/tariff/payment-methods')
+    if (res.success && res.data) {
+      methods.value = {
+        click: !!res.data.click,
+        payme: !!res.data.payme,
+      }
+    }
+  } catch {
+    methods.value = { click: false, payme: false }
+  }
+}
+
+const payOnline = async (provider: 'click' | 'payme') => {
+  if (!selected.value) return
+  payingProvider.value = provider
+  error.value = ''
+  try {
+    const path = provider === 'click' ? '/me/tariff/pay-click' : '/me/tariff/pay-payme'
+    const res = await useApi(path, {
+      method: 'POST',
+      body: { tariffId: selected.value.id },
+      timeout: 30000,
+    })
+    const payUrl = String(res?.data?.payUrl || '').trim()
+    if (!res.success || !payUrl) {
+      error.value = res.message || 'To\'lov havolasi olinmadi'
+      return
+    }
+    if (import.meta.client) {
+      window.location.assign(payUrl)
+    }
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || e?.message || 'To\'lov boshlanmadi'
+  } finally {
+    payingProvider.value = null
+  }
+}
+
 const buyTariff = async () => {
   if (!selected.value) return
   if (shortage.value > 0) {
@@ -435,6 +513,15 @@ onMounted(async () => {
   if (tab === 'topup') mode.value = 'topup'
   if (tab === 'tariff') mode.value = 'tariff'
 
+  const paid = String(route.query.paid || '')
+  if (paid === '1') {
+    try { await authStore.getMe() } catch { /* ignore */ }
+    if (authStore.tariffActive && returnPath.value) {
+      await navigateTo(returnPath.value)
+      return
+    }
+  }
+
   const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
   if (Number.isFinite(qAmount) && qAmount > 0) {
     topupText.value = formatMoney(qAmount)
@@ -442,7 +529,7 @@ onMounted(async () => {
   }
 
   try {
-    await tariffStore.fetchTariffs()
+    await Promise.all([tariffStore.fetchTariffs(), fetchPaymentMethods()])
     const qTariffId = String(route.query.tariffId || '').trim()
     if (qTariffId && tariffStore.tariffs.some(t => t.id === qTariffId)) {
       selectedId.value = qTariffId
