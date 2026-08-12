@@ -49,7 +49,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const orderSearchActive = computed(() => !!appliedOrderQuery.value.trim())
 
   const buildFilterParams = () => {
-    if (!isAdmin.value) return {}
     const botGroupId = appliedBotGroupId.value.trim()
     if (botGroupId) {
       return { botGroupId }
@@ -71,7 +70,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi */
   const displayOrders = computed(() => {
-    if (!isAdmin.value || appliedBotGroupId.value.trim()) return orderStore.orders
+    if (appliedBotGroupId.value.trim()) return orderStore.orders
     const raw = appliedKeywords.value.trim()
     if (!raw) return orderStore.orders
     return filterOrdersByKeywords(orderStore.orders, raw)
@@ -175,10 +174,6 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   }
 
   const hydrateFilter = () => {
-    if (!isAdmin.value) {
-      orderStore.applyListFilter({ page: 1, limit: LIMIT, ...scopeQuery() })
-      return
-    }
     const saved = loadOrderFilterKeywords()
     const savedGroup = loadOrderFilterBotGroupId()
     draftKeywords.value = saved

@@ -5,8 +5,7 @@
         <slot />
       </div>
     </BasePullToRefresh>
-    <DriverBottomNavigation v-if="!mandatoryRegionOpen && !regionGroupsWelcomeOpen" />
-    <OrdersMandatoryRegionGate />
+    <DriverBottomNavigation v-if="!regionGroupsWelcomeOpen" />
     <OrdersRegionGroupsWelcome />
   </AuthSessionGate>
 </template>
@@ -15,19 +14,11 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
-import { isTariffActive } from '~/utils/tariffActive'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
 const { open: regionGroupsWelcomeOpen, loadAndShowIfNeeded } = useRegionGroupsWelcome()
-
-const mandatoryRegionOpen = computed(() => {
-  if (!import.meta.client || !authStore.sessionReady) return false
-  if (authStore.user?.role === 'admin') return false
-  if (!isTariffActive(authStore.user)) return false
-  return !String(authStore.user?.regionSlug || '').trim()
-})
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
