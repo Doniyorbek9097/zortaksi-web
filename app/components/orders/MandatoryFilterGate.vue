@@ -39,13 +39,17 @@ const showGate = computed(() => {
 
 const onSave = async () => {
   const kw = draftKeywords.value.trim()
-  const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
+  const gid = String(draftBotGroupId.value || '').trim()
 
-  if (kw) saveOrderFilterKeywords(kw)
+  if (kw && !gid) saveOrderFilterKeywords(kw)
   else clearOrderFilterKeywords()
 
-  if (gid) saveOrderFilterBotGroupId(gid)
-  else clearOrderFilterBotGroupId()
+  if (gid) {
+    saveOrderFilterBotGroupId(gid)
+    clearOrderFilterKeywords()
+  } else {
+    clearOrderFilterBotGroupId()
+  }
 
   markOrderFilterConfigured()
 
@@ -61,7 +65,7 @@ const onSave = async () => {
     limit: ORDERS_PAGE_LIMIT,
     ...(gid ? { botGroupId: gid } : { search: kw || undefined }),
   })
-  void postStore.setSearch(kw, gid)
+  void postStore.setSearch(gid ? '' : kw, gid)
 }
 
 watch(

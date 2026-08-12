@@ -73,7 +73,8 @@
       v-if="store.tab === 'ads'"
       class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
     >
-      Faqat public guruhlar (@username) — kanallar va yopiq guruhlar yo'q.
+      Faqat public guruhlar (@username) va yozish mumkin bo'lganlari.
+      Yozish taqiqlangan guruhlar ko'rsatilmaydi.
       <span v-if="!store.isAdmin">
         Xabar yuborish: {{ ADS_BROADCAST_PRICE.toLocaleString('ru-RU') }} so'm/guruh.
       </span>

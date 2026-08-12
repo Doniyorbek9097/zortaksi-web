@@ -24,8 +24,8 @@
                   </p>
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                     {{ mandatory
-                      ? 'Davom etish uchun qaysi yo\'nalish buyurtmalarini ko\'rmoqchiligingizni belgilang'
-                      : 'Qaysi shahar/tuman buyurtmalarini ko‘rmoqchisiz?' }}
+                      ? 'Davom etish uchun bot guruh (yo‘nalish) tanlang yoki barcha joylar'
+                      : 'Bot guruh tanlang — faqat shu tinglovchilardan kelgan buyurtmalar' }}
                   </p>
                 </div>
                 <button
@@ -72,10 +72,10 @@
                       />
                       <span class="truncate">{{ preset.title }}</span>
                       <span
-                        v-if="preset.keywords?.length"
+                        v-if="preset.listenersCount || preset.listenerUserId"
                         class="ml-auto shrink-0 text-[10px] font-semibold opacity-60"
                       >
-                        {{ preset.keywords.length }}
+                        tinglovchi
                       </span>
                     </button>
                   </li>
@@ -100,7 +100,7 @@
               </p>
 
               <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
-                «Barcha joylar» — hudud filtri yo'q, barcha buyurtmalar ko'rinadi. Yoki alohida yo'nalish tanlang.
+                «Barcha joylar» — filtrsiz. Yoki bot guruh nomini tanlang — faqat shu guruh tinglovchilarining buyurtmalari.
               </p>
             </div>
 
@@ -141,6 +141,9 @@ export type BotGroupFilterPreset = {
   username: string
   title: string
   keywords: string[]
+  listenerUserId?: string
+  listenersCount?: number
+  regionSlug?: string
 }
 
 const props = withDefaults(
@@ -180,6 +183,10 @@ const keywordsFromPreset = (preset: BotGroupFilterPreset) =>
   (preset.keywords || []).map((k) => String(k).trim()).filter(Boolean).join(', ')
 
 const syncSelectedPresetFromKeywords = () => {
+  if (botGroupId.value) {
+    selectedPresetId.value = botGroupId.value
+    return
+  }
   const current = String(keywords.value || '').trim()
   if (!current) {
     selectedPresetId.value = null
@@ -190,10 +197,10 @@ const syncSelectedPresetFromKeywords = () => {
 }
 
 const onPresetClick = (preset: BotGroupFilterPreset) => {
-  if (!preset.keywords?.length) return
   saveError.value = ''
   allRegionsSelected.value = false
-  keywords.value = keywordsFromPreset(preset)
+  // Bot guruh tanlash — server listenerUserId bo'yicha filtrlaydi
+  keywords.value = ''
   selectedPresetId.value = preset.id
   botGroupId.value = preset.id
 }
@@ -210,11 +217,12 @@ watch(keywords, () => {
   saveError.value = ''
   const current = String(keywords.value || '').trim()
   if (!current) {
-    selectedPresetId.value = null
-    botGroupId.value = null
+    // botGroupId saqlangan bo'lsa — preset tanlangan deb qoladi
+    if (!botGroupId.value) selectedPresetId.value = null
     return
   }
   allRegionsSelected.value = false
+  botGroupId.value = null
   if (presets.value.length) syncSelectedPresetFromKeywords()
 })
 
@@ -245,7 +253,8 @@ const onBackdropClick = () => {
 
 const onSave = () => {
   const hasKeywords = parseKeywords(keywords.value).length > 0
-  if (props.mandatory && !hasKeywords && !allRegionsSelected.value) {
+  const hasBotGroup = !!String(botGroupId.value || '').trim()
+  if (props.mandatory && !hasKeywords && !hasBotGroup && !allRegionsSelected.value) {
     saveError.value = 'Yo\'nalish tanlang yoki «Barcha joylar» ni bosing'
     return
   }

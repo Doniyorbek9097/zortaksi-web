@@ -7,6 +7,7 @@ export interface BotGroupRow {
   username: string
   inviteLink?: string
   keywords: string[]
+  listenerUserId: string
   active: boolean
   hasBotToken?: boolean
   tokenMasked?: string
@@ -26,9 +27,20 @@ export interface BotRegionCard {
   slug: string
   title: string
   keywords: string[]
+  listenerUserId: string
   active: boolean
   public?: BotGroupRow
   private?: BotGroupRow
+}
+
+export type ListenerCandidate = {
+  userId: string
+  firstName: string
+  lastName: string
+  username: string
+  phoneNumber: string
+  listenGroups: boolean
+  label: string
 }
 
 export type BotRegionSidePayload = {
@@ -39,12 +51,21 @@ export type BotRegionSidePayload = {
 export type BotRegionPayload = {
   regionSlug: string
   title?: string
-  keywords: string
+  listenerUserId: string
   active?: boolean
   /** Bitta bot — public va private guruhlar uchun */
   botToken?: string
   public: BotRegionSidePayload
   private: BotRegionSidePayload
+}
+
+const readListenerId = (g: any): string => {
+  const single = String(g?.listenerUserId || '').trim()
+  if (single) return single
+  if (Array.isArray(g?.listenerUserIds) && g.listenerUserIds.length) {
+    return String(g.listenerUserIds[0] || '').trim()
+  }
+  return ''
 }
 
 const toRow = (g: any): BotGroupRow => ({
@@ -54,6 +75,7 @@ const toRow = (g: any): BotGroupRow => ({
   username: g.username,
   inviteLink: g.inviteLink || '',
   keywords: Array.isArray(g.keywords) ? g.keywords : [],
+  listenerUserId: readListenerId(g),
   active: !!g.active,
   hasBotToken: !!g.hasBotToken,
   tokenMasked: g.tokenMasked || '',
@@ -82,6 +104,7 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
         slug,
         title: row.title || row.telegramTitle || slug,
         keywords: row.keywords,
+        listenerUserId: row.listenerUserId || '',
         active: row.active,
       })
     }
@@ -90,6 +113,7 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
     else card.public = row
     if (row.title) card.title = row.title
     if (row.keywords?.length) card.keywords = row.keywords
+    if (row.listenerUserId) card.listenerUserId = row.listenerUserId
     card.active = card.active || row.active
   }
   return [...map.values()].sort((a, b) => a.title.localeCompare(b.title, 'uz'))
@@ -101,6 +125,7 @@ async function wait(ms: number) {
 
 export const useBotGroupStore = defineStore('botGroup', () => {
   const groups = ref<BotGroupRow[]>([])
+  const listenerCandidates = ref<ListenerCandidate[]>([])
   const isLoading = ref(false)
   const isSaving = ref(false)
 
@@ -119,6 +144,19 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       throw error
     } finally {
       isLoading.value = false
+    }
+  }
+
+  const fetchListenerCandidates = async () => {
+    try {
+      const response = await useApi('/bot-groups/listener-candidates')
+      if (response.success) {
+        listenerCandidates.value = (response.data.candidates ?? []) as ListenerCandidate[]
+      }
+      return response
+    } catch (error) {
+      console.error('FetchListenerCandidates error:', error)
+      throw error
     }
   }
 
@@ -142,7 +180,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         body: {
           regionSlug: payload.regionSlug.trim(),
           title: payload.title?.trim() || undefined,
-          keywords: payload.keywords.trim(),
+          listenerUserId: payload.listenerUserId?.trim() || '',
           active: payload.active !== false,
           botToken: payload.botToken?.trim(),
           public: {
@@ -169,7 +207,9 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       isSaving.value = true
       const body: Record<string, unknown> = {}
       if (payload.title !== undefined) body.title = payload.title?.trim() || ''
-      if (payload.keywords !== undefined) body.keywords = payload.keywords.trim()
+      if (payload.listenerUserId !== undefined) {
+        body.listenerUserId = String(payload.listenerUserId || '').trim()
+      }
       if (payload.active !== undefined) body.active = !!payload.active
       if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
       if (payload.public) {
@@ -237,15 +277,22 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     }
   }
 
+  const appendKeyword = async (_id: string, _keyword: string) => {
+    throw new Error('Kalit so\'z qo\'shish o\'chirilgan — Bot guruhlarida tinglovchi userbotlarni tanlang')
+  }
+
   return {
     groups,
+    listenerCandidates,
     regionCards,
     isLoading,
     isSaving,
     fetchGroups,
+    fetchListenerCandidates,
     createRegion,
     updateRegion,
     deleteRegion,
     refreshGroup,
+    appendKeyword,
   }
 })

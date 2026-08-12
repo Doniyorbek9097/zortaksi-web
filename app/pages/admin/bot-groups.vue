@@ -16,7 +16,8 @@
 
     <section class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-3">
       <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-        Har bir hudud uchun <strong>slug</strong>, kalit so'zlar, <strong>bitta bot token</strong>, public @username va private <strong>invite link</strong>.
+        Har bir hudud uchun <strong>slug</strong>, <strong>tinglovchi userbot</strong>,
+        <strong>bitta bot token</strong>, public @username va private <strong>invite link</strong>.
       </p>
 
       <form class="space-y-3" @submit.prevent="onSubmit">
@@ -42,16 +43,37 @@
           />
         </label>
 
-        <label class="block space-y-1">
-          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Kalit so'zlar</span>
-          <textarea
-            v-model="form.keywords"
-            rows="3"
-            placeholder="Namangan, namangan, Намangan"
-            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-rose-500/30 resize-none"
-            required
-          />
-        </label>
+        <div class="space-y-1.5">
+          <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+            Tinglovchi userbot
+          </span>
+          <p class="text-[10px] text-slate-400 leading-snug">
+            Faqat <strong>listenGroups</strong> yoqilganlar. Shu userbot buyurtmalari
+            public va private bot guruhlariga yuboriladi.
+          </p>
+          <select
+            v-model="form.listenerUserId"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-rose-500/30"
+          >
+            <option value="">— Tanlang —</option>
+            <option
+              v-if="form.listenerUserId && !store.listenerCandidates.some(c => c.userId === form.listenerUserId)"
+              :value="form.listenerUserId"
+            >
+              {{ form.listenerUserId }} (listenGroups o‘chiq?)
+            </option>
+            <option
+              v-for="c in store.listenerCandidates"
+              :key="c.userId"
+              :value="c.userId"
+            >
+              {{ c.label }}{{ c.username ? ` (@${c.username})` : '' }}
+            </option>
+          </select>
+          <p v-if="!store.listenerCandidates.length" class="text-[10px] text-amber-600">
+            listenGroups yoqilgan userbot yo‘q — avval haydovchida «Guruh tinglash»ni yoqing.
+          </p>
+        </div>
 
         <label class="block space-y-1">
           <span class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Bot token (BotFather)</span>
@@ -153,7 +175,8 @@
         </div>
 
         <p class="text-[11px] text-slate-600 dark:text-slate-300">
-          <span class="font-bold">Kalit so'zlar:</span> {{ card.keywords.join(', ') }}
+          <span class="font-bold">Tinglovchi:</span>
+          {{ listenerLabel(card.listenerUserId) }}
         </p>
         <p v-if="card.public?.botUsername || card.private?.botUsername" class="text-[11px] text-violet-600 dark:text-violet-400 font-bold">
           Bot: @{{ card.public?.botUsername || card.private?.botUsername }}
@@ -233,7 +256,7 @@ const store = useBotGroupStore()
 const emptyForm = () => ({
   regionSlug: '',
   title: '',
-  keywords: '',
+  listenerUserId: '',
   botToken: '',
   active: true,
   public: { username: '' },
@@ -248,6 +271,13 @@ const deleteOpen = ref(false)
 const deleteTarget = ref<BotRegionCard | null>(null)
 const error = ref('')
 
+const listenerLabel = (userId: string) => {
+  if (!userId) return 'tanlanmagan'
+  const c = store.listenerCandidates.find((x) => x.userId === userId)
+  if (c) return c.username ? `${c.label} (@${c.username})` : c.label
+  return userId
+}
+
 const resetForm = () => {
   form.value = emptyForm()
   editingSlug.value = null
@@ -260,7 +290,7 @@ const onSubmit = async () => {
   const payload = {
     regionSlug: form.value.regionSlug.trim(),
     title: form.value.title.trim(),
-    keywords: form.value.keywords.trim(),
+    listenerUserId: form.value.listenerUserId.trim(),
     botToken: form.value.botToken.trim() || undefined,
     active: form.value.active,
     public: {
@@ -286,6 +316,7 @@ const onSubmit = async () => {
       await store.createRegion(payload as any)
     }
     resetForm()
+    void store.fetchListenerCandidates()
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.message || 'Xatolik yuz berdi'
   }
@@ -298,7 +329,7 @@ const startEdit = (card: BotRegionCard) => {
   form.value = {
     regionSlug: card.slug,
     title: card.title,
-    keywords: card.keywords.join(', '),
+    listenerUserId: card.listenerUserId || '',
     botToken: '',
     active: card.active,
     public: {
@@ -333,6 +364,7 @@ const confirmDelete = async () => {
     deleteOpen.value = false
     deleteTarget.value = null
     if (editingSlug.value) resetForm()
+    void store.fetchListenerCandidates()
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.message || 'O\'chirish xato'
   }
@@ -340,5 +372,6 @@ const confirmDelete = async () => {
 
 onMounted(() => {
   void store.fetchGroups()
+  void store.fetchListenerCandidates()
 })
 </script>

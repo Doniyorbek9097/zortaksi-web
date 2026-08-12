@@ -104,18 +104,21 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   const onSaveFilter = async () => {
     const kw = draftKeywords.value.trim()
-    const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
+    const gid = String(draftBotGroupId.value || '').trim()
 
-    appliedKeywords.value = kw
+    appliedKeywords.value = gid ? '' : kw
     appliedBotGroupId.value = gid
-    draftKeywords.value = kw
+    draftKeywords.value = appliedKeywords.value
     draftBotGroupId.value = gid
 
-    if (kw) saveOrderFilterKeywords(kw)
-    else clearOrderFilterKeywords()
-
-    if (gid) saveOrderFilterBotGroupId(gid)
-    else clearOrderFilterBotGroupId()
+    if (gid) {
+      clearOrderFilterKeywords()
+      saveOrderFilterBotGroupId(gid)
+    } else {
+      clearOrderFilterBotGroupId()
+      if (kw) saveOrderFilterKeywords(kw)
+      else clearOrderFilterKeywords()
+    }
 
     markOrderFilterConfigured()
 

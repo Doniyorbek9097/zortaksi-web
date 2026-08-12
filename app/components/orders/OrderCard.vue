@@ -258,9 +258,7 @@ const bookedByName = computed(() => {
 
 const group = computed(() => props.order.group)
 
-const canAddToBot = computed(
-  () => isAdmin.value && !!String(group.value?.username || '').trim().replace(/^@/, ''),
-)
+const canAddToBot = computed(() => false)
 
 /** Admin: Telegram guruhidagi xabarni ochish */
 const groupViewUrl = computed(() =>
