@@ -42,7 +42,7 @@ export const useOrderStore = defineStore('order', () => {
         listBotGroupId.value = String(params.botGroupId || '').trim()
         listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
         listText.value = String(params.text || '').trim()
-        listScope.value = params.scope === 'mine' ? 'mine' : 'all'
+        listScope.value = 'all'
     }
 
     const hasActiveListFilter = () =>

@@ -318,7 +318,15 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         await connect(chatId, { silent: true })
 
-        const updated = findChatById(chatId)
+        let updated = findChatById(chatId)
+        if (hasTelegramPeerLink(updated) || connectionStatus.value === 'ready') return true
+
+        // O'z hisob ishlamasa — order owner proxy
+        if (updated?.orderId || chat?.orderId) {
+            await connect(chatId, { silent: true, viaProxy: true })
+            updated = findChatById(chatId)
+        }
+
         return hasTelegramPeerLink(updated) || connectionStatus.value === 'ready'
     }
 

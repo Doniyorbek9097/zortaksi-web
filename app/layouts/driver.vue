@@ -5,8 +5,7 @@
         <slot />
       </div>
     </BasePullToRefresh>
-    <DriverBottomNavigation v-if="!regionGroupsWelcomeOpen" />
-    <OrdersRegionGroupsWelcome />
+    <DriverBottomNavigation />
   </AuthSessionGate>
 </template>
 
@@ -18,7 +17,6 @@ import { useOrderStore } from '~/stores/order.store'
 const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
-const { open: regionGroupsWelcomeOpen, loadAndShowIfNeeded } = useRegionGroupsWelcome()
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
@@ -29,20 +27,12 @@ const refreshBadges = async () => {
 onMounted(() => {
   orderStore.startRecentMinuteTicker()
   void refreshBadges()
-  void loadAndShowIfNeeded()
 })
 
 watch(
   () => [authStore.sessionReady, authStore.user?.userId] as const,
   ([ready, id]) => {
     if (ready && id) void refreshBadges()
-  }
-)
-
-watch(
-  () => [authStore.sessionReady, authStore.user?.regionSlug] as const,
-  ([ready, slug]) => {
-    if (ready && slug) void loadAndShowIfNeeded()
   }
 )
 </script>

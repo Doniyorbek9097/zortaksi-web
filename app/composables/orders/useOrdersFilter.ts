@@ -15,21 +15,12 @@ import {
 } from '~/utils/orderFilterKeywords'
 
 const LIMIT = ORDERS_PAGE_LIMIT
-const SCOPE_STORAGE_KEY = 'zortaksi:orders-scope'
 
 export type OrdersScopeTab = 'all' | 'mine'
 
-const loadScope = (): OrdersScopeTab => {
-  if (!import.meta.client) return 'all'
-  try {
-    return localStorage.getItem(SCOPE_STORAGE_KEY) === 'mine' ? 'mine' : 'all'
-  } catch {
-    return 'all'
-  }
-}
-
 /**
  * Buyurtmalar filtri — server (search/botGroupId) + client qo'shimcha filter.
+ * Scope tab olib tashlangan — doim barcha buyurtmalar.
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const authStore = useAuthStore()
@@ -42,7 +33,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const filterLoading = ref(false)
   const orderQuery = ref('')
   const appliedOrderQuery = ref('')
-  const scope = ref<OrdersScopeTab>(loadScope())
+  const scope = ref<OrdersScopeTab>('all')
   const filterActive = computed(
     () => !!appliedBotGroupId.value.trim() || !!appliedKeywords.value.trim(),
   )
@@ -57,14 +48,10 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     return search ? { search } : {}
   }
 
-  const scopeQuery = () =>
-    scope.value === 'mine' ? { scope: 'mine' as const } : {}
-
-  /** API so'rovlari uchun query (limit + filter + matn qidiruvi + tab) */
+  /** API so'rovlari uchun query (limit + filter + matn qidiruvi) */
   const queryParams = () => ({
     limit: LIMIT,
     ...buildFilterParams(),
-    ...scopeQuery(),
     ...(appliedOrderQuery.value.trim() ? { text: appliedOrderQuery.value.trim() } : {}),
   })
 
@@ -137,21 +124,9 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     showFilter.value = false
   }
 
-  const setScope = async (next: OrdersScopeTab) => {
-    if (next === scope.value) return
-    scope.value = next
-    if (import.meta.client) {
-      try {
-        localStorage.setItem(SCOPE_STORAGE_KEY, next)
-      } catch { /* ignore */ }
-    }
-    beginFilterReload()
-    filterLoading.value = true
-    try {
-      await load()
-    } finally {
-      filterLoading.value = false
-    }
+  const setScope = async (_next: OrdersScopeTab) => {
+    // Tab olib tashlangan — doim barcha
+    scope.value = 'all'
   }
 
   const onRemoveRegion = async (chip: string) => {
@@ -180,10 +155,10 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     appliedKeywords.value = saved
     draftBotGroupId.value = savedGroup
     appliedBotGroupId.value = savedGroup
+    scope.value = 'all'
     orderStore.applyListFilter({
       page: 1,
       limit: LIMIT,
-      ...scopeQuery(),
       ...(savedGroup ? { botGroupId: savedGroup } : { search: saved.trim() || undefined }),
     })
   }
