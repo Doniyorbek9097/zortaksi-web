@@ -67,6 +67,16 @@
               {{ driver.active ? 'Faol' : 'Faol emas' }}
             </span>
           </div>
+          <div class="mt-1.5 flex flex-wrap gap-1.5">
+            <span
+              class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-black border"
+              :class="driver.listenGroups
+                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50'
+                : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'"
+            >
+              {{ driver.listenGroups ? 'Guruh tinglovchi' : 'Guruh tinglamaydi' }}
+            </span>
+          </div>
           <p class="mt-2 text-lg font-black text-sky-500">
             {{ formatMoney(driver.balance) }} so'm
           </p>
@@ -152,6 +162,18 @@
         >
           <font-awesome-icon :icon="driver.active ? 'fa-solid fa-ban' : 'fa-solid fa-circle-check'" />
           {{ driver.active ? 'Blok' : 'Faollashtir' }}
+        </button>
+        <button
+          type="button"
+          class="col-span-2 inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black active:scale-95 transition-all border disabled:opacity-50"
+          :class="driver.listenGroups
+            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/25'
+            : 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20'"
+          :disabled="store.isSaving"
+          @click="toggleListenGroups"
+        >
+          <font-awesome-icon icon="fa-solid fa-headset" />
+          {{ driver.listenGroups ? "Guruh tinglashni o'chirish" : 'Guruh tinglashni yoqish' }}
         </button>
       </section>
 
@@ -401,6 +423,22 @@ const confirmBlock = async () => {
     await load()
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Saqlanmadi'
+  }
+}
+
+const toggleListenGroups = async () => {
+  if (!driver.value) return
+  error.value = ''
+  success.value = ''
+  const next = !driver.value.listenGroups
+  try {
+    await store.setListenGroups(driver.value.id, next)
+    success.value = next
+      ? 'Guruh tinglash yoqildi — userbot endi tinglaydi'
+      : 'Guruh tinglash o‘chirildi'
+    await load()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Tinglash sozlamasi saqlanmadi'
   }
 }
 

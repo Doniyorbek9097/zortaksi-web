@@ -520,10 +520,12 @@ onMounted(async () => {
   const paid = String(route.query.paid || '')
   if (paid === '1') {
     try { await authStore.getMe() } catch { /* ignore */ }
-    if (authStore.tariffActive && returnPath.value) {
+    if (returnPath.value && authStore.tariffActive) {
       await navigateTo(returnPath.value)
       return
     }
+    await navigateTo('/driver/dashboard')
+    return
   }
 
   const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN

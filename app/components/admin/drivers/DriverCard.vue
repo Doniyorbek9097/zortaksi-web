@@ -51,6 +51,14 @@
           >
             {{ active ? 'Faol' : 'Nofaol' }}
           </span>
+          <span
+            class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black"
+            :class="listenGroups
+              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400'
+              : 'bg-slate-200/80 dark:bg-slate-700 text-slate-500'"
+          >
+            {{ listenGroups ? 'Tinglovchi' : 'Tinglamaydi' }}
+          </span>
           <span class="text-[12px] font-black text-sky-500">
             {{ formattedBalance }} so'm
           </span>
@@ -124,6 +132,7 @@ interface Props {
   avatar?: string
   userId?: string
   active?: boolean
+  listenGroups?: boolean
   balance?: number
   tariffLine?: string
   selected?: boolean
@@ -131,6 +140,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   active: true,
+  listenGroups: false,
   balance: 0,
   selected: false,
 })

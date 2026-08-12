@@ -9,6 +9,7 @@ export interface DriverRow {
   username?: string
   avatar?: string
   active: boolean
+  listenGroups?: boolean
   balance: number
   tariffName?: string
   expireAt?: string
@@ -107,6 +108,23 @@ export const useDriverStore = defineStore('driver', () => {
       return response
     } catch (error) {
       console.error('SetDriverActive error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const setListenGroups = async (userId: string, listenGroups: boolean) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/listen-groups`, {
+        method: 'PATCH',
+        body: { listenGroups },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('SetListenGroups error:', error)
       throw error
     } finally {
       isSaving.value = false
@@ -235,6 +253,7 @@ export const useDriverStore = defineStore('driver', () => {
     fetchDrivers,
     loadMore,
     setActive,
+    setListenGroups,
     setBalance,
     adjustBalance,
     assignTariff,

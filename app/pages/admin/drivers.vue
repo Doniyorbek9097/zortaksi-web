@@ -40,6 +40,7 @@
         :avatar="d.avatar"
         :user-id="d.id"
         :active="d.active"
+        :listen-groups="!!d.listenGroups"
         :balance="d.balance"
         :tariff-line="d.tariffLine"
         :selected="selected.has(d.id)"
