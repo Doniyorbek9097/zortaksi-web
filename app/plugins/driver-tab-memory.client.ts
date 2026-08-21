@@ -1,7 +1,7 @@
 /**
  * Pastki tabbar orqali asosiy sahifaga o'tganda boshqa tablarning
  * og'ir Pinia / media xotirasini bo'shatadi.
- * Ichki navigatsiya (masalan order → chat) da saqlanadi.
+ * Chat ochilganda buyurtmalar ro'yxatini yumshoq qisqartirish.
  */
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
@@ -49,8 +49,18 @@ export default defineNuxtPlugin(() => {
 
   router.afterEach((to, from) => {
     const toPath = normalizePath(to.path)
+    const fromPath = normalizePath(from.path)
+
+    // Order → chat: to'liq release emas, lekin RAM uchun qisqartirish
+    if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
+      const orderStore = useOrderStore()
+      orderStore.trimListForNavigation(15)
+      releaseSessionMediaCache()
+      return
+    }
+
     if (!isDriverMainTab(toPath)) return
-    if (normalizePath(from.path) === toPath) return
+    if (fromPath === toPath) return
 
     releaseOtherDriverTabs(toPath)
   })

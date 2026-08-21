@@ -19,12 +19,17 @@ export function createLocalStateActions(refs: ChatStoreRefs) {
         }
     }
 
-    /** Ochiq chatga xabar qo'shish (dublikatsiz, sana bo'yicha tartib) */
+    /** Ochiq chatga xabar qo'shish (dublikatsiz) */
     const appendMessage = (msg: IChatMessage) => {
         if (!isCurrentChatMessage(currentChat.value?._id, msg)) return
         if (messageAlreadyExists(messages.value, msg)) return
-        messages.value.push(msg)
-        sortMessagesByDate(messages.value)
+        const list = messages.value
+        const last = list[list.length - 1]
+        const t = new Date(msg.date || 0).getTime()
+        const lastT = last ? new Date(last.date || 0).getTime() : 0
+        list.push(msg)
+        // Tartib buzilgan bo'lsa to'liq sort
+        if (t < lastT) sortMessagesByDate(list)
     }
 
     return { patchChat, appendMessage }

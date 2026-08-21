@@ -139,7 +139,8 @@ export function createListActions(
                     totalPages: messagesTotalPages.value,
                 })
                 if (import.meta.client) {
-                    useChatMedia().prefetch(messages.value, null)
+                    // Faqat oxirgi bir nechta media — RAM
+                    useChatMedia().prefetch(messages.value.slice(-16), null)
                 }
             }
             return res
@@ -201,14 +202,20 @@ export function createListActions(
                 if (!messageAlreadyExists(merged, m)) merged.push(m)
             }
             sortMessagesByDate(merged)
-            messages.value = merged
+            // RAM: eski xabarlarni chegaralash
+            const MAX_OPEN_MESSAGES = 120
+            messages.value =
+              merged.length > MAX_OPEN_MESSAGES
+                ? merged.slice(merged.length - MAX_OPEN_MESSAGES)
+                : merged
 
             messagesPage.value = res.data.pagination?.page ?? nextPage
             messagesTotalPages.value =
                 res.data.pagination?.totalPages ?? messagesTotalPages.value
 
             if (import.meta.client) {
-                useChatMedia().prefetch(older, null)
+              // Faqat yangi kelgan batch — to'liq prefetch emas
+              useChatMedia().prefetch(older.slice(-12), null)
             }
             return res
         } catch (error) {

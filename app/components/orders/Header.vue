@@ -4,7 +4,6 @@
       <h1 class="text-base font-black text-slate-900 dark:text-white">Buyurtmalar</h1>
       <p class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
         <span class="relative flex h-1.5 w-1.5">
-          <span class="absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75 animate-ping" />
           <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
         </span>
         <span class="text-emerald-500">LIVE</span>

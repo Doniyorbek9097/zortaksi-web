@@ -196,6 +196,34 @@
       </div>
     </div>
 
+    <!-- O'z hisob ishlamadi — proxy orqali ulanish uchun RUXSAT so'raladi -->
+    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+      <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
+        <p>
+          <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
+          {{ connReason || "O'z hisobingiz orqali bog'lanib bo'lmadi. Proksi orqali bog'lanib ko'rishga ruxsat berasizmi?" }}
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+          <button
+            type="button"
+            :disabled="proxyConnecting"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-sky-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
+            @click="confirmProxyConnect"
+          >
+            <font-awesome-icon icon="fa-solid fa-route" />
+            {{ proxyConnecting ? 'Ulanmoqda...' : "Proksi orqali bog'lanib ko'rish" }}
+          </button>
+          <button
+            type="button"
+            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+            @click="dismissProxyConfirm"
+          >
+            Bekor qilish
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
         <p>
@@ -430,6 +458,7 @@ const selectedMessageIds = ref<string[]>([])
 const isDeletingMessages = ref(false)
 const openFailed = ref(false)
 const openError = ref('')
+const proxyConnecting = ref(false)
 
 /** Chat ochilmasa ham query/stash dan buyurtma matni */
 const fallbackOrderText = computed(() => {
@@ -637,6 +666,23 @@ const onPhoto = async (file: File) => {
   }
   await chatStore.sendPhoto(chatId.value, file)
   scrollToBottom()
+}
+
+/** O'z hisob ishlamaganda — haydovchi ruxsat berib owner (proksi) orqali ulanish */
+const confirmProxyConnect = async () => {
+  if (proxyConnecting.value) return
+  proxyConnecting.value = true
+  try {
+    await chatStore.connect(chatId.value, { viaProxy: true })
+  } finally {
+    proxyConnecting.value = false
+  }
+}
+
+/** Proksi orqali ulanish rad etildi */
+const dismissProxyConfirm = () => {
+  chatStore.connectionStatus = 'unreachable'
+  chatStore.connectionReason = "O'z hisobingiz orqali bog'lanib bo'lmadi. Proksi orqali ulanish rad etildi."
 }
 
 const goChats = () => navigateTo('/driver/chats')
@@ -854,7 +900,7 @@ const startPresenceLoop = (id: string) => {
   clearPresenceTimer()
   presenceTimer = setInterval(() => {
     void chatStore.fetchPresence(id)
-  }, 45000)
+  }, 90_000)
 }
 
 /** Silent connect — xabarlar loadChat da bir marta yuklanadi */

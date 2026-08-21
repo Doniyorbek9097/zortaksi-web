@@ -102,6 +102,32 @@ export const useOrderStore = defineStore('order', () => {
     /** O'qilmagan — buyurtma vaqti bo'yicha oxirgi 1 soat */
     const UNREAD_WINDOW_MS = 60 * 60 * 1000
     const SEEN_STORAGE_KEY = 'zortaksi:seen-order-ids'
+    /** Infinite scroll DOM/RAM limithi */
+    const MAX_ORDERS_IN_MEMORY = 40
+    const MAX_SEEN_IDS = 200
+
+    const trimOrdersInMemory = () => {
+        if (orders.value.length <= MAX_ORDERS_IN_MEMORY) return
+        orders.value = orders.value.slice(0, MAX_ORDERS_IN_MEMORY)
+    }
+
+    /** Navigatsiya (order→chat) — yumshoq qisqartirish */
+    const trimListForNavigation = (keep = 15) => {
+        const n = Math.max(1, keep)
+        if (orders.value.length > n) {
+            orders.value = orders.value.slice(0, n)
+        }
+    }
+
+    const pruneSeenIds = () => {
+        const keys = Object.keys(seenOrderIds.value)
+        if (keys.length <= MAX_SEEN_IDS) return
+        const keep = keys.slice(keys.length - MAX_SEEN_IDS)
+        const next: Record<string, true> = {}
+        for (const id of keep) next[id] = true
+        seenOrderIds.value = next
+        persistSeen()
+    }
 
     const orderCreatedAtMs = (order: IOrder) => {
         const t = order?.createdAt ? new Date(order.createdAt).getTime() : NaN
@@ -133,10 +159,12 @@ export const useOrderStore = defineStore('order', () => {
     const persistSeen = () => {
         if (!import.meta.client) return
         try {
-            sessionStorage.setItem(
-                SEEN_STORAGE_KEY,
-                JSON.stringify(Object.keys(seenOrderIds.value)),
-            )
+            const keys = Object.keys(seenOrderIds.value)
+            const slim =
+                keys.length > MAX_SEEN_IDS
+                    ? keys.slice(keys.length - MAX_SEEN_IDS)
+                    : keys
+            sessionStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(slim))
         } catch { /* ignore */ }
     }
 
@@ -264,10 +292,19 @@ export const useOrderStore = defineStore('order', () => {
         if (!import.meta.client || recentTicker) return
         loadSeenFromStorage()
         pruneRecentArrivals()
+        pruneSeenIds()
         recentTicker = setInterval(() => {
             pruneRecentArrivals()
+            pruneSeenIds()
             recentTick.value += 1
         }, 60_000)
+    }
+
+    const stopRecentMinuteTicker = () => {
+        if (recentTicker) {
+            clearInterval(recentTicker)
+            recentTicker = null
+        }
     }
 
     const hasMore = computed(() => page.value < totalPages.value)
@@ -298,17 +335,13 @@ export const useOrderStore = defineStore('order', () => {
         newOrdersCount.value = Math.max(0, newOrdersCount.value + delta)
     }
 
-    /** Socket order:update — band qilish / bot «Shofyor topildi» */
+    /** Socket order:update — faqat ro'yxatdagi buyurtmani yangilash (yangi insert yo'q) */
     const applyOrderUpdate = (order: IOrder) => {
         if (!order?._id) return
         const idx = orders.value.findIndex((o) => String(o._id) === String(order._id))
-        const prev = idx !== -1 ? orders.value[idx] : null
-        if (idx !== -1) {
-            orders.value[idx] = { ...orders.value[idx], ...order } as IOrder
-        } else {
-            orders.value = [order, ...orders.value]
-            total.value = (total.value || 0) + 1
-        }
+        if (idx === -1) return
+        const prev = orders.value[idx]
+        orders.value[idx] = { ...orders.value[idx], ...order } as IOrder
         if (prev?.status === 'new' && order.status === 'booked') {
             bumpNewCount(-1)
         }
@@ -347,6 +380,7 @@ export const useOrderStore = defineStore('order', () => {
         })
         if (isDup) return false
         orders.value = [order, ...list]
+        trimOrdersInMemory()
         total.value = (total.value || 0) + 1
         if ((order.status || 'new') === 'new') bumpNewCount(1)
         noteRecentOrder(order)
@@ -384,6 +418,7 @@ export const useOrderStore = defineStore('order', () => {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
                     orders.value = uniqueOrdersByContent([...fresh, ...orders.value])
+                    trimOrdersInMemory()
                 }
             }
             // Catch-up: faqat oxirgi 1 daqiqada yaratilgan yangilar
@@ -428,6 +463,7 @@ export const useOrderStore = defineStore('order', () => {
                     if (!paramsMatchListFilter(params)) return response
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
+                    trimOrdersInMemory()
                 } else {
                     orders.value = list
                     rememberListFilter(params)
@@ -451,6 +487,7 @@ export const useOrderStore = defineStore('order', () => {
     // Keyingi sahifani yuklab, mavjud ro'yxatga qo'shadi (infinite scroll)
     const loadMore = async (params: FetchOrdersParams = {}) => {
         if (isLoading.value || isLoadingMore.value || !hasMore.value) return
+        if (orders.value.length >= MAX_ORDERS_IN_MEMORY) return
         return fetchOrders({ ...params, page: page.value + 1 }, { append: true })
     }
 
@@ -597,6 +634,7 @@ export const useOrderStore = defineStore('order', () => {
         ordersListScrollY.value = 0
         isLoading.value = false
         isLoadingMore.value = false
+        pruneSeenIds()
     }
 
     return {
@@ -643,6 +681,8 @@ export const useOrderStore = defineStore('order', () => {
         unreadOrdersCount,
         markAllOrdersAsRead,
         startRecentMinuteTicker,
+        stopRecentMinuteTicker,
         releaseListMemory,
+        trimListForNavigation,
     }
 })

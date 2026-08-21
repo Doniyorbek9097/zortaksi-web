@@ -10,23 +10,24 @@
 </template>
 
 <script setup lang="ts">
-import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 
-const chatStore = useChatStore()
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
-  if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 20 })
   void orderStore.refreshNewCount()
 }
 
 onMounted(() => {
   orderStore.startRecentMinuteTicker()
   void refreshBadges()
+})
+
+onBeforeUnmount(() => {
+  orderStore.stopRecentMinuteTicker()
 })
 
 watch(

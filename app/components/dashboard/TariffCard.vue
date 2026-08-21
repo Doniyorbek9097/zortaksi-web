@@ -201,9 +201,13 @@ const progressPct = computed(() => {
 
 onMounted(() => {
   if (!import.meta.client) return
+  const end = expireMs.value
+  // 1 soatdan ko'p qolsa — 30s tick; yaqinroq — 1s
+  const msLeft = end != null ? end - Date.now() : Infinity
+  const interval = msLeft > 3_600_000 ? 30_000 : 1_000
   timer = setInterval(() => {
     nowMs.value = Date.now()
-  }, 1000)
+  }, interval)
 })
 
 onBeforeUnmount(() => {

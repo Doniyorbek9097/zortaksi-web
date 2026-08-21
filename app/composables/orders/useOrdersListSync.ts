@@ -9,9 +9,10 @@ type QueryParams = () => {
   scope?: 'mine'
 }
 
+const POLL_MS = 45_000
+
 /**
- * Ro'yxat sync: poll, infinite scroll va "ko'rilgan" badge kuzatuvchisi.
- * Chatdan qaytganda ro'yxat/scroll saqlanadi (to'liq qayta load qilinmaydi).
+ * Ro'yxat sync: poll (visibility-aware), infinite scroll va "ko'rilgan" badge.
  */
 export function useOrdersListSync(options: {
   orderStore: ReturnType<typeof useOrderStore>
@@ -23,14 +24,11 @@ export function useOrdersListSync(options: {
 }) {
   const { orderStore, displayOrders, queryParams, load, loadMore, hydrateFilter } = options
 
-  // LIVE + catch-up: page>1 da ham yangilarni boshiga qo'shadi (scroll buzilmaydi)
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
-  // --- Infinite scroll (IntersectionObserver) ---
   const sentinel = ref<HTMLElement | null>(null)
   let observer: IntersectionObserver | null = null
 
-  /** Ro'yxatda ko'rinadigan buyurtmalar — badge dan chiqarish */
   const listRoot = ref<HTMLElement | null>(null)
   let seenObserver: IntersectionObserver | null = null
   const observedSeenEls = new WeakSet<Element>()
@@ -46,6 +44,12 @@ export function useOrdersListSync(options: {
     const y = orderStore.ordersListScrollY
     if (y == null || y <= 0) return
     window.scrollTo(0, y)
+  }
+
+  const syncIfVisible = () => {
+    if (!import.meta.client) return
+    if (document.hidden) return
+    void orderStore.syncLatest(queryParams())
   }
 
   const bindSeenObserver = () => {
@@ -76,6 +80,10 @@ export function useOrdersListSync(options: {
     })
   }
 
+  const onVisibility = () => {
+    if (!document.hidden) syncIfVisible()
+  }
+
   onMounted(async () => {
     orderStore.startRecentMinuteTicker()
     hydrateFilter()
@@ -92,20 +100,16 @@ export function useOrdersListSync(options: {
       orderStore.listScope === 'all'
 
     if (hasCachedList && sameServerFilter) {
-      // Chatdan qaytish — pagination + scroll; filtr server bilan mos
       await nextTick()
       restoreScroll()
-      setTimeout(restoreScroll, 50)
-      setTimeout(restoreScroll, 150)
-      void orderStore.syncLatest(queryParams())
+      setTimeout(restoreScroll, 80)
+      syncIfVisible()
     } else {
-      // Filtr o'zgargan yoki bo'sh cache — serverdan filterlab yuklash
       await load()
     }
 
-    pollTimer = setInterval(() => {
-      void orderStore.syncLatest(queryParams())
-    }, 10000)
+    pollTimer = setInterval(syncIfVisible, POLL_MS)
+    document.addEventListener('visibilitychange', onVisibility)
 
     observer = new IntersectionObserver(
       (entries) => {
@@ -117,19 +121,21 @@ export function useOrdersListSync(options: {
     bindSeenObserver()
   })
 
-  // Sentinel v-if bilan paydo bo'lsa/yo'qolsa — qayta kuzatamiz
   watch(sentinel, (el) => {
     if (observer && el) observer.observe(el)
   })
 
+  // Faqat uzunlik o'zgarsa — to'liq id join emas
   watch(
-    () => displayOrders.value.map((o) => o._id).join(','),
+    () => displayOrders.value.length,
     () => bindSeenObserver(),
   )
 
   onBeforeUnmount(() => {
     saveScroll()
     if (pollTimer) clearInterval(pollTimer)
+    pollTimer = null
+    document.removeEventListener('visibilitychange', onVisibility)
     if (observer) observer.disconnect()
     if (seenObserver) seenObserver.disconnect()
   })

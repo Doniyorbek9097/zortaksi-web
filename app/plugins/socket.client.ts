@@ -40,19 +40,33 @@ export default defineNuxtPlugin(() => {
     }
   }
 
+  const isOnOrders = () =>
+    import.meta.client && /\/driver\/orders/.test(window.location.pathname)
+
+  const isOnChats = () =>
+    import.meta.client &&
+    (/\/driver\/chats/.test(window.location.pathname) ||
+      /\/driver\/chat\//.test(window.location.pathname))
+
   const catchUpOrders = () => {
     if (!currentToken()) return
+    if (!isOnOrders()) {
+      void orderStore.refreshNewCount()
+      return
+    }
     void orderStore.syncLatest(orderSearchParams())
   }
 
   const catchUpChats = () => {
     if (!currentToken()) return
+    if (!isOnChats()) return
     void chatStore.fetchChats().catch(() => {})
     const openId = chatStore.currentChat?._id
     if (openId) void chatStore.fetchMessages(openId).catch(() => {})
   }
 
   const catchUpAll = () => {
+    if (document.hidden) return
     catchUpOrders()
     catchUpChats()
   }

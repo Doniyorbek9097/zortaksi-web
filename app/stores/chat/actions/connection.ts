@@ -173,8 +173,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         },
     ) => {
         const isRelevant =
-            !currentChat.value?._id ||
-            currentChat.value._id === chatId ||
+            currentChat.value?._id === chatId ||
             activeConnectChatId === chatId
         if (!isRelevant) return
 
@@ -318,16 +317,13 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         await connect(chatId, { silent: true })
 
-        let updated = findChatById(chatId)
+        const updated = findChatById(chatId)
         if (hasTelegramPeerLink(updated) || connectionStatus.value === 'ready') return true
 
-        // O'z hisob ishlamasa — order owner proxy
-        if (updated?.orderId || chat?.orderId) {
-            await connect(chatId, { silent: true, viaProxy: true })
-            updated = findChatById(chatId)
-        }
-
-        return hasTelegramPeerLink(updated) || connectionStatus.value === 'ready'
+        // Order chat — o'z hisob ishlamasa proxy AVTOMATIK emas:
+        // 'proxy-required' holati UI banner orqali ruxsat so'raydi, shundan
+        // keyin connect(chatId, { viaProxy: true }) chaqiriladi.
+        return false
     }
 
     /** Socket: chat:connect — warm/connect natijasi (push) */
@@ -341,9 +337,17 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (!data?.chatId) return
         const isRelevant =
             currentChat.value?._id === data.chatId ||
-            activeConnectChatId === data.chatId ||
-            !currentChat.value?._id
-        if (!isRelevant) return
+            activeConnectChatId === data.chatId
+        if (!isRelevant) {
+            // Ochiq chat emas — faqat peer linkni chat ro'yxatida yangilash (presence yo'q)
+            if (data.viaUserbotId || data.accessHash) {
+                patchChatPeerLink(data.chatId, {
+                    viaUserbotId: data.viaUserbotId,
+                    accessHash: data.accessHash,
+                })
+            }
+            return
+        }
         applyConnectResult(data.chatId, data)
         if (data.status === 'ready') {
             void fetchPresence(data.chatId)

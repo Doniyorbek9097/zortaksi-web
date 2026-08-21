@@ -13,9 +13,10 @@ export interface FetchChatsParams {
  * connecting -> tekshirilmoqda (loading)
  * ready      -> 100% yozish mumkin
  * restricted -> spam/blok/maxfiylik (reason ko'rsatiladi)
+ * proxy-required -> o'z hisob ishlamadi; proxy ruxsat so'raladi (order chat)
  * unreachable-> umuman bog'lanib bo'lmaydi
  */
-export type ConnStatus = 'idle' | 'connecting' | 'ready' | 'restricted' | 'unreachable'
+export type ConnStatus = 'idle' | 'connecting' | 'ready' | 'restricted' | 'unreachable' | 'proxy-required'
 
 /** Suhbatdosh onlayn / oxirgi kirish holati */
 export interface PeerPresence {
