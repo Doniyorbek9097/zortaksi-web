@@ -128,6 +128,7 @@
                 :out="isDriverMsg(msg)"
                 :read="msg.status === 'read'"
                 :status="msg.status"
+                :error="msg.error"
                 :type="mediaTypeOf(msg)"
                 :message-id="msgId(msg)"
                 :media-path="msg.mediaPath"

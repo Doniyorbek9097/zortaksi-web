@@ -11,6 +11,16 @@ import {
 import { replaceTempWithReal } from '../helpers/merge-messages'
 import type { ChatStoreRefs } from '../types'
 
+/** Server javobi / xatodan tushunarli xato matni olish */
+function getSendErrorText(res: any): string {
+    const dataErr = String(res?.data?.error || '').trim()
+    if (dataErr) return dataErr
+    const msg = String(res?.message || res?.errorMessage || '').trim()
+    if (msg) return msg
+    if (res?.response?.data?.message) return String(res.response.data.message)
+    return 'Xabar yetib bormadi'
+}
+
 /** Matn / ovoz / rasm yuborish va temp→real media almashtirish */
 export function createMessagingActions(
     refs: ChatStoreRefs,
@@ -72,12 +82,17 @@ export function createMessagingActions(
                 patchChat(chatId, { lastMessage: res.data.text, lastMessageAt: res.data.date })
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
-                if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                if (idx !== -1) {
+                    const errText = getSendErrorText(res)
+                    messages.value[idx] = markTempFailed(temp, errText)
+                }
             }
             return res
-        } catch (error) {
+        } catch (error: any) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
-            if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            if (idx !== -1) {
+                messages.value[idx] = markTempFailed(temp, getSendErrorText(error))
+            }
             console.error('sendMessage error:', error)
             throw error
         } finally {
@@ -115,13 +130,13 @@ export function createMessagingActions(
                 })
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
-                if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(res))
                 console.error('sendVoice failed:', res.message || res)
             }
             return res
         } catch (error: any) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
-            if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(error))
             console.error('sendVoice error:', error?.response?.data?.message || error?.message || error)
             throw error
         } finally {
@@ -158,13 +173,13 @@ export function createMessagingActions(
                 })
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
-                if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(res))
                 console.error('sendPhoto failed:', res.message || res)
             }
             return res
         } catch (error: any) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
-            if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(error))
             console.error('sendPhoto error:', error?.response?.data?.message || error?.message || error)
             throw error
         } finally {
@@ -200,12 +215,12 @@ export function createMessagingActions(
                 })
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
-                if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+                if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(res))
             }
             return res
         } catch (error) {
             const idx = messages.value.findIndex((m) => m._id === tempId)
-            if (idx !== -1) messages.value[idx] = markTempFailed(temp)
+            if (idx !== -1) messages.value[idx] = markTempFailed(temp, getSendErrorText(error))
             console.error('sendLocation error:', error)
             throw error
         } finally {

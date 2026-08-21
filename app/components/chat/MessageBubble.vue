@@ -217,6 +217,25 @@
         </template>
       </div>
 
+      <!-- Xabar yetib bormadi — aniq sabab (SPAM / bloklangan) -->
+      <div
+        v-if="status === 'failed' && errorText"
+        class="mt-1.5 flex items-start gap-1.5 px-1.5 pb-0.5"
+        :class="out ? 'bg-sky-500' : ''"
+      >
+        <font-awesome-icon
+          icon="fa-solid fa-circle-exclamation"
+          class="mt-0.5 text-[10px] shrink-0"
+          :class="out ? 'text-amber-200' : 'text-red-500'"
+        />
+        <p
+          class="text-[11px] font-semibold leading-snug"
+          :class="out ? 'text-amber-100' : 'text-red-500 dark:text-red-400'"
+        >
+          {{ errorText }}
+        </p>
+      </div>
+
       <audio
         v-if="type === 'voice'"
         ref="audioEl"
@@ -271,6 +290,8 @@ interface Props {
   out?: boolean
   read?: boolean
   status?: 'sending' | 'sent' | 'failed' | 'read'
+  /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok) */
+  error?: string
   type?: 'text' | 'photo' | 'video' | 'voice' | 'document' | 'location'
   messageId?: string
   /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
@@ -294,6 +315,7 @@ const props = withDefaults(defineProps<Props>(), {
   out: false,
   read: false,
   status: 'sent',
+  error: '',
   type: 'text',
   mediaPath: '',
   duration: 0,
@@ -304,6 +326,12 @@ const props = withDefaults(defineProps<Props>(), {
   maskPhones: false,
   selectionMode: false,
   selected: false,
+})
+
+/** Failed xabarda ko'rsatiladigan sabab — media xabarlarda ham ko'rsatiladi */
+const errorText = computed(() => {
+  if (props.status !== 'failed') return ''
+  return String(props.error || '').trim()
 })
 
 const emit = defineEmits<{ 'long-press': []; 'toggle-select': [] }>()

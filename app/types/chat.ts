@@ -54,6 +54,8 @@ export interface IChatMessage {
     text: string
     type: ChatMessageType
     status: ChatMessageStatus
+    /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok va h.k.) */
+    error?: string
     tgMessageId?: number
     mediaPath?: string
     mimeType?: string

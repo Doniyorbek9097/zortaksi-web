@@ -80,6 +80,10 @@ export function createTempLocationMessage(
 }
 
 /** Temp bubble'ni failed holatiga o'tkazish (yuborish xatosi) */
-export function markTempFailed(temp: IChatMessage): IChatMessage {
-    return { ...temp, status: 'failed' } as IChatMessage
+export function markTempFailed(temp: IChatMessage, error?: string): IChatMessage {
+    return {
+        ...temp,
+        status: 'failed',
+        ...(error ? { error } : {}),
+    } as IChatMessage
 }

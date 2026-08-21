@@ -154,6 +154,7 @@
           :out="msg.direction === 'out'"
           :read="msg.status === 'read'"
           :status="msg.status"
+          :error="msg.error"
           :type="chatMediaType(msg)"
           :message-id="String(msg._id)"
           :media-path="msg.mediaPath"
