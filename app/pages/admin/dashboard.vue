@@ -207,6 +207,13 @@ const navItems = [
     tone: 'rose' as const,
     to: '/admin/bot-groups',
   },
+  {
+    title: 'Bloklanganlar',
+    subtitle: 'User · guruh · blokdan chiqarish',
+    icon: 'fa-solid fa-ban',
+    tone: 'rose' as const,
+    to: '/admin/blocked',
+  },
 ]
 
 const num = (...vals: Array<number | undefined | null>) => {
