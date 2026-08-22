@@ -35,6 +35,19 @@ export function createListActions(
 
     let messagesFetchGen = 0
 
+    /** Bir order uchun parallel startChat dublikatini oldini oladi */
+    const startChatInflight = new Map<string, Promise<unknown>>()
+
+    const dedupeStartChat = (key: string, run: () => Promise<unknown>) => {
+        const existing = startChatInflight.get(key)
+        if (existing) return existing
+        const job = run().finally(() => {
+            if (startChatInflight.get(key) === job) startChatInflight.delete(key)
+        })
+        startChatInflight.set(key, job)
+        return job
+    }
+
     const invalidateMessagesFetch = () => {
         messagesFetchGen += 1
     }
@@ -226,21 +239,28 @@ export function createListActions(
         }
     }
 
-    /** Orderdan chat ochish (sender) — server connect qiladi */
+    /** Orderdan chat ochish (sender) */
     const startChatFromOrder = async (orderId: string) => {
-        try {
-            return await useApi(`/chats/from-order/${orderId}`, {
-                method: 'POST',
-                timeout: 30_000,
-            })
-        } catch (error) {
-            const data = (error as { response?: { data?: { code?: string } } })?.response?.data
-            return {
-                success: false,
-                code: data?.code,
-                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
-            }
+        const oid = String(orderId || '').trim()
+        if (!oid) {
+            return { success: false, message: 'orderId kerak' }
         }
+        return dedupeStartChat(`order:${oid}`, async () => {
+            try {
+                return await useApi(`/chats/from-order/${oid}`, {
+                    method: 'POST',
+                    timeout: 30_000,
+                })
+            } catch (error) {
+                const data = (error as { response?: { data?: { code?: string } } })?.response
+                    ?.data
+                return {
+                    success: false,
+                    code: data?.code,
+                    message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+                }
+            }
+        })
     }
 
     /** Agent: order egasi (owner) bilan chat */

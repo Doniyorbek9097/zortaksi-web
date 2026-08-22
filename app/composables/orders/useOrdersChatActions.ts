@@ -1,4 +1,4 @@
-import type { IInterestedUser, IOrder } from '~/types'
+import type { IInterestedUser, IOrder, IChat } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
@@ -55,6 +55,20 @@ export function useOrdersChatActions(options: {
     })
   }
 
+  /** Serverdan kelgan chatni store ga yozish + connect */
+  const adoptStartedChat = (chat: IChat) => {
+    if (!chat?._id) return
+    const id = String(chat._id)
+    chatStore.primeFromChat(chat)
+    const idx = chatStore.chats.findIndex((c) => c._id === id)
+    if (idx >= 0) {
+      chatStore.chats[idx] = { ...chatStore.chats[idx], ...chat }
+    } else {
+      chatStore.chats.unshift(chat)
+    }
+    void chatStore.connect(id, { silent: true })
+  }
+
   const onMessage = async (order: IOrder) => {
     if (!order._id) return
     markOrderInterest(order)
@@ -73,6 +87,13 @@ export function useOrdersChatActions(options: {
         query: linkQ,
       })
     }
+
+    // Chat yaratishni navigatsiya bilan parallel boshlash
+    void chatStore.startChatFromOrder(order._id).then((res: { success?: boolean; data?: IChat }) => {
+      if (res?.success && res.data?._id) {
+        adoptStartedChat(res.data)
+      }
+    })
 
     return goOpenChat({
       open: 'order',

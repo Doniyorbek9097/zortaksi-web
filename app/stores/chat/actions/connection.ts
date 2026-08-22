@@ -3,6 +3,7 @@ import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 
 const CONNECT_TIMEOUT_MS = 45000
+const SOCKET_WAIT_MS = 600
 
 type ConnectAck = {
     success: boolean
@@ -21,7 +22,7 @@ const getSocket = (): Socket | null => {
     return nuxt.$socket?.() ?? null
 }
 
-const waitForSocketConnected = (maxMs = 3000): Promise<Socket | null> => {
+const waitForSocketConnected = (maxMs = SOCKET_WAIT_MS): Promise<Socket | null> => {
     const existing = getSocket()
     if (existing?.connected) return Promise.resolve(existing)
     if (!existing) return Promise.resolve(null)
@@ -44,7 +45,57 @@ const waitForSocketConnected = (maxMs = 3000): Promise<Socket | null> => {
     })
 }
 
-/** Sender ulanish — faqat socket orqali (chat:connect:request → ack + chat:connect push) */
+/** HTTP connect — socket kutmasdan tezroq (bir xil backend connectChat) */
+const requestConnectViaHttp = async (
+    chatId: string,
+    opts: { viaProxy?: boolean } = {},
+): Promise<ConnectAck> => {
+    try {
+        const res = await useApi(`/chats/${chatId}/connect`, {
+            method: 'POST',
+            body: { viaProxy: !!opts.viaProxy },
+            timeout: CONNECT_TIMEOUT_MS,
+        })
+        if (res?.success) {
+            return { success: true, data: res.data }
+        }
+        return {
+            success: false,
+            message: String(res?.message || 'Connect xatolik'),
+        }
+    } catch (error: unknown) {
+        const err = error as { message?: string }
+        return {
+            success: false,
+            message: err?.message || 'Connect xatolik',
+        }
+    }
+}
+
+/** HTTP birinchi — socket 3s kutish yo'q; warm push socket orqali keladi */
+const requestConnect = async (
+    chatId: string,
+    opts: { viaProxy?: boolean } = {},
+): Promise<ConnectAck> => {
+    const http = await requestConnectViaHttp(chatId, opts)
+    if (http.success) return http
+
+    const socket = getSocket()
+    if (!socket?.connected) {
+        const nuxt = useNuxtApp() as { $reconnectSocket?: () => void }
+        nuxt.$reconnectSocket?.()
+        const waited = await waitForSocketConnected(1500)
+        if (!waited?.connected) return http
+    }
+
+    try {
+        return await requestConnectViaSocket(chatId, opts)
+    } catch {
+        return http
+    }
+}
+
+/** Sender ulanish — socket orqali (chat:connect:request → ack + chat:connect push) */
 const requestConnectViaSocket = async (
     chatId: string,
     opts: { viaProxy?: boolean } = {},
@@ -53,7 +104,7 @@ const requestConnectViaSocket = async (
     if (!socket?.connected) {
         const nuxt = useNuxtApp() as { $reconnectSocket?: () => void }
         nuxt.$reconnectSocket?.()
-        socket = await waitForSocketConnected(2500)
+        socket = await waitForSocketConnected(1200)
     }
     if (!socket?.connected) {
         throw new Error('Socket ulanmagan')
@@ -214,71 +265,55 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         chatId: string,
         opts: { silent?: boolean; viaProxy?: boolean } = {},
     ) => {
-        const maxAttempts = opts.silent ? 2 : 2
         const chat = findChatById(chatId) ?? currentChat.value
+
+        // Peer link allaqachon bor — backend ga qayta connect shart emas
         if (hasTelegramPeerLink(chat)) {
             connectionStatus.value = 'ready'
             connectionReason.value = ''
-        } else if (!isInAppChatLike(chat)) {
+            return { success: true, data: { status: 'ready' as ConnStatus } }
+        }
+
+        if (!isInAppChatLike(chat)) {
             connectionStatus.value = 'connecting'
             connectionReason.value = ''
         }
         activeConnectChatId = chatId
 
-        let lastError: unknown = null
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            try {
-                const res = await requestConnectViaSocket(chatId, {
-                    viaProxy: opts.viaProxy,
+        try {
+            const res = await requestConnect(chatId, {
+                viaProxy: opts.viaProxy,
+            })
+            if (res.success) {
+                const next = (res.data?.status ?? 'unreachable') as ConnStatus
+
+                applyConnectResult(chatId, {
+                    status: next,
+                    reason: res.data?.reason,
+                    viaUserbotId: res.data?.viaUserbotId,
+                    accessHash: res.data?.accessHash,
                 })
-                if (res.success) {
-                    const next = (res.data?.status ?? 'unreachable') as ConnStatus
 
-                    if (next === 'unreachable' && attempt < maxAttempts) {
-                        continue
-                    }
-
-                    if (next !== 'ready') {
-                        const linked = findChatById(chatId)
-                        if (
-                            hasTelegramPeerLink(linked) ||
-                            connectionStatus.value === 'ready'
-                        ) {
-                            return res
-                        }
-                    }
-
-                    applyConnectResult(chatId, {
-                        status: next,
-                        reason: res.data?.reason,
-                        viaUserbotId: res.data?.viaUserbotId,
-                        accessHash: res.data?.accessHash,
-                    })
-
-                    if (next === 'ready') {
-                        void fetchPresence(chatId)
-                    }
-                    return res
-                }
-
-                if (!opts.silent && attempt >= maxAttempts) {
-                    connectionStatus.value = 'unreachable'
-                    connectionReason.value = res.message ?? ''
-                } else if (!opts.silent) {
-                    continue
+                if (next === 'ready') {
+                    void fetchPresence(chatId)
                 }
                 return res
-            } catch (error: any) {
-                lastError = error
-                console.error('connect error (socket):', error)
-                if (attempt < maxAttempts) continue
-                if (!opts.silent) {
-                    connectionStatus.value = 'unreachable'
-                    connectionReason.value = error?.message ?? ''
-                }
             }
+
+            if (!opts.silent) {
+                connectionStatus.value = 'unreachable'
+                connectionReason.value = res.message ?? ''
+            }
+            return res
+        } catch (error: unknown) {
+            const err = error as { message?: string }
+            console.error('connect error:', err)
+            if (!opts.silent) {
+                connectionStatus.value = 'unreachable'
+                connectionReason.value = err?.message ?? ''
+            }
+            throw error
         }
-        return lastError
     }
 
     /**
@@ -313,7 +348,8 @@ export function createConnectionActions(refs: ChatStoreRefs) {
     const ensureTelegramReady = async (chatId: string): Promise<boolean> => {
         const chat = findChatById(chatId)
         if (!chat || isInAppChatLike(chat)) return true
-        if (hasTelegramPeerLink(chat) || connectionStatus.value === 'ready') return true
+        if (hasTelegramPeerLink(chat)) return true
+        if (connectionStatus.value === 'ready') return true
 
         await connect(chatId, { silent: true })
 
