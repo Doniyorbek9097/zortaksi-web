@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-5">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-5">
     <!-- Header -->
     <DashboardHeader @bonus="onBonus" />
 
@@ -188,9 +188,42 @@ const stats = computed<Stat[]>(() => [
   },
 ])
 
-const fetchPlatformStats = async () => {
+const STATS_CACHE_KEY = 'zt:dashboard-platform-stats'
+
+const loadCachedStats = () => {
+  if (!import.meta.client) return
   try {
+    const raw = sessionStorage.getItem(STATS_CACHE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw) as Partial<typeof platform.value>
+    platform.value = {
+      ordersToday: Number(data.ordersToday || 0),
+      ordersLastHour: Number(data.ordersLastHour || 0),
+      ordersTotal: Number(data.ordersTotal || 0),
+      totalDrivers: Number(data.totalDrivers || 0),
+      activeDrivers: Number(data.activeDrivers || 0),
+      tariffsCount: Number(data.tariffsCount || 0),
+    }
+    statsReady.value = true
+  } catch {
+    /* */
+  }
+}
+
+const saveCachedStats = () => {
+  if (!import.meta.client) return
+  try {
+    sessionStorage.setItem(STATS_CACHE_KEY, JSON.stringify(platform.value))
+  } catch {
+    /* */
+  }
+}
+
+const fetchPlatformStats = async (opts?: { background?: boolean }) => {
+  if (!opts?.background && !statsReady.value) {
     statsLoading.value = true
+  }
+  try {
     const res = await useApi('/dashboard/stats')
     if (res?.success && res.data) {
       platform.value = {
@@ -202,6 +235,7 @@ const fetchPlatformStats = async () => {
         tariffsCount: Number(res.data.tariffsCount || 0),
       }
       statsReady.value = true
+      saveCachedStats()
     }
   } catch (e) {
     console.warn('[Dashboard] stats:', e)
@@ -227,6 +261,7 @@ usePullToRefresh(async () => {
 })
 
 onMounted(() => {
-  fetchPlatformStats()
+  loadCachedStats()
+  void fetchPlatformStats({ background: statsReady.value })
 })
 </script>

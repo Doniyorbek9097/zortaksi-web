@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
     <!-- Header -->
     <ChatsHeader
       :count="chatStore.chats.length"
@@ -98,6 +98,7 @@ import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
 import { chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
+import { compactQuery } from '~/utils/navigationQuery'
 
 definePageMeta({
   layout: 'driver',
@@ -232,18 +233,20 @@ const markAllRead = async () => {
 usePullToRefresh(refresh)
 
 const openChat = (chat: IChat) => {
+  const id = String(chat._id || '').trim()
+  if (!id) return
   saveScroll()
   chatStore.primeFromChat(chat)
   if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {
-    void chatStore.connect(chat._id, { silent: true })
+    void chatStore.connect(id, { silent: true })
   }
   navigateTo({
-    path: `/driver/chat/${chat._id}`,
-    query: {
+    path: `/driver/chat/${id}`,
+    query: compactQuery({
       name: peerName(chat),
       ...chatPeerQuickLinkQuery(chat),
       support: isSupport(chat) ? '1' : undefined,
-    },
+    }),
   })
 }
 
@@ -263,7 +266,7 @@ const bindLoadMore = () => {
         void chatStore.loadMoreChats({ limit: PAGE_LIMIT })
       }
     },
-    { rootMargin: '200px' },
+    { rootMargin: '520px' },
   )
   if (sentinelEl.value) loadMoreObserver.observe(sentinelEl.value)
 }
@@ -276,6 +279,7 @@ onMounted(() => {
   const boot = async () => {
     const hasCached = chatStore.chats.length > 0
     if (hasCached) {
+      void chatStore.fetchChats({ page: 1, limit: PAGE_LIMIT }, { silent: true })
       await nextTick()
       restoreScroll()
       setTimeout(restoreScroll, 80)

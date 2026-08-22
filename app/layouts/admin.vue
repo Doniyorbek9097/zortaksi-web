@@ -1,7 +1,7 @@
 <template>
   <AuthSessionGate>
     <BasePullToRefresh>
-      <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <div class="admin-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
         <slot />
       </div>
     </BasePullToRefresh>
@@ -48,3 +48,9 @@ watch(
   { immediate: true }
 )
 </script>
+
+<style scoped>
+.admin-shell {
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+}
+</style>

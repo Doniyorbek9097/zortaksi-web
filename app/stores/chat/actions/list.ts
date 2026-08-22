@@ -71,11 +71,11 @@ export function createListActions(
     /** Chatlar ro'yxatini yuklash */
     const fetchChats = async (
         params: FetchChatsParams = {},
-        opts: { append?: boolean } = {},
+        opts: { append?: boolean; silent?: boolean } = {},
     ) => {
         try {
             if (opts.append) isLoadingMore.value = true
-            else isLoading.value = true
+            else if (!opts.silent) isLoading.value = true
 
             const nextPage = params.page ?? 1
             const res = await useApi('/chats', {

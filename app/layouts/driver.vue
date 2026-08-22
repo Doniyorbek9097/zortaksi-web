@@ -12,13 +12,18 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
+import { useChatStore } from '~/stores/chat.store'
 
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
+const chatStore = useChatStore()
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
   void orderStore.refreshNewCount()
+  if (!chatStore.chats.length) {
+    void chatStore.fetchChats({ page: 1, limit: 20 }, { silent: true })
+  }
 }
 
 onMounted(() => {
@@ -40,6 +45,7 @@ watch(
 
 <style scoped>
 .driver-shell {
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+  /* Faqat tabbar balandligi + xavfsiz zona — sahifada qo'shimcha pb kerak emas */
+  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
 }
 </style>

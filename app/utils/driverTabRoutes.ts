@@ -19,6 +19,25 @@ export function isDriverMainTab(path: string): path is DriverMainTab {
   return (DRIVER_MAIN_TABS as readonly string[]).includes(normalizePath(path))
 }
 
+/** Pastki tabbar sahifalari (driver + admin asosiy) */
+export const APP_TABBAR_PATHS = [
+  ...DRIVER_MAIN_TABS,
+  '/admin/dashboard',
+  '/admin/drivers',
+] as const
+
+export function isAppTabbarPath(path: string): boolean {
+  return (APP_TABBAR_PATHS as readonly string[]).includes(normalizePath(path))
+}
+
+/** Asosiy tablar orasida o'tish — to'liq ekran loading kerak emas */
+export function isMainTabHop(fromPath: string, toPath: string): boolean {
+  const from = normalizePath(fromPath)
+  const to = normalizePath(toPath)
+  if (!from || !to || from === to) return false
+  return isAppTabbarPath(from) && isAppTabbarPath(to)
+}
+
 /** Ichki sahifalar qaysi tab bo'limiga tegishli */
 export function driverTabSection(path: string): DriverMainTab | null {
   const p = normalizePath(path)

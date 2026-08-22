@@ -59,10 +59,12 @@ export default defineNuxtPlugin(() => {
 
   const catchUpChats = () => {
     if (!currentToken()) return
-    if (!isOnChats()) return
-    void chatStore.fetchChats().catch(() => {})
-    const openId = chatStore.currentChat?._id
-    if (openId) void chatStore.fetchMessages(openId).catch(() => {})
+    // Ro'yxat ochiq bo'lsa to'liq sync; boshqa tablarda socket eventlar ishlaydi
+    if (isOnChats()) {
+      void chatStore.fetchChats().catch(() => {})
+      const openId = chatStore.currentChat?._id
+      if (openId) void chatStore.fetchMessages(openId).catch(() => {})
+    }
   }
 
   const catchUpAll = () => {

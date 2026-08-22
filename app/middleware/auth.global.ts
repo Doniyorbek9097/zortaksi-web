@@ -13,6 +13,7 @@ import {
     resolveHomePath,
     resolveSafeNextPath,
 } from '~/utils/userRole'
+import { isMainTabHop, normalizePath } from '~/utils/driverTabRoutes'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -32,7 +33,7 @@ function applyPrivateCacheHeaders(path: string) {
     } catch { /* */ }
 }
 
-export default defineNuxtRouteMiddleware(async (to) => {
+export default defineNuxtRouteMiddleware(async (to, from) => {
     applyPrivateCacheHeaders(to.path)
 
     const token = useCookie('auth_token', { ...getAuthCookieOptions() })
@@ -57,8 +58,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     // ——— CLIENT ———
-    // Har navigatsiyada ready=false — redirect tugaguncha loading
-    authStore.sessionReady = false
+    const tabHop =
+        authStore.user &&
+        authStore.sessionReady &&
+        isMainTabHop(from?.path || '', to.path)
+
+    // Tab orasida o'tishda to'liq ekran loading ko'rsatilmaydi
+    if (!tabHop) {
+        authStore.sessionReady = false
+    }
 
     syncSelectedAccountToCookie((t) => {
         token.value = t

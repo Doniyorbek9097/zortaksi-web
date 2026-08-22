@@ -310,6 +310,7 @@ import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, b
 import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
+import { compactQuery } from '~/utils/navigationQuery'
 
 definePageMeta({
   layout: false,
@@ -956,7 +957,7 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
 
   await navigateTo({
     path: `/driver/chat/${newId}`,
-    query: nextQuery,
+    query: compactQuery(nextQuery),
     replace: true,
   })
   return true

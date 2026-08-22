@@ -3,6 +3,7 @@ import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { orderQuickLinkQuery } from '~/utils/orderChatQuery'
+import { compactQuery } from '~/utils/navigationQuery'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -51,7 +52,7 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
     return navigateTo({
       path: '/driver/chat/open',
-      query,
+      query: compactQuery(query),
     })
   }
 
@@ -80,11 +81,13 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
 
     if (existing?._id) {
+      const chatId = String(existing._id).trim()
+      if (!chatId) return goOpenChat({ open: 'order', ...linkQ })
       chatStore.primeFromChat(existing)
-      void chatStore.connect(String(existing._id), { silent: true })
+      void chatStore.connect(chatId, { silent: true })
       return navigateTo({
-        path: `/driver/chat/${existing._id}`,
-        query: linkQ,
+        path: `/driver/chat/${chatId}`,
+        query: compactQuery(linkQ),
       })
     }
 
@@ -193,11 +196,19 @@ export function useOrdersChatActions(options: {
       : { name, orderId }
 
     if (existing?._id) {
+      const chatId = String(existing._id).trim()
+      if (!chatId) {
+        return goOpenChat({
+          open: 'user',
+          userId: String(user.userId),
+          ...linkQ,
+        })
+      }
       chatStore.primeFromChat(existing)
-      void chatStore.connect(existing._id, { silent: true })
+      void chatStore.connect(chatId, { silent: true })
       return navigateTo({
-        path: `/driver/chat/${existing._id}`,
-        query: linkQ,
+        path: `/driver/chat/${chatId}`,
+        query: compactQuery(linkQ),
       })
     }
 
@@ -223,11 +234,13 @@ export function useOrdersChatActions(options: {
 
     beforeNavigate?.()
     if (existing?._id) {
+      const chatId = String(existing._id).trim()
+      if (!chatId) return goOpenChat({ open: 'booked', ...linkQ })
       chatStore.primeFromChat(existing)
-      void chatStore.connect(existing._id, { silent: true })
+      void chatStore.connect(chatId, { silent: true })
       return navigateTo({
-        path: `/driver/chat/${existing._id}`,
-        query: linkQ,
+        path: `/driver/chat/${chatId}`,
+        query: compactQuery(linkQ),
       })
     }
 
@@ -253,11 +266,13 @@ export function useOrdersChatActions(options: {
 
     beforeNavigate?.()
     if (existing?._id) {
+      const chatId = String(existing._id).trim()
+      if (!chatId) return goOpenChat({ open: 'agent', ...linkQ })
       chatStore.primeFromChat(existing)
-      void chatStore.connect(existing._id, { silent: true })
+      void chatStore.connect(chatId, { silent: true })
       return navigateTo({
-        path: `/driver/chat/${existing._id}`,
-        query: linkQ,
+        path: `/driver/chat/${chatId}`,
+        query: compactQuery(linkQ),
       })
     }
 
