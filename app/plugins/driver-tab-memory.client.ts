@@ -7,6 +7,7 @@ import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
 import { usePostStore } from '~/stores/post.store'
 import { releaseSessionMediaCache } from '~/composables/useVoiceMedia'
+import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
 import {
   DRIVER_MAIN_TABS,
   isDriverMainTab,
@@ -21,10 +22,10 @@ function releaseDriverTabMemory(tab: DriverMainTab) {
 
   switch (tab) {
     case '/driver/orders':
-      orderStore.releaseListMemory()
+      orderStore.trimListForTabSwitch(TAB_LIST_KEEP)
       break
     case '/driver/chats':
-      chatStore.releaseTabMemory()
+      chatStore.trimChatsForTabSwitch(TAB_LIST_KEEP)
       break
     case '/driver/post':
       postStore.releaseTabMemory()
@@ -54,7 +55,7 @@ export default defineNuxtPlugin(() => {
     // Order → chat: to'liq release emas, lekin RAM uchun qisqartirish
     if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
       const orderStore = useOrderStore()
-      orderStore.trimListForNavigation(15)
+      orderStore.trimListForNavigation(TAB_LIST_KEEP)
       releaseSessionMediaCache()
       return
     }

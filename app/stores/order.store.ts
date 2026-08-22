@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
+import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
 
 export interface FetchOrdersParams {
     page?: number
@@ -179,10 +180,22 @@ export const useOrderStore = defineStore('order', () => {
     }
 
     /** Navigatsiya (order→chat) — yumshoq qisqartirish */
-    const trimListForNavigation = (keep = 15) => {
+    const trimListForNavigation = (keep = TAB_LIST_KEEP) => {
         const n = Math.max(1, keep)
         if (orders.value.length > n) {
             orders.value = orders.value.slice(0, n)
+        }
+    }
+
+    /** Boshqa tabga o'tganda — birinchi N ta saqlanadi, qolgani RAM dan chiqariladi */
+    const trimListForTabSwitch = (keep = TAB_LIST_KEEP) => {
+        trimListForNavigation(keep)
+        page.value = 1
+        isLoading.value = false
+        isLoadingMore.value = false
+        const approxRow = 140
+        if (ordersListScrollY.value > keep * approxRow) {
+            ordersListScrollY.value = 0
         }
     }
 
@@ -465,7 +478,7 @@ export const useOrderStore = defineStore('order', () => {
         try {
             const response = await useApi('/orders', {
                 method: 'GET',
-                params: { ...params, limit: params.limit ?? 5, page: 1 },
+                params: { ...params, limit: params.limit ?? ORDERS_PAGE_LIMIT, page: 1 },
             })
             if (!response.success) return response
             if (!paramsMatchListFilter(params)) return response
@@ -754,6 +767,7 @@ export const useOrderStore = defineStore('order', () => {
         stopRecentMinuteTicker,
         releaseListMemory,
         trimListForNavigation,
+        trimListForTabSwitch,
         warmOrderPeer,
     }
 })

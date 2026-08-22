@@ -6,6 +6,7 @@ import { createLocalStateActions } from './actions/local-state'
 import { createMessagingActions } from './actions/messaging'
 import { createSocketActions } from './actions/socket'
 import { clearMessagesCache } from './helpers/message-cache'
+import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
 import type { ChatStoreRefs, ConnStatus, FetchChatsParams, PeerPresence } from './types'
 
 export type { FetchChatsParams }
@@ -34,7 +35,7 @@ export const useChatStore = defineStore('chat', () => {
     /** Chats ro'yxati scroll — profil/chatdan qaytganda tiklash */
     const chatsListScrollY = ref(0)
 
-    /** Tab badge — barcha chatlardagi o'qilmagan xabarlar yig'indisi */
+    /** Tab badge — joriy ro'yxatdagi unread */
     const unreadTotal = computed(() =>
         chats.value.reduce((sum, c) => sum + (Number(c.unreadCount) || 0), 0),
     )
@@ -76,7 +77,7 @@ export const useChatStore = defineStore('chat', () => {
         clearTypingForChat: connection.clearTypingForChat,
     })
 
-    /** Tabbar boshqa tabga o'tganda — chat sessiya xotirasi */
+    /** Tabbar boshqa tabga o'tganda — to'liq tozalash (logout va h.k.) */
     const releaseTabMemory = () => {
         messages.value = []
         currentChat.value = null
@@ -93,6 +94,32 @@ export const useChatStore = defineStore('chat', () => {
         isLoadingMore.value = false
         isLoadingMessages.value = false
         isLoadingOlderMessages.value = false
+    }
+
+    /** Boshqa tabga o'tganda — birinchi N chat saqlanadi, ochiq chat sessiyasi tozalanadi */
+    const trimChatsForTabSwitch = (keep = TAB_LIST_KEEP) => {
+        const n = Math.max(1, keep)
+        messages.value = []
+        currentChat.value = null
+        messagesChatId.value = null
+        connection.resetConnection()
+        list.resetMessagesPagination()
+        clearMessagesCache()
+
+        if (chats.value.length > n) {
+            chats.value = chats.value.slice(0, n)
+        }
+
+        page.value = 1
+        isLoading.value = false
+        isLoadingMore.value = false
+        isLoadingMessages.value = false
+        isLoadingOlderMessages.value = false
+
+        const approxRow = 72
+        if (chatsListScrollY.value > n * approxRow) {
+            chatsListScrollY.value = 0
+        }
     }
 
     return {
@@ -153,5 +180,6 @@ export const useChatStore = defineStore('chat', () => {
         onPeerPresence: connection.onPeerPresence,
         onPeerTyping: connection.onPeerTyping,
         releaseTabMemory,
+        trimChatsForTabSwitch,
     }
 })

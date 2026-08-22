@@ -4,8 +4,8 @@ export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
 /** Birinchi marta yo'nalish tanlangan — majburiy onboarding */
 export const ORDER_FILTER_CONFIGURED_KEY = 'zt_order_filter_configured'
-/** Buyurtmalar ro'yxati — bir sahifada */
-export const ORDERS_PAGE_LIMIT = 5
+/** Buyurtmalar ro'yxati — bir sahifada (tab cache bilan mos) */
+export const ORDERS_PAGE_LIMIT = 10
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
   [/ё/g, 'yo'], [/ж/g, 'j'], [/ц/g, 'ts'], [/ч/g, 'ch'],
