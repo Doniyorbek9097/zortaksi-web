@@ -96,6 +96,7 @@
         >
           <button type="button"
             class="min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-sky-600 dark:text-sky-400 bg-sky-500/10 hover:bg-sky-500/15 active:scale-[0.98] transition-all"
+            @mouseenter="onMessageHover"
             @click.stop="$emit('message')">
             <font-awesome-icon icon="fa-solid fa-comments" class="text-sm shrink-0" />
             <span class="truncate">Xabar yozish</span>
@@ -228,6 +229,14 @@ const emit = defineEmits<{
   unlock: []
   'add-to-bot': []
 }>()
+
+const orderStore = useOrderStore()
+
+/** Connect tezligi — chat ochilishidan oldin sender warm */
+const onMessageHover = () => {
+  const id = props.order?._id
+  if (id) orderStore.warmOrderPeer(String(id))
+}
 
 const isAdmin = computed(() => props.role === 'admin')
 // Amal tugmalari admin yoki aktiv userga ko'rinadi

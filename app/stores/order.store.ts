@@ -58,6 +58,73 @@ export const useOrderStore = defineStore('order', () => {
         }, 1200)
     }
 
+    /** Sender connect tezligi — order ro'yxatida oldindan warm */
+    let warmPeersTimer: ReturnType<typeof setTimeout> | null = null
+    const WARM_PEER_MAX = 4
+    const warmedOrderIds = new Set<string>()
+
+    const orderNeedsWarm = (order: IOrder, driverId: string) => {
+        if (!order?._id || order.sender?.isBot) return false
+        const id = String(order._id)
+        if (warmedOrderIds.has(id)) return false
+        const hashes = order.sender?.accessHashes || []
+        return !hashes.some(
+            (h) => String(h.ownerId) === driverId && String(h.accessHash || '').trim(),
+        )
+    }
+
+    const pickOrdersToWarm = (list: IOrder[], driverId: string) => {
+        const ids: string[] = []
+        for (const o of list) {
+            if (!orderNeedsWarm(o, driverId)) continue
+            ids.push(String(o._id))
+            if (ids.length >= WARM_PEER_MAX) break
+        }
+        return ids
+    }
+
+    const postWarmPeers = async (orderIds: string[]) => {
+        if (!import.meta.client || !orderIds.length) return
+        try {
+            await useApi('/orders/warm-peers', { method: 'POST', body: { orderIds } })
+            for (const id of orderIds) warmedOrderIds.add(id)
+        } catch {
+            /* fon — xato ko'rsatilmaydi */
+        }
+    }
+
+    const scheduleWarmOrderPeers = (list: IOrder[]) => {
+        if (!import.meta.client) return
+        const authStore = useAuthStore()
+        const driverId = String(authStore.user?.userId || '')
+        if (!driverId) return
+
+        const ids = pickOrdersToWarm(list, driverId)
+        if (!ids.length) return
+
+        if (warmPeersTimer) clearTimeout(warmPeersTimer)
+        warmPeersTimer = setTimeout(() => {
+            warmPeersTimer = null
+            void postWarmPeers(ids)
+        }, 1500)
+    }
+
+    /** Bitta order — "Xabar yozish" hover */
+    const warmOrderPeer = (orderId: string) => {
+        if (!import.meta.client) return
+        const authStore = useAuthStore()
+        const driverId = String(authStore.user?.userId || '')
+        if (!driverId) return
+        const id = String(orderId)
+        if (warmedOrderIds.has(id)) return
+        const order = orders.value.find((o) => String(o._id) === id)
+        if (order && !orderNeedsWarm(order, driverId)) {
+            warmedOrderIds.add(id)
+            return
+        }
+        void postWarmPeers([id])
+    }
+
     const applyListFilter = (params: FetchOrdersParams) => {
         rememberListFilter(params)
     }
@@ -384,6 +451,7 @@ export const useOrderStore = defineStore('order', () => {
         total.value = (total.value || 0) + 1
         if ((order.status || 'new') === 'new') bumpNewCount(1)
         noteRecentOrder(order)
+        scheduleWarmOrderPeers([order])
         return true
     }
 
@@ -423,6 +491,7 @@ export const useOrderStore = defineStore('order', () => {
             }
             // Catch-up: faqat oxirgi 1 daqiqada yaratilgan yangilar
             noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
+            scheduleWarmOrderPeers(orders.value)
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
             return response
@@ -470,6 +539,7 @@ export const useOrderStore = defineStore('order', () => {
                     // Birinchi yuklash: oxirgi 1 daqiqadagi buyurtmalar badge
                     noteRecentOrdersFromList(list)
                 }
+                scheduleWarmOrderPeers(orders.value)
                 total.value = response.data.pagination?.total ?? orders.value.length
                 page.value = response.data.pagination?.page ?? params.page ?? 1
                 totalPages.value = response.data.pagination?.totalPages ?? 1
@@ -684,5 +754,6 @@ export const useOrderStore = defineStore('order', () => {
         stopRecentMinuteTicker,
         releaseListMemory,
         trimListForNavigation,
+        warmOrderPeer,
     }
 })
