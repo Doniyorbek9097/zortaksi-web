@@ -206,6 +206,9 @@ export const useBotGroupStore = defineStore('botGroup', () => {
     try {
       isSaving.value = true
       const body: Record<string, unknown> = {}
+      if (payload.regionSlug !== undefined) {
+        body.regionSlug = String(payload.regionSlug || '').trim()
+      }
       if (payload.title !== undefined) body.title = payload.title?.trim() || ''
       if (payload.listenerUserId !== undefined) {
         body.listenerUserId = String(payload.listenerUserId || '').trim()

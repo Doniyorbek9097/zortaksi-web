@@ -73,6 +73,17 @@
 
     <!-- TARIF -->
     <template v-if="mode === 'tariff'">
+      <section
+        v-if="tariffActive"
+        class="rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 space-y-2"
+      >
+        <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">Tarif faol</p>
+        <p class="text-[13px] font-medium text-slate-600 dark:text-slate-400">
+          Tarif muddati tugaguncha yangi tarif sotib olish yoki yangilash mumkin emas.
+        </p>
+      </section>
+
+      <template v-else>
       <section class="space-y-3">
         <div class="px-0.5">
           <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
@@ -171,6 +182,7 @@
           </button>
         </template>
       </section>
+      </template>
     </template>
 
     <!-- TOPUP -->
@@ -414,6 +426,10 @@ const payTopupOnline = async (provider: 'click' | 'payme') => {
 
 const buyTariff = async () => {
   if (!selected.value) return
+  if (tariffActive.value) {
+    error.value = 'Tarif allaqachon faol. Muddati tugaguncha yangilay olmaysiz.'
+    return
+  }
   if (shortage.value > 0) {
     await sendTariffRequest()
     return

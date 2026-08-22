@@ -28,9 +28,11 @@
             type="text"
             placeholder="namangan"
             class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2.5 text-[13px] font-mono font-semibold outline-none focus:ring-2 focus:ring-rose-500/30"
-            :disabled="!!editingSlug"
             required
           />
+          <p v-if="editingSlug && form.regionSlug.trim() !== editingSlug" class="text-[10px] text-amber-600 dark:text-amber-400">
+            Slug o‘zgarsa — haydovchilar, buyurtmalar va boshqa yozuvlar ham yangilanadi.
+          </p>
         </label>
 
         <label class="block space-y-1">
