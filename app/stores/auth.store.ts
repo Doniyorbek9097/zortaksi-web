@@ -175,68 +175,6 @@ export const useAuthStore = defineStore('auth', () => {
         return next
     }
 
-    const sendPhoneChangeCode = async (phone: string, opts?: { forceSms?: boolean }) => {
-        try {
-            isLoading.value = true
-            return await useApi('/me/phone/send-code', {
-                method: 'POST',
-                body: { phone, forceSms: opts?.forceSms || undefined },
-                timeout: AUTH_API_TIMEOUT_MS,
-            })
-        } catch (error) {
-            console.error('SendPhoneChangeCode error:', error)
-            throw Object.assign(error as object, {
-                userMessage: getApiErrorMessage(error, 'Kod yuborib bo\'lmadi'),
-            })
-        } finally {
-            isLoading.value = false
-        }
-    }
-
-    const verifyPhoneChangeCode = async (phone: string, code: string) => {
-        try {
-            isLoading.value = true
-            const response = await useApi('/me/phone/verify-code', {
-                method: 'POST',
-                body: { phone, code },
-                timeout: AUTH_API_TIMEOUT_MS,
-            })
-            if (response.success && response.data?.user) {
-                applyUserUpdate(response.data.user)
-            }
-            return response
-        } catch (error) {
-            console.error('VerifyPhoneChangeCode error:', error)
-            throw Object.assign(error as object, {
-                userMessage: getApiErrorMessage(error, 'Kod tasdiqlanmadi'),
-            })
-        } finally {
-            isLoading.value = false
-        }
-    }
-
-    const verifyPhoneChangePassword = async (phone: string, password: string) => {
-        try {
-            isLoading.value = true
-            const response = await useApi('/me/phone/verify-password', {
-                method: 'POST',
-                body: { phone, password },
-                timeout: AUTH_API_TIMEOUT_MS,
-            })
-            if (response.success && response.data?.user) {
-                applyUserUpdate(response.data.user)
-            }
-            return response
-        } catch (error) {
-            console.error('VerifyPhoneChangePassword error:', error)
-            throw Object.assign(error as object, {
-                userMessage: getApiErrorMessage(error, 'Parol tasdiqlanmadi'),
-            })
-        } finally {
-            isLoading.value = false
-        }
-    }
-
     const sendAccountMigrateCode = async (phone: string, opts?: { forceSms?: boolean }) => {
         try {
             isLoading.value = true
@@ -336,9 +274,6 @@ export const useAuthStore = defineStore('auth', () => {
         sendCode,
         verifyCode,
         verifyPassword,
-        sendPhoneChangeCode,
-        verifyPhoneChangeCode,
-        verifyPhoneChangePassword,
         sendAccountMigrateCode,
         verifyAccountMigrateCode,
         verifyAccountMigratePassword,

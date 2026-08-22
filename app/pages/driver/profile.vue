@@ -72,16 +72,6 @@
     <!-- Settings -->
     <ProfileSectionCard title="Sozlamalar" no-padding>
       <div class="divide-y divide-slate-100 dark:divide-slate-800">
-        <!-- Phone -->
-        <ProfileSettingRow
-          icon="fa-solid fa-phone"
-          title="Telefon raqami"
-          :subtitle="phoneSubtitle"
-          color="sky"
-          clickable
-          @click="showChangePhone = true"
-        />
-
         <!-- Account migration -->
         <ProfileSettingRow
           icon="fa-solid fa-right-left"
@@ -171,13 +161,6 @@
       </div>
     </ProfileSectionCard>
 
-    <!-- Hisobni o'chirish tasdig'i -->
-    <ProfileChangePhoneDialog
-      v-model="showChangePhone"
-      :current-phone="user.phone"
-      @success="onPhoneChanged"
-    />
-
     <ProfileMigrateAccountDialog
       v-model="showMigrateAccount"
       :from-user-id="user.userId"
@@ -227,18 +210,7 @@ const user = computed(() => ({
   tariffName: authStore.user?.tariff?.name || 'Kunlik sinov',
 }))
 
-const phoneSubtitle = computed(() => {
-  const digits = String(user.value.phone || '').replace(/\D/g, '')
-  return digits ? `+${digits} · O'zgartirish` : 'Telefon raqamini o\'zgartirish'
-})
-
-const showChangePhone = ref(false)
 const showMigrateAccount = ref(false)
-
-const onPhoneChanged = async () => {
-  await authStore.getMe().catch(() => {})
-  if (authStore.user) accountStore.ensureCurrent(authStore.user)
-}
 
 const onAccountMigrated = async () => {
   await authStore.getMe().catch(() => {})
