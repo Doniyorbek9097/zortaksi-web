@@ -77,7 +77,7 @@
         <div class="px-0.5">
           <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
           <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-            Balans yetarli bo'lsa darhol ulanadi, yetmasa adminga so'rov yuboriladi
+            Balans yetarli bo'lsa darhol ulanadi, yetmasa Admin Telegram orqali to'lov
           </p>
         </div>
 
@@ -152,7 +152,7 @@
             :click-enabled="methods.click"
             :payme-enabled="methods.payme"
             :show-admin="true"
-            :admin-label="`Yetishmagan ${formatMoney(shortage)} so'm — adminga`"
+            :admin-label="'Admin Telegram — to\'lov so\'rovi'"
             online-hint="Faqat yetishmayotgan summa to'lanadi. To'lovdan so'ng tarif darhol faol bo'ladi."
             :loading="payingProvider"
             :admin-loading="savingRequest"
@@ -182,7 +182,7 @@
           Balans to'ldirish
         </p>
         <p class="text-[13px] font-medium text-slate-600 dark:text-slate-300 leading-snug">
-          Click yoki Payme orqali to'lov — balans darhol qo'shiladi. Admin orqali — admin to'lov xabarini ko'rib faollashtiradi.
+          Click yoki Payme orqali to'lov — balans darhol qo'shiladi. Admin orqali — Telegram lichkasiga tayyor xabar bilan.
         </p>
       </section>
 
@@ -220,7 +220,7 @@
           :click-enabled="methods.click"
           :payme-enabled="methods.payme"
           :show-admin="true"
-          admin-label="Balans to'ldirish — adminga so'rov"
+          admin-label="Admin Telegram — balans so'rovi"
           online-hint="Click yoki Payme orqali to'lovdan so'ng balans darhol qo'shiladi."
           :loading="payingProvider"
           :admin-loading="savingRequest"
@@ -242,7 +242,12 @@
 import type { TariffRow } from '~/stores/tariff.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { resolveSafeNextPath } from '~/utils/userRole'
+import {
+  buildAdminTelegramDmUrl,
+  formatAdminTariffPaymentMessage,
+  formatAdminTopupPaymentMessage,
+  openTelegramExternalUrl,
+} from '~/utils/telegramLinks'
 
 definePageMeta({ layout: 'driver' })
 
@@ -263,16 +268,10 @@ const error = ref('')
 const amountPresets = [50000, 100000, 150000, 200000]
 const methods = ref<{ click: boolean; payme: boolean }>({ click: false, payme: false })
 
-const appURL = computed(() => String(config.public.appUrl || 'https://www.zortaksi.uz').replace(/\/$/, ''))
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
 
 const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
-
-const payUserId = computed(() => {
-  const u = authStore.user
-  return String(u?.userId || u?._id || '')
-})
 
 const selected = computed(() =>
   tariffStore.tariffs.find(t => t.id === selectedId.value) || null
@@ -298,61 +297,18 @@ const tariffMeta = (t: TariffRow) => {
   return `${days} • ${t.expireDays * 24} soat faol`
 }
 
-const buildPaymentPayload = (payload: Record<string, unknown>) =>
-  `[[ZT_PAYMENT_REQUEST]]\n${JSON.stringify(payload)}\n[[/ZT_PAYMENT_REQUEST]]`
+const adminUsername = computed(() =>
+  String(config.public.adminTelegram || 'zortaksi_admin').replace(/^@/, '')
+)
 
-const buildTariffRequestMessage = (tariff: TariffRow, amount: number) => {
-  const u = authStore.user
-  const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || 'Haydovchi'
-  const phone = u?.phoneNumber || '—'
-  const sum = formatMoney(amount)
-  const payUrl =
-    `${appURL.value}/admin/pay/${encodeURIComponent(payUserId.value)}` +
-    `?amount=${amount}&tariffId=${encodeURIComponent(tariff.id)}`
-
-  return buildPaymentPayload({
-    type: 'tariff',
-    name,
-    phone,
-    amount: sum,
-    amountRaw: amount,
-    tariff: tariff.name,
-    tariffId: tariff.id,
-    payUrl,
-    userId: payUserId.value,
-    paymentStatus: 'unpaid',
-  })
-}
-
-const buildTopupMessage = (amount: number) => {
-  const u = authStore.user
-  const name = [u?.firstName, u?.lastName].filter(Boolean).join(' ').trim() || 'Haydovchi'
-  const phone = u?.phoneNumber || '—'
-  const sum = formatMoney(amount)
-  const payUrl = `${appURL.value}/admin/pay/${encodeURIComponent(payUserId.value)}?amount=${amount}`
-
-  return buildPaymentPayload({
-    type: 'topup',
-    name,
-    phone,
-    amount: sum,
-    amountRaw: amount,
-    payUrl,
-    userId: payUserId.value,
-    paymentStatus: 'unpaid',
-  })
-}
-
-const openSupportChat = async (res: { success?: boolean; data?: { chatId?: string }; message?: string }) => {
-  if (res.success && res.data?.chatId) {
-    await navigateTo({
-      path: `/driver/chat/${res.data.chatId}`,
-      query: { name: 'Admin', support: '1' },
-    })
-    return true
+const openAdminTelegramPayment = (text: string) => {
+  const url = buildAdminTelegramDmUrl(adminUsername.value, text)
+  if (!url) {
+    error.value = 'Admin Telegram topilmadi'
+    return false
   }
-  error.value = res.message || 'So\'rov yuborilmadi'
-  return false
+  openTelegramExternalUrl(url)
+  return true
 }
 
 const sendTariffRequest = async () => {
@@ -361,14 +317,8 @@ const sendTariffRequest = async () => {
   savingRequest.value = true
   error.value = ''
   try {
-    const res = await useApi('/me/tariff/request-payment', {
-      method: 'POST',
-      body: { text: buildTariffRequestMessage(selected.value, amount) },
-      timeout: 30000,
-    })
-    await openSupportChat(res)
-  } catch (e: any) {
-    error.value = e?.response?.data?.message || e?.message || 'So\'rov yuborilmadi'
+    const msg = formatAdminTariffPaymentMessage(selected.value.name, amount)
+    if (!openAdminTelegramPayment(msg)) return
   } finally {
     savingRequest.value = false
   }
@@ -383,14 +333,7 @@ const sendTopupRequest = async () => {
   savingRequest.value = true
   error.value = ''
   try {
-    const res = await useApi('/me/tariff/request-payment', {
-      method: 'POST',
-      body: { text: buildTopupMessage(amount) },
-      timeout: 30000,
-    })
-    await openSupportChat(res)
-  } catch (e: any) {
-    error.value = e?.response?.data?.message || e?.message || 'So\'rov yuborilmadi'
+    if (!openAdminTelegramPayment(formatAdminTopupPaymentMessage(amount))) return
   } finally {
     savingRequest.value = false
   }

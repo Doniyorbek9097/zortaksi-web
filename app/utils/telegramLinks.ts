@@ -13,13 +13,37 @@ export function buildTelegramContactUrl(input: {
     username?: string
     phone?: string
 }): string {
-    const uname = String(input.username || '').replace(/^@/, '').trim()
-    if (uname) return `https://t.me/${uname}`
+  const uname = String(input.username || '').replace(/^@/, '').trim()
+  if (uname) return `https://t.me/${uname}`
 
-    const digits = normalizePhoneDigits(input.phone)
-    if (digits) return `https://t.me/+${digits}`
+  const digits = normalizePhoneDigits(input.phone)
+  if (digits) return `https://t.me/+${digits}`
 
-    return ''
+  return ''
+}
+
+export function formatAdminTariffPaymentMessage(tariffName: string, amount: number): string {
+  const name = String(tariffName || 'Tarif').trim() || 'Tarif'
+  const sum = `${Math.round(Number(amount) || 0).toLocaleString('ru-RU')} so'm`
+  return `${name} ${sum} tarifni sotib olmoqchiman`
+}
+
+export function formatAdminTopupPaymentMessage(amount: number): string {
+  const sum = `${Math.round(Number(amount) || 0).toLocaleString('ru-RU')} so'm`
+  return `${sum} hisobni to'ldirmoqchiman`
+}
+
+/** Admin lichkasi — https://t.me/zortaksi_admin?text=... */
+export function buildAdminTelegramDmUrl(
+  adminUsername: string,
+  text?: string
+): string {
+  const username = String(adminUsername || '').trim().replace(/^@/, '')
+  if (!username) return ''
+  const trimmed = String(text || '').trim()
+  if (!trimmed) return `https://t.me/${username}`
+  const params = new URLSearchParams({ text: trimmed })
+  return `https://t.me/${username}?${params.toString()}`
 }
 
 /** Guruhdagi buyurtma xabarini yoki guruhni Telegramda ochish */

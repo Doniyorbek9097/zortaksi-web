@@ -83,7 +83,7 @@
           Admin orqali to'lov
         </p>
         <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug">
-          So'rov adminga yuboriladi. Admin to'lov xabarini ko'rib, qo'lda faollashtiradi.
+          Admin Telegram ochiladi — tayyor xabar bilan yuboring. Admin tasdiqlagach faol bo'ladi.
         </p>
       </div>
 
