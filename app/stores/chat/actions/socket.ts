@@ -1,5 +1,6 @@
 import type { IChat, IChatMessage } from '~/types'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
+import { inferTextFormat } from '~/utils/telegramHtml'
 import { lastMessagePreview } from '../helpers/message-preview'
 import {
     applyMessagesRead,
@@ -43,7 +44,12 @@ export function createSocketActions(
         const idx = messages.value.findIndex((m) => m._id === msg._id)
         const prev = idx !== -1 ? messages.value[idx] : null
         if (idx !== -1) {
-            messages.value[idx] = { ...messages.value[idx], ...msg } as IChatMessage
+            const merged = { ...messages.value[idx], ...msg } as IChatMessage
+            merged.textFormat = inferTextFormat(
+                merged.text || '',
+                merged.textFormat || messages.value[idx].textFormat,
+            )
+            messages.value[idx] = merged
         }
         if (
             import.meta.client &&
@@ -65,41 +71,45 @@ export function createSocketActions(
 
     /** Socket: yangi xabar keldi (kiruvchi yoki chiquvchi) */
     const onNewMessage = (msg: IChatMessage) => {
-        if (mergeOutgoingMediaFromSocket(msg)) {
+        const normalized = {
+            ...msg,
+            textFormat: inferTextFormat(msg.text || '', msg.textFormat),
+        } as IChatMessage
+        if (mergeOutgoingMediaFromSocket(normalized)) {
             // temp bilan birlashtirildi
         } else {
-            appendMessage(msg)
+            appendMessage(normalized)
         }
 
         if (
             import.meta.client &&
-            (msg.type === 'voice' || msg.type === 'photo') &&
-            (msg.mediaPath || msg.tgMessageId)
+            (normalized.type === 'voice' || normalized.type === 'photo') &&
+            (normalized.mediaPath || normalized.tgMessageId)
         ) {
-            const kind = msg.type === 'voice' ? 'voice' : 'photo'
+            const kind = normalized.type === 'voice' ? 'voice' : 'photo'
             useChatMedia()
-                .getUrl(msg._id, kind, { mediaPath: msg.mediaPath || 'remote' })
+                .getUrl(normalized._id, kind, { mediaPath: normalized.mediaPath || 'remote' })
                 .catch(() => {})
         }
 
         // Ro'yxatda oxirgi xabar + tartib (owner socket — faqat o'z chatlari)
-        const idx = chats.value.findIndex((c) => c._id === msg.chatId)
+        const idx = chats.value.findIndex((c) => c._id === normalized.chatId)
         if (idx !== -1) {
-            const preview = lastMessagePreview(msg)
+            const preview = lastMessagePreview(normalized)
             const chat = {
                 ...chats.value[idx],
                 lastMessage: preview,
-                lastMessageAt: msg.date,
+                lastMessageAt: normalized.date,
             } as IChat
-            if (msg.direction === 'in' && currentChat.value?._id !== msg.chatId) {
+            if (normalized.direction === 'in' && currentChat.value?._id !== normalized.chatId) {
                 chat.unreadCount = (chat.unreadCount || 0) + 1
             }
             chats.value.splice(idx, 1)
             chats.value.unshift(chat)
         }
 
-        if (msg.direction === 'in' && currentChat.value?._id === msg.chatId) {
-            markRead(msg.chatId)
+        if (normalized.direction === 'in' && currentChat.value?._id === normalized.chatId) {
+            markRead(normalized.chatId)
         }
     }
 

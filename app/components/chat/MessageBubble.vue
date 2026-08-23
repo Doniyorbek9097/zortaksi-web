@@ -37,7 +37,7 @@
         'bg-white text-slate-800 border border-slate-200',
         out ? 'rounded-br-md' : 'rounded-bl-md',
         type === 'photo' ? '!p-1.5' : '',
-        isMediaSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
+        isSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
       @pointerdown="onSelectPointerDown"
       @pointerup="onSelectPointerUp"
@@ -53,7 +53,7 @@
       />
 
       <div
-        v-if="isMediaSelectable && selectionMode"
+        v-if="isSelectable && selectionMode"
         class="absolute top-2 left-2 z-10 w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors"
         :class="selected
           ? 'bg-indigo-500 border-indigo-500 text-white'
@@ -396,7 +396,14 @@ const onSwipePointerUp = () => {
   swipeAxis.value = null
 }
 
-const isMediaSelectable = computed(() => props.type === 'voice' || props.type === 'photo')
+const isSelectable = computed(
+  () =>
+    props.type === 'text' ||
+    props.type === 'voice' ||
+    props.type === 'photo' ||
+    props.type === 'location' ||
+    props.type === 'document',
+)
 
 let longPressTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -408,12 +415,12 @@ const clearLongPress = () => {
 }
 
 const onSelectPointerDown = (e: PointerEvent) => {
-  if (!isMediaSelectable.value || props.selectionMode) return
+  if (!isSelectable.value || props.selectionMode) return
   clearLongPress()
   longPressTimer = setTimeout(() => {
     longPressTimer = null
     emit('long-press')
-  }, 3000)
+  }, 500)
 }
 
 const onSelectPointerUp = () => clearLongPress()
@@ -426,7 +433,7 @@ const onBubbleClickCapture = (e: Event) => {
     swipeMoved.value = false
     return
   }
-  if (!isMediaSelectable.value || !props.selectionMode) return
+  if (!isSelectable.value || !props.selectionMode) return
   e.preventDefault()
   e.stopPropagation()
   emit('toggle-select')
@@ -605,7 +612,7 @@ const playAudio = async () => {
 }
 
 const toggle = async () => {
-  if (props.selectionMode && isMediaSelectable.value) {
+  if (props.selectionMode && isSelectable.value) {
     emit('toggle-select')
     return
   }
@@ -646,7 +653,7 @@ const toggle = async () => {
 }
 
 const openLightbox = async () => {
-  if (props.selectionMode && isMediaSelectable.value) {
+  if (props.selectionMode && isSelectable.value) {
     emit('toggle-select')
     return
   }

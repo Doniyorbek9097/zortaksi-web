@@ -9,7 +9,9 @@ import {
     markTempFailed,
 } from '../helpers/temp-message'
 import { replaceTempWithReal } from '../helpers/merge-messages'
+import { lastMessagePreview } from '../helpers/message-preview'
 import { messageReplyPreview } from '~/utils/messageReplyPreview'
+import { inferTextFormat } from '~/utils/telegramHtml'
 import type { ChatStoreRefs } from '../types'
 
 /** Server javobi / xatodan tushunarli xato matni olish */
@@ -94,11 +96,18 @@ export function createMessagingActions(
             if (res.success) {
                 // Temp bubble'ni serverdagi haqiqiy xabar (sent/failed) bilan almashtiramiz.
                 // Socket orqali shu xabar allaqachon kelib qolgan bo'lishi mumkin — dublikat qilmaymiz.
-                const result = replaceTempWithReal(messages.value, tempId, res.data)
-                if (result === 'missing' && !messages.value.some((m) => m._id === res.data._id)) {
-                    appendMessage(res.data)
+                const real = {
+                    ...res.data,
+                    textFormat: inferTextFormat(res.data.text || '', res.data.textFormat),
+                } as IChatMessage
+                const result = replaceTempWithReal(messages.value, tempId, real)
+                if (result === 'missing' && !messages.value.some((m) => m._id === real._id)) {
+                    appendMessage(real)
                 }
-                patchChat(chatId, { lastMessage: res.data.text, lastMessageAt: res.data.date })
+                patchChat(chatId, {
+                    lastMessage: lastMessagePreview(real),
+                    lastMessageAt: real.date,
+                })
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) {

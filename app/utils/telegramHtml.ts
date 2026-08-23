@@ -25,3 +25,14 @@ export function sanitizeTelegramHtml(html: string): string {
   s = s.replace(/<(?!\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br)\b)[^>]+>/gi, '')
   return s
 }
+
+/** Matndan HTML formatini aniqlash */
+export function inferTextFormat(
+  text: string,
+  explicit?: 'plain' | 'html' | null,
+): 'plain' | 'html' {
+  if (explicit === 'html') return 'html'
+  const t = String(text || '').trim()
+  if (/<[a-z][\s>\/]/i.test(t)) return 'html'
+  return 'plain'
+}

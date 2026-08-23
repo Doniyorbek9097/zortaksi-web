@@ -65,6 +65,24 @@
         <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
         Qo'ng'iroq
       </a>
+
+      <button
+        v-if="showClearHistory"
+        type="button"
+        class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition-all disabled:opacity-40"
+        :class="support
+          ? 'text-white/90 hover:bg-white/10'
+          : 'text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5'"
+        :disabled="clearingHistory"
+        aria-label="Chat tarixini tozalash"
+        @click="$emit('clear-history')"
+      >
+        <font-awesome-icon
+          :icon="clearingHistory ? 'fa-solid fa-spinner' : 'fa-solid fa-eraser'"
+          :class="{ 'animate-spin': clearingHistory }"
+          class="text-[13px]"
+        />
+      </button>
     </div>
 
     <slot name="actions" />
@@ -84,6 +102,9 @@ interface Props {
   support?: boolean
   /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
+  /** Chat tarixini tozalash tugmasi */
+  showClearHistory?: boolean
+  clearingHistory?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
@@ -93,7 +114,9 @@ withDefaults(defineProps<Props>(), {
   callHref: '',
   support: false,
   showDriverPage: false,
+  showClearHistory: false,
+  clearingHistory: false,
 })
 
-defineEmits<{ back: []; call: []; 'driver-page': [] }>()
+defineEmits<{ back: []; call: []; 'driver-page': []; 'clear-history': [] }>()
 </script>

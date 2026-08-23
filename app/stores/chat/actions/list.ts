@@ -3,6 +3,7 @@ import { mergeOrderChatContext } from '~/utils/orderChatQuery'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
+import { inferTextFormat } from '~/utils/telegramHtml'
 import {
     restoreMessagesCache,
     saveMessagesCache,
@@ -66,7 +67,24 @@ export function createListActions(
         (list || []).map((m: any) => ({
             ...m,
             _id: String(m._id || m.id || ''),
+            textFormat: inferTextFormat(String(m.text || ''), m.textFormat),
         }))
+
+    const mergeFetchedMessages = (
+        incoming: IChatMessage[],
+        prev: IChatMessage[],
+    ): IChatMessage[] => {
+        const prevById = new Map(prev.map((m) => [String(m._id), m]))
+        return incoming.map((m) => {
+            const old = prevById.get(String(m._id))
+            if (!old) return m
+            const textFormat =
+                m.textFormat === 'html' || old.textFormat === 'html'
+                    ? 'html'
+                    : inferTextFormat(m.text || '', m.textFormat)
+            return { ...m, textFormat }
+        })
+    }
 
     /** Chatlar ro'yxatini yuklash */
     const fetchChats = async (
@@ -141,7 +159,10 @@ export function createListActions(
                 currentChat.value = prev
                     ? (mergeOrderChatContext(prev, incoming) as IChat)
                     : incoming
-                messages.value = mapMessages(res.data.messages || [])
+                messages.value = mergeFetchedMessages(
+                    mapMessages(res.data.messages || []),
+                    messages.value,
+                )
                 messagesChatId.value = chatId
                 messagesPage.value = res.data.pagination?.page ?? 1
                 messagesTotalPages.value = res.data.pagination?.totalPages ?? 1
@@ -405,6 +426,38 @@ export function createListActions(
         return res
     }
 
+    /** Chat tarixini tozalash — server + Telegram */
+    const clearChatHistory = async (chatId: string) => {
+        const localMediaIds = messages.value
+            .filter(
+                (m) =>
+                    String(m.chatId) === String(chatId) &&
+                    (m.type === 'voice' || m.type === 'photo'),
+            )
+            .map((m) => String(m._id))
+
+        const res = await useApi(`/chats/${chatId}/history`, { method: 'DELETE' })
+
+        if (res.success) {
+            const serverIds = (res.data?.messageIds as string[] | undefined) || []
+            const purgeIds = [...new Set([...localMediaIds, ...serverIds.map(String)])]
+
+            messages.value = messages.value.filter(
+                (m) => String(m.chatId) !== String(chatId),
+            )
+
+            if (purgeIds.length && import.meta.client) {
+                invalidateChatMediaCaches(purgeIds)
+            }
+
+            const chat = chats.value.find((c) => c._id === chatId)
+            if (chat) {
+                patchChat(chatId, { lastMessage: '', lastMessageAt: new Date().toISOString() })
+            }
+        }
+        return res
+    }
+
     return {
         hasMore,
         hasMoreMessages,
@@ -424,5 +477,6 @@ export function createListActions(
         markAllRead,
         deleteChats,
         deleteMessages,
+        clearChatHistory,
     }
 }

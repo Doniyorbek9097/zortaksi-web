@@ -18,7 +18,10 @@
       :user-id="peerUserId"
       :can-call="!!callPhone"
       :call-href="callTelHref"
+      :show-clear-history="messagesMatchChat && !selectionMode && chatStore.messages.length > 0"
+      :clearing-history="isClearingHistory"
       @back="goBack"
+      @clear-history="confirmClearHistory"
     />
 
     <ChatQuickActions
@@ -167,8 +170,8 @@
           :selection-mode="selectionMode"
           :selected="selectedMessageIds.includes(String(msg._id))"
           :reply-to="msg.replyTo"
-          @long-press="onMessageLongPress(String(msg._id), chatMediaType(msg))"
-          @toggle-select="toggleMessageSelect(String(msg._id), chatMediaType(msg))"
+          @long-press="onMessageLongPress(String(msg._id))"
+          @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
         />
         </template>
@@ -482,6 +485,7 @@ const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
 const isDeletingMessages = ref(false)
+const isClearingHistory = ref(false)
 const openFailed = ref(false)
 const openError = ref('')
 const proxyConnecting = ref(false)
@@ -492,8 +496,6 @@ const fallbackOrderText = computed(() => {
   const raw = resolveOrderTextHint(route.query as Record<string, unknown>, null)
   return revealOrderTextPhones(raw, String(route.query.phone || ''))
 })
-
-const isSelectableMedia = (type: string) => type === 'voice' || type === 'photo'
 
 const enterSelectionMode = (messageId: string) => {
   selectionMode.value = true
@@ -507,13 +509,11 @@ const exitSelectionMode = () => {
   selectedMessageIds.value = []
 }
 
-const onMessageLongPress = (messageId: string, type: string) => {
-  if (!isSelectableMedia(type)) return
+const onMessageLongPress = (messageId: string) => {
   enterSelectionMode(messageId)
 }
 
-const toggleMessageSelect = (messageId: string, type: string) => {
-  if (!isSelectableMedia(type)) return
+const toggleMessageSelect = (messageId: string) => {
   if (!selectionMode.value) return
   const set = new Set(selectedMessageIds.value)
   if (set.has(messageId)) set.delete(messageId)
@@ -543,6 +543,26 @@ const confirmDeleteSelected = async () => {
     window.alert('Xabarlarni o\'chirib bo\'lmadi')
   } finally {
     isDeletingMessages.value = false
+  }
+}
+
+const confirmClearHistory = async () => {
+  if (isClearingHistory.value || !chatStore.messages.length) return
+  if (!import.meta.client) return
+  const ok = window.confirm(
+    'Chat tarixini tozalaysizmi? Barcha xabarlar ilovadan va Telegramdan o\'chiriladi.',
+  )
+  if (!ok) return
+
+  isClearingHistory.value = true
+  try {
+    await chatStore.clearChatHistory(chatId.value)
+    exitSelectionMode()
+  } catch (err) {
+    console.error('clearChatHistory error:', err)
+    window.alert('Chat tarixini tozalab bo\'lmadi')
+  } finally {
+    isClearingHistory.value = false
   }
 }
 
