@@ -42,6 +42,12 @@
         <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 truncate">
           {{ phone }}
         </p>
+        <p
+          v-if="registeredAt"
+          class="text-[10px] font-semibold text-slate-400 dark:text-slate-500"
+        >
+          Ro'yxat: {{ registeredAt }}
+        </p>
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span
             class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black"
@@ -135,6 +141,7 @@ interface Props {
   listenGroups?: boolean
   balance?: number
   tariffLine?: string
+  registeredAt?: string
   selected?: boolean
 }
 

@@ -13,10 +13,12 @@
 <script setup lang="ts">
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
+import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { isAdminUser, resolveHomePath } from '~/utils/userRole'
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()
+const dashboardStore = useAdminDashboardStore()
 
 watch(
   () => [authStore.sessionReady, authStore.user] as const,
@@ -43,6 +45,8 @@ watch(
       void navigateTo(authStore.user ? resolveHomePath(authStore.user) : '/auth', { replace: true })
       return
     }
+    dashboardStore.loadCached()
+    void dashboardStore.fetchStats({ background: dashboardStore.isReady })
     void refreshBadges()
   },
   { immediate: true }

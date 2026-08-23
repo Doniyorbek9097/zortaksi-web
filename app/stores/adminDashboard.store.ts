@@ -33,9 +33,7 @@ export interface AdminDashboardData {
     ordersTotal?: number
     newOrders?: number
     tariffsCount?: number
-    /** Taklif orqali kelgan userlar */
     totalInvites?: number
-    /** Taklif qilgan unique userlar */
     totalReferrers?: number
   }
   platform?: {
@@ -54,17 +52,51 @@ export interface AdminDashboardData {
   chart: ChartMonth[]
 }
 
+const CACHE_KEY = 'zt:admin-dashboard-data'
+
+const emptyIncome = (): IncomeBlock => ({ amount: 0, payments: 0, total: 0 })
+
 export const useAdminDashboardStore = defineStore('adminDashboard', () => {
   const data = ref<AdminDashboardData | null>(null)
   const isLoading = ref(false)
   const error = ref('')
+  const hydrated = ref(false)
 
-  const fetchStats = async () => {
+  const loadCached = () => {
+    if (!import.meta.client) return
     try {
-      isLoading.value = true
-      error.value = ''
+      const raw = sessionStorage.getItem(CACHE_KEY)
+      if (!raw) return
+      const parsed = JSON.parse(raw) as AdminDashboardData
+      if (parsed && typeof parsed === 'object') {
+        data.value = parsed
+        hydrated.value = true
+      }
+    } catch {
+      /* */
+    }
+  }
+
+  const saveCached = () => {
+    if (!import.meta.client || !data.value) return
+    try {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(data.value))
+    } catch {
+      /* */
+    }
+  }
+
+  const fetchStats = async (opts?: { background?: boolean }) => {
+    const background = opts?.background ?? hydrated.value
+    if (!background) isLoading.value = true
+    error.value = ''
+    try {
       const res = await useApi('/admin/dashboard')
-      if (res.success) data.value = res.data
+      if (res.success) {
+        data.value = res.data
+        hydrated.value = true
+        saveCached()
+      }
       return res
     } catch (e: any) {
       error.value = e?.response?.data?.message || 'Statistika yuklanmadi'
@@ -74,5 +106,19 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     }
   }
 
-  return { data, isLoading, error, fetchStats }
+  /** UI — kesh yoki API dan ma'lumot bor */
+  const isReady = computed(() => hydrated.value && data.value !== null)
+
+  const monthIncome = computed(() => data.value?.monthIncome ?? emptyIncome())
+
+  return {
+    data,
+    isLoading,
+    error,
+    hydrated,
+    isReady,
+    monthIncome,
+    loadCached,
+    fetchStats,
+  }
 })

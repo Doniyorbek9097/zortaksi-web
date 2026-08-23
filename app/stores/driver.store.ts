@@ -17,6 +17,11 @@ export interface DriverRow {
   debt?: boolean
   tariffExpireAt?: string | Date | null
   startedAt?: string | Date | null
+  createdAt?: string | Date | null
+  registeredAt?: string
+  groupInviteCount?: number
+  appInviteCount?: number
+  inviteGroups?: Array<{ id: string; title: string; count: number }>
   tariff?: {
     name?: string
     info?: string

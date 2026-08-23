@@ -43,6 +43,7 @@
         :listen-groups="!!d.listenGroups"
         :balance="d.balance"
         :tariff-line="d.tariffLine"
+        :registered-at="d.registeredAt"
         :selected="selected.has(d.id)"
         @toggle="toggleOne(d.id)"
         @message="openSingleMessage(d)"

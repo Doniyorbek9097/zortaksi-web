@@ -97,6 +97,46 @@
         @buy="openTariff"
       />
 
+      <!-- Ro'yxat va takliflar -->
+      <section
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+      >
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Ma'lumot</h2>
+        <div class="grid grid-cols-2 gap-3 text-[12px]">
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ro'yxatdan o'tgan</p>
+            <p class="font-black text-slate-800 dark:text-slate-200 mt-0.5">
+              {{ driver.registeredAt || formatRegistered(driver.createdAt) || '—' }}
+            </p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Guruhga qo'shgan</p>
+            <p class="font-black text-slate-800 dark:text-slate-200 mt-0.5">
+              {{ driver.groupInviteCount ?? 0 }} ta
+            </p>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ilovaga taklif</p>
+            <p class="font-black text-slate-800 dark:text-slate-200 mt-0.5">
+              {{ driver.appInviteCount ?? 0 }} ta
+            </p>
+          </div>
+        </div>
+        <div v-if="driver.inviteGroups?.length" class="space-y-2">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Guruhlar bo'yicha</p>
+          <ul class="space-y-1.5">
+            <li
+              v-for="g in driver.inviteGroups"
+              :key="g.id || g.title"
+              class="flex items-center justify-between gap-2 text-[12px] font-semibold text-slate-600 dark:text-slate-300 py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-slate-800/60"
+            >
+              <span class="truncate">{{ g.title }}</span>
+              <span class="shrink-0 font-black text-sky-500">{{ g.count }}</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
       <!-- Asosiy amallar -->
       <section class="grid grid-cols-1 gap-2">
         <button
@@ -290,6 +330,11 @@ const formatDate = (value?: string | Date | null) => {
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '—'
   return d.toLocaleDateString('uz-UZ')
+}
+
+const formatRegistered = (value?: string | Date | null) => {
+  const s = formatDate(value)
+  return s === '—' ? undefined : s
 }
 
 const tariffCard = computed(() => {

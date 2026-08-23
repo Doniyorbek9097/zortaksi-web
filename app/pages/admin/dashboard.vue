@@ -14,26 +14,18 @@
       </p>
     </div>
 
-    <div v-if="store.isLoading && !store.data" class="space-y-3">
-      <div class="h-36 rounded-3xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      <div class="grid grid-cols-2 gap-2.5">
-        <div v-for="n in 4" :key="n" class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
-      </div>
-    </div>
+    <AdminIncomeCard
+      :amount="monthIncome.amount"
+      :payments="monthIncome.payments"
+      :total="monthIncome.total"
+    />
 
-    <template v-else>
-      <AdminIncomeCard
-        :amount="monthIncome.amount"
-        :payments="monthIncome.payments"
-        :total="monthIncome.total"
-      />
+    <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
+      {{ store.error }}
+    </p>
 
-      <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
-        {{ store.error }}
-      </p>
-
-      <!-- Tezkor bo'limlar -->
-      <section class="space-y-2.5">
+    <!-- Tezkor bo'limlar — darhol ko'rinadi -->
+    <section class="space-y-2.5">
         <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
           Boshqaruv
         </h3>
@@ -53,7 +45,14 @@
         <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
           Platforma statistikasi
         </h3>
-        <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+        <div v-if="store.isLoading && !store.isReady" class="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <div
+            v-for="n in 4"
+            :key="n"
+            class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+          />
+        </div>
+        <div v-else class="grid grid-cols-2 gap-2.5 sm:gap-3">
           <AdminStatCard
             v-for="stat in keyStats"
             :key="stat.label"
@@ -135,7 +134,6 @@
           </div>
         </div>
       </AdminSectionCard>
-    </template>
   </div>
 </template>
 
@@ -165,11 +163,7 @@ const greeting = computed(() => {
 
 const isNight = computed(() => /tun|kech/i.test(greeting.value))
 
-const monthIncome = computed(() => store.data?.monthIncome ?? {
-  amount: 0,
-  payments: 0,
-  total: 0,
-})
+const monthIncome = computed(() => store.monthIncome)
 
 const navItems = [
   {
@@ -305,8 +299,9 @@ usePullToRefresh(async () => {
 })
 
 onMounted(() => {
-  store.fetchStats().catch(() => {})
-  referralStore.fetchAll().catch(() => {})
+  store.loadCached()
+  void store.fetchStats({ background: store.isReady })
+  void referralStore.fetchAll().catch(() => {})
   try {
     const accountStore = useAccountStore()
     accountStore.load()
