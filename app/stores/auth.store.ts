@@ -19,7 +19,29 @@ export const useAuthStore = defineStore('auth', () => {
     const sessionReady = ref(false)
     const isAuthenticated = computed(() => !!resolveAuthToken(token.value))
     const isLoading = ref(false)
-    const tariffActive = computed(() => isTariffActive(user.value))
+
+    /** Jonli countdown / tariffActive uchun har soniya yangilanadi */
+    const liveNowMs = ref(Date.now())
+    let liveTickTimer: ReturnType<typeof setInterval> | null = null
+
+    const startLiveTicker = () => {
+        if (!import.meta.client || liveTickTimer) return
+        liveTickTimer = setInterval(() => {
+            liveNowMs.value = Date.now()
+        }, 1000)
+    }
+
+    const stopLiveTicker = () => {
+        if (liveTickTimer) {
+            clearInterval(liveTickTimer)
+            liveTickTimer = null
+        }
+    }
+
+    const tariffActive = computed(() => {
+        liveNowMs.value
+        return isTariffActive(user.value)
+    })
 
     let expireTimer: ReturnType<typeof setTimeout> | null = null
     const MAX_TIMEOUT_MS = 24 * 60 * 60 * 1000
@@ -59,6 +81,17 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (import.meta.client) {
         watch(user, () => scheduleTariffExpiry(), { deep: true })
+        watch(
+            () => user.value?.tariffExpireAt,
+            (exp) => {
+                if (exp && user.value?.tariff) startLiveTicker()
+                else stopLiveTicker()
+            },
+            { immediate: true }
+        )
+        watch(user, (u) => {
+            if (!u) stopLiveTicker()
+        })
     }
 
     const normalizeUser = (raw: any): IUser | null => {

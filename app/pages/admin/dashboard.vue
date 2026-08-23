@@ -24,7 +24,7 @@
       {{ store.error }}
     </p>
 
-    <!-- Boshqaruv — grid -->
+    <!-- Boshqaruv -->
     <section class="space-y-2.5">
       <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
         Boshqaruv
@@ -41,96 +41,124 @@
       </div>
     </section>
 
-    <!-- Platforma statistikasi -->
+    <!-- Statistika — aralash dizayn -->
     <section class="space-y-3">
       <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
-        Platforma statistikasi
+        Statistika
       </h3>
-      <div v-if="store.isLoading && !store.isReady" class="grid grid-cols-2 gap-2.5 sm:gap-3">
-        <div
-          v-for="n in 6"
-          :key="n"
-          class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
-        />
+
+      <div v-if="store.isLoading && !store.isReady" class="space-y-2.5">
+        <div class="grid grid-cols-2 gap-2.5">
+          <div class="h-[108px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+          <div class="h-[108px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div v-for="n in 4" :key="n" class="h-[52px] rounded-xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+        </div>
       </div>
-      <div v-else class="grid grid-cols-2 gap-2.5 sm:gap-3">
-        <AdminStatCard
-          v-for="stat in keyStats"
-          :key="stat.label"
-          :value="stat.value"
-          :label="stat.label"
-          :icon="stat.icon"
-          :tone="stat.tone"
-          :compact="stat.compact"
-          :change="stat.change"
-          :change-mode="stat.changeMode"
-        />
-      </div>
+
+      <template v-else>
+        <!-- Gradient hero -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <AdminStatHero
+            :value="heroStats.orders"
+            label="Bugungi buyurtmalar"
+            icon="fa-solid fa-clipboard-list"
+            tone="sky"
+            :change="growth?.ordersTodayDelta"
+          />
+          <AdminStatHero
+            :value="heroStats.active"
+            label="Faol haydovchilar"
+            icon="fa-solid fa-user-check"
+            tone="emerald"
+          />
+        </div>
+
+        <!-- Chip grid -->
+        <div class="grid grid-cols-2 gap-2">
+          <AdminStatChip
+            :value="chipStats.newToday"
+            label="Yangi bugun"
+            icon="fa-solid fa-user-plus"
+            tone="green"
+            :change="growth?.newDriversTodayDelta"
+          />
+          <AdminStatChip
+            :value="chipStats.total"
+            label="Jami haydovchi"
+            icon="fa-solid fa-users"
+            tone="violet"
+            :change="growth?.newDriversMonthDelta"
+          />
+          <AdminStatChip
+            :value="chipStats.debtors"
+            label="Qarzdorlar"
+            icon="fa-solid fa-circle-exclamation"
+            tone="rose"
+          />
+          <AdminStatChip
+            :value="chipStats.visits"
+            label="Tashriflar"
+            icon="fa-solid fa-eye"
+            tone="sky"
+          />
+        </div>
+      </template>
     </section>
 
-    <!-- Yo'nalishlar bo'yicha haydovchilar -->
-    <AdminSectionCard title="Yo'nalishlar bo'yicha haydovchilar">
-      <AdminRegionBarList :items="regionDrivers" />
-    </AdminSectionCard>
-
-    <!-- Daromad tafsiloti -->
-    <AdminSectionCard title="Daromad tafsiloti">
-      <AdminDataRow
-        v-for="row in incomeDetails"
-        :key="row.label"
-        :label="row.label"
-        :amount="row.amount"
-        :count="row.count"
-      />
-    </AdminSectionCard>
-
-    <!-- Tarif bo'yicha taqsimot -->
-    <AdminSectionCard title="Tarif bo'yicha taqsimot">
-      <AdminDataRow
-        v-for="row in tariffSplit"
-        :key="row.label"
-        :label="row.label"
-        :amount="row.amount"
-        :count="row.count"
-      />
-      <p
-        v-if="!tariffSplit.length"
-        class="py-4 text-center text-[12px] font-medium text-slate-400"
+    <!-- Hududlar -->
+    <AdminSectionCard title="Yo'nalishlar">
+      <div
+        v-if="regionDrivers.length"
+        class="flex gap-2 mb-3 -mt-1"
       >
-        Hali to'lovlar yo'q
-      </p>
+        <div class="flex-1 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/50 px-3 py-2 text-center">
+          <p class="text-lg font-black text-sky-600 dark:text-sky-400 tabular-nums">
+            {{ regionTotalDrivers }}
+          </p>
+          <p class="text-[10px] font-bold text-slate-400">Jami</p>
+        </div>
+        <div class="flex-1 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-100 dark:border-amber-900/50 px-3 py-2 text-center min-w-0">
+          <p class="text-[12px] font-black text-amber-600 dark:text-amber-400 truncate">
+            {{ topRegion?.title || '—' }}
+          </p>
+          <p class="text-[10px] font-bold text-slate-400">Eng ko'p</p>
+        </div>
+      </div>
+      <AdminRegionBarList :items="regionDrivers.slice(0, 6)" />
     </AdminSectionCard>
 
-    <!-- Eng ko'p sotilgan tariflar -->
+    <!-- Tariflar -->
     <AdminSectionCard title="Eng ko'p sotilgan tariflar">
       <template #action>
         <AdminSegmentTabs v-model="tariffTab" :tabs="tariffTabs" />
       </template>
-      <AdminTariffBarList :items="tariffStatsItems" />
+      <AdminTariffRankGrid :items="tariffStatsItems" />
     </AdminSectionCard>
 
-    <!-- Oylik statistika -->
-    <AdminSectionCard title="Oylik statistika">
+    <!-- Oylik trend -->
+    <AdminSectionCard title="Oylik trend">
       <template #action>
         <AdminSegmentTabs v-model="chartTab" :tabs="chartTabs" />
       </template>
-      <AdminBarChart
+      <AdminMonthlyTrendChart
         :items="chartItems"
         :value-mode="chartTab === 'amount' ? 'amount' : 'number'"
       />
     </AdminSectionCard>
 
-    <!-- Top referal -->
+    <!-- Referal -->
     <AdminSectionCard title="Top 10 referal" no-padding>
       <div class="px-4 pt-1 pb-2 flex items-center gap-3 text-[11px] font-bold text-slate-400">
         <span class="inline-flex items-center gap-1.5">
           <font-awesome-icon icon="fa-solid fa-user-plus" class="text-pink-500" />
-          Jami taklif: {{ totalInvites.toLocaleString('ru-RU') }}
+          Taklif: {{ totalInvites.toLocaleString('ru-RU') }}
         </span>
         <span class="text-slate-300 dark:text-slate-600">·</span>
         <span class="inline-flex items-center gap-1.5">
           <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-violet-500" />
-          Taklifchilar: {{ totalReferrers.toLocaleString('ru-RU') }}
+          {{ totalReferrers.toLocaleString('ru-RU') }} kishi
         </span>
       </div>
       <div class="px-4 pb-2">
@@ -239,60 +267,31 @@ const totalReferrers = computed(() =>
   num(store.data?.keyStats?.totalReferrers, store.data?.platform?.totalReferrers)
 )
 
-const keyStats = computed(() => {
+const heroStats = computed(() => {
   const s = store.data?.keyStats
   const p = store.data?.platform
-  const g = growth.value
-  return [
-    {
-      value: num(s?.ordersToday, p?.ordersToday),
-      label: 'Bugungi buyurtmalar',
-      icon: 'fa-solid fa-clipboard-list',
-      tone: 'blue' as const,
-      change: g?.ordersTodayDelta ?? null,
-      changeMode: 'absolute' as const,
-    },
-    {
-      value: num(s?.newDriversToday),
-      label: "Bugun qo'shilgan",
-      icon: 'fa-solid fa-user-plus',
-      tone: 'green' as const,
-      change: g?.newDriversTodayDelta ?? null,
-      changeMode: 'absolute' as const,
-    },
-    {
-      value: num(s?.activeDrivers, p?.activeDrivers),
-      label: 'Faol haydovchilar',
-      icon: 'fa-solid fa-user-check',
-      tone: 'emerald' as const,
-    },
-    {
-      value: num(s?.totalDrivers, p?.totalDrivers),
-      label: 'Jami haydovchilar',
-      icon: 'fa-solid fa-users',
-      tone: 'violet' as const,
-      change: g?.newDriversMonthDelta ?? null,
-      changeMode: 'absolute' as const,
-    },
-    {
-      value: num(s?.debtorDrivers),
-      label: 'Qarzdorlar',
-      icon: 'fa-solid fa-circle-exclamation',
-      tone: 'rose' as const,
-    },
-    {
-      value: num(s?.visitsToday),
-      label: 'Bugungi tashriflar',
-      icon: 'fa-solid fa-eye',
-      tone: 'sky' as const,
-    },
-  ]
+  return {
+    orders: num(s?.ordersToday, p?.ordersToday),
+    active: num(s?.activeDrivers, p?.activeDrivers),
+  }
+})
+
+const chipStats = computed(() => {
+  const s = store.data?.keyStats
+  const p = store.data?.platform
+  return {
+    newToday: num(s?.newDriversToday),
+    total: num(s?.totalDrivers, p?.totalDrivers),
+    debtors: num(s?.debtorDrivers),
+    visits: num(s?.visitsToday),
+  }
 })
 
 const regionDrivers = computed(() => store.data?.regionDrivers ?? [])
-
-const incomeDetails = computed(() => store.data?.incomeDetails ?? [])
-const tariffSplit = computed(() => store.data?.tariffSplit ?? [])
+const regionTotalDrivers = computed(() =>
+  regionDrivers.value.reduce((sum, r) => sum + r.count, 0)
+)
+const topRegion = computed(() => regionDrivers.value[0] ?? null)
 
 const tariffTab = ref('month')
 const tariffTabs = [
@@ -302,43 +301,38 @@ const tariffTabs = [
 const tariffStatsItems = computed(() => {
   const stats = store.data?.tariffStats
   if (!stats) return []
-  return tariffTab.value === 'month' ? stats.month : stats.total
+  const list = tariffTab.value === 'month' ? stats.month : stats.total
+  return list.slice(0, 5)
 })
 
 const chartTab = ref('payments')
 const chartTabs = [
-  { label: "To'lovlar", value: 'payments' },
+  { label: "To'lov", value: 'payments' },
   { label: 'Daromad', value: 'amount' },
-  { label: 'Haydovchilar', value: 'drivers' },
+  { label: 'Driver', value: 'drivers' },
 ]
 
 const chartItems = computed(() => {
   const series = store.data?.chart ?? []
   if (!series.length) {
     const now = new Date()
-  const labels = ['YAN', 'FEV', 'MAR', 'APR', 'MAY', 'IYN', 'IYL', 'AVG', 'SEN', 'OKT', 'NOY', 'DEK']
+    const labels = ['YAN', 'FEV', 'MAR', 'APR', 'MAY', 'IYN', 'IYL', 'AVG', 'SEN', 'OKT', 'NOY', 'DEK']
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (6 - i), 1)
       return {
         label: labels[d.getMonth()],
         value: 0,
-        active: i === 6,
       }
     })
   }
-  const values = series.map((m) => {
-    if (chartTab.value === 'payments') return m.payments
-    if (chartTab.value === 'amount') return m.amount
-    return m.newDrivers
-  })
-  const maxIdx = values.reduce(
-    (best, v, i) => (v > values[best] ? i : best),
-    0
-  )
-  return series.map((m, i) => ({
+  return series.map((m) => ({
     label: m.label,
-    value: values[i] ?? 0,
-    active: i === maxIdx,
+    value:
+      chartTab.value === 'payments'
+        ? m.payments
+        : chartTab.value === 'amount'
+          ? m.amount
+          : m.newDrivers,
   }))
 })
 

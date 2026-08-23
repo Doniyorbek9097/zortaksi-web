@@ -20,7 +20,7 @@
           {{ formattedPrice }} so'm
         </p>
         <p class="mt-1 text-[12px] font-bold text-slate-400 dark:text-slate-500">
-          {{ expireDays }} kun
+          {{ durationLabel }}
         </p>
       </div>
     </div>
@@ -187,6 +187,21 @@ const remainingLabel = computed(() => {
   return '1 daqiqadan kam'
 })
 
+/** Jonli qolgan muddat (kun) */
+const durationLabel = computed(() => {
+  if (props.active && hasDeadline.value) {
+    const ms = remainingMs.value
+    if (ms <= 0) return 'Muddati tugadi'
+    const days = Math.floor(ms / 86400000)
+    const hours = Math.floor((ms % 86400000) / 3600000)
+    if (days > 0) return `${days} kun qoldi`
+    if (hours > 0) return `${hours} soat qoldi`
+    const minutes = Math.floor((ms % 3600000) / 60000)
+    return minutes > 0 ? `${minutes} daq qoldi` : '1 daq qoldi'
+  }
+  return `${props.expireDays} kun`
+})
+
 /** Qolgan foiz (to‘liq = 100%) */
 const progressPct = computed(() => {
   const end = expireMs.value
@@ -201,13 +216,9 @@ const progressPct = computed(() => {
 
 onMounted(() => {
   if (!import.meta.client) return
-  const end = expireMs.value
-  // 1 soatdan ko'p qolsa — 30s tick; yaqinroq — 1s
-  const msLeft = end != null ? end - Date.now() : Infinity
-  const interval = msLeft > 3_600_000 ? 30_000 : 1_000
   timer = setInterval(() => {
     nowMs.value = Date.now()
-  }, interval)
+  }, 1000)
 })
 
 onBeforeUnmount(() => {
