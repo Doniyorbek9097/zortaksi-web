@@ -15,7 +15,36 @@ export interface DataRow {
 export interface ChartMonth {
   label: string
   payments: number
-  profit: number
+  amount: number
+  newDrivers: number
+}
+
+export interface RegionDriverStat {
+  slug: string
+  title: string
+  count: number
+  active: number
+}
+
+export interface TariffStatItem {
+  tariffId?: string | null
+  title: string
+  count: number
+  amount: number
+  expireDays?: number | null
+}
+
+export interface TariffStatsBlock {
+  month: TariffStatItem[]
+  total: TariffStatItem[]
+}
+
+export interface DashboardGrowth {
+  ordersTodayDelta: number
+  newDriversTodayDelta: number
+  monthIncomeDelta: number
+  monthIncomePercent: number
+  newDriversMonthDelta: number
 }
 
 export interface AdminDashboardData {
@@ -49,7 +78,10 @@ export interface AdminDashboardData {
   }
   incomeDetails: DataRow[]
   tariffSplit: DataRow[]
+  tariffStats?: TariffStatsBlock
   chart: ChartMonth[]
+  regionDrivers?: RegionDriverStat[]
+  growth?: DashboardGrowth
 }
 
 const CACHE_KEY = 'zt:admin-dashboard-data'

@@ -1,6 +1,19 @@
 <template>
   <div class="pt-2">
-    <div class="flex items-end gap-2 h-36">
+  <p
+    v-if="isEmpty"
+    class="py-8 text-center text-[12px] font-medium text-slate-400"
+  >
+    Bu davrda ma'lumot yo'q
+  </p>
+  <template v-else>
+    <p
+      v-if="activeItem"
+      class="text-center text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 tabular-nums"
+    >
+      {{ activeItem.label }}: {{ formattedValue(activeItem.value) }}
+    </p>
+    <div class="flex items-end gap-1.5 sm:gap-2 h-36">
       <div
         v-for="item in items"
         :key="item.label"
@@ -8,10 +21,9 @@
       >
         <div class="w-full flex-1 flex items-end justify-center">
           <div
-            class="w-full max-w-[28px] rounded-t-md transition-all"
-            :class="item.active ? 'bg-sky-500' : 'bg-sky-200 dark:bg-sky-900/60'"
+            class="w-full max-w-[32px] rounded-t-lg transition-all duration-300"
+            :class="item.active ? 'bg-sky-500 shadow-sm shadow-sky-500/30' : 'bg-sky-200/80 dark:bg-sky-900/50'"
             :style="{ height: `${barHeight(item.value)}%` }"
-            :title="`${item.value.toLocaleString('ru-RU')}`"
           />
         </div>
         <span
@@ -22,6 +34,7 @@
         </span>
       </div>
     </div>
+  </template>
   </div>
 </template>
 
@@ -32,8 +45,30 @@ interface BarItem {
   active?: boolean
 }
 
-const props = defineProps<{ items: BarItem[] }>()
+const props = defineProps<{
+  items: BarItem[]
+  /** amount uchun ming so'm */
+  valueMode?: 'number' | 'amount'
+}>()
+
+const isEmpty = computed(() =>
+  props.items.length > 0 && props.items.every((i) => i.value === 0)
+)
 
 const max = computed(() => Math.max(...props.items.map((i) => i.value), 1))
-const barHeight = (value: number) => Math.max(8, Math.round((value / max.value) * 100))
+const barHeight = (value: number) => {
+  if (value <= 0) return 4
+  return Math.max(12, Math.round((value / max.value) * 100))
+}
+
+const activeItem = computed(() => props.items.find((i) => i.active))
+
+const formattedValue = (value: number) => {
+  if (props.valueMode === 'amount') {
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M so'm`
+    if (value >= 1000) return `${Math.round(value / 1000)}K so'm`
+    return `${value.toLocaleString('ru-RU')} so'm`
+  }
+  return value.toLocaleString('ru-RU')
+}
 </script>

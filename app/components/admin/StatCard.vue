@@ -9,9 +9,22 @@
       <font-awesome-icon :icon="icon" />
     </div>
     <div class="min-w-0 flex-1">
-      <p class="text-[22px] sm:text-2xl font-black leading-none tabular-nums" :class="valueClass">
-        {{ displayValue }}
-      </p>
+      <div class="flex items-baseline gap-2 flex-wrap">
+        <p class="text-[22px] sm:text-2xl font-black leading-none tabular-nums" :class="valueClass">
+          {{ displayValue }}
+        </p>
+        <span
+          v-if="change != null"
+          class="inline-flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.5 rounded-md"
+          :class="changeBadgeClass"
+        >
+          <font-awesome-icon
+            :icon="change >= 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
+            class="text-[9px]"
+          />
+          {{ changeLabel }}
+        </span>
+      </div>
       <p class="mt-1 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
         {{ label }}
       </p>
@@ -29,11 +42,17 @@ interface Props {
   tone?: Tone
   /** 849000 → 849K */
   compact?: boolean
+  /** O'sish/kamayish (+3 yoki -2) */
+  change?: number | null
+  /** 'absolute' | 'percent' */
+  changeMode?: 'absolute' | 'percent'
 }
 
 const props = withDefaults(defineProps<Props>(), {
   tone: 'blue',
   compact: false,
+  change: null,
+  changeMode: 'absolute',
 })
 
 const toneMap: Record<Tone, string> = {
@@ -67,5 +86,21 @@ const displayValue = computed(() => {
   if (props.value >= 1_000_000) return `${Math.round(props.value / 100_000) / 10}M`
   if (props.value >= 1000) return `${Math.round(props.value / 1000)}K`
   return String(props.value)
+})
+
+const changeLabel = computed(() => {
+  if (props.change == null) return ''
+  const sign = props.change > 0 ? '+' : ''
+  if (props.changeMode === 'percent') return `${sign}${props.change}%`
+  return `${sign}${props.change}`
+})
+
+const changeBadgeClass = computed(() => {
+  if (props.change == null || props.change === 0) {
+    return 'bg-slate-100 text-slate-500 dark:bg-slate-800'
+  }
+  return props.change > 0
+    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
 })
 </script>

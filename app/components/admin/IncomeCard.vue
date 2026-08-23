@@ -9,6 +9,19 @@
       <p class="text-4xl md:text-5xl font-black tracking-tight text-sky-600 dark:text-sky-400 leading-none">
         {{ formattedAmount }}
       </p>
+      <span
+        v-if="changePercent != null"
+        class="inline-flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg"
+        :class="changePercent >= 0
+          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+          : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'"
+      >
+        <font-awesome-icon
+          :icon="changePercent >= 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
+          class="text-[10px]"
+        />
+        {{ changePercent > 0 ? '+' : '' }}{{ changePercent }}% o'tgan oyga
+      </span>
     </div>
     <p class="mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
       so'm / {{ payments }} ta to'lov
@@ -25,11 +38,13 @@ interface Props {
   amount: number
   payments: number
   total?: number
+  changePercent?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   label: 'Shu oy daromad',
   total: undefined,
+  changePercent: null,
 })
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
