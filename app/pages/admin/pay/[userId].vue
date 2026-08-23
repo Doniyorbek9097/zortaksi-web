@@ -216,7 +216,6 @@
         v-if="paymentsApiPath"
         ref="historyList"
         :api-path="paymentsApiPath"
-        :max-items="30"
         subtitle="Shu haydovchi bo'yicha"
       />
     </template>

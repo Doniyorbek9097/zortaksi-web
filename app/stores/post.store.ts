@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '~/stores/auth.store'
+import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export type PostTab = 'mine' | 'ads'
 
@@ -23,7 +24,7 @@ export interface PostGroup {
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
 /** Guruhlar ro'yxati — bir sahifada */
-export const GROUPS_PAGE_SIZE = 5
+export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()

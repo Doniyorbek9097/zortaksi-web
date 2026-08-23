@@ -1,11 +1,12 @@
 /** Buyurtmalar / E'lon — umumiy kalit so'z filtri (localStorage) */
+import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
 /** Birinchi marta yo'nalish tanlangan — majburiy onboarding */
 export const ORDER_FILTER_CONFIGURED_KEY = 'zt_order_filter_configured'
-/** Buyurtmalar ro'yxati — bir sahifada (tab cache bilan mos) */
-export const ORDERS_PAGE_LIMIT = 10
+/** Buyurtmalar ro'yxati — bir sahifada (infinite scroll) */
+export const ORDERS_PAGE_LIMIT = LIST_PAGE_SIZE
 
 const CYRILLIC_TO_LATIN: [RegExp, string][] = [
   [/ё/g, 'yo'], [/ж/g, 'j'], [/ц/g, 'ts'], [/ч/g, 'ch'],

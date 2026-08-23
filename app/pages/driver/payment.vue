@@ -246,7 +246,7 @@
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
 
-    <DriverPaymentHistoryList ref="historyList" :max-items="30" />
+    <DriverPaymentHistoryList ref="historyList" />
   </div>
 </template>
 

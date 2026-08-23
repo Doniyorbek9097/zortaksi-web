@@ -19,7 +19,6 @@
 
     <DriverPaymentHistoryList
       api-path="/drivers/payments"
-      :max-items="50"
       show-driver
       subtitle="Hisob to'ldirish va tarif to'lovlari"
     />

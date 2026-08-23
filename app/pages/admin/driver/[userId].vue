@@ -220,7 +220,6 @@
       <DriverPaymentHistoryList
         v-if="paymentsApiPath"
         :api-path="paymentsApiPath"
-        :max-items="20"
         subtitle="Shu haydovchi bo'yicha"
       />
     </template>

@@ -1,37 +1,13 @@
 <template>
-  <!-- Buyurtmalar ro'yxati + infinite scroll sentinel -->
-  <div ref="listRootEl" class="relative space-y-6 pt-2">
-    <template v-if="showReadDivider">
-      <template v-for="order in unreadOrders" :key="`u-${order._id}`">
-        <div
-          class="order-seen-anchor"
-          :data-order-id="order._id"
-        >
-          <OrdersOrderCard
-            :order="order"
-            :role="role"
-            :active="active"
-            :current-user-id="currentUserId"
-            unread
-            @unlock="$emit('unlock')"
-            @book="$emit('book', order)"
-            @unbook="$emit('unbook', order)"
-            @message="$emit('message', order)"
-            @call="$emit('call', order)"
-            @interest="$emit('interest', order)"
-            @booked-chat="$emit('booked-chat', order)"
-            @agent="$emit('agent', order)"
-            @stop-group="$emit('stop-group', order)"
-            @stop-user="$emit('stop-user', order)"
-            @delete="$emit('delete', order)"
-            @add-to-bot="$emit('add-to-bot', order)"
-          />
-        </div>
-      </template>
+  <!-- Buyurtmalar ro'yxati — virtual scroll + infinite scroll -->
+  <div ref="listRootEl" class="relative pt-2">
+    <div :style="{ height: `${virtual.range.paddingTop}px` }" aria-hidden="true" />
 
+    <template v-for="{ row } in virtual.range.visible" :key="row.key">
       <div
-        v-if="unreadOrders.length && readOrders.length"
+        v-if="row.data.type === 'divider'"
         class="relative py-2"
+        :style="{ height: `${ORDER_DIVIDER_HEIGHT}px` }"
       >
         <div class="absolute inset-x-0 top-1/2 border-t border-slate-200 dark:border-slate-700" />
         <p class="relative mx-auto w-fit px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-950">
@@ -39,69 +15,40 @@
         </p>
       </div>
 
-      <template v-for="order in readOrders" :key="`r-${order._id}`">
-        <div
-          class="order-seen-anchor"
-          :data-order-id="order._id"
-        >
-          <OrdersOrderCard
-            :order="order"
-            :role="role"
-            :active="active"
-            :current-user-id="currentUserId"
-            :unread="false"
-            @unlock="$emit('unlock')"
-            @book="$emit('book', order)"
-            @unbook="$emit('unbook', order)"
-            @message="$emit('message', order)"
-            @call="$emit('call', order)"
-            @interest="$emit('interest', order)"
-            @booked-chat="$emit('booked-chat', order)"
-            @agent="$emit('agent', order)"
-            @stop-group="$emit('stop-group', order)"
-            @stop-user="$emit('stop-user', order)"
-            @delete="$emit('delete', order)"
-            @add-to-bot="$emit('add-to-bot', order)"
-          />
-        </div>
-      </template>
-    </template>
-
-    <template v-else>
       <div
-        v-for="order in orders"
-        :key="order._id"
+        v-else
         class="order-seen-anchor"
-        :data-order-id="order._id"
+        :data-order-id="row.data.order._id"
+        :style="{ height: `${ORDER_ROW_HEIGHT}px` }"
       >
         <OrdersOrderCard
-          :order="order"
+          :order="row.data.order"
           :role="role"
           :active="active"
           :current-user-id="currentUserId"
+          :unread="row.data.unread"
           @unlock="$emit('unlock')"
-          @book="$emit('book', order)"
-          @unbook="$emit('unbook', order)"
-          @message="$emit('message', order)"
-          @call="$emit('call', order)"
-          @interest="$emit('interest', order)"
-          @booked-chat="$emit('booked-chat', order)"
-          @agent="$emit('agent', order)"
-          @stop-group="$emit('stop-group', order)"
-          @stop-user="$emit('stop-user', order)"
-          @delete="$emit('delete', order)"
-          @add-to-bot="$emit('add-to-bot', order)"
+          @book="$emit('book', row.data.order)"
+          @unbook="$emit('unbook', row.data.order)"
+          @message="$emit('message', row.data.order)"
+          @call="$emit('call', row.data.order)"
+          @interest="$emit('interest', row.data.order)"
+          @booked-chat="$emit('booked-chat', row.data.order)"
+          @agent="$emit('agent', row.data.order)"
+          @stop-group="$emit('stop-group', row.data.order)"
+          @stop-user="$emit('stop-user', row.data.order)"
+          @delete="$emit('delete', row.data.order)"
+          @add-to-bot="$emit('add-to-bot', row.data.order)"
         />
       </div>
     </template>
 
-    <!-- Infinite scroll sentinel -->
-    <div ref="sentinelEl" class="h-1" />
+    <div :style="{ height: `${virtual.range.paddingBottom}px` }" aria-hidden="true" />
 
-    <!-- Yuklanmoqda (keyingi sahifa) — bitta OrderCard skeleton -->
+  <div ref="sentinelEl" class="h-1" />
+
     <OrdersOrderCardSkeleton v-if="loadingMore" />
 
-    <!-- Oxiri -->
     <p
       v-else-if="!hasMore && orders.length"
       class="py-4 text-center text-[12px] font-medium text-slate-400 dark:text-slate-600"
@@ -113,10 +60,16 @@
 
 <script setup lang="ts">
 import type { IOrder } from '~/types'
+import { ORDER_DIVIDER_HEIGHT, ORDER_ROW_HEIGHT } from '~/utils/memoryBudget'
+import { useWindowVirtualRows, type VirtualRow } from '~/composables/useWindowVirtualRows'
+
+type OrderRowData =
+  | { type: 'order'; order: IOrder; unread?: boolean }
+  | { type: 'divider' }
 
 /**
  * Haydovchi buyurtmalar ro'yxati.
- * O'qilmaganlar yuqorida, «Pastkilari o'qilganlar» chizigidan keyin o'qilganlar.
+ * Virtual scroll — faqat ko'rinadigan kartalar DOM da (RAM tejash).
  */
 const props = defineProps<{
   orders: IOrder[]
@@ -126,7 +79,6 @@ const props = defineProps<{
   loadingMore: boolean
   hasMore: boolean
   isOrderSeen?: (order: IOrder) => boolean
-  /** Haydovchi: o'qilgan/o'qilmagan bo'linishi */
   showReadDivider?: boolean
 }>()
 
@@ -147,15 +99,49 @@ defineEmits<{
 
 const seen = (order: IOrder) => props.isOrderSeen?.(order) ?? false
 
-const unreadOrders = computed(() =>
-  props.orders.filter((o) => !seen(o)),
-)
+const unreadOrders = computed(() => props.orders.filter((o) => !seen(o)))
+const readOrders = computed(() => props.orders.filter((o) => seen(o)))
 
-const readOrders = computed(() =>
-  props.orders.filter((o) => seen(o)),
-)
+const virtualRows = computed<VirtualRow<OrderRowData>[]>(() => {
+  const rows: VirtualRow<OrderRowData>[] = []
 
-/** Parent (useOrdersListSync) observerlari uchun — DOM ni v-model ga uzatamiz */
+  if (props.showReadDivider) {
+    for (const order of unreadOrders.value) {
+      rows.push({
+        key: `u-${order._id}`,
+        height: ORDER_ROW_HEIGHT,
+        data: { type: 'order', order, unread: true },
+      })
+    }
+    if (unreadOrders.value.length && readOrders.value.length) {
+      rows.push({
+        key: 'read-divider',
+        height: ORDER_DIVIDER_HEIGHT,
+        data: { type: 'divider' },
+      })
+    }
+    for (const order of readOrders.value) {
+      rows.push({
+        key: `r-${order._id}`,
+        height: ORDER_ROW_HEIGHT,
+        data: { type: 'order', order, unread: false },
+      })
+    }
+  } else {
+    for (const order of props.orders) {
+      rows.push({
+        key: String(order._id),
+        height: ORDER_ROW_HEIGHT,
+        data: { type: 'order', order, unread: false },
+      })
+    }
+  }
+
+  return rows
+})
+
+const virtual = useWindowVirtualRows(virtualRows, 4)
+
 const listRoot = defineModel<HTMLElement | null>('listRoot', { default: null })
 const sentinel = defineModel<HTMLElement | null>('sentinel', { default: null })
 

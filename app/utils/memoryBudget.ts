@@ -3,8 +3,21 @@
  * O'zgartirish kerak bo'lsa faqat shu faylni tahrirlang.
  */
 
-/** Pastki tabbar orasida saqlanadigan ro'yxat elementlari (buyurtma, chat) */
+/** Pastki tabbar orasida saqlanadigan ro'yxat elementlari (tab almashganda RAM) */
 export const TAB_LIST_KEEP = 10
+
+/** Infinite scroll — bir API so'rovda yuklanadigan elementlar */
+export const LIST_PAGE_SIZE = 15
+
+/** To'lovlar tarixi — sahifa hajmi */
+export const PAYMENT_PAGE_SIZE = 15
+
+/** Virtual scroll — taxminiy qator balandliklari (px, gap bilan) */
+export const ORDER_ROW_HEIGHT = 148
+export const ORDER_DIVIDER_HEIGHT = 44
+export const CHAT_ROW_HEIGHT = 86
+export const POST_GROUP_ROW_HEIGHT = 102
+export const PAYMENT_ROW_HEIGHT = 68
 
 /** Ochiq chatda xotirada saqlanadigan xabarlar soni (eski xabarlar kesiladi) */
 export const MAX_OPEN_MESSAGES = 80

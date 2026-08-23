@@ -131,25 +131,31 @@
       tone="slate"
     />
 
-    <div v-else class="space-y-2.5">
-      <PostGroupCard
-        v-for="g in filtered"
-        :key="g.id"
-        :group="g"
-        :selectable="true"
-        :selected="store.selected.has(g.id)"
-        :show-admin-badge="store.tab === 'mine'"
-        :show-visible-badge="store.tab === 'mine' && store.isAdmin"
-        :show-join="store.tab === 'ads'"
-        :joining="store.joiningId === g.id"
-        :show-leave="store.tab === 'mine'"
-        :leaving="store.joiningId === g.id"
-        :show-visibility="store.tab === 'mine' && store.isAdmin && g.isAdmin"
-        @toggle="store.toggle(g.id)"
-        @join="onJoinGroup(g)"
-        @leave="onAskLeave(g)"
-        @toggle-visibility="onToggleVisibility(g)"
-      />
+    <div v-else ref="listRootEl" class="relative">
+      <div :style="{ height: `${virtual.range.paddingTop}px` }" aria-hidden="true" />
+
+      <div class="space-y-2.5">
+        <template v-for="{ row } in virtual.range.visible" :key="row.key">
+          <PostGroupCard
+            :group="row.data"
+            :selectable="true"
+            :selected="store.selected.has(row.data.id)"
+            :show-admin-badge="store.tab === 'mine'"
+            :show-visible-badge="store.tab === 'mine' && store.isAdmin"
+            :show-join="store.tab === 'ads'"
+            :joining="store.joiningId === row.data.id"
+            :show-leave="store.tab === 'mine'"
+            :leaving="store.joiningId === row.data.id"
+            :show-visibility="store.tab === 'mine' && store.isAdmin && row.data.isAdmin"
+            @toggle="store.toggle(row.data.id)"
+            @join="onJoinGroup(row.data)"
+            @leave="onAskLeave(row.data)"
+            @toggle-visibility="onToggleVisibility(row.data)"
+          />
+        </template>
+      </div>
+
+      <div :style="{ height: `${virtual.range.paddingBottom}px` }" aria-hidden="true" />
 
       <div ref="sentinel" class="h-1" />
 
@@ -284,6 +290,8 @@ import {
   clearOrderFilterKeywords,
   markOrderFilterConfigured,
 } from '~/utils/orderFilterKeywords'
+import { POST_GROUP_ROW_HEIGHT } from '~/utils/memoryBudget'
+import { useWindowVirtualRows, type VirtualRow } from '~/composables/useWindowVirtualRows'
 
 definePageMeta({ layout: 'driver' })
 
@@ -354,6 +362,17 @@ const filtered = computed(() => {
   if (!raw) return store.groups
   return filterGroupsByKeywords(store.groups, raw)
 })
+
+const groupRows = computed<VirtualRow<PostGroup>[]>(() =>
+  filtered.value.map((g) => ({
+    key: g.id,
+    height: POST_GROUP_ROW_HEIGHT,
+    data: g,
+  })),
+)
+
+const virtual = useWindowVirtualRows(groupRows, 3)
+const listRootEl = ref<HTMLElement | null>(null)
 
 const emptyTitle = computed(() => {
   if (store.tab === 'mine') {
@@ -474,7 +493,7 @@ onMounted(async () => {
     (entries) => {
       if (entries[0]?.isIntersecting) store.loadMore()
     },
-    { rootMargin: '200px' }
+    { rootMargin: '520px' },
   )
   if (sentinel.value) observer.observe(sentinel.value)
 })
