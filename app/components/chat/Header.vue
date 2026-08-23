@@ -52,6 +52,21 @@
         <font-awesome-icon icon="fa-solid fa-car" />
         Haydovchi
       </button>
+
+      <a
+        v-if="canCall && callHref"
+        :href="callHref"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-black shrink-0 whitespace-nowrap leading-none active:scale-95 transition-all no-underline"
+        :class="support
+          ? 'text-white bg-white/15 hover:bg-white/25'
+          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'"
+        @click="$emit('call')"
+      >
+        <span class="chat-header-phone-pulse inline-flex items-center justify-center">
+          <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
+        </span>
+        Qo'ng'iroq
+      </a>
     </div>
 
     <slot name="actions" />
@@ -65,6 +80,9 @@ interface Props {
   online?: boolean
   avatar?: string
   userId?: string
+  canCall?: boolean
+  /** tel:+998... — native qo'ng'iroq uchun */
+  callHref?: string
   support?: boolean
   /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
@@ -73,9 +91,22 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   status: '',
   online: false,
+  canCall: false,
+  callHref: '',
   support: false,
   showDriverPage: false,
 })
 
-defineEmits<{ back: []; 'driver-page': [] }>()
+defineEmits<{ back: []; call: []; 'driver-page': [] }>()
 </script>
+
+<style scoped>
+.chat-header-phone-pulse {
+  animation: chat-header-phone-ring 1.4s ease-in-out infinite;
+}
+
+@keyframes chat-header-phone-ring {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+</style>

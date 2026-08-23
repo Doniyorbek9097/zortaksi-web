@@ -16,25 +16,16 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
+      :can-call="!!callPhone"
+      :call-href="callTelHref"
       @back="goBack"
     >
       <template #actions>
         <div
-          v-if="(callTelHref || showClearHistoryBtn) && !selectionMode"
-          class="mx-auto w-full max-w-2xl px-3 py-2 flex flex-col gap-2 border-b border-slate-200/50 dark:border-slate-800/50"
+          v-if="showClearHistoryBtn && !selectionMode"
+          class="mx-auto w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
         >
-          <a
-            v-if="callTelHref"
-            :href="callTelHref"
-            class="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[14px] font-black active:scale-[0.98] transition-all no-underline shadow-lg shadow-emerald-500/25"
-          >
-            <span class="chat-phone-pulse inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/20">
-              <font-awesome-icon icon="fa-solid fa-phone" class="text-[15px]" />
-            </span>
-            Hoziroq telefon qiling
-          </a>
           <button
-            v-if="showClearHistoryBtn"
             type="button"
             :disabled="isClearingHistory"
             class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 border border-red-200/60 dark:border-red-900/40 active:scale-[0.98] transition-all disabled:opacity-50"
@@ -1332,14 +1323,5 @@ onBeforeUnmount(() => {
 @keyframes typing-bounce {
   0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-2px); }
-}
-
-.chat-phone-pulse {
-  animation: chat-phone-ring 1.4s ease-in-out infinite;
-}
-
-@keyframes chat-phone-ring {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.14); }
 }
 </style>
