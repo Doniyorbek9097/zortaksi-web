@@ -1,9 +1,9 @@
 <template>
   <div
-    class="mb-1.5 rounded-lg px-2.5 py-1.5 border-l-[3px] text-left bg-slate-100 border-sky-500 text-slate-600"
+    class="mb-1.5 rounded-lg px-2.5 py-1.5 border-l-[3px] text-left bg-slate-100 border-sky-500 text-slate-600 dark:bg-slate-600/50 dark:border-sky-400 dark:text-slate-200"
   >
     <p
-      class="text-[10px] font-black uppercase tracking-wide text-sky-600"
+      class="text-[10px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-300"
     >
       {{ authorLabel }}
     </p>

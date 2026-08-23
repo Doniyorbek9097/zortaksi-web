@@ -40,4 +40,13 @@ const safeHtml = computed(() => sanitizeTelegramHtml(props.html || ''))
   border-radius: 0.25rem;
   background: rgb(241 245 249);
 }
+
+:global(.dark) .chat-html :deep(code) {
+  background: rgb(51 65 85);
+  color: rgb(241 245 249);
+}
+
+:global(.dark) .chat-html--in :deep(a) {
+  color: rgb(125 211 252);
+}
 </style>

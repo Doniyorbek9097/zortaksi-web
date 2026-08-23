@@ -85,7 +85,7 @@
       </div>
 
       <div
-        class="rounded-xl p-2.5 min-h-[96px] flex flex-col border-2 bg-violet-50 dark:bg-violet-950/40 border-violet-200 dark:border-violet-700/60 ring-1 ring-violet-100 dark:ring-violet-900/40"
+        class="rounded-xl p-2.5 min-h-[96px] flex flex-col border bg-violet-50 dark:bg-violet-950/35 border-violet-100 dark:border-violet-900/50"
       >
         <div
           class="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white text-[11px] mb-2 shadow-sm"

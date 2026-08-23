@@ -46,7 +46,7 @@
     <div
       class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
       :class="[
-        'bg-white text-slate-800 border border-slate-200',
+        'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600',
         out ? 'rounded-br-md' : 'rounded-bl-md',
         type === 'photo' ? '!p-1.5' : '',
         isSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
@@ -170,7 +170,7 @@
         :href="mapsUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="flex items-center gap-3 min-w-[200px] px-1 py-1 no-underline text-slate-800"
+        class="flex items-center gap-3 min-w-[200px] px-1 py-1 no-underline text-slate-800 dark:text-slate-100"
       >
         <span
           class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-sky-500/15 text-sky-500"
@@ -182,7 +182,7 @@
             {{ locationTitle || 'Joylashuv' }}
           </span>
           <span
-            class="block text-[11px] mt-0.5 text-slate-500"
+            class="block text-[11px] mt-0.5 text-slate-500 dark:text-slate-300"
           >
             Xaritada ochish
           </span>
@@ -204,7 +204,7 @@
       </p>
 
       <div
-        class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400"
+        class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400 dark:text-slate-300"
         :class="type === 'photo' ? 'px-1.5 pb-0.5' : ''"
       >
         <span>{{ time }}</span>
