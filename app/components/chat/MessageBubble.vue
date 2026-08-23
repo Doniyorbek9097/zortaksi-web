@@ -34,9 +34,8 @@
     <div
       class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
       :class="[
-        out
-            ? 'bg-sky-500 text-white rounded-br-md'
-            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700',
+        'bg-white text-slate-800 border border-slate-200',
+        out ? 'rounded-br-md' : 'rounded-bl-md',
         type === 'photo' ? '!p-1.5' : '',
         isMediaSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
@@ -68,7 +67,7 @@
         <button
           type="button"
           class="w-9 h-9 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all"
-          :class="out ? 'bg-white/20 text-white' : 'bg-sky-500/15 text-sky-500'"
+          :class="out ? 'bg-sky-100 text-sky-600' : 'bg-sky-500/15 text-sky-500'"
           :aria-label="playing ? 'To\'xtatish' : 'Tinglash'"
           :disabled="loading"
           @click="toggle"
@@ -88,18 +87,18 @@
         <div class="flex-1 min-w-0">
           <div
             class="h-1 rounded-full overflow-hidden cursor-pointer"
-            :class="out ? 'bg-white/25' : 'bg-slate-200 dark:bg-slate-600'"
+            :class="out ? 'bg-slate-200' : 'bg-slate-200'"
             @click="seek"
           >
             <div
               class="h-full rounded-full transition-[width] duration-100"
-              :class="out ? 'bg-white' : 'bg-sky-500'"
+              :class="'bg-sky-500'"
               :style="{ width: `${progress}%` }"
             />
           </div>
           <div
             class="mt-1 flex justify-between text-[10px] tabular-nums"
-            :class="out ? 'text-white/70' : 'text-slate-400 dark:text-slate-500'"
+            :class="'text-slate-400'"
           >
             <span>{{ currentLabel }}</span>
             <span>{{ durationLabel }}</span>
@@ -147,7 +146,6 @@
         <p
           v-if="text"
           class="px-2 text-[15px] leading-relaxed"
-          :class="out ? 'text-white' : ''"
         >
           <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
@@ -159,12 +157,10 @@
         :href="mapsUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="flex items-center gap-3 min-w-[200px] px-1 py-1 no-underline"
-        :class="out ? 'text-white' : 'text-slate-800 dark:text-slate-100'"
+        class="flex items-center gap-3 min-w-[200px] px-1 py-1 no-underline text-slate-800"
       >
         <span
-          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center"
-          :class="out ? 'bg-white/20' : 'bg-sky-500/15 text-sky-500'"
+          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center bg-sky-500/15 text-sky-500"
         >
           <font-awesome-icon icon="fa-solid fa-location-dot" />
         </span>
@@ -173,8 +169,7 @@
             {{ locationTitle || 'Joylashuv' }}
           </span>
           <span
-            class="block text-[11px] mt-0.5"
-            :class="out ? 'text-white/75' : 'text-slate-500 dark:text-slate-400'"
+            class="block text-[11px] mt-0.5 text-slate-500"
           >
             Xaritada ochish
           </span>
@@ -190,11 +185,8 @@
       </p>
 
       <div
-        class="mt-1 flex items-center justify-end gap-1 text-[10px]"
-        :class="[
-          out ? 'text-white/70' : 'text-slate-400 dark:text-slate-500',
-          type === 'photo' ? 'px-1.5 pb-0.5' : '',
-        ]"
+        class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400"
+        :class="type === 'photo' ? 'px-1.5 pb-0.5' : ''"
       >
         <span>{{ time }}</span>
         <template v-if="out">
@@ -202,14 +194,14 @@
           <font-awesome-icon
             v-else-if="status === 'failed' && !mediaPath"
             icon="fa-solid fa-exclamation-triangle"
-            class="text-[9px] text-amber-200"
+            class="text-[9px] text-amber-500"
             title="Yuborilmadi"
           />
           <font-awesome-icon
             v-else
             :icon="(read || status === 'read') ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
             class="text-[9px]"
-            :class="(read || status === 'read') ? 'text-sky-100' : ''"
+            :class="(read || status === 'read') ? 'text-sky-500' : ''"
           />
         </template>
       </div>
@@ -218,16 +210,13 @@
       <div
         v-if="status === 'failed' && errorText"
         class="mt-1.5 flex items-start gap-1.5 px-1.5 pb-0.5"
-        :class="out ? 'bg-sky-500' : ''"
       >
         <font-awesome-icon
           icon="fa-solid fa-circle-exclamation"
-          class="mt-0.5 text-[10px] shrink-0"
-          :class="out ? 'text-amber-200' : 'text-red-500'"
+          class="mt-0.5 text-[10px] shrink-0 text-red-500"
         />
         <p
-          class="text-[11px] font-semibold leading-snug"
-          :class="out ? 'text-amber-100' : 'text-red-500 dark:text-red-400'"
+          class="text-[11px] font-semibold leading-snug text-red-500"
         >
           {{ errorText }}
         </p>

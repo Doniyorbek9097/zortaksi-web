@@ -44,8 +44,6 @@ const displayText = computed(() =>
 const parts = computed(() => linkifyParts(displayText.value))
 
 const linkClass = computed(() =>
-  props.out
-    ? 'text-white hover:text-sky-100'
-    : 'text-sky-600 dark:text-sky-400 hover:text-sky-500'
+  'text-sky-600 hover:text-sky-500'
 )
 </script>

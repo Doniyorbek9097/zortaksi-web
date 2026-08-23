@@ -108,9 +108,11 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-9 h-9 ml-1 rounded-full flex items-center justify-center text-[15px] font-black text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 active:scale-95 transition-all disabled:opacity-40"
+            class="shrink-0 w-8 h-8 ml-1.5 rounded-lg flex items-center justify-center text-[14px] font-black border shadow-sm transition-all active:scale-95 disabled:opacity-40 bg-white text-sky-600 border-slate-200 hover:bg-sky-50 hover:border-sky-200"
+            :class="slashMenuOpen ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-400/25' : ''"
             aria-label="Admin komandalar"
-            @click="openSlashMenu"
+            :aria-expanded="slashMenuOpen"
+            @click="toggleSlashMenu"
           >
             /
           </button>
@@ -254,8 +256,12 @@ const closeSlashMenu = () => {
   slashHighlight.value = 0
 }
 
-const openSlashMenu = () => {
+const toggleSlashMenu = () => {
   if (props.disabled || !hasSlashCommands.value) return
+  if (slashMenuOpen.value) {
+    closeSlashMenu()
+    return
+  }
   slashMenuOpen.value = true
   slashHighlight.value = 0
   unlockDraft()

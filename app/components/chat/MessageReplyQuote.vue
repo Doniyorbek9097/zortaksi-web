@@ -1,15 +1,9 @@
 <template>
   <div
-    class="mb-1.5 rounded-lg px-2.5 py-1.5 border-l-[3px] text-left"
-    :class="
-      out
-        ? 'bg-white/15 border-white/70 text-white/90'
-        : 'bg-slate-100 dark:bg-slate-700/50 border-sky-500 text-slate-600 dark:text-slate-300'
-    "
+    class="mb-1.5 rounded-lg px-2.5 py-1.5 border-l-[3px] text-left bg-slate-100 border-sky-500 text-slate-600"
   >
     <p
-      class="text-[10px] font-black uppercase tracking-wide"
-      :class="out ? 'text-white/75' : 'text-sky-600 dark:text-sky-400'"
+      class="text-[10px] font-black uppercase tracking-wide text-sky-600"
     >
       {{ authorLabel }}
     </p>
