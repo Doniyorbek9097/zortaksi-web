@@ -7,7 +7,7 @@ import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
 import { usePostStore } from '~/stores/post.store'
 import { releaseSessionMediaCache } from '~/composables/useVoiceMedia'
-import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
+import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 import {
   DRIVER_MAIN_TABS,
   isDriverMainTab,

@@ -32,8 +32,10 @@
       </div>
 
       <div
-        class="relative will-change-transform"
-        :class="swipeDragging ? '' : 'transition-transform duration-200'"
+        class="relative"
+        :class="[
+          swipeDragging ? 'will-change-transform' : 'transition-transform duration-200',
+        ]"
         :style="{
           transform: `translate3d(${swipeX}px,0,0)`,
           touchAction: selectionMode ? 'auto' : 'pan-y',
@@ -143,7 +145,7 @@
             :src="src"
             alt="Rasm"
             class="max-w-[260px] max-h-[320px] w-full object-cover rounded-xl"
-            loading="eager"
+            loading="lazy"
             @error="onImageError"
           >
           <div

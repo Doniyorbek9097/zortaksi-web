@@ -6,7 +6,7 @@ import { createLocalStateActions } from './actions/local-state'
 import { createMessagingActions } from './actions/messaging'
 import { createSocketActions } from './actions/socket'
 import { clearMessagesCache } from './helpers/message-cache'
-import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
+import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 import type { ChatStoreRefs, ConnStatus, FetchChatsParams, PeerPresence } from './types'
 
 export type { FetchChatsParams }

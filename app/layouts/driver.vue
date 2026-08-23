@@ -13,7 +13,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
-import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
+import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 
 const authStore = useAuthStore()
 const orderStore = useOrderStore()

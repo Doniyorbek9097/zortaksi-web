@@ -15,6 +15,7 @@ import {
   ensureMediaCacheReady,
   clearMediaCachesOnly,
 } from '~/utils/mediaCacheReady'
+import { MAX_MEDIA_BLOB_CACHE } from '~/utils/memoryBudget'
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { api } from '~/config/axios'
 import { getAuthCookieOptions } from '~/utils/authCookie'
@@ -33,7 +34,7 @@ export type GetMediaUrlOpts = {
   mediaPath?: string | null
 }
 
-const MAX_MEMORY_ENTRIES = 96
+const MAX_MEMORY_ENTRIES = MAX_MEDIA_BLOB_CACHE
 /** Sessiya blob URL — barcha bubble lar ulashadi, unmount da revoke qilinmaydi */
 const cache = new Map<string, string>()
 const cacheMediaPath = new Map<string, string>()

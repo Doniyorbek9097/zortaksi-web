@@ -5,6 +5,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
+import { debounce } from '~/utils/debounce'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
@@ -72,6 +73,9 @@ export default defineNuxtPlugin(() => {
     catchUpOrders()
     catchUpChats()
   }
+
+  /** Tab qaytganda tez-tez fetch — debounce bilan RAM/tarmoq tejash */
+  const catchUpAllDebounced = debounce(catchUpAll, 1500)
 
   const connect = () => {
     const t = currentToken()
@@ -148,7 +152,7 @@ export default defineNuxtPlugin(() => {
     if (import.meta.client && !visibilityBound) {
       visibilityBound = true
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') catchUpAll()
+        if (document.visibilityState === 'visible') catchUpAllDebounced()
       })
     }
   }

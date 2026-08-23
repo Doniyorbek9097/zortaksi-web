@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
 import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
-import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
+import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
 
 export interface FetchOrdersParams {
     page?: number
@@ -170,10 +170,8 @@ export const useOrderStore = defineStore('order', () => {
     /** O'qilmagan — buyurtma vaqti bo'yicha oxirgi 1 soat */
     const UNREAD_WINDOW_MS = 60 * 60 * 1000
     const SEEN_STORAGE_KEY = 'zortaksi:seen-order-ids'
-    /** Infinite scroll DOM/RAM limithi */
-    const MAX_ORDERS_IN_MEMORY = 40
-    const MAX_SEEN_IDS = 200
 
+    /** Infinite scroll — xotirada saqlanadigan buyurtmalar (memoryBudget) */
     const trimOrdersInMemory = () => {
         if (orders.value.length <= MAX_ORDERS_IN_MEMORY) return
         orders.value = orders.value.slice(0, MAX_ORDERS_IN_MEMORY)
@@ -201,8 +199,8 @@ export const useOrderStore = defineStore('order', () => {
 
     const pruneSeenIds = () => {
         const keys = Object.keys(seenOrderIds.value)
-        if (keys.length <= MAX_SEEN_IDS) return
-        const keep = keys.slice(keys.length - MAX_SEEN_IDS)
+        if (keys.length <= MAX_SEEN_ORDER_IDS) return
+        const keep = keys.slice(keys.length - MAX_SEEN_ORDER_IDS)
         const next: Record<string, true> = {}
         for (const id of keep) next[id] = true
         seenOrderIds.value = next
@@ -241,8 +239,8 @@ export const useOrderStore = defineStore('order', () => {
         try {
             const keys = Object.keys(seenOrderIds.value)
             const slim =
-                keys.length > MAX_SEEN_IDS
-                    ? keys.slice(keys.length - MAX_SEEN_IDS)
+                keys.length > MAX_SEEN_ORDER_IDS
+                    ? keys.slice(keys.length - MAX_SEEN_ORDER_IDS)
                     : keys
             sessionStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(slim))
         } catch { /* ignore */ }

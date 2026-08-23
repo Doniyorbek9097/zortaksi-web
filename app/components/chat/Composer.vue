@@ -24,7 +24,7 @@
           <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
           <span class="flex items-end gap-0.5 h-5">
             <span
-              v-for="n in 18"
+              v-for="n in VOICE_WAVE_BARS"
               :key="n"
               class="w-0.5 rounded-full bg-red-500 animate-pulse"
               :style="{ height: `${bars[n % bars.length]}px`, animationDelay: `${(n % 6) * 80}ms` }"
@@ -188,6 +188,7 @@ import {
   normalizeVoiceBlob,
   pickVoiceMimeType,
 } from '~/utils/voiceRecording'
+import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
 
 const text = defineModel<string>({ default: '' })
 

@@ -99,7 +99,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
 import { chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
-import { TAB_LIST_KEEP } from '~/utils/tabListMemory'
+import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 
 definePageMeta({
   layout: 'driver',

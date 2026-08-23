@@ -1,10 +1,13 @@
-/** Debug session logger — ingest + local Nuxt API file sink */
+/**
+ * Faqat dev rejimda ishlaydi — production da RAM va tarmoq chaqiruvlari yo'q.
+ */
 export function agentDebugLog(payload: {
   hypothesisId: string
   location: string
   message: string
   data?: Record<string, unknown>
 }) {
+  if (!import.meta.dev) return
   const body = {
     sessionId: '86b4d7',
     runId: 'post-fix',

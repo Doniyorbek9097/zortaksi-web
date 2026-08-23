@@ -8,6 +8,7 @@ import {
     restoreMessagesCache,
     saveMessagesCache,
 } from '../helpers/message-cache'
+import { MAX_OPEN_MESSAGES, MEDIA_PREFETCH_BATCH } from '~/utils/memoryBudget'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
 
 /** Bir sahifadagi xabarlar soni (eng yangi batch) */
@@ -173,8 +174,11 @@ export function createListActions(
                     totalPages: messagesTotalPages.value,
                 })
                 if (import.meta.client) {
-                    // Faqat oxirgi bir nechta media — RAM
-                    useChatMedia().prefetch(messages.value.slice(-16), null)
+                    // Faqat oxirgi bir nechta media — RAM tejash
+                    useChatMedia().prefetch(
+                      messages.value.slice(-MEDIA_PREFETCH_BATCH),
+                      null,
+                    )
                 }
             }
             return res
@@ -236,8 +240,7 @@ export function createListActions(
                 if (!messageAlreadyExists(merged, m)) merged.push(m)
             }
             sortMessagesByDate(merged)
-            // RAM: eski xabarlarni chegaralash
-            const MAX_OPEN_MESSAGES = 120
+            // RAM: eski xabarlarni chegaralash (memoryBudget.MAX_OPEN_MESSAGES)
             messages.value =
               merged.length > MAX_OPEN_MESSAGES
                 ? merged.slice(merged.length - MAX_OPEN_MESSAGES)
@@ -249,7 +252,7 @@ export function createListActions(
 
             if (import.meta.client) {
               // Faqat yangi kelgan batch — to'liq prefetch emas
-              useChatMedia().prefetch(older.slice(-12), null)
+              useChatMedia().prefetch(older.slice(-MEDIA_PREFETCH_BATCH), null)
             }
             return res
         } catch (error) {

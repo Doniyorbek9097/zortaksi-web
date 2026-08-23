@@ -146,7 +146,12 @@
 
         <!-- Loading — chat almashtirish yoki birinchi yuklash -->
         <div v-if="showMessageSkeleton" class="space-y-2 flex-1">
-          <div v-for="n in 8" :key="n" class="h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" :class="n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto'" />
+          <div
+            v-for="n in CHAT_SKELETON_ROWS"
+            :key="n"
+            class="h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+            :class="n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto'"
+          />
         </div>
 
         <!-- Empty — darhol ko'rinsin (order konteksti bo'lsa) -->
@@ -161,6 +166,17 @@
         <ChatMessageBubble
           v-for="msg in visibleMessages"
           :key="String(msg._id)"
+          v-memo="[
+            msg._id,
+            msg.text,
+            msg.status,
+            msg.date,
+            msg.mediaPath,
+            msg.direction,
+            selectionMode,
+            isMessageSelected(String(msg._id)),
+            focusId === String(msg._id),
+          ]"
           :id="`msg-${msg._id}`"
           :text="msg.text"
           :text-format="msg.textFormat"
@@ -179,7 +195,7 @@
           :location-title="msg.locationTitle"
           :highlight="focusId === String(msg._id)"
           :selection-mode="selectionMode"
-          :selected="selectedMessageIds.includes(String(msg._id))"
+          :selected="isMessageSelected(String(msg._id))"
           :reply-to="msg.replyTo"
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
@@ -300,7 +316,7 @@
     <!-- Tanlangan xabarlarni o'chirish -->
     <ChatMessageSelectionBar
       v-if="selectionMode"
-      :selected-count="selectedMessageIds.length"
+      :selected-count="selectedCount"
       :deleting="isDeletingMessages"
       @cancel="exitSelectionMode"
       @delete="confirmDeleteSelected"
@@ -366,6 +382,7 @@ import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
+import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
 definePageMeta({
@@ -521,7 +538,10 @@ const visibleMessages = computed(() =>
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
-const selectedMessageIds = ref<string[]>([])
+/** Tanlangan xabarlar — Set tez qidiruv uchun (includes O(n) emas) */
+const selectedIdSet = shallowRef(new Set<string>())
+const selectedCount = computed(() => selectedIdSet.value.size)
+const isMessageSelected = (id: string) => selectedIdSet.value.has(id)
 const isDeletingMessages = ref(false)
 const isClearingHistory = ref(false)
 const showDeleteDialog = ref(false)
@@ -540,14 +560,14 @@ const fallbackOrderText = computed(() => {
 
 const enterSelectionMode = (messageId: string) => {
   selectionMode.value = true
-  if (!selectedMessageIds.value.includes(messageId)) {
-    selectedMessageIds.value = [...selectedMessageIds.value, messageId]
-  }
+  const next = new Set(selectedIdSet.value)
+  next.add(messageId)
+  selectedIdSet.value = next
 }
 
 const exitSelectionMode = () => {
   selectionMode.value = false
-  selectedMessageIds.value = []
+  selectedIdSet.value = new Set()
 }
 
 const onMessageLongPress = (messageId: string) => {
@@ -556,11 +576,11 @@ const onMessageLongPress = (messageId: string) => {
 
 const toggleMessageSelect = (messageId: string) => {
   if (!selectionMode.value) return
-  const set = new Set(selectedMessageIds.value)
-  if (set.has(messageId)) set.delete(messageId)
-  else set.add(messageId)
-  selectedMessageIds.value = [...set]
-  if (!selectedMessageIds.value.length) selectionMode.value = false
+  const next = new Set(selectedIdSet.value)
+  if (next.has(messageId)) next.delete(messageId)
+  else next.add(messageId)
+  selectedIdSet.value = next
+  if (!next.size) selectionMode.value = false
 }
 
 const onMessageReply = (msg: { _id: string; text?: string; type?: string; locationTitle?: string; duration?: number; direction?: string }) => {
@@ -596,7 +616,7 @@ const openClearHistoryDialog = () => {
 }
 
 const confirmDeleteSelected = () => {
-  openDeleteDialog(selectedMessageIds.value)
+  openDeleteDialog([...selectedIdSet.value])
 }
 
 const executeDeleteMessages = async () => {
