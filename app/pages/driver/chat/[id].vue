@@ -165,8 +165,10 @@
           :highlight="focusId === String(msg._id)"
           :selection-mode="selectionMode"
           :selected="selectedMessageIds.includes(String(msg._id))"
+          :reply-to="msg.replyTo"
           @long-press="onMessageLongPress(String(msg._id), chatMediaType(msg))"
           @toggle-select="toggleMessageSelect(String(msg._id), chatMediaType(msg))"
+          @reply="onMessageReply(msg)"
         />
         </template>
 
@@ -289,11 +291,18 @@
     />
 
     <!-- Composer — ochilish/loading paytida ham ko'rinsin -->
+    <ChatReplyBar
+      v-if="replyTarget"
+      :reply="replyTarget"
+      @cancel="replyTarget = null"
+    />
+
     <ChatComposer
       v-if="showComposer && !selectionMode"
       v-model="draft"
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
+      :slash-commands="adminSlashCommands"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -311,6 +320,10 @@ import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { compactQuery } from '~/utils/navigationQuery'
+import { isAdminUser } from '~/utils/userRole'
+import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
+import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
+import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
 definePageMeta({
   layout: false,
@@ -320,6 +333,11 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const chatStore = useChatStore()
+const isAdmin = computed(() => isAdminUser(authStore.user))
+const { commands: adminSlashCommandList, load: loadAdminSlashCommands } = useAdminSlashCommands()
+const adminSlashCommands = computed(() =>
+  isAdmin.value ? adminSlashCommandList.value : [],
+)
 const { ensureAccess: ensureOrderTakeAccessFromApi, redirectIfBlocked: redirectOrderTakeBlocked } =
   useOrderTakeAccess()
 
@@ -453,6 +471,7 @@ const displayOrderText = computed(() => {
 })
 
 const draft = ref('')
+const replyTarget = ref<ChatReplyTarget | null>(null)
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
@@ -496,6 +515,11 @@ const toggleMessageSelect = (messageId: string, type: string) => {
   else set.add(messageId)
   selectedMessageIds.value = [...set]
   if (!selectedMessageIds.value.length) selectionMode.value = false
+}
+
+const onMessageReply = (msg: { _id: string; text?: string; type?: string; locationTitle?: string; duration?: number; direction?: string }) => {
+  if (selectionMode.value) return
+  replyTarget.value = replyTargetFromMessage(msg as any)
 }
 
 const confirmDeleteSelected = async () => {
@@ -646,7 +670,9 @@ const onSend = async (text: string) => {
     const ok = await chatStore.ensureTelegramReady(chatId.value)
     if (!ok) return
   }
-  await chatStore.sendMessage(chatId.value, text)
+  const replyId = replyTarget.value?.id
+  await chatStore.sendMessage(chatId.value, text, replyId)
+  replyTarget.value = null
   scrollToBottom()
 }
 
@@ -1167,6 +1193,8 @@ watch(scrollEl, (el, _, onCleanup) => {
 })
 
 onMounted(() => {
+  if (isAdmin.value) void loadAdminSlashCommands()
+
   prevBodyOverflow = document.body.style.overflow
   prevHtmlOverflow = document.documentElement.style.overflow
   document.body.style.overflow = 'hidden'
@@ -1191,6 +1219,7 @@ onBeforeUnmount(() => {
   chatStore.messages = []
   chatStore.resetMessagesPagination()
   chatStore.resetConnection()
+  replyTarget.value = null
 })
 </script>
 

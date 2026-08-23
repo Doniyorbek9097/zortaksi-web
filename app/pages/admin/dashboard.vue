@@ -29,11 +29,13 @@
     </p>
 
     <!-- Boshqaruv -->
-    <section class="space-y-2">
-      <h3 class="text-[11px] font-black uppercase tracking-wide text-slate-400 px-0.5">
-        Boshqaruv
-      </h3>
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+    <AdminSectionCard
+      title="Boshqaruv"
+      icon="fa-solid fa-house"
+      icon-tone="sky"
+      no-padding
+    >
+      <div class="grid grid-cols-2 gap-1.5 p-2.5">
         <AdminNavGridItem
           v-for="nav in navItems"
           :key="nav.title"
@@ -43,7 +45,7 @@
           @click="navigateTo(nav.to)"
         />
       </div>
-    </section>
+    </AdminSectionCard>
 
     <!-- Jonli statistika -->
     <section class="space-y-2">

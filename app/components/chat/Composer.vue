@@ -45,7 +45,37 @@
       </div>
 
       <!-- Oddiy holat -->
-      <div v-else class="flex items-center gap-2">
+      <div v-else class="relative">
+        <div
+          v-if="showSlashMenu"
+          class="absolute bottom-full left-0 right-0 mb-1.5 z-40 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden max-h-[min(52vh,280px)]"
+        >
+          <p class="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
+            Admin komandalar
+          </p>
+          <ul class="overflow-y-auto max-h-[min(48vh,248px)]">
+            <li
+              v-for="(item, idx) in filteredSlashCommands"
+              :key="`${item.cmd}-${idx}`"
+            >
+              <button
+                type="button"
+                class="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/80 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
+                :class="idx === slashHighlight ? 'bg-sky-50 dark:bg-sky-950/40' : ''"
+                @click="pickSlashCommand(item.cmd)"
+              >
+                <span class="shrink-0 text-[12px] font-black font-mono text-sky-600 dark:text-sky-400">
+                  {{ item.cmd }}
+                </span>
+                <span class="min-w-0 text-[11px] font-bold text-slate-500 dark:text-slate-400 leading-snug">
+                  {{ item.label }}
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex items-center gap-2">
         <button
           type="button"
           :disabled="disabled"
@@ -84,7 +114,9 @@
           class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
           @touchstart.passive="unlockDraft"
           @mousedown="unlockDraft"
-          @keydown.enter.prevent="send"
+          @keydown.enter.prevent="onEnter"
+          @keydown.down.prevent="onSlashDown"
+          @keydown.up.prevent="onSlashUp"
           @focus="unlockDraft"
         >
 
@@ -107,6 +139,7 @@
         >
           <font-awesome-icon icon="fa-solid fa-microphone" />
         </button>
+        </div>
       </div>
 
       <p v-if="micError" class="mt-1.5 px-1 text-[11px] font-bold text-red-500">{{ micError }}</p>
@@ -116,6 +149,7 @@
 
 <script setup lang="ts">
 import { onBeforeUnmount } from 'vue'
+import type { AdminSlashCommandItem } from '~/types/adminCommands'
 import { CHAT_PHOTO_MAX_INPUT, isChatPhotoFile, prepareChatPhoto } from '~/utils/prepareChatPhoto'
 import {
   buildVoiceRecorderOptions,
@@ -128,8 +162,12 @@ import {
 const text = defineModel<string>({ default: '' })
 
 const props = withDefaults(
-  defineProps<{ disabled?: boolean; placeholder?: string }>(),
-  { disabled: false, placeholder: '' },
+  defineProps<{
+    disabled?: boolean
+    placeholder?: string
+    slashCommands?: AdminSlashCommandItem[]
+  }>(),
+  { disabled: false, placeholder: '', slashCommands: () => [] },
 )
 
 const emit = defineEmits<{
@@ -148,6 +186,54 @@ const inputPlaceholder = computed(() => {
 const fileInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
+const slashHighlight = ref(0)
+
+const filteredSlashCommands = computed(() => {
+  const list = props.slashCommands ?? []
+  if (!list.length) return []
+  const raw = text.value
+  if (!raw.startsWith('/')) return []
+  const q = raw.trim().toLowerCase()
+  if (q === '/') return list.slice(0, 16)
+  return list
+    .filter((item) => item.cmd.toLowerCase().startsWith(q))
+    .slice(0, 16)
+})
+
+const showSlashMenu = computed(
+  () => !props.disabled && filteredSlashCommands.value.length > 0,
+)
+
+watch(filteredSlashCommands, (list) => {
+  if (!list.length) slashHighlight.value = 0
+  else if (slashHighlight.value >= list.length) slashHighlight.value = 0
+})
+
+const pickSlashCommand = (cmd: string) => {
+  text.value = cmd
+  slashHighlight.value = 0
+  unlockDraft()
+}
+
+const onSlashDown = () => {
+  if (!showSlashMenu.value) return
+  const max = filteredSlashCommands.value.length
+  slashHighlight.value = (slashHighlight.value + 1) % max
+}
+
+const onSlashUp = () => {
+  if (!showSlashMenu.value) return
+  const max = filteredSlashCommands.value.length
+  slashHighlight.value = (slashHighlight.value - 1 + max) % max
+}
+
+const onEnter = () => {
+  if (showSlashMenu.value && filteredSlashCommands.value[slashHighlight.value]) {
+    pickSlashCommand(filteredSlashCommands.value[slashHighlight.value].cmd)
+    return
+  }
+  send()
+}
 
 const unlockDraft = () => {
   draftLocked.value = false

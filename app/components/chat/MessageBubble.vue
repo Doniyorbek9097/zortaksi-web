@@ -6,8 +6,33 @@
       highlight ? 'ring-2 ring-amber-400/80 rounded-2xl' : '',
     ]"
   >
+    <div class="relative max-w-[82%] overflow-hidden">
+      <div
+        v-if="!selectionMode && swipeX > 4"
+        class="absolute inset-y-0 left-0 w-11 flex items-center justify-center pointer-events-none"
+      >
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center bg-sky-500 text-white shadow-sm transition-opacity"
+          :style="{ opacity: swipeIconOpacity }"
+        >
+          <font-awesome-icon icon="fa-solid fa-reply" class="text-[12px]" />
+        </div>
+      </div>
+
+      <div
+        class="relative will-change-transform"
+        :class="swipeDragging ? '' : 'transition-transform duration-200'"
+        :style="{
+          transform: `translate3d(${swipeX}px,0,0)`,
+          touchAction: selectionMode ? 'auto' : 'pan-y',
+        }"
+        @pointerdown="onSwipePointerDown"
+        @pointermove="onSwipePointerMove"
+        @pointerup="onSwipePointerUp"
+        @pointercancel="onSwipePointerUp"
+      >
     <div
-      class="relative max-w-[82%] rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
+      class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
       :class="[
         paymentCards || paymentRequest
           ? (out
@@ -30,6 +55,13 @@
       @pointerleave="onSelectPointerCancel"
       @click.capture="onBubbleClickCapture"
     >
+      <ChatMessageReplyQuote
+        v-if="replyTo?.text"
+        :text="replyTo.text"
+        :out="out"
+        :reply-out="replyTo.direction === 'out'"
+      />
+
       <div
         v-if="isMediaSelectable && selectionMode"
         class="absolute top-2 left-2 z-10 w-5 h-5 rounded-md flex items-center justify-center border-2 transition-colors"
@@ -249,6 +281,8 @@
         @error="onAudioError"
       />
     </div>
+      </div>
+    </div>
 
     <!-- Rasm lightbox -->
     <Teleport to="body">
@@ -306,6 +340,12 @@ interface Props {
   /** Ovoz/rasm tanlash rejimi */
   selectionMode?: boolean
   selected?: boolean
+  replyTo?: {
+    messageId?: string
+    text?: string
+    type?: string
+    direction?: 'in' | 'out'
+  } | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -326,6 +366,7 @@ const props = withDefaults(defineProps<Props>(), {
   maskPhones: false,
   selectionMode: false,
   selected: false,
+  replyTo: null,
 })
 
 /** Failed xabarda ko'rsatiladigan sabab — media xabarlarda ham ko'rsatiladi */
@@ -334,7 +375,65 @@ const errorText = computed(() => {
   return String(props.error || '').trim()
 })
 
-const emit = defineEmits<{ 'long-press': []; 'toggle-select': [] }>()
+const emit = defineEmits<{ 'long-press': []; 'toggle-select': []; reply: [] }>()
+
+const SWIPE_REVEAL = 56
+const swipeX = ref(0)
+const swipeDragging = ref(false)
+const swipeStartX = ref(0)
+const swipeOriginX = ref(0)
+const swipeOriginY = ref(0)
+const swipeAxis = ref<'h' | 'v' | null>(null)
+const swipeMoved = ref(false)
+
+const swipeIconOpacity = computed(() =>
+  Math.min(1, swipeX.value / SWIPE_REVEAL),
+)
+
+const onSwipePointerDown = (e: PointerEvent) => {
+  if (props.selectionMode) return
+  swipeDragging.value = true
+  swipeMoved.value = false
+  swipeAxis.value = null
+  swipeOriginX.value = e.clientX
+  swipeOriginY.value = e.clientY
+  swipeStartX.value = e.clientX - swipeX.value
+  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+}
+
+const onSwipePointerMove = (e: PointerEvent) => {
+  if (!swipeDragging.value || props.selectionMode) return
+  const rawDx = e.clientX - swipeOriginX.value
+  const rawDy = e.clientY - swipeOriginY.value
+  if (!swipeAxis.value) {
+    if (Math.abs(rawDx) < 8 && Math.abs(rawDy) < 8) return
+    swipeAxis.value = Math.abs(rawDx) >= Math.abs(rawDy) ? 'h' : 'v'
+    if (swipeAxis.value === 'v') {
+      swipeDragging.value = false
+      return
+    }
+  }
+  if (swipeAxis.value !== 'h') return
+  swipeMoved.value = true
+  clearLongPress()
+  let dx = e.clientX - swipeStartX.value
+  if (dx < 0) dx = 0
+  if (dx > SWIPE_REVEAL) dx = SWIPE_REVEAL
+  swipeX.value = dx
+}
+
+const onSwipePointerUp = () => {
+  if (!swipeDragging.value && swipeAxis.value !== 'h') {
+    swipeAxis.value = null
+    return
+  }
+  swipeDragging.value = false
+  if (swipeAxis.value === 'h' && swipeX.value >= SWIPE_REVEAL * 0.65) {
+    emit('reply')
+  }
+  swipeX.value = 0
+  swipeAxis.value = null
+}
 
 const isMediaSelectable = computed(() => props.type === 'voice' || props.type === 'photo')
 
@@ -360,6 +459,12 @@ const onSelectPointerUp = () => clearLongPress()
 const onSelectPointerCancel = () => clearLongPress()
 
 const onBubbleClickCapture = (e: Event) => {
+  if (swipeMoved.value) {
+    e.preventDefault()
+    e.stopPropagation()
+    swipeMoved.value = false
+    return
+  }
   if (!isMediaSelectable.value || !props.selectionMode) return
   e.preventDefault()
   e.stopPropagation()

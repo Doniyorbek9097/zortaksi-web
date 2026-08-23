@@ -64,6 +64,13 @@ export interface IChatMessage {
     locationLat?: number
     locationLng?: number
     locationTitle?: string
+    replyToMessageId?: string
+    replyTo?: {
+        messageId?: string
+        text?: string
+        type?: ChatMessageType
+        direction?: ChatDirection
+    }
     date: string | Date
     createdAt: string | Date
     updatedAt: string | Date

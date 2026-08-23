@@ -9,6 +9,7 @@ import {
     markTempFailed,
 } from '../helpers/temp-message'
 import { replaceTempWithReal } from '../helpers/merge-messages'
+import { messageReplyPreview } from '~/utils/messageReplyPreview'
 import type { ChatStoreRefs } from '../types'
 
 /** Server javobi / xatodan tushunarli xato matni olish */
@@ -61,16 +62,34 @@ export function createMessagingActions(
      * Xabar yuborish — darhol "yuborilmoqda" bubble; server javobi kelgach
      * haqiqiy holat (sent/failed) bilan almashtiriladi.
      */
-    const sendMessage = async (chatId: string, text: string) => {
+    const sendMessage = async (
+        chatId: string,
+        text: string,
+        replyToMessageId?: string,
+    ) => {
         const tempId = createTempId()
         const temp = createTempTextMessage(chatId, text, tempId)
+        if (replyToMessageId) {
+            const ref = messages.value.find((m) => String(m._id) === String(replyToMessageId))
+            if (ref) {
+                ;(temp as any).replyTo = {
+                    messageId: String(ref._id),
+                    text: messageReplyPreview(ref),
+                    type: ref.type,
+                    direction: ref.direction,
+                }
+            }
+        }
         messages.value.push(temp)
 
         try {
             isSending.value = true
             const res = await useApi(`/chats/${chatId}/messages`, {
                 method: 'POST',
-                body: { text },
+                body: {
+                    text,
+                    ...(replyToMessageId ? { replyToMessageId } : {}),
+                },
             })
             if (res.success) {
                 // Temp bubble'ni serverdagi haqiqiy xabar (sent/failed) bilan almashtiramiz.
