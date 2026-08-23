@@ -56,8 +56,5 @@ watch(
 <style scoped>
 .admin-shell {
   padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
-  background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(56, 189, 248, 0.08), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(139, 92, 246, 0.06), transparent);
 }
 </style>

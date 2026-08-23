@@ -1,36 +1,29 @@
 <template>
   <div
-    class="rounded-2xl p-4 relative overflow-hidden min-h-[112px] flex flex-col justify-between border border-white/20"
-    :class="gradientClass"
+    class="rounded-xl p-3 min-h-[88px] flex flex-col"
+    :class="surfaceClass"
   >
-    <div class="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.22),transparent_55%)] pointer-events-none" />
-    <div class="absolute -right-6 -bottom-6 w-20 h-20 rounded-full bg-white/10 blur-xl pointer-events-none" />
-
-    <div class="flex items-start justify-between gap-2 relative z-[1]">
+    <div class="flex items-center justify-between gap-1">
       <div
-        class="w-10 h-10 rounded-xl flex items-center justify-center bg-white/20 backdrop-blur-sm text-white text-sm shrink-0 ring-1 ring-white/30"
+        class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] shrink-0"
+        :class="iconClass"
       >
         <font-awesome-icon :icon="icon" />
       </div>
       <span
         v-if="change != null"
-        class="inline-flex items-center gap-0.5 text-[10px] font-black px-2 py-0.5 rounded-full bg-black/20 backdrop-blur-sm text-white ring-1 ring-white/20"
+        class="text-[10px] font-black tabular-nums"
+        :class="change >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
       >
-        <font-awesome-icon
-          :icon="change >= 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
-          class="text-[8px]"
-        />
         {{ change > 0 ? '+' : '' }}{{ change }}
       </span>
     </div>
-    <div class="relative z-[1] mt-3">
-      <p class="text-[30px] font-black leading-none tabular-nums text-white drop-shadow-sm">
-        {{ displayValue }}
-      </p>
-      <p class="mt-1.5 text-[10px] font-bold uppercase tracking-wider text-white/75 leading-snug">
-        {{ label }}
-      </p>
-    </div>
+    <p class="mt-2 text-2xl font-black leading-none tabular-nums" :class="valueClass">
+      {{ displayValue }}
+    </p>
+    <p class="mt-1.5 text-[11px] font-bold leading-snug" :class="labelClass">
+      {{ label }}
+    </p>
   </div>
 </template>
 
@@ -43,29 +36,47 @@ interface Props {
   icon: string
   tone?: Tone
   change?: number | null
-  compact?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   tone: 'sky',
   change: null,
-  compact: false,
 })
 
-const gradientMap: Record<Tone, string> = {
-  sky: 'bg-gradient-to-br from-sky-500 via-blue-600 to-indigo-700 shadow-xl shadow-sky-600/30',
-  emerald: 'bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 shadow-xl shadow-emerald-600/30',
-  violet: 'bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-700 shadow-xl shadow-violet-600/30',
-  amber: 'bg-gradient-to-br from-amber-500 via-orange-500 to-rose-600 shadow-xl shadow-amber-600/30',
+const toneMap: Record<Tone, { surface: string; icon: string; value: string; label: string }> = {
+  sky: {
+    surface: 'bg-sky-50 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-900',
+    icon: 'bg-sky-500 text-white',
+    value: 'text-sky-700 dark:text-sky-300',
+    label: 'text-sky-600/80 dark:text-sky-400/80',
+  },
+  emerald: {
+    surface: 'bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-100 dark:border-emerald-900',
+    icon: 'bg-emerald-500 text-white',
+    value: 'text-emerald-700 dark:text-emerald-300',
+    label: 'text-emerald-600/80 dark:text-emerald-400/80',
+  },
+  violet: {
+    surface: 'bg-violet-50 dark:bg-violet-950/50 border border-violet-100 dark:border-violet-900',
+    icon: 'bg-violet-500 text-white',
+    value: 'text-violet-700 dark:text-violet-300',
+    label: 'text-violet-600/80 dark:text-violet-400/80',
+  },
+  amber: {
+    surface: 'bg-amber-50 dark:bg-amber-950/50 border border-amber-100 dark:border-amber-900',
+    icon: 'bg-amber-500 text-white',
+    value: 'text-amber-700 dark:text-amber-300',
+    label: 'text-amber-600/80 dark:text-amber-400/80',
+  },
 }
 
-const gradientClass = computed(() => gradientMap[props.tone])
+const surfaceClass = computed(() => toneMap[props.tone].surface)
+const iconClass = computed(() => toneMap[props.tone].icon)
+const valueClass = computed(() => toneMap[props.tone].value)
+const labelClass = computed(() => toneMap[props.tone].label)
 
 const displayValue = computed(() => {
   if (typeof props.value === 'string') return props.value
-  if (!props.compact) return props.value.toLocaleString('ru-RU')
-  if (props.value >= 1_000_000) return `${Math.round(props.value / 100_000) / 10}M`
-  if (props.value >= 1000) return `${Math.round(props.value / 1000)}K`
-  return String(props.value)
+  return props.value.toLocaleString('ru-RU')
 })
 </script>
