@@ -34,18 +34,9 @@
     <div
       class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
       :class="[
-        paymentCards || paymentRequest
-          ? (out
-            ? 'bg-teal-600 text-white rounded-br-md max-w-[92%]'
-            : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-teal-300 dark:border-teal-700 max-w-[92%]')
-          : out
+        out
             ? 'bg-sky-500 text-white rounded-br-md'
             : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-md border border-slate-200 dark:border-slate-700',
-        paymentRequest && !paymentCards
-          ? (out
-            ? '!bg-sky-500'
-            : '!border-sky-300 dark:!border-sky-700')
-          : '',
         type === 'photo' ? '!p-1.5' : '',
         isMediaSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
@@ -190,32 +181,6 @@
         </span>
       </a>
 
-      <!-- To'lov kartalari (admin javobi) -->
-      <ChatPaymentCardsBubble
-        v-else-if="paymentCards"
-        :name="paymentCards.name"
-        :owner="paymentCards.owner"
-        :cards="paymentCards.cards"
-        :out="out"
-      />
-
-      <!-- To'lov so'rovi (haydovchi → admin) -->
-      <ChatPaymentRequestBubble
-        v-else-if="paymentRequest"
-        :type="paymentRequest.type"
-        :name="paymentRequest.name"
-        :phone="maskPhones ? PHONE_MASK : paymentRequest.phone"
-        :tariff="paymentRequest.tariff"
-        :amount="paymentRequest.amount"
-        :pay-url="paymentRequest.payUrl"
-        :user-id="paymentRequest.userId"
-        :tariff-id="paymentRequest.tariffId"
-        :payment-status="paymentRequest.paymentStatus"
-        :date="date || undefined"
-        :message-id="messageId"
-        :out="out"
-      />
-
       <!-- Matn (link / telefon bosiladi) -->
       <p
         v-else
@@ -315,7 +280,6 @@
 <script setup lang="ts">
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
-import { PHONE_MASK } from '~/utils/phone'
 
 interface Props {
   text?: string
@@ -481,101 +445,6 @@ const mapsUrl = computed(() => {
 })
 
 const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
-
-const pickLine = (raw: string, re: RegExp) => {
-  const m = raw.match(re)
-  return m?.[1]?.trim() || ''
-}
-
-/** [[ZT_PAYMENT_CARDS]] yoki oddiy karta matni */
-const paymentCards = computed(() => {
-  const raw = String(props.text || '')
-  const m = raw.match(/\[\[ZT_PAYMENT_CARDS\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_CARDS\]\]/)
-  if (m?.[1]) {
-    try {
-      const data = JSON.parse(m[1].trim())
-      const cards = (Array.isArray(data.cards) ? data.cards : [])
-        .map((c: unknown) => String(c || '').replace(/\D/g, ''))
-        .filter((c: string) => c.length >= 16)
-      if (!cards.length) return null
-      return {
-        name: String(data.name || '').trim(),
-        owner: String(data.owner || '').trim(),
-        cards,
-      }
-    } catch {
-      /* fallback below */
-    }
-  }
-
-  // Telegram oddiy matn / eski format
-  const digits = raw.replace(/\D/g, ' ').match(/\d{16}/g) || []
-  const unique = [...new Set(digits)]
-  if (
-    unique.length >= 1 &&
-    (/to['']lov so['']rovingiz qabul/i.test(raw) ||
-      /karta egasi/i.test(raw) ||
-      /kartadan biriga/i.test(raw) ||
-      /💳/.test(raw))
-  ) {
-    return {
-      name: pickLine(raw, /Assalomu alaykum[,\s]+(.+?)!/i).replace(/\s+/g, ' '),
-      owner: pickLine(raw, /Karta egasi:\s*(.+)/i),
-      cards: unique.slice(0, 3),
-    }
-  }
-  return null
-})
-
-/** [[ZT_PAYMENT_REQUEST]] yoki oddiy so'rov matni */
-const paymentRequest = computed(() => {
-  const raw = String(props.text || '')
-  const m = raw.match(/\[\[ZT_PAYMENT_REQUEST\]\]\s*([\s\S]*?)\s*\[\[\/ZT_PAYMENT_REQUEST\]\]/)
-  if (m?.[1]) {
-    try {
-      const data = JSON.parse(m[1].trim())
-      const statusRaw = String(data.paymentStatus || 'unpaid').trim().toLowerCase()
-      return {
-        type: String(data.type || (data.tariffId || data.tariff ? 'tariff' : 'topup')).trim(),
-        name: String(data.name || '').trim(),
-        phone: String(data.phone || '').trim(),
-        tariff: String(data.tariff || '').trim(),
-        amount: String(data.amount || '').trim(),
-        payUrl: String(data.payUrl || '').trim(),
-        userId: String(data.userId || '').trim(),
-        tariffId: String(data.tariffId || '').trim(),
-        paymentStatus: statusRaw === 'paid' ? 'paid' : 'unpaid',
-      }
-    } catch {
-      /* fallback */
-    }
-  }
-
-  if (
-    /hisobni to['']ldir/i.test(raw) ||
-    /tarif sotib olmoqchiman/i.test(raw) ||
-    /🛒/.test(raw) ||
-    /💰/.test(raw) ||
-    (/karta raqamini yuboring/i.test(raw) && /summa/i.test(raw))
-  ) {
-    const url = pickLine(raw, /(https?:\/\/[^\s]+\/admin\/pay\/[^\s]+)/i)
-      || pickLine(raw, /(https?:\/\/[^\s]+)/i)
-    const tariff = pickLine(raw, /Tarif:\s*(.+)/i)
-    const isTopup = /hisobni to['']ldir/i.test(raw) || !tariff
-    return {
-      type: isTopup ? 'topup' : 'tariff',
-      name: pickLine(raw, /Ism:\s*(.+)/i),
-      phone: pickLine(raw, /Tel:\s*(.+)/i),
-      tariff,
-      amount: pickLine(raw, /Summa:\s*([^\n]+?)(?:\s*so['']m)?$/im).replace(/\s*so['']m/i, '').trim(),
-      payUrl: url,
-      userId: '',
-      tariffId: '',
-      paymentStatus: 'unpaid',
-    }
-  }
-  return null
-})
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')

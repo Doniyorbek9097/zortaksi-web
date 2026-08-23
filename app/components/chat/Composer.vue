@@ -53,7 +53,7 @@
           <p class="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
             Admin komandalar
           </p>
-          <ul class="overflow-y-auto max-h-[min(48vh,248px)]">
+          <ul v-if="filteredSlashCommands.length" class="overflow-y-auto max-h-[min(48vh,248px)]">
             <li
               v-for="(item, idx) in filteredSlashCommands"
               :key="`${item.cmd}-${idx}`"
@@ -62,7 +62,7 @@
                 type="button"
                 class="w-full px-3 py-2.5 flex items-start gap-2.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/80 active:bg-slate-100 dark:active:bg-slate-800 transition-colors"
                 :class="idx === slashHighlight ? 'bg-sky-50 dark:bg-sky-950/40' : ''"
-                @click="pickSlashCommand(item.cmd)"
+                @click="sendSlashCommand(item.cmd)"
               >
                 <span class="shrink-0 text-[12px] font-black font-mono text-sky-600 dark:text-sky-400">
                   {{ item.cmd }}
@@ -73,6 +73,12 @@
               </button>
             </li>
           </ul>
+          <p
+            v-else
+            class="px-3 py-3 text-[12px] font-bold text-slate-400 text-center"
+          >
+            Komanda topilmadi
+          </p>
         </div>
 
         <div class="flex items-center gap-2">
@@ -94,31 +100,51 @@
           @change="onFileChange"
         >
 
-        <input
-          v-model="text"
-          type="search"
-          name="zortaksi-chat-message"
-          inputmode="text"
-          enterkeyhint="send"
-          autocomplete="off"
-          autocorrect="on"
-          autocapitalize="sentences"
-          spellcheck="true"
-          data-lpignore="true"
-          data-1p-ignore="true"
-          data-form-type="other"
-          data-bwignore="true"
-          :readonly="draftLocked"
-          :disabled="disabled"
-          :placeholder="inputPlaceholder"
-          class="flex-1 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500/30 transition-all disabled:opacity-60 disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
-          @touchstart.passive="unlockDraft"
-          @mousedown="unlockDraft"
-          @keydown.enter.prevent="onEnter"
-          @keydown.down.prevent="onSlashDown"
-          @keydown.up.prevent="onSlashUp"
-          @focus="unlockDraft"
+        <div
+          class="flex-1 flex items-center min-w-0 rounded-full bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all"
+          :class="disabled ? 'opacity-60' : ''"
         >
+          <button
+            v-if="hasSlashCommands"
+            type="button"
+            :disabled="disabled"
+            class="shrink-0 w-9 h-9 ml-1 rounded-full flex items-center justify-center text-[15px] font-black text-sky-600 dark:text-sky-400 hover:bg-sky-500/10 active:scale-95 transition-all disabled:opacity-40"
+            aria-label="Admin komandalar"
+            @click="openSlashMenu"
+          >
+            /
+          </button>
+
+          <input
+            ref="textInput"
+            v-model="text"
+            type="search"
+            name="zortaksi-chat-message"
+            inputmode="text"
+            enterkeyhint="send"
+            autocomplete="off"
+            autocorrect="on"
+            autocapitalize="sentences"
+            spellcheck="true"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-form-type="other"
+            data-bwignore="true"
+            :readonly="draftLocked"
+            :disabled="disabled"
+            :placeholder="inputPlaceholder"
+            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
+            :class="hasSlashCommands ? 'pl-0.5' : 'pl-4'"
+            @touchstart.passive="unlockDraft"
+            @mousedown="unlockDraft"
+            @keydown.enter.prevent="onEnter"
+            @keydown.down.prevent="onSlashDown"
+            @keydown.up.prevent="onSlashUp"
+            @keydown.esc.prevent="closeSlashMenu"
+            @input="onTextInput"
+            @focus="unlockDraft"
+          >
+        </div>
 
         <button
           v-if="text.trim()"
@@ -184,24 +210,38 @@ const inputPlaceholder = computed(() => {
 })
 
 const fileInput = ref<HTMLInputElement | null>(null)
+const textInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
+const slashMenuOpen = ref(false)
 const slashHighlight = ref(0)
+
+const hasSlashCommands = computed(() => (props.slashCommands?.length ?? 0) > 0)
 
 const filteredSlashCommands = computed(() => {
   const list = props.slashCommands ?? []
-  if (!list.length) return []
+  if (!list.length || !slashMenuOpen.value) return []
+
   const raw = text.value
-  if (!raw.startsWith('/')) return []
   const q = raw.trim().toLowerCase()
-  if (q === '/') return list.slice(0, 16)
+
+  if (!q || q === '/') return list.slice(0, 20)
+
+  if (q.startsWith('/')) {
+    return list.filter((item) => item.cmd.toLowerCase().startsWith(q)).slice(0, 20)
+  }
+
   return list
-    .filter((item) => item.cmd.toLowerCase().startsWith(q))
-    .slice(0, 16)
+    .filter(
+      (item) =>
+        item.cmd.toLowerCase().includes(q) ||
+        item.label.toLowerCase().includes(q),
+    )
+    .slice(0, 20)
 })
 
 const showSlashMenu = computed(
-  () => !props.disabled && filteredSlashCommands.value.length > 0,
+  () => !props.disabled && slashMenuOpen.value && hasSlashCommands.value,
 )
 
 watch(filteredSlashCommands, (list) => {
@@ -209,27 +249,53 @@ watch(filteredSlashCommands, (list) => {
   else if (slashHighlight.value >= list.length) slashHighlight.value = 0
 })
 
-const pickSlashCommand = (cmd: string) => {
-  text.value = cmd
+const closeSlashMenu = () => {
+  slashMenuOpen.value = false
+  slashHighlight.value = 0
+}
+
+const openSlashMenu = () => {
+  if (props.disabled || !hasSlashCommands.value) return
+  slashMenuOpen.value = true
   slashHighlight.value = 0
   unlockDraft()
+  nextTick(() => textInput.value?.focus())
+}
+
+const onTextInput = () => {
+  if (!hasSlashCommands.value) return
+  const v = text.value
+  if (v.startsWith('/')) {
+    slashMenuOpen.value = true
+  }
+}
+
+const sendSlashCommand = (cmd: string) => {
+  if (props.disabled) return
+  const value = String(cmd || '').trim()
+  if (!value) return
+  closeSlashMenu()
+  text.value = ''
+  emit('send', value)
 }
 
 const onSlashDown = () => {
   if (!showSlashMenu.value) return
   const max = filteredSlashCommands.value.length
+  if (!max) return
   slashHighlight.value = (slashHighlight.value + 1) % max
 }
 
 const onSlashUp = () => {
   if (!showSlashMenu.value) return
   const max = filteredSlashCommands.value.length
+  if (!max) return
   slashHighlight.value = (slashHighlight.value - 1 + max) % max
 }
 
 const onEnter = () => {
   if (showSlashMenu.value && filteredSlashCommands.value[slashHighlight.value]) {
-    pickSlashCommand(filteredSlashCommands.value[slashHighlight.value].cmd)
+    sendSlashCommand(filteredSlashCommands.value[slashHighlight.value].cmd)
     return
   }
   send()
@@ -266,6 +332,7 @@ const send = () => {
   if (props.disabled) return
   const value = text.value.trim()
   if (!value) return
+  closeSlashMenu()
   emit('send', value)
   text.value = ''
 }

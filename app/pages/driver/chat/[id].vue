@@ -145,7 +145,7 @@
 
         <template v-else-if="messagesMatchChat">
         <ChatMessageBubble
-          v-for="msg in chatStore.messages"
+          v-for="msg in visibleMessages"
           :key="String(msg._id)"
           :id="`msg-${msg._id}`"
           :text="msg.text"
@@ -323,6 +323,7 @@ import { compactQuery } from '~/utils/navigationQuery'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
+import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
 definePageMeta({
@@ -472,6 +473,9 @@ const displayOrderText = computed(() => {
 
 const draft = ref('')
 const replyTarget = ref<ChatReplyTarget | null>(null)
+const visibleMessages = computed(() =>
+  chatStore.messages.filter((m) => !isLegacyPaymentChatMessage(m)),
+)
 const scrollEl = ref<HTMLElement | null>(null)
 const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
