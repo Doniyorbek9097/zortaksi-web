@@ -18,6 +18,10 @@
       :payments="monthIncome.payments"
       :total="monthIncome.total"
       :change-percent="growth?.monthIncomePercent"
+      :today-amount="todayIncome.amount"
+      :today-payments="todayIncome.payments"
+      :week-amount="weekIncome.amount"
+      :week-payments="weekIncome.payments"
     />
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
@@ -114,6 +118,18 @@
       <AdminRegionBarList :items="regionDrivers.slice(0, 6)" />
     </AdminSectionCard>
 
+    <!-- 7 kunlik daromad -->
+    <AdminSectionCard
+      title="7 kunlik daromad"
+      icon="fa-solid fa-chart-line"
+      icon-tone="emerald"
+    >
+      <AdminMonthlyTrendChart
+        :items="incomeDailyItems"
+        value-mode="amount"
+      />
+    </AdminSectionCard>
+
     <!-- Tariflar -->
     <AdminSectionCard
       title="Eng ko'p sotilgan tariflar"
@@ -204,6 +220,8 @@ const greeting = computed(() => {
 const isNight = computed(() => /tun|kech/i.test(greeting.value))
 
 const monthIncome = computed(() => store.monthIncome)
+const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payments: 0, total: 0 })
+const weekIncome = computed(() => store.data?.weekIncome ?? { amount: 0, payments: 0, total: 0 })
 const growth = computed(() => store.data?.growth)
 
 const navItems = [
@@ -296,6 +314,14 @@ const chartItems = computed(() => {
         : chartTab.value === 'amount'
           ? m.amount
           : m.newDrivers,
+  }))
+})
+
+const incomeDailyItems = computed(() => {
+  const series = store.data?.incomeDailyChart ?? []
+  return series.map((d) => ({
+    label: d.label,
+    value: d.amount,
   }))
 })
 

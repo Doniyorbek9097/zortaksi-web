@@ -49,6 +49,8 @@ export interface DashboardGrowth {
 
 export interface AdminDashboardData {
   monthIncome: IncomeBlock
+  todayIncome?: IncomeBlock
+  weekIncome?: IncomeBlock
   keyStats: {
     ordersToday: number
     newDriversToday: number
@@ -80,6 +82,7 @@ export interface AdminDashboardData {
   tariffSplit: DataRow[]
   tariffStats?: TariffStatsBlock
   chart: ChartMonth[]
+  incomeDailyChart?: ChartMonth[]
   regionDrivers?: RegionDriverStat[]
   growth?: DashboardGrowth
 }
