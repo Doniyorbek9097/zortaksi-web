@@ -5,11 +5,14 @@
       v-if="clickEnabled"
       type="button"
       :disabled="disabled || loading === 'click'"
-      class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-white bg-[#00ADEF] hover:bg-[#0096d1] active:scale-[0.98] transition-all disabled:opacity-50"
+      class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-white bg-[#00ADEF] hover:bg-[#0096d1] active:scale-[0.98] transition-all disabled:opacity-50"
       @click="$emit('pay-click')"
     >
       <img :src="clickLogo" alt="Click" class="w-8 h-8 rounded-md shrink-0 object-cover bg-white" loading="lazy">
-      <span class="flex-1 min-w-0 font-black text-[13px] leading-tight">Click · {{ amountLabel }}</span>
+      <span class="flex-1 min-w-0">
+        <span class="block font-black text-[13px] leading-tight">Click orqali to'lash</span>
+        <span class="block text-[11px] font-semibold opacity-90 mt-0.5">{{ amountLabel }}</span>
+      </span>
       <font-awesome-icon
         :icon="loading === 'click' ? 'fa-solid fa-spinner' : 'fa-solid fa-chevron-right'"
         class="text-xs shrink-0"
@@ -22,11 +25,14 @@
       v-if="paymeEnabled"
       type="button"
       :disabled="disabled || loading === 'payme'"
-      class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 active:scale-[0.98] transition-all disabled:opacity-50"
+      class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 active:scale-[0.98] transition-all disabled:opacity-50"
       @click="$emit('pay-payme')"
     >
       <img :src="paymeLogo" alt="Payme" class="w-8 h-8 rounded-md shrink-0 object-cover" loading="lazy">
-      <span class="flex-1 min-w-0 font-black text-[13px] text-slate-900 dark:text-white leading-tight">Payme · {{ amountLabel }}</span>
+      <span class="flex-1 min-w-0">
+        <span class="block font-black text-[13px] text-slate-900 dark:text-white leading-tight">Payme orqali to'lash</span>
+        <span class="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">{{ amountLabel }}</span>
+      </span>
       <font-awesome-icon
         :icon="loading === 'payme' ? 'fa-solid fa-spinner' : 'fa-solid fa-chevron-right'"
         class="text-xs text-slate-400 shrink-0"
@@ -39,7 +45,7 @@
       v-if="showAdmin"
       type="button"
       :disabled="disabled || adminLoading"
-      class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all disabled:opacity-50"
+      class="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-left text-white bg-violet-600 hover:bg-violet-700 active:scale-[0.98] transition-all disabled:opacity-50"
       @click="$emit('pay-admin')"
     >
       <span class="w-8 h-8 rounded-md bg-white/15 flex items-center justify-center shrink-0">
@@ -49,7 +55,10 @@
           :class="{ 'animate-spin': adminLoading }"
         />
       </span>
-      <span class="flex-1 min-w-0 font-black text-[13px] leading-tight">Admin · {{ amountLabel }}</span>
+      <span class="flex-1 min-w-0">
+        <span class="block font-black text-[13px] leading-tight">{{ adminLabel }}</span>
+        <span class="block text-[11px] font-semibold opacity-90 mt-0.5">{{ amountLabel }}</span>
+      </span>
       <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-xs shrink-0 opacity-90" />
     </button>
 
@@ -79,7 +88,7 @@ const props = withDefaults(
     clickEnabled: false,
     paymeEnabled: false,
     showAdmin: true,
-    adminLabel: "Adminga so'rov",
+    adminLabel: "Adminga to'lov qilish",
     onlineHint: "Online to'lovdan keyin darhol faol bo'ladi.",
     loading: null,
     adminLoading: false,
