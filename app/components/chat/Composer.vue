@@ -108,8 +108,10 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-8 h-8 ml-1.5 rounded-lg flex items-center justify-center text-[14px] font-black border shadow-sm transition-all active:scale-95 disabled:opacity-40 bg-white text-sky-600 border-slate-200 hover:bg-sky-50 hover:border-sky-200"
-            :class="slashMenuOpen ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-400/25' : ''"
+            class="shrink-0 w-9 h-9 ml-1 rounded-full flex items-center justify-center text-[15px] font-black transition-all active:scale-95 disabled:opacity-40 shadow-sm"
+            :class="slashMenuOpen
+              ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sky-500/30 ring-2 ring-sky-400/40'
+              : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200/80 dark:border-slate-600 hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
             aria-label="Admin komandalar"
             :aria-expanded="slashMenuOpen"
             @click="toggleSlashMenu"
@@ -243,7 +245,11 @@ const filteredSlashCommands = computed(() => {
 })
 
 const showSlashMenu = computed(
-  () => !props.disabled && slashMenuOpen.value && hasSlashCommands.value,
+  () =>
+    !props.disabled &&
+    hasSlashCommands.value &&
+    slashMenuOpen.value &&
+    text.value.startsWith('/'),
 )
 
 watch(filteredSlashCommands, (list) => {
@@ -258,21 +264,26 @@ const closeSlashMenu = () => {
 
 const toggleSlashMenu = () => {
   if (props.disabled || !hasSlashCommands.value) return
-  if (slashMenuOpen.value) {
+  unlockDraft()
+  if (slashMenuOpen.value && text.value === '/') {
     closeSlashMenu()
+    text.value = ''
     return
+  }
+  if (!text.value.startsWith('/')) {
+    text.value = '/' + text.value.replace(/^\/+/, '')
   }
   slashMenuOpen.value = true
   slashHighlight.value = 0
-  unlockDraft()
   nextTick(() => textInput.value?.focus())
 }
 
 const onTextInput = () => {
   if (!hasSlashCommands.value) return
-  const v = text.value
-  if (v.startsWith('/')) {
+  if (text.value.startsWith('/')) {
     slashMenuOpen.value = true
+  } else {
+    closeSlashMenu()
   }
 }
 

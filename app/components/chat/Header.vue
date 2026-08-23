@@ -52,37 +52,6 @@
         <font-awesome-icon icon="fa-solid fa-car" />
         Haydovchi
       </button>
-
-      <a
-        v-if="canCall && callHref"
-        :href="callHref"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-black shrink-0 whitespace-nowrap leading-none active:scale-95 transition-all no-underline"
-        :class="support
-          ? 'text-white bg-white/15 hover:bg-white/25'
-          : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'"
-        @click="$emit('call')"
-      >
-        <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
-        Qo'ng'iroq
-      </a>
-
-      <button
-        v-if="showClearHistory"
-        type="button"
-        class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition-all disabled:opacity-40"
-        :class="support
-          ? 'text-white/90 hover:bg-white/10'
-          : 'text-slate-500 dark:text-slate-300 hover:bg-slate-200/60 dark:hover:bg-white/5'"
-        :disabled="clearingHistory"
-        aria-label="Chat tarixini tozalash"
-        @click="$emit('clear-history')"
-      >
-        <font-awesome-icon
-          :icon="clearingHistory ? 'fa-solid fa-spinner' : 'fa-solid fa-eraser'"
-          :class="{ 'animate-spin': clearingHistory }"
-          class="text-[13px]"
-        />
-      </button>
     </div>
 
     <slot name="actions" />
@@ -96,27 +65,17 @@ interface Props {
   online?: boolean
   avatar?: string
   userId?: string
-  canCall?: boolean
-  /** tel:+998... — native qo'ng'iroq uchun */
-  callHref?: string
   support?: boolean
   /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
-  /** Chat tarixini tozalash tugmasi */
-  showClearHistory?: boolean
-  clearingHistory?: boolean
 }
 
 withDefaults(defineProps<Props>(), {
   status: '',
   online: false,
-  canCall: false,
-  callHref: '',
   support: false,
   showDriverPage: false,
-  showClearHistory: false,
-  clearingHistory: false,
 })
 
-defineEmits<{ back: []; call: []; 'driver-page': []; 'clear-history': [] }>()
+defineEmits<{ back: []; 'driver-page': [] }>()
 </script>

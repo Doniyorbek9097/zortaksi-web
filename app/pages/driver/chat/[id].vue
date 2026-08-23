@@ -16,19 +16,39 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :can-call="!!callPhone"
-      :call-href="callTelHref"
-      :show-clear-history="messagesMatchChat && !selectionMode && chatStore.messages.length > 0"
-      :clearing-history="isClearingHistory"
       @back="goBack"
-      @clear-history="confirmClearHistory"
-    />
-
-    <ChatQuickActions
-      :show="showQuickActions"
-      :telegram-href="telegramContactUrl"
-      :group-href="groupViewUrl"
-    />
+    >
+      <template #actions>
+        <div
+          v-if="(callTelHref || showClearHistoryBtn) && !selectionMode"
+          class="mx-auto w-full max-w-2xl px-3 py-2 flex flex-col gap-2 border-b border-slate-200/50 dark:border-slate-800/50"
+        >
+          <a
+            v-if="callTelHref"
+            :href="callTelHref"
+            class="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[14px] font-black active:scale-[0.98] transition-all no-underline shadow-lg shadow-emerald-500/25"
+          >
+            <span class="chat-phone-pulse inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/20">
+              <font-awesome-icon icon="fa-solid fa-phone" class="text-[15px]" />
+            </span>
+            Hoziroq telefon qiling
+          </a>
+          <button
+            v-if="showClearHistoryBtn"
+            type="button"
+            :disabled="isClearingHistory"
+            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 border border-red-200/60 dark:border-red-900/40 active:scale-[0.98] transition-all disabled:opacity-50"
+            @click="openClearHistoryDialog"
+          >
+            <font-awesome-icon
+              :icon="isClearingHistory ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
+              :class="{ 'animate-spin': isClearingHistory }"
+            />
+            Chat tarixini tozalash
+          </button>
+        </div>
+      </template>
+    </ChatHeader>
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -173,6 +193,7 @@
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
+          @delete="onMessageDeleteRequest(String(msg._id))"
         />
         </template>
 
@@ -310,6 +331,32 @@
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
+    />
+
+    <BaseConfirmDialog
+      v-model="showDeleteDialog"
+      title="Xabarni o'chirish"
+      description="Ilova va Telegram"
+      :message="deleteDialogMessage"
+      confirm-text="Ha, o'chirish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="isDeletingMessages"
+      :close-on-confirm="false"
+      @confirm="executeDeleteMessages"
+    />
+
+    <BaseConfirmDialog
+      v-model="showClearHistoryDialog"
+      title="Chat tarixini tozalash"
+      description="Ilova va Telegram"
+      message="Barcha xabarlar ikkala tomondan ham o'chiriladi. Davom etasizmi?"
+      confirm-text="Ha, tozalash"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="isClearingHistory"
+      :close-on-confirm="false"
+      @confirm="executeClearHistory"
     />
   </div>
   </BasePullToRefresh>
@@ -486,6 +533,9 @@ const selectionMode = ref(false)
 const selectedMessageIds = ref<string[]>([])
 const isDeletingMessages = ref(false)
 const isClearingHistory = ref(false)
+const showDeleteDialog = ref(false)
+const showClearHistoryDialog = ref(false)
+const pendingDeleteIds = ref<string[]>([])
 const openFailed = ref(false)
 const openError = ref('')
 const proxyConnecting = ref(false)
@@ -527,40 +577,64 @@ const onMessageReply = (msg: { _id: string; text?: string; type?: string; locati
   replyTarget.value = replyTargetFromMessage(msg as any)
 }
 
-const confirmDeleteSelected = async () => {
-  const ids = selectedMessageIds.value.filter((id) => !id.startsWith('temp-'))
+const showClearHistoryBtn = computed(
+  () => messagesMatchChat.value && chatStore.messages.length > 0,
+)
+
+const deleteDialogMessage = computed(() => {
+  const n = pendingDeleteIds.value.length
+  if (n <= 1) return "Ushbu xabar ilovadan va Telegramdan o'chiriladi."
+  return `${n} ta xabar ilovadan va Telegramdan o'chiriladi.`
+})
+
+const openDeleteDialog = (ids: string[]) => {
+  const valid = [...new Set(ids.map(String).filter((id) => id && !id.startsWith('temp-')))]
+  if (!valid.length) return
+  pendingDeleteIds.value = valid
+  showDeleteDialog.value = true
+}
+
+const onMessageDeleteRequest = (messageId: string) => {
+  if (selectionMode.value) return
+  openDeleteDialog([messageId])
+}
+
+const openClearHistoryDialog = () => {
+  if (!chatStore.messages.length) return
+  showClearHistoryDialog.value = true
+}
+
+const confirmDeleteSelected = () => {
+  openDeleteDialog(selectedMessageIds.value)
+}
+
+const executeDeleteMessages = async () => {
+  const ids = pendingDeleteIds.value.filter((id) => !id.startsWith('temp-'))
   if (!ids.length || isDeletingMessages.value) return
-  if (!import.meta.client) return
-  const ok = window.confirm(`${ids.length} ta xabarni o'chirishni tasdiqlaysizmi?`)
-  if (!ok) return
 
   isDeletingMessages.value = true
   try {
     await chatStore.deleteMessages(chatId.value, ids)
     exitSelectionMode()
+    showDeleteDialog.value = false
+    pendingDeleteIds.value = []
   } catch (err) {
     console.error('deleteMessages error:', err)
-    window.alert('Xabarlarni o\'chirib bo\'lmadi')
   } finally {
     isDeletingMessages.value = false
   }
 }
 
-const confirmClearHistory = async () => {
+const executeClearHistory = async () => {
   if (isClearingHistory.value || !chatStore.messages.length) return
-  if (!import.meta.client) return
-  const ok = window.confirm(
-    'Chat tarixini tozalaysizmi? Barcha xabarlar ilovadan va Telegramdan o\'chiriladi.',
-  )
-  if (!ok) return
 
   isClearingHistory.value = true
   try {
     await chatStore.clearChatHistory(chatId.value)
     exitSelectionMode()
+    showClearHistoryDialog.value = false
   } catch (err) {
     console.error('clearChatHistory error:', err)
-    window.alert('Chat tarixini tozalab bo\'lmadi')
   } finally {
     isClearingHistory.value = false
   }
@@ -790,16 +864,6 @@ const quickLinks = computed(() =>
 )
 
 const telegramContactUrl = computed(() => quickLinks.value.telegramHref)
-
-const groupViewUrl = computed(() => quickLinks.value.groupHref)
-
-/** Guruh «Mijozni olish» dan kelganda — Telegramda yozish / Guruhda ko'rish */
-const showQuickActions = computed(
-  () =>
-    isFromGroupTakeClient(route.query as Record<string, unknown>) &&
-    !isSupport.value &&
-    !isDirect.value,
-)
 
 // Yangi xabar pastga qo'shilganda scroll (prepend da emas)
 watch(
@@ -1268,5 +1332,14 @@ onBeforeUnmount(() => {
 @keyframes typing-bounce {
   0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-2px); }
+}
+
+.chat-phone-pulse {
+  animation: chat-phone-ring 1.4s ease-in-out infinite;
+}
+
+@keyframes chat-phone-ring {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.14); }
 }
 </style>

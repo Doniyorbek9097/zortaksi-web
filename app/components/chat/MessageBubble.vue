@@ -8,6 +8,18 @@
   >
     <div class="relative max-w-[82%] overflow-hidden">
       <div
+        v-if="!selectionMode && swipeX < -4"
+        class="absolute inset-y-0 right-0 w-11 flex items-center justify-center pointer-events-none"
+      >
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 text-white shadow-sm transition-opacity"
+          :style="{ opacity: swipeDeleteOpacity }"
+        >
+          <font-awesome-icon icon="fa-solid fa-trash" class="text-[12px]" />
+        </div>
+      </div>
+
+      <div
         v-if="!selectionMode && swipeX > 4"
         class="absolute inset-y-0 left-0 w-11 flex items-center justify-center pointer-events-none"
       >
@@ -336,7 +348,7 @@ const errorText = computed(() => {
   return String(props.error || '').trim()
 })
 
-const emit = defineEmits<{ 'long-press': []; 'toggle-select': []; reply: [] }>()
+const emit = defineEmits<{ 'long-press': []; 'toggle-select': []; reply: []; delete: [] }>()
 
 const SWIPE_REVEAL = 56
 const swipeX = ref(0)
@@ -349,6 +361,10 @@ const swipeMoved = ref(false)
 
 const swipeIconOpacity = computed(() =>
   Math.min(1, swipeX.value / SWIPE_REVEAL),
+)
+
+const swipeDeleteOpacity = computed(() =>
+  Math.min(1, -swipeX.value / SWIPE_REVEAL),
 )
 
 const onSwipePointerDown = (e: PointerEvent) => {
@@ -377,10 +393,14 @@ const onSwipePointerMove = (e: PointerEvent) => {
   if (swipeAxis.value !== 'h') return
   swipeMoved.value = true
   clearLongPress()
-  let dx = e.clientX - swipeStartX.value
-  if (dx < 0) dx = 0
-  if (dx > SWIPE_REVEAL) dx = SWIPE_REVEAL
-  swipeX.value = dx
+  const dx = e.clientX - swipeStartX.value
+  if (dx > 0) {
+    swipeX.value = Math.min(SWIPE_REVEAL, dx)
+  } else if (dx < 0) {
+    swipeX.value = Math.max(-SWIPE_REVEAL, dx)
+  } else {
+    swipeX.value = 0
+  }
 }
 
 const onSwipePointerUp = () => {
@@ -391,6 +411,8 @@ const onSwipePointerUp = () => {
   swipeDragging.value = false
   if (swipeAxis.value === 'h' && swipeX.value >= SWIPE_REVEAL * 0.65) {
     emit('reply')
+  } else if (swipeAxis.value === 'h' && swipeX.value <= -SWIPE_REVEAL * 0.65) {
+    emit('delete')
   }
   swipeX.value = 0
   swipeAxis.value = null
