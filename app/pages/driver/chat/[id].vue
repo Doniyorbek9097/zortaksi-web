@@ -149,6 +149,7 @@
           :key="String(msg._id)"
           :id="`msg-${msg._id}`"
           :text="msg.text"
+          :text-format="msg.textFormat"
           :time="formatTime(msg.date)"
           :date="msg.date"
           :out="msg.direction === 'out'"

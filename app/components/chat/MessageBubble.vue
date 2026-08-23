@@ -147,7 +147,8 @@
           v-if="text"
           class="px-2 text-[15px] leading-relaxed"
         >
-          <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
+          <ChatHtmlText v-if="textFormat === 'html'" :html="text" :out="out" />
+          <ChatLinkifiedText v-else :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
       </div>
 
@@ -177,6 +178,12 @@
       </a>
 
       <!-- Matn (link / telefon bosiladi) -->
+      <div
+        v-else-if="textFormat === 'html' && text"
+        class="text-[15px] leading-relaxed"
+      >
+        <ChatHtmlText :html="text" :out="out" />
+      </div>
       <p
         v-else
         class="text-[15px] leading-relaxed"
@@ -272,6 +279,7 @@ import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoic
 
 interface Props {
   text?: string
+  textFormat?: 'plain' | 'html'
   time?: string
   date?: string | Date
   out?: boolean

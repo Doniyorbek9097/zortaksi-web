@@ -123,6 +123,7 @@
             >
               <ChatMessageBubble
                 :text="msg.text"
+                :text-format="msg.textFormat"
                 :time="formatTime(msg.date)"
                 :date="msg.date"
                 :out="isDriverMsg(msg)"

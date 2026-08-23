@@ -1,8 +1,9 @@
 import type { IChatMessage } from '~/types'
+import { stripTelegramHtml } from '~/utils/telegramHtml'
 
 export function messageReplyPreview(msg: Pick<
   IChatMessage,
-  'text' | 'type' | 'locationTitle' | 'duration'
+  'text' | 'type' | 'locationTitle' | 'duration' | 'textFormat'
 >): string {
   const type = String(msg.type || 'text')
   if (type === 'voice') {
@@ -16,7 +17,9 @@ export function messageReplyPreview(msg: Pick<
   if (type === 'location') {
     return String(msg.locationTitle || '').trim() || '📍 Joylashuv'
   }
-  const t = String(msg.text || '').replace(/\s+/g, ' ').trim()
+  const t = msg.textFormat === 'html'
+    ? stripTelegramHtml(msg.text || '')
+    : String(msg.text || '').replace(/\s+/g, ' ').trim()
   if (!t) return 'Xabar'
   return t.length > 160 ? `${t.slice(0, 157)}...` : t
 }

@@ -45,6 +45,7 @@ export type ChatMessageType =
     | 'document'
     | 'location'
 export type ChatMessageStatus = 'sending' | 'sent' | 'failed' | 'read'
+export type ChatTextFormat = 'plain' | 'html'
 
 export interface IChatMessage {
     _id: string
@@ -52,6 +53,7 @@ export interface IChatMessage {
     ownerId: string
     direction: ChatDirection
     text: string
+    textFormat?: ChatTextFormat
     type: ChatMessageType
     status: ChatMessageStatus
     /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok va h.k.) */
