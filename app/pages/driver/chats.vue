@@ -35,32 +35,26 @@
       title="Hozircha yozishmalar yo'q"
     />
 
-    <!-- Chat list — virtual scroll + infinite scroll -->
-    <div v-else ref="listRootEl" class="relative">
-      <div :style="{ height: `${virtual.range.paddingTop}px` }" aria-hidden="true" />
-
-      <div class="space-y-2.5">
-        <template v-for="{ row } in virtual.range.visible" :key="row.key">
-          <ChatsChatItem
-            :name="peerName(row.data)"
-            :preview="row.data.lastMessage || 'Yozishma boshlang'"
-            :date="formatDate(row.data.lastMessageAt)"
-            :phone="isSupport(row.data) ? undefined : row.data.peer.phone"
-            :avatar="row.data.peer.avatar"
-            :user-id="row.data.peer.userId"
-            :unread="row.data.unreadCount"
-            :selection-mode="selectionMode"
-            :selected="selectedIds.includes(row.data._id)"
-            :show-driver-page="showDriverPageFor(row.data)"
-            @open="openChat(row.data)"
-            @toggle="toggleOne(row.data._id)"
-            @delete="requestSwipeDelete(row.data)"
-            @driver-page="openDriverPage(row.data)"
-          />
-        </template>
-      </div>
-
-      <div :style="{ height: `${virtual.range.paddingBottom}px` }" aria-hidden="true" />
+    <!-- Chat list + infinite scroll -->
+    <div v-else class="space-y-2.5">
+      <ChatsChatItem
+        v-for="chat in chatStore.chats"
+        :key="chat._id"
+        :name="peerName(chat)"
+        :preview="chat.lastMessage || 'Yozishma boshlang'"
+        :date="formatDate(chat.lastMessageAt)"
+        :phone="isSupport(chat) ? undefined : chat.peer.phone"
+        :avatar="chat.peer.avatar"
+        :user-id="chat.peer.userId"
+        :unread="chat.unreadCount"
+        :selection-mode="selectionMode"
+        :selected="selectedIds.includes(chat._id)"
+        :show-driver-page="showDriverPageFor(chat)"
+        @open="openChat(chat)"
+        @toggle="toggleOne(chat._id)"
+        @delete="requestSwipeDelete(chat)"
+        @driver-page="openDriverPage(chat)"
+      />
 
       <div ref="sentinelEl" class="h-1" />
 
@@ -105,25 +99,13 @@ import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
 import { chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
-import { LIST_PAGE_SIZE, CHAT_ROW_HEIGHT } from '~/utils/memoryBudget'
-import { useWindowVirtualRows, type VirtualRow } from '~/composables/useWindowVirtualRows'
+import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
 
 definePageMeta({
   layout: 'driver',
 })
 
 const PAGE_LIMIT = LIST_PAGE_SIZE
-
-const chatRows = computed<VirtualRow<IChat>[]>(() =>
-  chatStore.chats.map((chat) => ({
-    key: String(chat._id),
-    height: CHAT_ROW_HEIGHT,
-    data: chat,
-  })),
-)
-
-const virtual = useWindowVirtualRows(chatRows, 4)
-const listRootEl = ref<HTMLElement | null>(null)
 
 const chatStore = useChatStore()
 const authStore = useAuthStore()

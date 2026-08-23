@@ -45,51 +45,46 @@
       <p class="text-[12px] font-medium">Hali to'lov yo'q</p>
     </div>
 
-  <div v-else ref="listRootEl" class="relative">
-      <!-- Virtual scroll — faqat ko'rinadigan qatorlar DOM da -->
-      <div :style="{ height: `${virtual.range.paddingTop}px` }" aria-hidden="true" />
-
+    <div v-else>
       <ul class="divide-y divide-slate-100 dark:divide-slate-800">
         <li
-          v-for="{ row } in virtual.range.visible"
-          :key="row.key"
+          v-for="item in items"
+          :key="item.id"
           class="flex items-center gap-3 px-4 py-3"
         >
           <span
             class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            :class="iconClass(row.data)"
+            :class="iconClass(item)"
           >
-            <font-awesome-icon :icon="iconName(row.data)" class="text-sm" />
+            <font-awesome-icon :icon="iconName(item)" class="text-sm" />
           </span>
           <div class="flex-1 min-w-0">
             <p class="text-[13px] font-black text-slate-900 dark:text-white truncate">
-              {{ titleFor(row.data) }}
+              {{ titleFor(item) }}
             </p>
             <p
-              v-if="showDriver && (row.data.driverName || row.data.userId)"
+              v-if="showDriver && (item.driverName || item.userId)"
               class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate"
             >
-              {{ row.data.driverName || row.data.userId }}
-              <span v-if="row.data.driverPhone" class="font-medium text-slate-400">
-                · {{ row.data.driverPhone }}
+              {{ item.driverName || item.userId }}
+              <span v-if="item.driverPhone" class="font-medium text-slate-400">
+                · {{ item.driverPhone }}
               </span>
             </p>
             <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-              {{ formatDate(row.data.createdAt) }}
+              {{ formatDate(item.createdAt) }}
             </p>
           </div>
           <div class="text-right shrink-0">
             <p class="text-sm font-black text-emerald-500">
-              +{{ formatMoney(row.data.amount) }}
+              +{{ formatMoney(item.amount) }}
             </p>
             <p class="text-[10px] font-bold text-emerald-600/80 dark:text-emerald-400/80">
-              {{ statusLabel(row.data.status) }}
+              {{ statusLabel(item.status) }}
             </p>
           </div>
         </li>
       </ul>
-
-      <div :style="{ height: `${virtual.range.paddingBottom}px` }" aria-hidden="true" />
 
       <div ref="sentinelEl" class="h-1" />
 
@@ -123,8 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { PAYMENT_PAGE_SIZE, PAYMENT_ROW_HEIGHT } from '~/utils/memoryBudget'
-import { useWindowVirtualRows, type VirtualRow } from '~/composables/useWindowVirtualRows'
+import { PAYMENT_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export interface PaymentHistoryItem {
   id: string
@@ -146,7 +140,6 @@ const props = withDefaults(defineProps<{
   showDriver?: boolean
   title?: string
   subtitle?: string
-  /** Infinite scroll (default) yoki bir martalik yuklash */
   paginated?: boolean
   pageSize?: number
 }>(), {
@@ -166,19 +159,8 @@ const loadingMore = ref(false)
 const error = ref('')
 const page = ref(1)
 const hasMore = ref(true)
-const listRootEl = ref<HTMLElement | null>(null)
 const sentinelEl = ref<HTMLElement | null>(null)
 let loadMoreObserver: IntersectionObserver | null = null
-
-const virtualRows = computed<VirtualRow<PaymentHistoryItem>[]>(() =>
-  items.value.map((item) => ({
-    key: item.id,
-    height: PAYMENT_ROW_HEIGHT,
-    data: item,
-  })),
-)
-
-const virtual = useWindowVirtualRows(virtualRows, 3)
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
@@ -233,10 +215,7 @@ const fetchPage = async (nextPage: number, append: boolean) => {
   error.value = ''
   try {
     const res = await useApi(props.apiPath, {
-      params: {
-        page: nextPage,
-        limit: props.pageSize,
-      },
+      params: { page: nextPage, limit: props.pageSize },
     })
     if (res.success) {
       const batch = Array.isArray(res.data?.items) ? res.data.items : []
