@@ -127,6 +127,7 @@
       <AdminMonthlyTrendChart
         :items="incomeDailyItems"
         value-mode="amount"
+        selected-title="Kun"
       />
     </AdminSectionCard>
 
@@ -154,6 +155,7 @@
       <AdminMonthlyTrendChart
         :items="chartItems"
         :value-mode="chartTab === 'amount' ? 'amount' : 'number'"
+        :selected-title="chartSelectedTitle"
       />
     </AdminSectionCard>
 
@@ -296,33 +298,62 @@ const chartTabs = [
   { label: 'Driver', value: 'drivers' },
 ]
 
+const MONTH_FULL_UZ = [
+  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
+  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr',
+]
+
+/** Hafta kunlari (0=Yakshanba) */
+const WEEKDAY_SHORT = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pash', 'Jum', 'Sham']
+
+const chartSelectedTitle = computed(() => {
+  if (chartTab.value === 'payments') return "To'lovlar"
+  if (chartTab.value === 'amount') return 'Daromad'
+  return 'Haydovchilar'
+})
+
 const chartItems = computed(() => {
   const series = store.data?.chart ?? []
+  const now = new Date()
   if (!series.length) {
-    const now = new Date()
     const labels = ['YAN', 'FEV', 'MAR', 'APR', 'MAY', 'IYN', 'IYL', 'AVG', 'SEN', 'OKT', 'NOY', 'DEK']
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (6 - i), 1)
-      return { label: labels[d.getMonth()], value: 0 }
+      return {
+        label: labels[d.getMonth()],
+        detail: `${MONTH_FULL_UZ[d.getMonth()]} ${d.getFullYear()}`,
+        value: 0,
+      }
     })
   }
-  return series.map((m) => ({
-    label: m.label,
-    value:
-      chartTab.value === 'payments'
-        ? m.payments
-        : chartTab.value === 'amount'
-          ? m.amount
-          : m.newDrivers,
-  }))
+  return series.map((m, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (series.length - 1 - i), 1)
+    return {
+      label: m.label,
+      detail: `${MONTH_FULL_UZ[d.getMonth()]} ${d.getFullYear()}`,
+      value:
+        chartTab.value === 'payments'
+          ? m.payments
+          : chartTab.value === 'amount'
+            ? m.amount
+            : m.newDrivers,
+    }
+  })
 })
 
 const incomeDailyItems = computed(() => {
   const series = store.data?.incomeDailyChart ?? []
-  return series.map((d) => ({
-    label: d.label,
-    value: d.amount,
-  }))
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  return series.map((d, i) => {
+    const date = new Date(todayStart.getTime() - (series.length - 1 - i) * 86400000)
+    const wd = date.getDay()
+    return {
+      label: WEEKDAY_SHORT[wd],
+      detail: d.label,
+      value: d.amount,
+    }
+  })
 })
 
 const referrals = computed(() => referralStore.leaderboard)

@@ -7,18 +7,22 @@
       Bu davrda ma'lumot yo'q
     </p>
     <template v-else>
-      <div class="flex items-center justify-between gap-2 mb-3 text-[11px]">
-        <span class="font-bold text-slate-500">Eng yuqori: {{ peakLabel }}</span>
-        <span class="font-black tabular-nums text-sky-600 dark:text-sky-400">
-          {{ formattedValue(peakValue) }}
+      <div class="flex items-center justify-between gap-2 mb-3 px-1 text-[11px]">
+        <span class="font-bold text-slate-600 dark:text-slate-300 min-w-0 truncate">
+          {{ displayTitle }}
+        </span>
+        <span class="font-black tabular-nums text-sky-600 dark:text-sky-400 shrink-0">
+          {{ formattedValue(selectedValue) }}
         </span>
       </div>
 
-      <div class="relative h-28 w-full rounded-xl bg-sky-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 overflow-hidden">
+      <div
+        class="relative h-28 w-full rounded-xl bg-sky-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 overflow-hidden"
+      >
         <svg
           viewBox="0 0 100 80"
           preserveAspectRatio="none"
-          class="absolute inset-0 w-full h-full"
+          class="absolute inset-0 w-full h-full pointer-events-none"
           aria-hidden="true"
         >
           <path
@@ -38,24 +42,33 @@
             vector-effect="non-scaling-stroke"
           />
         </svg>
-        <div
+        <button
           v-for="(pt, idx) in points"
-          :key="pt.label"
-          class="absolute w-2.5 h-2.5 -ml-[5px] -mb-[5px] rounded-full border-2 border-white dark:border-slate-900"
-          :class="idx === activeIdx ? 'bg-sky-500' : 'bg-sky-300 dark:bg-sky-600'"
+          :key="`${pt.label}-${idx}`"
+          type="button"
+          class="absolute w-4 h-4 -ml-2 -mb-2 rounded-full border-2 border-white dark:border-slate-900 transition-transform"
+          :class="idx === currentIdx
+            ? 'bg-sky-500 scale-110 ring-2 ring-sky-300/60'
+            : 'bg-sky-300 dark:bg-sky-600'"
           :style="{ left: `${pt.xPct}%`, bottom: `${pt.yPct}%` }"
+          :aria-label="`${items[idx]?.label} ${formattedValue(items[idx]?.value ?? 0)}`"
+          @click="selectIdx(idx)"
         />
       </div>
 
       <div class="flex gap-1 mt-2">
-        <span
+        <button
           v-for="(item, idx) in items"
-          :key="item.label"
-          class="flex-1 text-center text-[9px] font-bold uppercase truncate"
-          :class="idx === activeIdx ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400'"
+          :key="`${item.label}-${idx}`"
+          type="button"
+          class="flex-1 text-center text-[9px] font-bold uppercase py-1 rounded-md transition-colors"
+          :class="idx === currentIdx
+            ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10'
+            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'"
+          @click="selectIdx(idx)"
         >
           {{ item.label }}
-        </span>
+        </button>
       </div>
     </template>
   </div>
@@ -65,12 +78,18 @@
 interface TrendItem {
   label: string
   value: number
+  /** Tanlanganda ko'rsatiladigan qo'shimcha (masalan sana) */
+  detail?: string
 }
 
 const props = defineProps<{
   items: TrendItem[]
   valueMode?: 'number' | 'amount'
+  /** Tanlangan bo'lim sarlavhasi */
+  selectedTitle?: string
 }>()
+
+const selectedIdx = ref(-1)
 
 const isEmpty = computed(() =>
   props.items.length > 0 && props.items.every((i) => i.value === 0)
@@ -78,13 +97,42 @@ const isEmpty = computed(() =>
 
 const max = computed(() => Math.max(...props.items.map((i) => i.value), 1))
 
-const activeIdx = computed(() => {
+const maxIdx = computed(() => {
   const vals = props.items.map((i) => i.value)
+  if (!vals.length) return 0
   return vals.reduce((best, v, i) => (v > vals[best] ? i : best), 0)
 })
 
-const peakValue = computed(() => props.items[activeIdx.value]?.value ?? 0)
-const peakLabel = computed(() => props.items[activeIdx.value]?.label ?? '—')
+const currentIdx = computed(() => {
+  if (selectedIdx.value >= 0 && selectedIdx.value < props.items.length) {
+    return selectedIdx.value
+  }
+  return maxIdx.value
+})
+
+const selectedItem = computed(() => props.items[currentIdx.value])
+const selectedValue = computed(() => selectedItem.value?.value ?? 0)
+
+const displayTitle = computed(() => {
+  const item = selectedItem.value
+  if (!item) return '—'
+  const prefix = props.selectedTitle || ''
+  if (item.detail) {
+    return prefix ? `${prefix}: ${item.label} (${item.detail})` : `${item.label} (${item.detail})`
+  }
+  return prefix ? `${prefix}: ${item.label}` : item.label
+})
+
+const selectIdx = (idx: number) => {
+  selectedIdx.value = idx
+}
+
+watch(
+  () => props.items,
+  () => {
+    selectedIdx.value = -1
+  }
+)
 
 const points = computed(() => {
   const n = props.items.length
