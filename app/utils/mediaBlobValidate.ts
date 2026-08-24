@@ -44,6 +44,7 @@ export async function isValidMediaBlob(
   if (kind === 'document') {
     if (head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46) return true
     if (head[0] === 0x50 && head[1] === 0x4b) return true
+    if (head[0] === 0x1a && head[1] === 0x45) return true
     return blob.size > 32
   }
 

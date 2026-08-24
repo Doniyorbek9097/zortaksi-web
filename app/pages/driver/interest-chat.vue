@@ -170,7 +170,7 @@
 
 <script setup lang="ts">
 import type { IChatMessage } from '~/types'
-import { chatMediaUrlKey, useChatMedia } from '~/composables/useVoiceMedia'
+import { chatMediaUrlKey } from '~/composables/useVoiceMedia'
 import { hidePhoneNumbers } from '~/utils/phone'
 
 definePageMeta({
@@ -180,7 +180,6 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const runtimeConfig = useRuntimeConfig()
-const { prefetch } = useChatMedia()
 
 const orderId = computed(() => String(route.query.orderId || ''))
 const driverUserId = computed(() => String(route.query.driverUserId || ''))
@@ -307,16 +306,6 @@ const load = async () => {
     customerAvatar.value = data.customer?.avatar || data.chat?.peer?.avatar || ''
     driverId.value = data.driver?.userId || driverUserId.value
     customerId.value = data.customer?.userId || data.chat?.peer?.userId || ''
-    // Voice/photo oldindan yuklash (interest media endpoint orqali)
-    prefetch(
-      messages.value.map((m) => ({
-        _id: msgId(m),
-        type: mediaTypeOf(m),
-        mediaPath: m.mediaPath,
-        tgMessageId: (m as any).tgMessageId,
-      })),
-      interestMediaUrl,
-    )
   } catch (e: any) {
     const msg =
       e?.response?.data?.message ||

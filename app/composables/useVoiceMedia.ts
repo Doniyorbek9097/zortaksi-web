@@ -10,7 +10,7 @@ import {
   idbDeleteMedia,
   idbMediaStats,
 } from '~/utils/mediaIdb'
-import { isCorruptMediaBlob, isValidMediaBlob } from '~/utils/mediaBlobValidate'
+import { isCorruptMediaBlob, isValidMediaBlob, readBlobHead } from '~/utils/mediaBlobValidate'
 import {
   ensureMediaCacheReady,
   clearMediaCachesOnly,
@@ -32,6 +32,8 @@ export type GetMediaUrlOpts = {
   urlBuilder?: ChatMediaUrlBuilder | null
   /** Serverdagi mediaPath — o'zgarganda eski IDB ishlatilmaydi */
   mediaPath?: string | null
+  /** Faqat kesh (xotira/IDB) — tarmoqdan yuklamaydi */
+  onlyCache?: boolean
 }
 
 const MAX_MEMORY_ENTRIES = MAX_MEDIA_BLOB_CACHE
@@ -175,6 +177,18 @@ async function fetchMediaBlobFromNetwork(
   const raw = res.data
   if (kind === 'photo' && (!mime.startsWith('image/') || /json|text/i.test(mime))) {
     mime = 'image/jpeg'
+  }
+  if (kind === 'document') {
+    const head = await readBlobHead(raw, 8)
+    if (!mime || mime === 'application/octet-stream') {
+      if (head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46) {
+        mime = 'application/pdf'
+      } else if (head[0] === 0x50 && head[1] === 0x4b) {
+        mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      } else if (head[0] === 0x1a && head[1] === 0x45) {
+        mime = 'video/webm'
+      }
+    }
   }
   if (kind === 'voice' && (/json|text/i.test(mime) || !mime.startsWith('audio/'))) {
     mime = raw.type?.startsWith('audio/') ? raw.type.split(';')[0]! : fallbackMime
@@ -345,6 +359,23 @@ export function useChatMedia() {
       return cache.get(id) || ''
     }
 
+    if (opts.onlyCache) {
+      const cachedOnly = cache.get(id)
+      if (cachedOnly) {
+        const stored = cacheMediaPath.get(id)
+        const expected = String(mediaPath || '').trim()
+        if (stored === 'local') return cachedOnly
+        if (!expected || expected === 'remote' || stored === expected || !stored) {
+          return cachedOnly
+        }
+      }
+      const idbBlob = await loadFromIdb(id, kind, mediaPath)
+      if (idbBlob) {
+        return blobToObjectUrl(id, idbBlob, kind, false, mediaPath || 'remote')
+      }
+      return ''
+    }
+
     const cached = cache.get(id)
     if (cached && !opts.forceNetwork) {
       const stored = cacheMediaPath.get(id)
@@ -427,25 +458,12 @@ export function useChatMedia() {
     })()
   }
 
-  /** Fon: kesh → server (Telegram lazy) */
+  /** Fon prefetch — o'chirilgan (faqat foydalanuvchi bosganda yuklanadi) */
   const prefetch = (
-    messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
-    urlBuilder?: ChatMediaUrlBuilder | null,
+    _messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+    _urlBuilder?: ChatMediaUrlBuilder | null,
   ) => {
-    for (const m of messages) {
-      const id = normalizeMessageId(m._id)
-      if (!id || id.startsWith('temp-')) continue
-      const isVoice = m.type === 'voice'
-      const isPhoto = m.type === 'photo' || m.type === 'sticker'
-      const isDocument = m.type === 'document'
-      if (!isVoice && !isPhoto && !isDocument) continue
-      if (!m.mediaPath && !m.tgMessageId) continue
-      const kind = isVoice ? 'voice' : isDocument ? 'document' : 'photo'
-      getUrl(id, kind, {
-        urlBuilder,
-        mediaPath: m.mediaPath || 'remote',
-      }).catch(() => {})
-    }
+    /* media faqat MessageBubble ichida ochilganda yuklanadi */
   }
 
   const revokeAll = () => {
