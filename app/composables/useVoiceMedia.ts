@@ -36,6 +36,19 @@ export type GetMediaUrlOpts = {
   onlyCache?: boolean
 }
 
+export type MediaOpenLinkOpts = {
+  urlBuilder?: ChatMediaUrlBuilder | null
+  name?: string
+  disposition?: 'inline' | 'attachment'
+}
+
+export type MediaOpenLinkResult = {
+  url: string
+  fileName: string
+  mimeType?: string
+  expiresInSec?: number
+}
+
 const MAX_MEMORY_ENTRIES = MAX_MEDIA_BLOB_CACHE
 /** Sessiya blob URL — barcha bubble lar ulashadi, unmount da revoke qilinmaydi */
 const cache = new Map<string, string>()
@@ -120,6 +133,49 @@ function resolveMediaRequestUrl(
     return `${built}${sep}_cb=${cb}`
   }
   return `${buildApiUrl(base, `/chats/messages/${messageId}/media`)}?_cb=${cb}`
+}
+
+function resolveMediaLinkRequestUrl(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+  opts: MediaOpenLinkOpts = {},
+): string {
+  const raw = resolveMediaRequestUrl(messageId, urlBuilder)
+  const link = raw.replace('/media', '/media-link')
+  const params = new URLSearchParams()
+  if (opts.disposition) params.set('disposition', opts.disposition)
+  if (opts.name) params.set('name', opts.name)
+  const extra = params.toString()
+  if (!extra) return link
+  return `${link}&${extra}`
+}
+
+async function fetchMediaOpenLink(
+  messageId: string,
+  opts: MediaOpenLinkOpts = {},
+): Promise<MediaOpenLinkResult> {
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
+  const token = resolveAuthToken(cookie.value)
+  const url = resolveMediaLinkRequestUrl(messageId, opts.urlBuilder, opts)
+
+  const res = await api.get<{
+    success: boolean
+    data?: MediaOpenLinkResult
+    message?: string
+  }>(url, {
+    timeout: 60_000,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
+  })
+
+  const data = res.data?.data
+  if (!data?.url) {
+    throw new Error(res.data?.message || 'Media havolasi olinmadi')
+  }
+  return data
 }
 
 async function fetchMediaBlobFromNetwork(
@@ -462,20 +518,55 @@ export function useChatMedia() {
     })()
   }
 
+  /** PDF/DOCX — Telegram WebView blob URL bilan ochilmaydi; tokenli HTTPS havola */
+  const getMediaOpenLink = async (
+    messageId: string,
+    opts: MediaOpenLinkOpts = {},
+  ): Promise<MediaOpenLinkResult> => {
+    const id = normalizeMessageId(messageId)
+    if (!id) throw new Error('Xabar ID yo\'q')
+    const builder = resolveBuilder(opts.urlBuilder)
+    return fetchMediaOpenLink(id, { ...opts, urlBuilder: builder })
+  }
+
   /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
-    messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+    messages: {
+      _id: string
+      type?: string
+      mediaPath?: string
+      tgMessageId?: number
+      mimeType?: string
+    }[],
     urlBuilder?: ChatMediaUrlBuilder | null,
   ) => {
     for (const m of messages) {
       const id = normalizeMessageId(m._id)
       if (!id || id.startsWith('temp-')) continue
+      const mime = String(m.mimeType || '').toLowerCase()
       const isVoice = m.type === 'voice'
-      const isPhoto = m.type === 'photo' || m.type === 'sticker'
       const isDocument = m.type === 'document'
-      if (!isVoice && !isPhoto && !isDocument) continue
+      const isPhoto = m.type === 'photo'
+      const isSticker = m.type === 'sticker'
+      if (!isVoice && !isPhoto && !isDocument && !isSticker) continue
       if (!m.mediaPath && !m.tgMessageId) continue
-      const kind = isVoice ? 'voice' : isDocument ? 'document' : 'photo'
+
+      // Animatsion TGS stiker — brauzerda ko'rsatilmaydi, prefetch shart emas
+      if (
+        isSticker &&
+        (mime.includes('tgsticker') ||
+          mime.includes('gzip') ||
+          String(m.mediaPath || '').toLowerCase().endsWith('.tgs'))
+      ) {
+        continue
+      }
+
+      let kind: 'voice' | 'photo' | 'document' = 'photo'
+      if (isVoice) kind = 'voice'
+      else if (isDocument) kind = 'document'
+      else if (isSticker && mime.startsWith('video/')) kind = 'document'
+      else if (isSticker || isPhoto) kind = 'photo'
+
       getUrl(id, kind, {
         urlBuilder,
         mediaPath: m.mediaPath || 'remote',
@@ -501,6 +592,7 @@ export function useChatMedia() {
 
   return {
     getUrl,
+    getMediaOpenLink,
     peekUrl,
     setLocalUrl,
     adoptLocalUrl,

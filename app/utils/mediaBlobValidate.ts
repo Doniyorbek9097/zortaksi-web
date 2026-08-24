@@ -28,6 +28,9 @@ export async function isCorruptMediaBlob(
     /* */
   }
 
+  // TGS (gzip) rasm sifatida yuklangan — buzilgan deb hisoblanadi
+  if (kind === 'photo' && head[0] === 0x1f && head[1] === 0x8b) return true
+
   return false
 }
 
@@ -45,14 +48,18 @@ export async function isValidMediaBlob(
     if (head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46) return true
     if (head[0] === 0x50 && head[1] === 0x4b) return true
     if (head[0] === 0x1a && head[1] === 0x45) return true
+    if (head[0] === 0x1f && head[1] === 0x8b) return true
     return blob.size > 32
   }
 
   if (kind === 'photo') {
+    // Gzip/TGS rasm sifatida ko'rsatilmaydi
+    if (head[0] === 0x1f && head[1] === 0x8b) return false
     if (head[0] === 0xff && head[1] === 0xd8) return true
     if (head[0] === 0x89 && head[1] === 0x50) return true
     if (head[0] === 0x47 && head[1] === 0x49) return true
     if (head[0] === 0x52 && head[1] === 0x49) return true
+    if (head[0] === 0x1a && head[1] === 0x45) return true
     return blob.type.startsWith('image/') && blob.size > 64
   }
 

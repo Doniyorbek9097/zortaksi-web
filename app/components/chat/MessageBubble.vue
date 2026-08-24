@@ -130,10 +130,17 @@
           @click.stop="handlePhotoStickerTap"
         >
           <div
-            v-if="loading && !src"
+            v-if="loading && !src && !isStickerTgs && !stickerRenderFailed"
             class="w-full min-w-[120px] max-w-[320px] h-[160px] flex items-center justify-center"
           >
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-lg opacity-60" />
+          </div>
+          <div
+            v-else-if="isStickerTgs || stickerRenderFailed"
+            class="w-full min-w-[120px] max-w-[200px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
+          >
+            <font-awesome-icon icon="fa-solid fa-face-smile" class="text-3xl text-amber-400" />
+            <span>Animatsion stiker</span>
           </div>
           <video
             v-else-if="src && isStickerVideo"
@@ -365,6 +372,7 @@
 <script setup lang="ts">
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
+import { openTelegramExternalUrl } from '~/utils/telegramLinks'
 
 interface Props {
   text?: string
@@ -550,7 +558,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
+const { getUrl, getMediaOpenLink, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
@@ -558,6 +566,7 @@ const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
 const lightboxMode = ref<'image' | 'pdf'>('image')
+const stickerRenderFailed = ref(false)
 const closeLightbox = () => {
   lightbox.value = false
   lightboxMode.value = 'image'
@@ -610,10 +619,22 @@ const documentIcon = computed(() =>
   isPdfDocument.value ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-word',
 )
 
-const isStickerVideo = computed(
-  () =>
-    props.type === 'sticker' &&
-    String(props.mimeType || '').toLowerCase().startsWith('video/'),
+const isStickerTgs = computed(() => {
+  if (props.type !== 'sticker') return false
+  const m = String(props.mimeType || '').toLowerCase()
+  const p = String(props.mediaPath || '').toLowerCase()
+  return m.includes('tgsticker') || m.includes('gzip') || p.endsWith('.tgs')
+})
+
+const isStickerVideo = computed(() => {
+  if (props.type !== 'sticker') return false
+  const m = String(props.mimeType || '').toLowerCase()
+  const p = String(props.mediaPath || '').toLowerCase()
+  return m.startsWith('video/') || p.endsWith('.webm')
+})
+
+const isStaticSticker = computed(
+  () => props.type === 'sticker' && !isStickerVideo.value && !isStickerTgs.value,
 )
 
 const mediaKind = computed((): 'voice' | 'photo' | 'document' => {
@@ -657,6 +678,7 @@ const applySrc = (url: string) => {
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
+  if (isStickerTgs.value || stickerRenderFailed.value) return
   const id = String(props.messageId)
   if (id.startsWith('temp-')) {
     const local = peekUrl(id)
@@ -852,22 +874,26 @@ const toggle = async () => {
   }
 }
 
-const openBlobExternal = (url: string, mime?: string, filename?: string) => {
+const openBlobExternal = async (mime?: string, filename?: string) => {
+  if (!props.messageId) return
   const name = String(filename || '').trim()
-  if (isPdfMime(mime) || /\.pdf$/i.test(name)) {
-    lightboxMode.value = 'pdf'
-    lightbox.value = true
-    return
-  }
+  const disposition =
+    isPdfMime(mime) || /\.pdf$/i.test(name) ? 'inline' : 'attachment'
   try {
-    window.open(url, '_blank', 'noopener,noreferrer')
-  } catch {
-    const a = document.createElement('a')
-    a.href = url
-    a.target = '_blank'
-    a.rel = 'noopener'
-    if (name) a.download = name
-    a.click()
+    const link = await getMediaOpenLink(props.messageId, {
+      name,
+      disposition,
+    })
+    openTelegramExternalUrl(link.url)
+  } catch (e) {
+    console.error('media open link', e)
+    if (src.value) {
+      try {
+        window.open(src.value, '_blank', 'noopener,noreferrer')
+      } catch {
+        /* */
+      }
+    }
   }
 }
 
@@ -876,6 +902,7 @@ const handlePhotoStickerTap = async () => {
     emit('toggle-select')
     return
   }
+  if (isStickerTgs.value || stickerRenderFailed.value) return
   if (!src.value) {
     loading.value = true
     try {
@@ -888,7 +915,7 @@ const handlePhotoStickerTap = async () => {
 }
 
 const openLightbox = () => {
-  if (!src.value) return
+  if (!src.value || isStickerTgs.value || stickerRenderFailed.value) return
   lightboxMode.value = 'image'
   lightbox.value = true
 }
@@ -898,16 +925,12 @@ const openDocument = async () => {
     emit('toggle-select')
     return
   }
-  if (!src.value) {
-    loading.value = true
-    try {
-      await ensureSrc({ force: true })
-    } finally {
-      loading.value = false
-    }
+  loading.value = true
+  try {
+    await openBlobExternal(props.mimeType, documentLabel.value)
+  } finally {
+    loading.value = false
   }
-  if (!src.value) return
-  openBlobExternal(src.value, props.mimeType, documentLabel.value)
 }
 
 const onTime = () => {
@@ -932,6 +955,11 @@ const onAudioError = async () => {
 }
 
 const onImageError = async () => {
+  if (props.type === 'sticker') {
+    stickerRenderFailed.value = true
+    applySrc('')
+    return
+  }
   await retryMedia()
 }
 
@@ -963,7 +991,7 @@ watch(
         return
       }
       if (props.type === 'photo' || props.type === 'sticker' || props.type === 'document') {
-        void ensureSrc()
+        if (!isStickerTgs.value) void ensureSrc()
       }
     }
   },
@@ -980,10 +1008,10 @@ watch(
       isRemoteMedia(prev) && !isRemoteMedia(path)
     if (becameReady) {
       applySrc('')
-      await ensureSrc({ force: true })
+      if (!isStickerTgs.value) await ensureSrc({ force: true })
       return
     }
-    if (!src.value) {
+    if (!src.value && !isStickerTgs.value) {
       await ensureSrc()
     }
   },
@@ -996,7 +1024,7 @@ watch(
     if (!props.messageId) return
     if (status === 'failed' && props.mediaPath && !src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else await ensureSrc()
+      else if (!isStickerTgs.value) await ensureSrc()
       return
     }
     if (prev !== 'sending' || status === 'sending') return
@@ -1007,7 +1035,7 @@ watch(
     }
     if (!src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else await ensureSrc()
+      else if (!isStickerTgs.value) await ensureSrc()
     }
   },
 )
@@ -1023,7 +1051,7 @@ watch(mediaCacheEpoch, () => {
   }
   stopLocalVoice()
   applySrc('')
-  if (!isRemoteMedia(props.mediaPath)) {
+  if (!isRemoteMedia(props.mediaPath) && !isStickerTgs.value) {
     void ensureSrc({ force: true })
   }
 })
