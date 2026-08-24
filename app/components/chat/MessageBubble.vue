@@ -38,13 +38,12 @@
         ]"
         :style="{
           transform: `translate3d(${swipeX}px,0,0)`,
-          touchAction: swipeTouchAction,
+          touchAction: selectionMode ? 'auto' : 'pan-y',
         }"
-        @pointerdown.capture="onSwipePointerDown"
+        @pointerdown="onSwipePointerDown"
         @pointermove="onSwipePointerMove"
         @pointerup="onSwipePointerUp"
         @pointercancel="onSwipePointerUp"
-        @click.capture="onSwipeClickCapture"
       >
     <div
       class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
@@ -126,43 +125,20 @@
       <div v-else-if="type === 'photo' || type === 'sticker'" class="space-y-1.5">
         <button
           type="button"
-          class="block w-full overflow-hidden rounded-xl relative"
-          :class="type === 'sticker' ? 'max-w-[200px]' : 'max-w-[320px]'"
+          class="block w-full overflow-hidden rounded-xl bg-black/5 dark:bg-white/5"
+          :class="type === 'sticker' ? 'max-w-[200px]' : ''"
           @click.stop="handlePhotoStickerTap"
         >
           <div
-            v-if="loading"
-            class="w-full min-h-[140px] flex items-center justify-center bg-slate-100/80 dark:bg-slate-800/50 rounded-xl"
+            v-if="loading && !src"
+            class="w-full min-w-[120px] max-w-[320px] h-[160px] flex items-center justify-center"
           >
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-lg opacity-60" />
           </div>
-
-          <!-- Hira placeholder — to'liq media yuklanmaguncha -->
-          <div
-            v-else-if="!fullLoaded"
-            class="relative w-full flex items-center justify-center overflow-hidden rounded-xl bg-slate-200/90 dark:bg-slate-700/70"
-            :class="type === 'sticker' ? 'min-h-[160px]' : 'min-h-[180px]'"
-          >
-            <div
-              class="absolute inset-0 scale-110 bg-gradient-to-br from-slate-300/80 via-slate-400/50 to-slate-300/80 dark:from-slate-600/80 dark:via-slate-500/40 dark:to-slate-600/80"
-              style="filter: blur(18px);"
-            />
-            <div class="absolute inset-0 backdrop-blur-xl bg-white/10 dark:bg-black/10" />
-            <span class="relative z-10 flex flex-col items-center gap-1.5 px-3 text-center">
-              <font-awesome-icon
-                :icon="type === 'sticker' ? 'fa-solid fa-face-smile' : 'fa-solid fa-image'"
-                class="text-xl opacity-50 text-slate-500 dark:text-slate-300"
-              />
-              <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                Ko'rish uchun bosing
-              </span>
-            </span>
-          </div>
-
           <video
-            v-else-if="isStickerVideo"
+            v-else-if="src && isStickerVideo"
             :src="src"
-            class="block w-full max-w-[200px] max-h-[200px] object-contain rounded-xl mx-auto transition-opacity duration-300"
+            class="block w-full max-w-[200px] max-h-[200px] object-contain rounded-xl mx-auto"
             autoplay
             loop
             muted
@@ -172,13 +148,24 @@
             v-else-if="src"
             :src="src"
             :alt="type === 'sticker' ? 'Stiker' : 'Rasm'"
-            class="block w-full max-w-[320px] max-h-[420px] object-contain rounded-xl mx-auto transition-opacity duration-300"
+            class="block w-full max-w-[320px] max-h-[420px] object-contain rounded-xl mx-auto"
             :class="type === 'sticker' ? '!max-w-[200px] !max-h-[200px]' : ''"
+            loading="lazy"
             @error="onImageError"
           >
           <div
+            v-else-if="!loading"
+            class="w-full min-w-[120px] max-w-[320px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
+          >
+            <font-awesome-icon
+              :icon="type === 'sticker' ? 'fa-solid fa-face-smile' : 'fa-solid fa-image'"
+              class="text-lg"
+            />
+            <span>{{ type === 'sticker' ? 'Stiker' : 'Rasmni ko\'rish' }}</span>
+          </div>
+          <div
             v-else
-            class="w-full min-h-[120px] flex flex-col items-center justify-center gap-1 text-xs opacity-70"
+            class="w-full min-w-[120px] max-w-[320px] h-[120px] flex flex-col items-center justify-center gap-1 text-xs opacity-70"
             @click.stop="retryMedia"
           >
             <span>Yuklanmadi</span>
@@ -223,7 +210,7 @@
               {{ documentLabel }}
             </span>
             <span class="block text-[11px] mt-0.5 text-sky-500 font-semibold">
-              {{ loading ? 'Yuklanmoqda...' : fullLoaded ? 'Ochilgan' : 'Ochish' }}
+              {{ loading ? 'Yuklanmoqda...' : 'Ochish' }}
             </span>
           </span>
           <font-awesome-icon
@@ -363,6 +350,12 @@
             muted
             playsinline
           />
+          <iframe
+            v-else-if="lightboxMode === 'pdf' && src"
+            :src="src"
+            title="PDF"
+            class="w-full max-w-[min(100vw-2rem,1200px)] h-[min(90vh,calc(100vh-4rem))] rounded-lg bg-white shadow-2xl border-0"
+          />
         </div>
       </Transition>
     </Teleport>
@@ -444,13 +437,6 @@ const swipeOriginX = ref(0)
 const swipeOriginY = ref(0)
 const swipeAxis = ref<'h' | 'v' | null>(null)
 const swipeMoved = ref(false)
-const swipeHandled = ref(false)
-
-const swipeTouchAction = computed(() => {
-  if (props.selectionMode) return 'auto'
-  if (swipeAxis.value === 'h' || swipeDragging.value) return 'none'
-  return 'manipulation'
-})
 
 const swipeIconOpacity = computed(() =>
   Math.min(1, swipeX.value / SWIPE_REVEAL),
@@ -496,38 +482,19 @@ const onSwipePointerMove = (e: PointerEvent) => {
   }
 }
 
-const onSwipePointerUp = (e?: PointerEvent) => {
-  try {
-    if (e?.currentTarget && typeof e.pointerId === 'number') {
-      ;(e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId)
-    }
-  } catch {
-    /* */
+const onSwipePointerUp = () => {
+  if (!swipeDragging.value && swipeAxis.value !== 'h') {
+    swipeAxis.value = null
+    return
   }
-
-  const axis = swipeAxis.value
-  const reveal = swipeX.value
   swipeDragging.value = false
-  swipeAxis.value = null
-
-  if (axis === 'h' && reveal >= SWIPE_REVEAL * 0.65) {
-    swipeHandled.value = true
+  if (swipeAxis.value === 'h' && swipeX.value >= SWIPE_REVEAL * 0.65) {
     emit('reply')
-  } else if (axis === 'h' && reveal <= -SWIPE_REVEAL * 0.65) {
-    swipeHandled.value = true
+  } else if (swipeAxis.value === 'h' && swipeX.value <= -SWIPE_REVEAL * 0.65) {
     emit('delete')
   }
-
   swipeX.value = 0
-  swipeMoved.value = false
-}
-
-const onSwipeClickCapture = (e: Event) => {
-  if (swipeHandled.value) {
-    e.preventDefault()
-    e.stopPropagation()
-    swipeHandled.value = false
-  }
+  swipeAxis.value = null
 }
 
 const isSelectable = computed(
@@ -562,12 +529,6 @@ const onSelectPointerUp = () => clearLongPress()
 const onSelectPointerCancel = () => clearLongPress()
 
 const onBubbleClickCapture = (e: Event) => {
-  if (swipeHandled.value) {
-    e.preventDefault()
-    e.stopPropagation()
-    swipeHandled.value = false
-    return
-  }
   if (swipeMoved.value) {
     e.preventDefault()
     e.stopPropagation()
@@ -594,11 +555,9 @@ const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
 const loading = ref(false)
-const fullLoaded = ref(false)
-const loadFailed = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
-const lightboxMode = ref<'image'>('image')
+const lightboxMode = ref<'image' | 'pdf'>('image')
 const closeLightbox = () => {
   lightbox.value = false
   lightboxMode.value = 'image'
@@ -696,61 +655,25 @@ const applySrc = (url: string) => {
   src.value = url || ''
 }
 
-const applyCachedIfAny = (): boolean => {
-  if (!props.messageId) return false
-  const id = String(props.messageId)
-  if (id.startsWith('temp-')) {
-    const local = peekUrl(id)
-    if (local) {
-      applySrc(local)
-      fullLoaded.value = true
-      return true
-    }
-    return false
-  }
-  const cached = peekUrl(id, props.mediaPath || 'remote')
-  if (!cached) return false
-  applySrc(cached)
-  fullLoaded.value = true
-  return true
-}
-
-/** To'liq media — faqat foydalanuvchi bosganda yoki keshdan */
-const loadFullMedia = async (opts: { force?: boolean } = {}) => {
+const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
   const id = String(props.messageId)
   if (id.startsWith('temp-')) {
     const local = peekUrl(id)
-    if (local) {
-      applySrc(local)
-      fullLoaded.value = true
-    }
+    if (local) applySrc(local)
     return
   }
-
-  if (!opts.force && fullLoaded.value && src.value) return
-
-  if (!opts.force) {
-    const cachedUrl = await getUrl(props.messageId, mediaKind.value, {
-      onlyCache: true,
-      mediaPath: props.mediaPath || 'remote',
-    })
-    if (cachedUrl) {
-      applySrc(cachedUrl)
-      fullLoaded.value = true
-      loadFailed.value = false
-      return
-    }
-  }
-
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
-    fullLoaded.value = false
   } else if (src.value) {
     return
   }
-
+  const cached = peekUrl(props.messageId, props.mediaPath || 'remote')
+  if (cached && !opts.force) {
+    applySrc(cached)
+    return
+  }
   loading.value = true
   try {
     const url = await getUrl(
@@ -761,19 +684,13 @@ const loadFullMedia = async (opts: { force?: boolean } = {}) => {
         mediaPath: props.mediaPath || 'remote',
       },
     )
-    if (url) {
-      applySrc(url)
-      fullLoaded.value = true
-      loadFailed.value = false
-    } else {
-      loadFailed.value = true
-    }
+    if (url) applySrc(url)
   } catch (e) {
     console.error('media load', e)
     agentDebugLog({
       hypothesisId: 'D',
-      location: 'MessageBubble.vue:loadFullMedia',
-      message: 'loadFullMedia_fail',
+      location: 'MessageBubble.vue:ensureSrc',
+      message: 'ensureSrc_fail',
       data: {
         messageId: props.messageId,
         type: props.type,
@@ -784,8 +701,6 @@ const loadFullMedia = async (opts: { force?: boolean } = {}) => {
     })
     if (opts.force && props.messageId) invalidateMedia(props.messageId)
     applySrc('')
-    fullLoaded.value = false
-    loadFailed.value = true
   } finally {
     loading.value = false
   }
@@ -832,14 +747,12 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
 }
 
 const retryMedia = async () => {
-  loadFailed.value = false
   applySrc('')
-  fullLoaded.value = false
   if (props.type === 'voice') {
     await ensureVoiceSrc({ force: true })
     return
   }
-  await loadFullMedia({ force: true })
+  await ensureSrc({ force: true })
 }
 
 /** Audio element tayyor bo'lguncha kutadi */
@@ -942,7 +855,8 @@ const toggle = async () => {
 const openBlobExternal = (url: string, mime?: string, filename?: string) => {
   const name = String(filename || '').trim()
   if (isPdfMime(mime) || /\.pdf$/i.test(name)) {
-    window.open(url, '_blank', 'noopener,noreferrer')
+    lightboxMode.value = 'pdf'
+    lightbox.value = true
     return
   }
   try {
@@ -958,40 +872,39 @@ const openBlobExternal = (url: string, mime?: string, filename?: string) => {
 }
 
 const handlePhotoStickerTap = async () => {
-  if (swipeHandled.value) {
-    swipeHandled.value = false
-    return
-  }
   if (props.selectionMode && isSelectable.value) {
     emit('toggle-select')
     return
   }
-  if (!fullLoaded.value) {
-    loadFailed.value = false
-    await loadFullMedia({ force: true })
-    if (!fullLoaded.value) return
+  if (!src.value) {
+    loading.value = true
+    try {
+      await ensureSrc({ force: true })
+    } finally {
+      loading.value = false
+    }
   }
   openLightbox()
 }
 
 const openLightbox = () => {
-  if (!fullLoaded.value || !src.value) return
+  if (!src.value) return
   lightboxMode.value = 'image'
   lightbox.value = true
 }
 
 const openDocument = async () => {
-  if (swipeHandled.value) {
-    swipeHandled.value = false
-    return
-  }
   if (props.selectionMode && isSelectable.value) {
     emit('toggle-select')
     return
   }
-  if (!fullLoaded.value) {
-    loadFailed.value = false
-    await loadFullMedia({ force: true })
+  if (!src.value) {
+    loading.value = true
+    try {
+      await ensureSrc({ force: true })
+    } finally {
+      loading.value = false
+    }
   }
   if (!src.value) return
   openBlobExternal(src.value, props.mimeType, documentLabel.value)
@@ -1018,11 +931,8 @@ const onAudioError = async () => {
   await retryMedia()
 }
 
-const onImageError = () => {
-  if (!fullLoaded.value) return
-  loadFailed.value = true
-  fullLoaded.value = false
-  applySrc('')
+const onImageError = async () => {
+  await retryMedia()
 }
 
 const seek = (e: MouseEvent) => {
@@ -1039,28 +949,42 @@ watch(
   () => props.messageId,
   (id, prevId) => {
     if (!isMediaBubble.value) return
-    if (!id || id === prevId) return
-    applySrc('')
-    fullLoaded.value = false
-    loadFailed.value = false
-    if (id.startsWith('temp-') || applyCachedIfAny()) return
+    if (!id || id !== prevId) {
+      applySrc('')
+      if (!id) return
+      if (id.startsWith('temp-')) {
+        const local = peekUrl(id)
+        if (local) applySrc(local)
+        return
+      }
+      const cached = peekUrl(id, props.mediaPath)
+      if (cached) {
+        applySrc(cached)
+        return
+      }
+      if (props.type === 'photo' || props.type === 'sticker' || props.type === 'document') {
+        void ensureSrc()
+      }
+    }
   },
   { immediate: true },
 )
 
-/** mediaPath yangilanganda — faqat allaqachon yuklangan bo'lsa */
+/** mediaPath yangilanganda (remote → disk) */
 watch(
   () => props.mediaPath,
   async (path, prev) => {
     if (!isMediaBubble.value) return
     if (!props.messageId || path === prev) return
-    if (!fullLoaded.value) return
     const becameReady =
       isRemoteMedia(prev) && !isRemoteMedia(path)
     if (becameReady) {
       applySrc('')
-      fullLoaded.value = false
-      await loadFullMedia({ force: true })
+      await ensureSrc({ force: true })
+      return
+    }
+    if (!src.value) {
+      await ensureSrc()
     }
   },
 )
@@ -1068,30 +992,40 @@ watch(
 watch(
   () => props.status,
   async (status, prev) => {
-    if (props.type !== 'voice') return
+    if (!isMediaBubble.value) return
     if (!props.messageId) return
     if (status === 'failed' && props.mediaPath && !src.value) {
-      await ensureVoiceSrc()
+      if (props.type === 'voice') await ensureVoiceSrc()
+      else await ensureSrc()
       return
     }
     if (prev !== 'sending' || status === 'sending') return
     const cached = peekUrl(props.messageId, props.mediaPath)
-    if (cached) applySrc(cached)
+    if (cached) {
+      applySrc(cached)
+      return
+    }
+    if (!src.value) {
+      if (props.type === 'voice') await ensureVoiceSrc()
+      else await ensureSrc()
+    }
   },
 )
 
-/** Profil → kesh tozalanganda — faqat yuklangan media qayta olinadi */
+/** Profil → kesh tozalanganda bubble ni qayta yuklash */
 watch(mediaCacheEpoch, () => {
-  if (!isMediaBubble.value || !fullLoaded.value) return
+  if (!isMediaBubble.value) return
   if (props.type === 'voice') {
     stopLocalVoice()
     applySrc('')
     void ensureVoiceSrc({ force: true })
     return
   }
+  stopLocalVoice()
   applySrc('')
-  fullLoaded.value = false
-  void loadFullMedia({ force: true })
+  if (!isRemoteMedia(props.mediaPath)) {
+    void ensureSrc({ force: true })
+  }
 })
 
 onBeforeUnmount(() => {

@@ -1,6 +1,6 @@
 import type { IChat, IChatMessage } from '~/types'
 import { mergeOrderChatContext } from '~/utils/orderChatQuery'
-import { invalidateChatMediaCaches } from '~/composables/useVoiceMedia'
+import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import { inferTextFormat } from '~/utils/telegramHtml'
@@ -8,7 +8,7 @@ import {
     restoreMessagesCache,
     saveMessagesCache,
 } from '../helpers/message-cache'
-import { MAX_OPEN_MESSAGES } from '~/utils/memoryBudget'
+import { MAX_OPEN_MESSAGES, MEDIA_PREFETCH_BATCH } from '~/utils/memoryBudget'
 import type { ChatStoreRefs, FetchChatsParams } from '../types'
 
 /** Bir sahifadagi xabarlar soni (eng yangi batch) */
@@ -174,7 +174,10 @@ export function createListActions(
                     totalPages: messagesTotalPages.value,
                 })
                 if (import.meta.client) {
-                    // Media faqat foydalanuvchi ochganda yuklanadi
+                    useChatMedia().prefetch(
+                      messages.value.slice(-MEDIA_PREFETCH_BATCH),
+                      null,
+                    )
                 }
             }
             return res
@@ -247,7 +250,7 @@ export function createListActions(
                 res.data.pagination?.totalPages ?? messagesTotalPages.value
 
             if (import.meta.client) {
-              /* media faqat ochilganda yuklanadi */
+              useChatMedia().prefetch(older.slice(-MEDIA_PREFETCH_BATCH), null)
             }
             return res
         } catch (error) {

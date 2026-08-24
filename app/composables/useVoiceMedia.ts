@@ -175,8 +175,12 @@ async function fetchMediaBlobFromNetwork(
   }
 
   const raw = res.data
-  if (kind === 'photo' && (!mime.startsWith('image/') || /json|text/i.test(mime))) {
-    mime = 'image/jpeg'
+  if (kind === 'photo') {
+    if (!mime.startsWith('image/') && !mime.startsWith('video/')) {
+      const head = await readBlobHead(raw, 12)
+      if (head[0] === 0x52 && head[1] === 0x49) mime = 'image/webp'
+      else mime = 'image/jpeg'
+    }
   }
   if (kind === 'document') {
     const head = await readBlobHead(raw, 8)
@@ -458,12 +462,25 @@ export function useChatMedia() {
     })()
   }
 
-  /** Fon prefetch — o'chirilgan (faqat foydalanuvchi bosganda yuklanadi) */
+  /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
-    _messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
-    _urlBuilder?: ChatMediaUrlBuilder | null,
+    messages: { _id: string; type?: string; mediaPath?: string; tgMessageId?: number }[],
+    urlBuilder?: ChatMediaUrlBuilder | null,
   ) => {
-    /* media faqat MessageBubble ichida ochilganda yuklanadi */
+    for (const m of messages) {
+      const id = normalizeMessageId(m._id)
+      if (!id || id.startsWith('temp-')) continue
+      const isVoice = m.type === 'voice'
+      const isPhoto = m.type === 'photo' || m.type === 'sticker'
+      const isDocument = m.type === 'document'
+      if (!isVoice && !isPhoto && !isDocument) continue
+      if (!m.mediaPath && !m.tgMessageId) continue
+      const kind = isVoice ? 'voice' : isDocument ? 'document' : 'photo'
+      getUrl(id, kind, {
+        urlBuilder,
+        mediaPath: m.mediaPath || 'remote',
+      }).catch(() => {})
+    }
   }
 
   const revokeAll = () => {
