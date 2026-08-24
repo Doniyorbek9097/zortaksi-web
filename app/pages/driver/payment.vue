@@ -261,6 +261,10 @@ import {
   openTelegramExternalUrl,
 } from '~/utils/telegramLinks'
 
+const queueRegionGroupsModal = () => {
+  if (import.meta.client) sessionStorage.setItem('zt-show-region-groups', '1')
+}
+
 definePageMeta({ layout: 'driver' })
 
 const config = useRuntimeConfig()
@@ -444,6 +448,7 @@ const buyTariff = async () => {
     })
     if (res.success) {
       await authStore.getMe()
+      queueRegionGroupsModal()
       if (returnPath.value && authStore.tariffActive) {
         await navigateTo(returnPath.value)
       } else {
@@ -479,6 +484,7 @@ onMounted(async () => {
   const paid = String(route.query.paid || '')
   if (paid === '1') {
     try { await authStore.getMe() } catch { /* ignore */ }
+    queueRegionGroupsModal()
     if (returnPath.value && authStore.tariffActive) {
       await navigateTo(returnPath.value)
       return

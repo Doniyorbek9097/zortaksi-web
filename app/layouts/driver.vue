@@ -6,6 +6,7 @@
       </div>
     </BasePullToRefresh>
     <DriverBottomNavigation />
+    <OrdersRegionGroupsWelcome />
   </AuthSessionGate>
 </template>
 
@@ -18,6 +19,7 @@ import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 const authStore = useAuthStore()
 const orderStore = useOrderStore()
 const chatStore = useChatStore()
+const { showAfterPayment } = useRegionGroupsWelcome()
 
 const refreshBadges = async () => {
   if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
@@ -30,6 +32,10 @@ const refreshBadges = async () => {
 onMounted(() => {
   orderStore.startRecentMinuteTicker()
   void refreshBadges()
+  if (import.meta.client && sessionStorage.getItem('zt-show-region-groups')) {
+    sessionStorage.removeItem('zt-show-region-groups')
+    void showAfterPayment()
+  }
 })
 
 onBeforeUnmount(() => {

@@ -14,14 +14,14 @@
             <div class="shrink-0 p-4 pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div class="flex items-center gap-2 px-0.5">
                 <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 inline-flex items-center justify-center shrink-0">
-                  <font-awesome-icon icon="fa-solid fa-users" />
+                  <font-awesome-icon icon="fa-solid fa-check" />
                 </span>
                 <div class="min-w-0 flex-1 leading-none">
                   <p class="text-sm font-black text-slate-900 dark:text-white">
-                    {{ groups.telegramSessionOk === false ? 'Guruhlarga qo\'shiling' : 'Guruhlarga qo\'shildingiz' }}
+                    {{ headerTitle }}
                   </p>
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-                    {{ groups.regionTitle }} — public va private guruhlar
+                    {{ groups.regionTitle }} — {{ headerSubtitle }}
                   </p>
                 </div>
               </div>
@@ -41,8 +41,7 @@
                   Public guruhda e'lon bering, private guruhdan buyurtmalar oling.
                 </template>
                 <template v-else>
-                  Sizga hudud guruhi qo'shildi. Public guruhda e'lon berishingiz mumkin,
-                  private guruhdan esa buyurtmalar olasiz.
+                  Hudud guruhingiz tayyor. E'lon va buyurtmalar uchun quyidagi guruhlarga qo'shiling.
                 </template>
               </p>
 
@@ -55,12 +54,15 @@
                 <div class="flex items-start justify-between gap-2">
                   <div class="min-w-0">
                     <p class="text-[10px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400">
-                      Public guruh
+                      E'lon berish
                     </p>
                     <p class="text-[13px] font-black text-slate-900 dark:text-white mt-0.5 truncate">
                       {{ groups.public.title }}
                     </p>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    <p class="text-[11px] font-bold text-sky-700 dark:text-sky-300 mt-1">
+                      {{ groups.public.title }} guruhiga qo'shiling
+                    </p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {{ groups.public.hint }}
                     </p>
                   </div>
@@ -69,7 +71,7 @@
                       groups.public.isMember
                         ? 'Ochish →'
                         : groups.public.canJoinManually
-                          ? "Telegramda qo'shilish →"
+                          ? "Telegramda →"
                           : "Qo'shilish →"
                     }}
                   </span>
@@ -81,12 +83,15 @@
                 class="rounded-xl border px-3.5 py-3 border-violet-200 dark:border-violet-900/60 bg-violet-50/80 dark:bg-violet-950/20"
               >
                 <p class="text-[10px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
-                  Private guruh
+                  Buyurtma olish
                 </p>
                 <p class="text-[13px] font-black text-slate-900 dark:text-white mt-0.5 truncate">
                   {{ groups.private.title }}
                 </p>
-                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                <p class="text-[11px] font-bold text-violet-700 dark:text-violet-300 mt-1">
+                  {{ groups.private.title }} guruhiga qo'shiling
+                </p>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {{ groups.private.hint }}
                 </p>
 
@@ -102,7 +107,7 @@
                       ? "Qo'shilmoqda…"
                       : groups.private.canJoinManually
                         ? "Telegramda qo'shilish"
-                        : "Guruhga qo'shilish"
+                        : `${groups.private.title} guruhiga qo'shilish`
                   }}
                 </button>
                 <p
@@ -141,6 +146,23 @@ const {
   joinPrivateGroup,
   close,
 } = useRegionGroupsWelcome()
+
+const headerTitle = computed(() => {
+  const g = groups.value
+  if (!g) return "Guruhlarga qo'shiling"
+  if (g.telegramSessionOk === false) return "Guruhlarga qo'shiling"
+  return "To'lov muvaffaqiyatli"
+})
+
+const headerSubtitle = computed(() => {
+  const g = groups.value
+  if (!g) return ''
+  const parts: string[] = []
+  if (g.public?.title) parts.push(g.public.title)
+  if (g.private?.title) parts.push(g.private.title)
+  if (parts.length) return parts.join(' · ')
+  return 'public va private guruhlar'
+})
 </script>
 
 <style scoped>

@@ -72,6 +72,13 @@ export function useRegionGroupsWelcome() {
     }
   }
 
+  const showAfterPayment = async () => {
+    if (!canShow.value) return null
+    const data = await fetchGroups()
+    if (data) show(data)
+    return data
+  }
+
   const loadAndShowIfNeeded = async () => {
     if (!canShow.value) return
     const data = groups.value ?? (await fetchGroups())
@@ -134,6 +141,7 @@ export function useRegionGroupsWelcome() {
     show,
     close,
     fetchGroups,
+    showAfterPayment,
     loadAndShowIfNeeded,
     openPublicGroup,
     openPrivateGroupManually,
