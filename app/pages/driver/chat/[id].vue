@@ -189,6 +189,7 @@
           :type="chatMediaType(msg)"
           :message-id="String(msg._id)"
           :media-path="msg.mediaPath"
+          :mime-type="msg.mimeType"
           :duration="msg.duration"
           :location-lat="msg.locationLat"
           :location-lng="msg.locationLng"
@@ -738,12 +739,33 @@ const composerPlaceholder = computed(() => {
 })
 
 /** Voice/photo/document — MessageBubble to'g'ri tip bilan ochilsin */
-const chatMediaType = (msg: { type?: string; mediaPath?: string; duration?: number; locationLat?: number; locationLng?: number }) => {
+const chatMediaType = (msg: {
+  type?: string
+  mediaPath?: string
+  mimeType?: string
+  duration?: number
+  locationLat?: number
+  locationLng?: number
+}) => {
   const t = String(msg.type || '')
-  if (t === 'voice' || t === 'photo' || t === 'location') return t
+  if (t === 'voice' || t === 'photo' || t === 'sticker' || t === 'location') return t
   if (msg.locationLat != null && msg.locationLng != null) return 'location'
   if (msg.duration) return 'voice'
-  if (t === 'document' || (msg.mediaPath && t !== 'text')) return 'photo'
+  if (t === 'sticker') return 'sticker'
+  if (t === 'document') {
+    const mime = String(msg.mimeType || '')
+    if (mime.startsWith('image/') || String(msg.mediaPath || '').startsWith('photo/')) {
+      return 'photo'
+    }
+    return 'document'
+  }
+  if (msg.mediaPath && t !== 'text') {
+    const mime = String(msg.mimeType || '')
+    if (mime.startsWith('image/') || String(msg.mediaPath || '').startsWith('photo/')) {
+      return 'photo'
+    }
+    return 'document'
+  }
   return t || 'text'
 }
 

@@ -133,6 +133,7 @@
                 :type="mediaTypeOf(msg)"
                 :message-id="msgId(msg)"
                 :media-path="msg.mediaPath"
+                :mime-type="msg.mimeType"
                 :duration="msg.duration"
                 :location-lat="msg.locationLat"
                 :location-lng="msg.locationLng"
@@ -216,7 +217,7 @@ const msgId = (msg: IChatMessage) => String((msg as any)?._id || (msg as any)?.i
 
 const isMediaMsg = (msg: IChatMessage) => {
   const t = String(msg.type || '')
-  if (t === 'voice' || t === 'photo' || t === 'document' || t === 'location') return true
+  if (t === 'voice' || t === 'photo' || t === 'sticker' || t === 'document' || t === 'location') return true
   // type yo'q, lekin media path bor
   const path = String(msg.mediaPath || '')
   if (path && path !== 'remote' && t !== 'text') return true
@@ -227,17 +228,26 @@ const isMediaMsg = (msg: IChatMessage) => {
 
 const mediaTypeOf = (msg: IChatMessage): IChatMessage['type'] => {
   const t = String(msg.type || '')
-  if (t === 'voice' || t === 'photo' || t === 'location') {
+  if (t === 'voice' || t === 'photo' || t === 'sticker' || t === 'location') {
     return t as IChatMessage['type']
   }
   if (msg.locationLat != null && msg.locationLng != null) return 'location'
-  if (msg.duration || t === 'document') {
-    // audio document → voice player
-    if (msg.duration) return 'voice'
-  }
-  if (t === 'document') return 'photo'
   if (msg.duration) return 'voice'
-  return 'photo'
+  if (t === 'document') {
+    const mime = String(msg.mimeType || '')
+    if (mime.startsWith('image/') || String(msg.mediaPath || '').startsWith('photo/')) {
+      return 'photo'
+    }
+    return 'document'
+  }
+  if (msg.mediaPath && t !== 'text') {
+    const mime = String(msg.mimeType || '')
+    if (mime.startsWith('image/') || String(msg.mediaPath || '').startsWith('photo/')) {
+      return 'photo'
+    }
+    return 'document'
+  }
+  return (t || 'text') as IChatMessage['type']
 }
 
 const speakerOf = (msg: IChatMessage) => {

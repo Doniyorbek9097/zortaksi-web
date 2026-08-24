@@ -122,10 +122,11 @@ function resolveMediaRequestUrl(
 
 async function fetchMediaBlobFromNetwork(
   messageId: string,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
   urlBuilder?: ChatMediaUrlBuilder | null,
 ): Promise<Blob> {
-  const fallbackMime = kind === 'voice' ? 'audio/ogg' : 'image/jpeg'
+  const fallbackMime =
+    kind === 'voice' ? 'audio/ogg' : kind === 'document' ? 'application/octet-stream' : 'image/jpeg'
   const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
   const token = resolveAuthToken(cookie.value)
   const url = resolveMediaRequestUrl(messageId, urlBuilder)
@@ -198,7 +199,7 @@ function idbPathMatches(stored?: string, expected?: string | null): boolean {
 
 async function loadFromIdb(
   id: string,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
   mediaPath?: string | null,
 ): Promise<Blob | null> {
   const row = await idbGetMediaRecord(id)
@@ -218,7 +219,7 @@ async function loadFromIdb(
 async function blobToObjectUrl(
   messageId: string,
   blob: Blob,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
   persistIdb: boolean,
   mediaPath?: string | null,
 ): Promise<string> {
@@ -310,7 +311,11 @@ export function useChatMedia() {
       try {
         const res = await fetch(url)
         const blob = await res.blob()
-        const kind = blob.type.startsWith('image/') ? 'photo' : 'voice'
+        const kind = blob.type.startsWith('image/')
+          ? 'photo'
+          : blob.type.startsWith('audio/')
+            ? 'voice'
+            : 'document'
         if (!(await isCorruptMediaBlob(blob, kind))) {
           await idbPutMedia(to, blob, kind)
         }
@@ -322,7 +327,7 @@ export function useChatMedia() {
 
   const getUrl = async (
     messageId: string,
-    kind: 'voice' | 'photo' = 'photo',
+    kind: 'voice' | 'photo' | 'document' = 'photo',
     opts: GetMediaUrlOpts = {},
   ): Promise<string> => {
     await ensureMediaCacheReady()
@@ -398,7 +403,7 @@ export function useChatMedia() {
   }
 
   /** Chiquvchi temp — serverdan yuklab IDB ga yozish */
-  const upgradeFromServer = (messageId: string, kind: 'voice' | 'photo') => {
+  const upgradeFromServer = (messageId: string, kind: 'voice' | 'photo' | 'document') => {
     const id = normalizeMessageId(messageId)
     if (!id || id.startsWith('temp-') || !localOnly.has(id)) return
     void (async () => {
@@ -431,10 +436,11 @@ export function useChatMedia() {
       const id = normalizeMessageId(m._id)
       if (!id || id.startsWith('temp-')) continue
       const isVoice = m.type === 'voice'
-      const isPhoto = m.type === 'photo'
-      if (!isVoice && !isPhoto) continue
+      const isPhoto = m.type === 'photo' || m.type === 'sticker'
+      const isDocument = m.type === 'document'
+      if (!isVoice && !isPhoto && !isDocument) continue
       if (!m.mediaPath && !m.tgMessageId) continue
-      const kind = isVoice ? 'voice' : 'photo'
+      const kind = isVoice ? 'voice' : isDocument ? 'document' : 'photo'
       getUrl(id, kind, {
         urlBuilder,
         mediaPath: m.mediaPath || 'remote',

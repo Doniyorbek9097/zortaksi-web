@@ -8,11 +8,12 @@ export async function readBlobHead(blob: Blob, len = 16): Promise<Uint8Array> {
 /** Aniq buzilgan (JSON/HTML/bo'sh) — network va IDB uchun */
 export async function isCorruptMediaBlob(
   blob: Blob,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
 ): Promise<boolean> {
   if (!blob?.size) return true
   if (kind === 'photo' && blob.size < 32) return true
   if (kind === 'voice' && blob.size < 16) return true
+  if (kind === 'document' && blob.size < 8) return true
 
   const head = await readBlobHead(blob, 12)
   if (!head.length) return true
@@ -33,12 +34,18 @@ export async function isCorruptMediaBlob(
 /** IDB dan o'qishda qo'shimcha tekshiruv (magic bytes) */
 export async function isValidMediaBlob(
   blob: Blob,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
 ): Promise<boolean> {
   if (await isCorruptMediaBlob(blob, kind)) return false
 
   const head = await readBlobHead(blob, 12)
   if (!head.length) return false
+
+  if (kind === 'document') {
+    if (head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46) return true
+    if (head[0] === 0x50 && head[1] === 0x4b) return true
+    return blob.size > 32
+  }
 
   if (kind === 'photo') {
     if (head[0] === 0xff && head[1] === 0xd8) return true

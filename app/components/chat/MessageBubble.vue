@@ -50,7 +50,8 @@
       :class="[
         'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600',
         out ? 'rounded-br-md' : 'rounded-bl-md',
-        type === 'photo' ? '!p-1.5' : '',
+        type === 'photo' || type === 'sticker' ? '!p-1.5' : '',
+        type === 'document' ? '!p-2' : '',
         isSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
       @pointerdown="onSelectPointerDown"
@@ -120,37 +121,55 @@
         </div>
       </div>
 
-      <!-- Rasm -->
-      <div v-else-if="type === 'photo'" class="space-y-1.5">
+      <!-- Rasm / stiker -->
+      <div v-else-if="type === 'photo' || type === 'sticker'" class="space-y-1.5">
         <button
           type="button"
-          class="block w-full overflow-hidden rounded-xl bg-black/5 dark:bg-white/5"
-          @click="openLightbox"
+          class="block w-full overflow-hidden rounded-xl bg-transparent"
+          :class="type === 'sticker' ? 'max-w-[200px]' : ''"
+          @click.stop="openLightbox"
+          @pointerdown.stop
         >
           <div
             v-if="loading && !src"
-            class="w-[220px] h-[160px] flex items-center justify-center"
+            class="w-full min-w-[120px] max-w-[320px] h-[160px] flex items-center justify-center"
           >
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-lg opacity-60" />
           </div>
           <div
             v-else-if="!src && !loading"
-            class="w-[220px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
+            class="w-full min-w-[120px] max-w-[320px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
+            @click.stop="openLightbox"
           >
-            <font-awesome-icon icon="fa-solid fa-image" class="text-lg" />
-            <span>Rasmni ko'rish</span>
+            <font-awesome-icon
+              :icon="type === 'sticker' ? 'fa-solid fa-face-smile' : 'fa-solid fa-image'"
+              class="text-lg"
+            />
+            <span>{{ type === 'sticker' ? 'Stiker' : 'Rasmni ko\'rish' }}</span>
           </div>
+          <video
+            v-else-if="src && isStickerVideo"
+            :src="src"
+            class="block w-full max-w-[200px] max-h-[200px] object-contain rounded-xl mx-auto"
+            autoplay
+            loop
+            muted
+            playsinline
+            @click.stop="openLightbox"
+          />
           <img
             v-else-if="src"
             :src="src"
-            alt="Rasm"
-            class="max-w-[260px] max-h-[320px] w-full object-cover rounded-xl"
+            :alt="type === 'sticker' ? 'Stiker' : 'Rasm'"
+            class="block w-full max-w-[320px] max-h-[420px] object-contain rounded-xl mx-auto"
+            :class="type === 'sticker' ? '!max-w-[200px] !max-h-[200px]' : ''"
             loading="lazy"
             @error="onImageError"
+            @click.stop="openLightbox"
           >
           <div
             v-else
-            class="w-[220px] h-[120px] flex flex-col items-center justify-center gap-1 text-xs opacity-70"
+            class="w-full min-w-[200px] max-w-[320px] h-[120px] flex flex-col items-center justify-center gap-1 text-xs opacity-70"
             @click.stop="retryMedia"
           >
             <span>Rasm yuklanmadi</span>
@@ -163,6 +182,52 @@
         >
           <ChatHtmlText v-if="textFormat === 'html'" :html="text" :out="out" />
           <ChatLinkifiedText v-else :text="text" :out="out" :mask-phones="maskPhones" />
+        </p>
+      </div>
+
+      <!-- Hujjat (PDF, DOCX) -->
+      <div v-else-if="type === 'document'" class="space-y-1.5 min-w-[200px]">
+        <button
+          type="button"
+          class="flex items-center gap-3 w-full max-w-[320px] rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-600/80 active:scale-[0.98] transition-transform"
+          @click.stop="openDocument"
+          @pointerdown.stop
+        >
+          <span
+            class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-lg"
+            :class="isPdfDocument
+              ? 'bg-red-500/15 text-red-500'
+              : 'bg-blue-500/15 text-blue-500'"
+          >
+            <font-awesome-icon
+              v-if="loading"
+              icon="fa-solid fa-spinner"
+              class="animate-spin text-base"
+            />
+            <font-awesome-icon
+              v-else
+              :icon="documentIcon"
+              class="text-xl"
+            />
+          </span>
+          <span class="min-w-0 flex-1 text-left">
+            <span class="block text-[14px] font-semibold truncate text-slate-800 dark:text-slate-100">
+              {{ documentLabel }}
+            </span>
+            <span class="block text-[11px] mt-0.5 text-sky-500 font-semibold">
+              {{ loading ? 'Yuklanmoqda...' : 'Ochish' }}
+            </span>
+          </span>
+          <font-awesome-icon
+            icon="fa-solid fa-arrow-up-right-from-square"
+            class="shrink-0 text-[12px] text-slate-400"
+          />
+        </button>
+        <p
+          v-if="text && text !== documentLabel"
+          class="px-1 text-[15px] leading-relaxed"
+        >
+          <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
       </div>
 
@@ -207,7 +272,7 @@
 
       <div
         class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400 dark:text-slate-300"
-        :class="type === 'photo' ? 'px-1.5 pb-0.5' : ''"
+        :class="type === 'photo' || type === 'sticker' || type === 'document' ? 'px-1.5 pb-0.5' : ''"
       >
         <span>{{ time }}</span>
         <template v-if="out">
@@ -259,28 +324,43 @@
       </div>
     </div>
 
-    <!-- Rasm lightbox -->
+    <!-- Rasm / PDF lightbox -->
     <Teleport to="body">
       <Transition name="fade">
         <div
           v-if="lightbox"
-          class="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center p-4"
-          @click.self="lightbox = false"
+          class="fixed inset-0 z-[9999] bg-black/92 flex items-center justify-center p-4"
+          @click.self="closeLightbox"
         >
           <button
             type="button"
-            class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
+            class="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center"
             aria-label="Yopish"
-            @click="lightbox = false"
+            @click="closeLightbox"
           >
             <font-awesome-icon icon="fa-solid fa-times" />
           </button>
           <img
-            v-if="src"
+            v-if="lightboxMode === 'image' && src && !isStickerVideo"
             :src="src"
             alt="Rasm"
-            class="max-w-full max-h-[90vh] object-contain rounded-lg"
+            class="max-w-[min(100vw-2rem,1400px)] max-h-[min(100vh-4rem,90vh)] w-auto h-auto object-contain rounded-lg shadow-2xl"
           >
+          <video
+            v-else-if="lightboxMode === 'image' && src && isStickerVideo"
+            :src="src"
+            class="max-w-[min(100vw-2rem,480px)] max-h-[min(100vh-4rem,480px)] w-auto h-auto object-contain rounded-lg shadow-2xl"
+            autoplay
+            loop
+            muted
+            playsinline
+          />
+          <iframe
+            v-else-if="lightboxMode === 'pdf' && src"
+            :src="src"
+            title="PDF"
+            class="w-full max-w-[min(100vw-2rem,1200px)] h-[min(90vh,calc(100vh-4rem))] rounded-lg bg-white shadow-2xl border-0"
+          />
         </div>
       </Transition>
     </Teleport>
@@ -301,10 +381,11 @@ interface Props {
   status?: 'sending' | 'sent' | 'failed' | 'read'
   /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok) */
   error?: string
-  type?: 'text' | 'photo' | 'video' | 'voice' | 'document' | 'location'
+  type?: 'text' | 'photo' | 'video' | 'voice' | 'document' | 'sticker' | 'location'
   messageId?: string
   /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
   mediaPath?: string
+  mimeType?: string
   duration?: number
   locationLat?: number
   locationLng?: number
@@ -333,6 +414,7 @@ const props = withDefaults(defineProps<Props>(), {
   error: '',
   type: 'text',
   mediaPath: '',
+  mimeType: '',
   duration: 0,
   locationLat: undefined,
   locationLng: undefined,
@@ -425,6 +507,7 @@ const isSelectable = computed(
     props.type === 'text' ||
     props.type === 'voice' ||
     props.type === 'photo' ||
+    props.type === 'sticker' ||
     props.type === 'location' ||
     props.type === 'document',
 )
@@ -479,7 +562,12 @@ const src = ref('')
 const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
-useHistoryBackClose(lightbox, () => { lightbox.value = false }, { key: 'ztLightbox' })
+const lightboxMode = ref<'image' | 'pdf'>('image')
+const closeLightbox = () => {
+  lightbox.value = false
+  lightboxMode.value = 'image'
+}
+useHistoryBackClose(lightbox, closeLightbox, { key: 'ztLightbox' })
 const current = ref(0)
 const total = ref(props.duration || 0)
 
@@ -497,7 +585,56 @@ const fmt = (s: number) => {
 const currentLabel = computed(() => fmt(current.value))
 const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
-const mediaKind = computed(() => (props.type === 'voice' ? 'voice' : 'photo') as 'voice' | 'photo')
+const isPdfMime = (mime?: string) => /pdf/i.test(String(mime || ''))
+const isDocMime = (mime?: string, name?: string) => {
+  const m = String(mime || '').toLowerCase()
+  const n = String(name || '').toLowerCase()
+  return (
+    m.includes('word') ||
+    m.includes('docx') ||
+    m.includes('msword') ||
+    /\.docx?$/i.test(n)
+  )
+}
+
+const documentLabel = computed(() => {
+  const t = String(props.text || '').trim()
+  if (t) return t
+  if (isPdfMime(props.mimeType)) return 'PDF hujjat'
+  if (isDocMime(props.mimeType, props.text)) return 'Word hujjat'
+  return 'Hujjat'
+})
+
+const isPdfDocument = computed(
+  () =>
+    props.type === 'document' &&
+    (isPdfMime(props.mimeType) || /\.pdf$/i.test(String(props.text || ''))),
+)
+
+const documentIcon = computed(() =>
+  isPdfDocument.value ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-word',
+)
+
+const isStickerVideo = computed(
+  () =>
+    props.type === 'sticker' &&
+    String(props.mimeType || '').toLowerCase().startsWith('video/'),
+)
+
+const mediaKind = computed((): 'voice' | 'photo' | 'document' => {
+  if (props.type === 'voice') return 'voice'
+  if (props.type === 'document') return 'document'
+  if (props.type === 'sticker' && isStickerVideo.value) return 'document'
+  return 'photo'
+})
+
+const isMediaBubble = computed(
+  () =>
+    props.type === 'voice' ||
+    props.type === 'photo' ||
+    props.type === 'sticker' ||
+    props.type === 'document',
+)
 
 const isRemoteMedia = (path?: string | null) => {
   const p = String(path || '').trim()
@@ -505,7 +642,7 @@ const isRemoteMedia = (path?: string | null) => {
 }
 
 // #region agent log
-if (import.meta.client && (props.type === 'voice' || props.type === 'photo')) {
+if (import.meta.client && isMediaBubble.value) {
   agentDebugLog({
     hypothesisId: 'D',
     location: 'MessageBubble.vue:setup',
@@ -700,7 +837,41 @@ const openLightbox = async () => {
       opened: !!src.value,
     },
   })
-  if (src.value) lightbox.value = true
+  if (src.value) {
+    lightboxMode.value = 'image'
+    lightbox.value = true
+  }
+}
+
+const openDocument = async () => {
+  if (props.selectionMode && isSelectable.value) {
+    emit('toggle-select')
+    return
+  }
+  if (!src.value) {
+    loading.value = true
+    try {
+      await ensureSrc({ force: true })
+    } finally {
+      loading.value = false
+    }
+  }
+  if (!src.value) return
+  if (isPdfDocument.value) {
+    lightboxMode.value = 'pdf'
+    lightbox.value = true
+    return
+  }
+  try {
+    window.open(src.value, '_blank', 'noopener,noreferrer')
+  } catch {
+    const a = document.createElement('a')
+    a.href = src.value
+    a.target = '_blank'
+    a.rel = 'noopener'
+    a.download = documentLabel.value
+    a.click()
+  }
 }
 
 const onTime = () => {
@@ -741,7 +912,7 @@ const seek = (e: MouseEvent) => {
 watch(
   () => props.messageId,
   (id, prevId) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!isMediaBubble.value) return
     if (!id || id !== prevId) {
       applySrc('')
       if (!id) return
@@ -755,7 +926,7 @@ watch(
         applySrc(cached)
         return
       }
-      if (props.type === 'photo') {
+      if (props.type === 'photo' || props.type === 'sticker' || props.type === 'document') {
         void ensureSrc()
       }
     }
@@ -767,7 +938,7 @@ watch(
 watch(
   () => props.mediaPath,
   async (path, prev) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!isMediaBubble.value) return
     if (!props.messageId || path === prev) return
     const becameReady =
       isRemoteMedia(prev) && !isRemoteMedia(path)
@@ -785,7 +956,7 @@ watch(
 watch(
   () => props.status,
   async (status, prev) => {
-    if (props.type !== 'voice' && props.type !== 'photo') return
+    if (!isMediaBubble.value) return
     if (!props.messageId) return
     if (status === 'failed' && props.mediaPath && !src.value) {
       await ensureSrc()
@@ -805,7 +976,7 @@ watch(
 
 /** Profil → kesh tozalanganda bubble ni qayta yuklash */
 watch(mediaCacheEpoch, () => {
-  if (props.type !== 'voice' && props.type !== 'photo') return
+  if (!isMediaBubble.value) return
   stopLocalVoice()
   applySrc('')
   if (!isRemoteMedia(props.mediaPath)) {

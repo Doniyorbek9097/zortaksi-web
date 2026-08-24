@@ -43,6 +43,7 @@ export type ChatMessageType =
     | 'video'
     | 'voice'
     | 'document'
+    | 'sticker'
     | 'location'
 export type ChatMessageStatus = 'sending' | 'sent' | 'failed' | 'read'
 export type ChatTextFormat = 'plain' | 'html'

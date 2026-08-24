@@ -10,7 +10,7 @@ const STORE = 'blobs'
 export type MediaRecord = {
   id: string
   blob: Blob
-  kind: 'voice' | 'photo'
+  kind: 'voice' | 'photo' | 'document'
   /** mediaPath o'zgarganda eski blob ishlatilmasin */
   mediaPath?: string
   updatedAt: number
@@ -70,7 +70,7 @@ export async function idbGetMedia(messageId: string): Promise<Blob | null> {
 export async function idbPutMedia(
   messageId: string,
   blob: Blob,
-  kind: 'voice' | 'photo',
+  kind: 'voice' | 'photo' | 'document',
   mediaPath?: string | null,
 ): Promise<void> {
   const id = String(messageId || '').trim()
@@ -136,7 +136,7 @@ export async function idbListAllMedia(): Promise<MediaRecord[]> {
 
 /** Yaroqsiz bloblarni o'chirish (brauzer keshini qo'lda tozalamasdan) */
 export async function idbPurgeInvalid(
-  isValid: (blob: Blob, kind: 'voice' | 'photo') => Promise<boolean>,
+  isValid: (blob: Blob, kind: 'voice' | 'photo' | 'document') => Promise<boolean>,
 ): Promise<number> {
   const rows = await idbListAllMedia()
   let removed = 0
@@ -146,7 +146,12 @@ export async function idbPurgeInvalid(
       removed++
       continue
     }
-    const kind = row.kind === 'voice' ? 'voice' : 'photo'
+    const kind =
+      row.kind === 'voice'
+        ? 'voice'
+        : row.kind === 'document'
+          ? 'document'
+          : 'photo'
     if (!(await isValid(row.blob, kind))) {
       await idbDeleteMedia(row.id)
       removed++
