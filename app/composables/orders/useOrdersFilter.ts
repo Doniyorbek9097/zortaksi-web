@@ -159,6 +159,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     orderStore.applyListFilter({
       page: 1,
       limit: LIMIT,
+      text: '',
       ...(savedGroup ? { botGroupId: savedGroup } : { search: saved.trim() || undefined }),
     })
   }

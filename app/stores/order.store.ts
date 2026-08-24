@@ -575,7 +575,6 @@ export const useOrderStore = defineStore('order', () => {
 
     const fetchOrderById = async (orderId: string) => {
         try {
-            isLoading.value = true
             const response = await useApi(`/orders/${orderId}`)
             if (response.success) {
                 currentOrder.value = response.data
@@ -585,8 +584,6 @@ export const useOrderStore = defineStore('order', () => {
         } catch (error) {
             console.error('FetchOrderById error:', error)
             throw error
-        } finally {
-            isLoading.value = false
         }
     }
 

@@ -51,7 +51,7 @@
       {{ displayOrders.length }}/{{ orderStore.total.toLocaleString('ru-RU') }} ko'rsatildi
     </p>
 
-    <div v-if="filterLoading || (orderStore.isLoading && !displayOrders.length)" class="pt-2">
+    <div v-if="filterLoading || (orderStore.isLoading && !orderStore.orders.length)" class="pt-2">
       <OrdersOrderCardSkeleton />
     </div>
 

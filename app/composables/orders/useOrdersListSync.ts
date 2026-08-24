@@ -49,7 +49,12 @@ export function useOrdersListSync(options: {
     if (!import.meta.client) return
     const y = orderStore.ordersListScrollY
     if (y == null || y <= 0) return
-    window.scrollTo(0, y)
+    const apply = () => window.scrollTo(0, y)
+    apply()
+    requestAnimationFrame(() => {
+      apply()
+      requestAnimationFrame(apply)
+    })
   }
 
   const syncIfVisible = () => {
@@ -108,7 +113,14 @@ export function useOrdersListSync(options: {
     if (hasCachedList && sameServerFilter) {
       await nextTick()
       restoreScroll()
-      setTimeout(restoreScroll, 80)
+      setTimeout(restoreScroll, 50)
+      setTimeout(restoreScroll, 200)
+      syncIfVisible()
+    } else if (hasCachedList && orderStore.orders.length > 0) {
+      await nextTick()
+      restoreScroll()
+      setTimeout(restoreScroll, 50)
+      setTimeout(restoreScroll, 200)
       syncIfVisible()
     } else {
       await load()
