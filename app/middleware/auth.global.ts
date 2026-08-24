@@ -14,12 +14,25 @@ import {
     resolveSafeNextPath,
 } from '~/utils/userRole'
 import { isMainTabHop, normalizePath } from '~/utils/driverTabRoutes'
+import {
+    classifyApiError,
+    isConnectivityError,
+} from '~/utils/connectionError'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
 
 const isAuthEntryPath = (path: string) =>
     path === '/' || path === '/auth' || path === '/login' || path === '/register'
+
+const isConnectionErrorPath = (path: string) => path === '/connection-error'
+
+function redirectConnectionError(next: string, reason: 'offline' | 'server') {
+    return navigateTo({
+        path: '/connection-error',
+        query: { next, reason },
+    })
+}
 
 function applyPrivateCacheHeaders(path: string) {
     if (!import.meta.server) return
@@ -58,6 +71,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     // ——— CLIENT ———
+    if (isConnectionErrorPath(to.path)) {
+        authStore.sessionReady = true
+        return
+    }
+
     const tabHop =
         authStore.user &&
         authStore.sessionReady &&
@@ -124,31 +142,54 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         return !!(wanted && got && wanted !== got)
     }
 
+    if (
+        import.meta.client &&
+        typeof navigator !== 'undefined' &&
+        !navigator.onLine &&
+        needsUserRefresh()
+    ) {
+        markReady()
+        if (!authStore.user && isProtectedPath(to.path)) {
+            return redirectConnectionError(to.fullPath, 'offline')
+        }
+    }
+
     if (needsUserRefresh()) {
         try {
             await authStore.getMe({ authToken: authToken() || undefined })
         } catch (e: any) {
-            const statusCode = e?.response?.status
-            if (statusCode === 401 || statusCode === 403) {
+            const kind = classifyApiError(e)
+            if (kind === 'auth') {
                 clearSession()
                 if (isProtectedPath(to.path) || to.path === '/auth') {
                     return navigateTo({ path: '/auth', query: { next: to.fullPath } })
                 }
                 return
             }
-            // Tarmoq/CORS xatosi — SessionGate qotib qolmasin
-            if (!authStore.user) {
+            if (isConnectivityError(kind)) {
                 markReady()
-                if (isProtectedPath(to.path)) {
-                    return navigateTo({ path: '/auth', query: { next: to.fullPath } })
+                if (!authStore.user && isProtectedPath(to.path)) {
+                    return redirectConnectionError(
+                        to.fullPath,
+                        kind === 'offline' ? 'offline' : 'server',
+                    )
                 }
                 return
             }
+            // Noma'lum xato — SessionGate qotib qolmasin
+            markReady()
+            if (!authStore.user && isProtectedPath(to.path)) {
+                return redirectConnectionError(to.fullPath, 'server')
+            }
+            return
         }
     }
 
     if (!authStore.user) {
         if (isProtectedPath(to.path)) {
+            if (hasToken()) {
+                return redirectConnectionError(to.fullPath, 'server')
+            }
             clearSession()
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }

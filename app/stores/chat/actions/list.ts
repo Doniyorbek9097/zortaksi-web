@@ -4,6 +4,7 @@ import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceM
 import { getApiErrorMessage } from '~/utils/apiError'
 import { messageAlreadyExists, sortMessagesByDate } from '../helpers/merge-messages'
 import { inferTextFormat } from '~/utils/telegramHtml'
+import { lastMessagePreview } from '../helpers/message-preview'
 import {
     restoreMessagesCache,
     saveMessagesCache,
@@ -412,13 +413,10 @@ export function createListActions(
             if (chat && currentChat.value?._id === chatId) {
                 const last = messages.value.at(-1)
                 if (last) {
-                    const preview =
-                        last.type === 'voice'
-                            ? `🎤 Ovozli xabar${last.duration ? ` (${last.duration}s)` : ''}`
-                            : last.type === 'photo'
-                              ? (last.text?.trim() || '📷 Rasm')
-                              : (last.text || '')
-                    patchChat(chatId, { lastMessage: preview, lastMessageAt: last.date })
+                    patchChat(chatId, {
+                        lastMessage: lastMessagePreview(last),
+                        lastMessageAt: last.date,
+                    })
                 } else {
                     patchChat(chatId, { lastMessage: '', lastMessageAt: new Date().toISOString() })
                 }

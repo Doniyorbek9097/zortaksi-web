@@ -1,5 +1,6 @@
 import type { IChatMessage } from '~/types'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
+import { getChatFileTypeLabel, isChatFileBadgeType } from '~/utils/chatFileTypeLabel'
 
 /**
  * Chat ro'yxatida ko'rsatiladigan oxirgi xabar matni.
@@ -16,6 +17,9 @@ export function lastMessagePreview(msg: IChatMessage): string {
     }
     if (msg.type === 'location') {
         return msg.locationTitle || '📍 Joylashuv'
+    }
+    if (isChatFileBadgeType(msg.type)) {
+        return getChatFileTypeLabel(msg.type, msg.mimeType, msg.text)
     }
     return msg.text
 }

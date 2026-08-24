@@ -50,8 +50,8 @@
       :class="[
         'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600',
         out ? 'rounded-br-md' : 'rounded-bl-md',
-        type === 'photo' || type === 'sticker' ? '!p-1.5' : '',
-        type === 'document' ? '!p-2' : '',
+        type === 'photo' ? '!p-1.5' : '',
+        isFileBadge ? '!p-2' : '',
         isSelectable && selectionMode ? (selected ? 'ring-2 ring-indigo-500' : 'ring-2 ring-indigo-300/60') : '',
       ]"
       @pointerdown="onSelectPointerDown"
@@ -121,42 +121,24 @@
         </div>
       </div>
 
-      <!-- Rasm / stiker -->
-      <div v-else-if="type === 'photo' || type === 'sticker'" class="space-y-1.5">
+      <!-- Rasm -->
+      <div v-else-if="type === 'photo'" class="space-y-1.5">
         <button
           type="button"
           class="block w-full overflow-hidden rounded-xl bg-black/5 dark:bg-white/5"
-          :class="type === 'sticker' ? 'max-w-[200px]' : ''"
-          @click.stop="handlePhotoStickerTap"
+          @click.stop="handlePhotoTap"
         >
           <div
-            v-if="loading && !src && !isStickerTgs && !stickerRenderFailed"
+            v-if="loading && !src"
             class="w-full min-w-[120px] max-w-[320px] h-[160px] flex items-center justify-center"
           >
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-lg opacity-60" />
           </div>
-          <div
-            v-else-if="isStickerTgs || stickerRenderFailed"
-            class="w-full min-w-[120px] max-w-[200px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
-          >
-            <font-awesome-icon icon="fa-solid fa-face-smile" class="text-3xl text-amber-400" />
-            <span>Animatsion stiker</span>
-          </div>
-          <video
-            v-else-if="src && isStickerVideo"
-            :src="src"
-            class="block w-full max-w-[200px] max-h-[200px] object-contain rounded-xl mx-auto"
-            autoplay
-            loop
-            muted
-            playsinline
-          />
           <img
             v-else-if="src"
             :src="src"
-            :alt="type === 'sticker' ? 'Stiker' : 'Rasm'"
+            alt="Rasm"
             class="block w-full max-w-[320px] max-h-[420px] object-contain rounded-xl mx-auto"
-            :class="type === 'sticker' ? '!max-w-[200px] !max-h-[200px]' : ''"
             loading="lazy"
             @error="onImageError"
           >
@@ -164,11 +146,8 @@
             v-else-if="!loading"
             class="w-full min-w-[120px] max-w-[320px] h-[120px] flex flex-col items-center justify-center gap-1.5 text-xs opacity-80"
           >
-            <font-awesome-icon
-              :icon="type === 'sticker' ? 'fa-solid fa-face-smile' : 'fa-solid fa-image'"
-              class="text-lg"
-            />
-            <span>{{ type === 'sticker' ? 'Stiker' : 'Rasmni ko\'rish' }}</span>
+            <font-awesome-icon icon="fa-solid fa-image" class="text-lg" />
+            <span>Rasmni ko'rish</span>
           </div>
           <div
             v-else
@@ -188,45 +167,24 @@
         </p>
       </div>
 
-      <!-- Hujjat (PDF, DOCX) -->
-      <div v-else-if="type === 'document'" class="space-y-1.5 min-w-[200px]">
-        <button
-          type="button"
-          class="flex items-center gap-3 w-full max-w-[320px] rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-600/80 active:scale-[0.98] transition-transform"
-          @click.stop="openDocument"
+      <!-- Stiker, PDF, APK va boshqa fayllar — faqat tur ko'rsatiladi -->
+      <div v-else-if="isFileBadge" class="space-y-1.5 min-w-[180px]">
+        <div
+          class="flex items-center gap-3 w-full max-w-[320px] rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-600/80"
         >
           <span
-            class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-lg"
-            :class="isPdfDocument
-              ? 'bg-red-500/15 text-red-500'
-              : 'bg-blue-500/15 text-blue-500'"
+            class="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-lg bg-slate-500/10 text-slate-500 dark:text-slate-300"
           >
-            <font-awesome-icon
-              v-if="loading"
-              icon="fa-solid fa-spinner"
-              class="animate-spin text-base"
-            />
-            <font-awesome-icon
-              v-else
-              :icon="documentIcon"
-              class="text-xl"
-            />
+            <font-awesome-icon :icon="fileTypeIcon" class="text-xl" />
           </span>
           <span class="min-w-0 flex-1 text-left">
-            <span class="block text-[14px] font-semibold truncate text-slate-800 dark:text-slate-100">
-              {{ documentLabel }}
-            </span>
-            <span class="block text-[11px] mt-0.5 text-sky-500 font-semibold">
-              {{ loading ? 'Yuklanmoqda...' : 'Ochish' }}
+            <span class="block text-[14px] font-semibold text-slate-800 dark:text-slate-100">
+              {{ fileTypeLabel }}
             </span>
           </span>
-          <font-awesome-icon
-            icon="fa-solid fa-arrow-up-right-from-square"
-            class="shrink-0 text-[12px] text-slate-400"
-          />
-        </button>
+        </div>
         <p
-          v-if="text && text !== documentLabel"
+          v-if="text && text !== fileTypeLabel"
           class="px-1 text-[15px] leading-relaxed"
         >
           <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
@@ -274,7 +232,7 @@
 
       <div
         class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400 dark:text-slate-300"
-        :class="type === 'photo' || type === 'sticker' || type === 'document' ? 'px-1.5 pb-0.5' : ''"
+        :class="type === 'photo' || isFileBadge ? 'px-1.5 pb-0.5' : ''"
       >
         <span>{{ time }}</span>
         <template v-if="out">
@@ -326,7 +284,7 @@
       </div>
     </div>
 
-    <!-- Rasm / PDF lightbox -->
+    <!-- Rasm lightbox -->
     <Teleport to="body">
       <Transition name="fade">
         <div
@@ -343,26 +301,11 @@
             <font-awesome-icon icon="fa-solid fa-times" />
           </button>
           <img
-            v-if="lightboxMode === 'image' && src && !isStickerVideo"
+            v-if="src"
             :src="src"
             alt="Rasm"
             class="max-w-[min(100vw-2rem,1400px)] max-h-[min(100vh-4rem,90vh)] w-auto h-auto object-contain rounded-lg shadow-2xl"
           >
-          <video
-            v-else-if="lightboxMode === 'image' && src && isStickerVideo"
-            :src="src"
-            class="max-w-[min(100vw-2rem,480px)] max-h-[min(100vh-4rem,480px)] w-auto h-auto object-contain rounded-lg shadow-2xl"
-            autoplay
-            loop
-            muted
-            playsinline
-          />
-          <iframe
-            v-else-if="lightboxMode === 'pdf' && src"
-            :src="src"
-            title="PDF"
-            class="w-full max-w-[min(100vw-2rem,1200px)] h-[min(90vh,calc(100vh-4rem))] rounded-lg bg-white shadow-2xl border-0"
-          />
         </div>
       </Transition>
     </Teleport>
@@ -372,7 +315,11 @@
 <script setup lang="ts">
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
-import { openTelegramExternalUrl } from '~/utils/telegramLinks'
+import {
+  getChatFileTypeIcon,
+  getChatFileTypeLabel,
+  isChatFileBadgeType,
+} from '~/utils/chatFileTypeLabel'
 
 interface Props {
   text?: string
@@ -558,18 +505,15 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, getMediaOpenLink, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
+const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
 const loading = ref(false)
 const playing = ref(false)
 const lightbox = ref(false)
-const lightboxMode = ref<'image' | 'pdf'>('image')
-const stickerRenderFailed = ref(false)
 const closeLightbox = () => {
   lightbox.value = false
-  lightboxMode.value = 'image'
 }
 useHistoryBackClose(lightbox, closeLightbox, { key: 'ztLightbox' })
 const current = ref(0)
@@ -589,67 +533,23 @@ const fmt = (s: number) => {
 const currentLabel = computed(() => fmt(current.value))
 const durationLabel = computed(() => fmt(total.value || props.duration || 0))
 
-const isPdfMime = (mime?: string) => /pdf/i.test(String(mime || ''))
-const isDocMime = (mime?: string, name?: string) => {
-  const m = String(mime || '').toLowerCase()
-  const n = String(name || '').toLowerCase()
-  return (
-    m.includes('word') ||
-    m.includes('docx') ||
-    m.includes('msword') ||
-    /\.docx?$/i.test(n)
-  )
-}
+const isFileBadge = computed(() => isChatFileBadgeType(props.type))
 
-const documentLabel = computed(() => {
-  const t = String(props.text || '').trim()
-  if (t) return t
-  if (isPdfMime(props.mimeType)) return 'PDF hujjat'
-  if (isDocMime(props.mimeType, props.text)) return 'Word hujjat'
-  return 'Hujjat'
-})
-
-const isPdfDocument = computed(
-  () =>
-    props.type === 'document' &&
-    (isPdfMime(props.mimeType) || /\.pdf$/i.test(String(props.text || ''))),
+const fileTypeLabel = computed(() =>
+  getChatFileTypeLabel(props.type, props.mimeType, props.text),
 )
 
-const documentIcon = computed(() =>
-  isPdfDocument.value ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-word',
+const fileTypeIcon = computed(() =>
+  getChatFileTypeIcon(props.type, props.mimeType, props.text),
 )
 
-const isStickerTgs = computed(() => {
-  if (props.type !== 'sticker') return false
-  const m = String(props.mimeType || '').toLowerCase()
-  const p = String(props.mediaPath || '').toLowerCase()
-  return m.includes('tgsticker') || m.includes('gzip') || p.endsWith('.tgs')
-})
-
-const isStickerVideo = computed(() => {
-  if (props.type !== 'sticker') return false
-  const m = String(props.mimeType || '').toLowerCase()
-  const p = String(props.mediaPath || '').toLowerCase()
-  return m.startsWith('video/') || p.endsWith('.webm')
-})
-
-const isStaticSticker = computed(
-  () => props.type === 'sticker' && !isStickerVideo.value && !isStickerTgs.value,
-)
-
-const mediaKind = computed((): 'voice' | 'photo' | 'document' => {
+const mediaKind = computed((): 'voice' | 'photo' => {
   if (props.type === 'voice') return 'voice'
-  if (props.type === 'document') return 'document'
-  if (props.type === 'sticker' && isStickerVideo.value) return 'document'
   return 'photo'
 })
 
 const isMediaBubble = computed(
-  () =>
-    props.type === 'voice' ||
-    props.type === 'photo' ||
-    props.type === 'sticker' ||
-    props.type === 'document',
+  () => props.type === 'voice' || props.type === 'photo',
 )
 
 const isRemoteMedia = (path?: string | null) => {
@@ -677,8 +577,7 @@ const applySrc = (url: string) => {
 }
 
 const ensureSrc = async (opts: { force?: boolean } = {}) => {
-  if (!props.messageId) return
-  if (isStickerTgs.value || stickerRenderFailed.value) return
+  if (!props.messageId || props.type !== 'photo') return
   const id = String(props.messageId)
   if (id.startsWith('temp-')) {
     const local = peekUrl(id)
@@ -874,35 +773,16 @@ const toggle = async () => {
   }
 }
 
-const openBlobExternal = async (mime?: string, filename?: string) => {
-  if (!props.messageId) return
-  const name = String(filename || '').trim()
-  const disposition =
-    isPdfMime(mime) || /\.pdf$/i.test(name) ? 'inline' : 'attachment'
-  try {
-    const link = await getMediaOpenLink(props.messageId, {
-      name,
-      disposition,
-    })
-    openTelegramExternalUrl(link.url)
-  } catch (e) {
-    console.error('media open link', e)
-    if (src.value) {
-      try {
-        window.open(src.value, '_blank', 'noopener,noreferrer')
-      } catch {
-        /* */
-      }
-    }
-  }
+const openLightbox = () => {
+  if (!src.value) return
+  lightbox.value = true
 }
 
-const handlePhotoStickerTap = async () => {
+const handlePhotoTap = async () => {
   if (props.selectionMode && isSelectable.value) {
     emit('toggle-select')
     return
   }
-  if (isStickerTgs.value || stickerRenderFailed.value) return
   if (!src.value) {
     loading.value = true
     try {
@@ -912,25 +792,6 @@ const handlePhotoStickerTap = async () => {
     }
   }
   openLightbox()
-}
-
-const openLightbox = () => {
-  if (!src.value || isStickerTgs.value || stickerRenderFailed.value) return
-  lightboxMode.value = 'image'
-  lightbox.value = true
-}
-
-const openDocument = async () => {
-  if (props.selectionMode && isSelectable.value) {
-    emit('toggle-select')
-    return
-  }
-  loading.value = true
-  try {
-    await openBlobExternal(props.mimeType, documentLabel.value)
-  } finally {
-    loading.value = false
-  }
 }
 
 const onTime = () => {
@@ -955,11 +816,6 @@ const onAudioError = async () => {
 }
 
 const onImageError = async () => {
-  if (props.type === 'sticker') {
-    stickerRenderFailed.value = true
-    applySrc('')
-    return
-  }
   await retryMedia()
 }
 
@@ -990,8 +846,8 @@ watch(
         applySrc(cached)
         return
       }
-      if (props.type === 'photo' || props.type === 'sticker' || props.type === 'document') {
-        if (!isStickerTgs.value) void ensureSrc()
+      if (props.type === 'photo') {
+        void ensureSrc()
       }
     }
   },
@@ -1008,10 +864,10 @@ watch(
       isRemoteMedia(prev) && !isRemoteMedia(path)
     if (becameReady) {
       applySrc('')
-      if (!isStickerTgs.value) await ensureSrc({ force: true })
+      if (props.type === 'photo') await ensureSrc({ force: true })
       return
     }
-    if (!src.value && !isStickerTgs.value) {
+    if (!src.value && props.type === 'photo') {
       await ensureSrc()
     }
   },
@@ -1024,7 +880,7 @@ watch(
     if (!props.messageId) return
     if (status === 'failed' && props.mediaPath && !src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else if (!isStickerTgs.value) await ensureSrc()
+      else if (props.type === 'photo') await ensureSrc()
       return
     }
     if (prev !== 'sending' || status === 'sending') return
@@ -1035,7 +891,7 @@ watch(
     }
     if (!src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else if (!isStickerTgs.value) await ensureSrc()
+      else if (props.type === 'photo') await ensureSrc()
     }
   },
 )
@@ -1051,7 +907,7 @@ watch(mediaCacheEpoch, () => {
   }
   stopLocalVoice()
   applySrc('')
-  if (!isRemoteMedia(props.mediaPath) && !isStickerTgs.value) {
+  if (!isRemoteMedia(props.mediaPath) && props.type === 'photo') {
     void ensureSrc({ force: true })
   }
 })

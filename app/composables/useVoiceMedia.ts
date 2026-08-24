@@ -543,29 +543,11 @@ export function useChatMedia() {
     for (const m of messages) {
       const id = normalizeMessageId(m._id)
       if (!id || id.startsWith('temp-')) continue
-      const mime = String(m.mimeType || '').toLowerCase()
       const isVoice = m.type === 'voice'
-      const isDocument = m.type === 'document'
       const isPhoto = m.type === 'photo'
-      const isSticker = m.type === 'sticker'
-      if (!isVoice && !isPhoto && !isDocument && !isSticker) continue
+      if (!isVoice && !isPhoto) continue
       if (!m.mediaPath && !m.tgMessageId) continue
-
-      // Animatsion TGS stiker — brauzerda ko'rsatilmaydi, prefetch shart emas
-      if (
-        isSticker &&
-        (mime.includes('tgsticker') ||
-          mime.includes('gzip') ||
-          String(m.mediaPath || '').toLowerCase().endsWith('.tgs'))
-      ) {
-        continue
-      }
-
-      let kind: 'voice' | 'photo' | 'document' = 'photo'
-      if (isVoice) kind = 'voice'
-      else if (isDocument) kind = 'document'
-      else if (isSticker && mime.startsWith('video/')) kind = 'document'
-      else if (isSticker || isPhoto) kind = 'photo'
+      const kind = isVoice ? 'voice' : 'photo'
 
       getUrl(id, kind, {
         urlBuilder,
