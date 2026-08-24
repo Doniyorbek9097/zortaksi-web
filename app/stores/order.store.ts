@@ -185,16 +185,17 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
-    /** Boshqa tabga o'tganda — birinchi N ta saqlanadi, qolgani RAM dan chiqariladi */
+    /** Boshqa tabga o'tganda — birinchi N ta saqlanadi, scroll tiklanmaydi */
     const trimListForTabSwitch = (keep = TAB_LIST_KEEP) => {
         trimListForNavigation(keep)
         page.value = 1
         isLoading.value = false
         isLoadingMore.value = false
-        const approxRow = 140
-        if (ordersListScrollY.value > keep * approxRow) {
-            ordersListScrollY.value = 0
-        }
+        ordersListScrollY.value = 0
+    }
+
+    const clearOrdersListScroll = () => {
+        ordersListScrollY.value = 0
     }
 
     const pruneSeenIds = () => {
@@ -766,6 +767,7 @@ export const useOrderStore = defineStore('order', () => {
         releaseListMemory,
         trimListForNavigation,
         trimListForTabSwitch,
+        clearOrdersListScroll,
         warmOrderPeer,
     }
 })

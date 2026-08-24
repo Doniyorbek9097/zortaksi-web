@@ -14,6 +14,11 @@ import {
   normalizePath,
   type DriverMainTab,
 } from '~/utils/driverTabRoutes'
+import {
+  isDriverMainTabSwitch,
+  markDriverScrollLeave,
+  consumeDriverScrollLeave,
+} from '~/utils/driverScrollNav'
 
 function releaseDriverTabMemory(tab: DriverMainTab) {
   const orderStore = useOrderStore()
@@ -48,9 +53,25 @@ export default defineNuxtPlugin(() => {
 
   const router = useRouter()
 
+  router.beforeEach((to, from) => {
+    const fromPath = normalizePath(from.path)
+    const toPath = normalizePath(to.path)
+
+    if (isDriverMainTabSwitch(fromPath, toPath)) {
+      markDriverScrollLeave('tab-switch')
+      const orderStore = useOrderStore()
+      const chatStore = useChatStore()
+      if (fromPath === '/driver/orders') orderStore.clearOrdersListScroll()
+      if (fromPath === '/driver/chats') chatStore.clearChatsListScroll()
+    } else {
+      markDriverScrollLeave('in-app')
+    }
+  })
+
   router.afterEach((to, from) => {
     const toPath = normalizePath(to.path)
     const fromPath = normalizePath(from.path)
+    const tabSwitch = consumeDriverScrollLeave() === 'tab-switch'
 
     // Order → chat: to'liq release emas, lekin RAM uchun qisqartirish
     if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
@@ -64,5 +85,9 @@ export default defineNuxtPlugin(() => {
     if (fromPath === toPath) return
 
     releaseOtherDriverTabs(toPath)
+
+    if (tabSwitch) {
+      window.scrollTo(0, 0)
+    }
   })
 })

@@ -116,10 +116,11 @@ export const useChatStore = defineStore('chat', () => {
         isLoadingMessages.value = false
         isLoadingOlderMessages.value = false
 
-        const approxRow = 72
-        if (chatsListScrollY.value > n * approxRow) {
-            chatsListScrollY.value = 0
-        }
+        chatsListScrollY.value = 0
+    }
+
+    const clearChatsListScroll = () => {
+        chatsListScrollY.value = 0
     }
 
     return {
@@ -182,5 +183,6 @@ export const useChatStore = defineStore('chat', () => {
         onPeerTyping: connection.onPeerTyping,
         releaseTabMemory,
         trimChatsForTabSwitch,
+        clearChatsListScroll,
     }
 })

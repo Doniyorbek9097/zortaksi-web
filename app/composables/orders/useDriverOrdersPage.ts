@@ -24,7 +24,7 @@ export function useDriverOrdersPage() {
 
   const filter = useOrdersFilter(orderStore)
 
-  const { sentinel, listRoot, saveScroll } = useOrdersListSync({
+  const { sentinel, listRoot, persistScroll } = useOrdersListSync({
     orderStore,
     displayOrders: filter.displayOrders,
     queryParams: filter.queryParams,
@@ -45,7 +45,7 @@ export function useDriverOrdersPage() {
     orderStore,
     chatStore,
     showError: moderation.showError,
-    beforeNavigate: saveScroll,
+    beforeNavigate: persistScroll,
   })
 
   useOrdersPreconnect({

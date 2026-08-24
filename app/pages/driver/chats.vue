@@ -100,6 +100,7 @@ import { isAdminUser } from '~/utils/userRole'
 import { chatPeerQuickLinkQuery } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
 import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
+import { shouldSaveDriverListScroll } from '~/utils/driverScrollNav'
 
 definePageMeta({
   layout: 'driver',
@@ -198,9 +199,14 @@ const confirmClear = async () => {
   }
 }
 
-const saveScroll = () => {
+const persistScroll = () => {
   if (!import.meta.client) return
   chatStore.chatsListScrollY = window.scrollY || document.documentElement.scrollTop || 0
+}
+
+const saveScroll = () => {
+  if (!shouldSaveDriverListScroll()) return
+  persistScroll()
 }
 
 const restoreScroll = () => {
@@ -236,7 +242,7 @@ usePullToRefresh(refresh)
 const openChat = (chat: IChat) => {
   const id = String(chat._id || '').trim()
   if (!id) return
-  saveScroll()
+  persistScroll()
   chatStore.primeFromChat(chat)
   if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {
     void chatStore.connect(id, { silent: true })
@@ -254,7 +260,7 @@ const openChat = (chat: IChat) => {
 const openDriverPage = (chat: IChat) => {
   const id = chat.peer?.userId
   if (!id) return
-  saveScroll()
+  persistScroll()
   navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
 }
 

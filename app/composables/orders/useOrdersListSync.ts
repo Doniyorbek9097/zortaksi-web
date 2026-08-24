@@ -1,5 +1,6 @@
 import type { Ref } from 'vue'
 import type { useOrderStore } from '~/stores/order.store'
+import { shouldSaveDriverListScroll } from '~/utils/driverScrollNav'
 
 type QueryParams = () => {
   limit: number
@@ -33,10 +34,15 @@ export function useOrdersListSync(options: {
   let seenObserver: IntersectionObserver | null = null
   const observedSeenEls = new WeakSet<Element>()
 
-  const saveScroll = () => {
+  const persistScroll = () => {
     if (!import.meta.client) return
     orderStore.ordersListScrollY =
       window.scrollY || document.documentElement.scrollTop || 0
+  }
+
+  const saveScroll = () => {
+    if (!shouldSaveDriverListScroll()) return
+    persistScroll()
   }
 
   const restoreScroll = () => {
@@ -144,5 +150,6 @@ export function useOrdersListSync(options: {
     sentinel,
     listRoot,
     saveScroll,
+    persistScroll,
   }
 }
