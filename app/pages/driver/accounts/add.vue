@@ -367,6 +367,10 @@ const finish = async () => {
 
 onMounted(() => {
   accountStore.load()
+  if (accountStore.isAtAccountLimit()) {
+    error.value = accountStore.accountLimitMessage()
+    void navigateTo('/driver/profile')
+  }
 })
 
 const handleBack = () => {

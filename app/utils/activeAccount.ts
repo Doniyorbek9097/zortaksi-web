@@ -3,6 +3,8 @@
 export const ACCOUNTS_KEY = 'zt_accounts'
 export const ACTIVE_USER_KEY = 'zt_active_user'
 export const ACTIVE_TOKEN_KEY = 'zt_active_token'
+/** Bir qurilmada saqlanadigan qo'shimcha hisoblar limiti */
+export const MAX_LOCAL_ACCOUNTS = 100
 
 /**
  * FAQAT CLIENT. Serverda module-level token saqlash MUMKIN EMAS —

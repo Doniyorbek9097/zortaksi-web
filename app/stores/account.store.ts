@@ -3,6 +3,7 @@ import type { ILocalAccount } from '~/types'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   ACCOUNTS_KEY,
+  MAX_LOCAL_ACCOUNTS,
   readActiveToken,
   readActiveUserId,
   resolveAuthToken,
@@ -133,6 +134,11 @@ export const useAccountStore = defineStore('account', () => {
 
   const digitsPhone = (phone?: string | null) => String(phone || '').replace(/\D/g, '')
 
+  const isAtAccountLimit = () => accounts.value.length >= MAX_LOCAL_ACCOUNTS
+
+  const accountLimitMessage = () =>
+    `Bir qurilmada ${MAX_LOCAL_ACCOUNTS} tadan ortiq hisob qo‘shib bo‘lmaydi.`
+
   const hasAccount = (opts: { phone?: string | null; userId?: string | null }) => {
     load()
     const phone = digitsPhone(opts.phone)
@@ -149,6 +155,10 @@ export const useAccountStore = defineStore('account', () => {
   const authOpts = { timeout: AUTH_API_TIMEOUT_MS }
 
   const sendCode = async (phone: string, opts?: { forceSms?: boolean }) => {
+    load()
+    if (isAtAccountLimit() && !hasAccount({ phone })) {
+      return { success: false, message: accountLimitMessage() }
+    }
     if (hasAccount({ phone })) {
       return {
         success: false,
@@ -230,6 +240,10 @@ export const useAccountStore = defineStore('account', () => {
         ok: false,
         message: 'Bu hisob allaqachon qo\'shilgan. Boshqa raqam kiriting.',
       }
+    }
+
+    if (!existing && isAtAccountLimit()) {
+      return { ok: false, message: accountLimitMessage() }
     }
 
     // Tokensiz eski yozuv yoki yangi — upsert
@@ -400,6 +414,9 @@ export const useAccountStore = defineStore('account', () => {
     isLoading,
     switching,
     activeUserId,
+    maxAccounts: MAX_LOCAL_ACCOUNTS,
+    isAtAccountLimit,
+    accountLimitMessage,
     load,
     ensureCurrent,
     syncFromStorage,

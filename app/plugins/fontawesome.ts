@@ -71,6 +71,8 @@ import {
   faUserSlash,
   faUsersSlash,
   faReply,
+  faWifi,
+  faServer,
 } from '@fortawesome/free-solid-svg-icons'
 
 config.autoAddCss = false
@@ -146,6 +148,8 @@ library.add(
   faUserSlash,
   faUsersSlash,
   faReply,
+  faWifi,
+  faServer,
 )
 
 export default defineNuxtPlugin((nuxtApp) => {

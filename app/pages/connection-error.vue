@@ -48,14 +48,6 @@
           Qayta urinish
         </button>
 
-        <button
-          v-if="hasToken && !authStore.user"
-          type="button"
-          class="w-full h-11 rounded-xl font-semibold text-sm text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-[0.98] transition"
-          @click="goAuth"
-        >
-          Kirish sahifasiga
-        </button>
       </div>
     </div>
   </div>
@@ -122,15 +114,6 @@ const retry = async () => {
   } finally {
     retrying.value = false
   }
-}
-
-const goAuth = () => {
-  const next = String(route.query.next || '').trim()
-  void navigateTo({
-    path: '/auth',
-    query: next ? { next } : {},
-    replace: true,
-  })
 }
 
 const onOnline = () => {

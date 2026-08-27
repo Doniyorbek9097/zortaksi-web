@@ -18,7 +18,7 @@
     />
 
     <!-- Accounts -->
-    <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/10`" no-padding>
+    <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`" no-padding>
       <!-- Loading -->
       <div v-if="accountStore.isLoading && !accountStore.accounts.length" class="p-4 space-y-3">
         <div v-for="n in 3" :key="n" class="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
@@ -56,7 +56,8 @@
       <div class="p-3">
         <button
           type="button"
-          class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-indigo-600 dark:text-indigo-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500/60 hover:bg-indigo-500/5 active:scale-[0.98] transition-all"
+          class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-indigo-600 dark:text-indigo-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500/60 hover:bg-indigo-500/5 active:scale-[0.98] transition-all disabled:opacity-45 disabled:pointer-events-none"
+          :disabled="accountStore.isAtAccountLimit()"
           @click="onAddAccount"
         >
           <font-awesome-icon icon="fa-solid fa-plus" />
@@ -278,7 +279,13 @@ const confirmDeleteAccount = async () => {
   deletingAccount.value = false
 }
 
-const onAddAccount = () => navigateTo('/driver/accounts/add')
+const onAddAccount = () => {
+  if (accountStore.isAtAccountLimit()) {
+    switchError.value = accountStore.accountLimitMessage()
+    return
+  }
+  void navigateTo('/driver/accounts/add')
+}
 
 const onContactAdmin = () => {
   if (import.meta.client) window.open(`https://t.me/${adminUsername.value}`, '_blank')
