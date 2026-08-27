@@ -93,10 +93,10 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
       await orderStore.restrictSender(order._id)
       showRestrictUserDialog.value = false
       restrictUserTarget.value = null
-      showSuccess('Yozish cheklangan, xabarlar o\'chirildi')
+      showSuccess('Foydalanuvchi guruhdan ban qilindi')
     } catch (err: any) {
       showRestrictUserDialog.value = false
-      showError(err?.response?.data?.message || 'Yozishni cheklash amalga oshmadi')
+      showError(err?.response?.data?.message || 'Ban qilish amalga oshmadi')
     } finally {
       blocking.value = false
     }

@@ -132,7 +132,7 @@
         ? `«${senderLabel(blockUserTarget)}» bloklansinmi?`
         : ''"
       :restrict-user-message="restrictUserTarget
-        ? `«${senderLabel(restrictUserTarget)}» guruhdagi xabarlar o'chiriladi va yozish cheklanadi`
+        ? `«${senderLabel(restrictUserTarget)}» guruhdan chiqariladi va buyurtmalari bloklanadi`
         : ''"
       :blocking="blocking"
       :action-error="actionError"

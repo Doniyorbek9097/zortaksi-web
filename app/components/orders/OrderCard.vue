@@ -169,11 +169,11 @@
           <button
             v-if="order.canRestrictSender"
             type="button"
-            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/15 active:scale-[0.98] transition-all"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 active:scale-[0.98] transition-all"
             @click.stop="$emit('restrict-user')"
           >
-            <font-awesome-icon icon="fa-solid fa-comment-slash" class="text-sm shrink-0" />
-            <span class="truncate">Yozish cheklash</span>
+            <font-awesome-icon icon="fa-solid fa-user-slash" class="text-sm shrink-0" />
+            <span class="truncate">Ban qilish</span>
           </button>
           <button
             v-if="canAddToBot"

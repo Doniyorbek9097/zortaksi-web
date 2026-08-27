@@ -73,13 +73,13 @@
       @cancel="$emit('cancel-block-user')"
     />
 
-    <!-- Yozish cheklash -->
+    <!-- Ban qilish (guruhdan chiqarish) -->
     <BaseConfirmDialog
       v-model="showRestrictUserDialog"
-      title="Yozish cheklash"
-      description="Xabarlar o'chiriladi va guruhdagi yozish cheklanadi"
+      title="Ban qilish"
+      description="Guruhdan chiqariladi va buyurtmalar bloklanadi"
       :message="restrictUserMessage"
-      confirm-text="Cheklash"
+      confirm-text="Ban qilish"
       cancel-text="Bekor"
       variant="danger"
       :loading="blocking"

@@ -661,7 +661,12 @@ export const useOrderStore = defineStore('order', () => {
     const restrictSender = async (orderId: string) => {
         const response = await useApi(`/orders/${orderId}/restrict-sender`, { method: 'POST' })
         if (response.success) {
-            orders.value = orders.value.filter((o) => o._id !== orderId)
+            const senderId = response.data?.senderId
+            if (senderId) {
+                orders.value = orders.value.filter((o) => o.sender?.userId !== senderId)
+            } else {
+                orders.value = orders.value.filter((o) => o._id !== orderId)
+            }
         }
         return response
     }

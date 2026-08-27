@@ -72,7 +72,7 @@ export interface IOrder {
     /** Xabar/Telefon bosganlar soni */
     interestCount?: number;
     interestedUsers?: IInterestedUser[];
-    /** Admin: admin userbot creator guruhi — yozish cheklash tugmasi */
+    /** Admin: admin userbot creator guruhi — guruhdan ban */
     canRestrictSender?: boolean;
     dedupeKey?: string | null;
     createdAt: string | Date;
