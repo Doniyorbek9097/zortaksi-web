@@ -198,7 +198,8 @@ onMounted(() => {
   watch(isOpen, (val) => {
     if (val) {
       document.body.style.overflow = "hidden";
-      history.pushState(null, "");
+      const url = window.location.pathname + window.location.search + window.location.hash;
+      history.pushState(null, "", url);
     } else {
       document.body.style.overflow = "";
     }

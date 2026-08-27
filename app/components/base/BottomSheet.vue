@@ -63,10 +63,10 @@ const forceClose = () => {
   sheetClosed()
   emit('closed')
 
-  // Agar sheet state eng oxirgi bo‘lsa, uni tarixdan o‘chirish
   const state = history.state
   if (state && state.sheet) {
-    history.back() // ❌ yoki history.replaceState({}, '')
+    const { sheet: _sheet, ...rest } = state
+    history.replaceState(rest, '', window.location.pathname + window.location.search + window.location.hash)
   }
 }
 
@@ -111,7 +111,8 @@ onMounted(() => {
       document.body.style.overflow = 'hidden'
 
       myIndex = sheetOpened()
-      history.pushState({ sheet: true }, '')
+      const sheetUrl = window.location.pathname + window.location.search + window.location.hash
+      history.pushState({ ...((history.state as object) || {}), sheet: true }, '', sheetUrl)
       window.dispatchEvent(new Event('zt-history-layer'))
     } else {
       // $lenis?.start()

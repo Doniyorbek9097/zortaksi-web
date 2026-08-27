@@ -15,6 +15,18 @@ type Options = {
   key?: string
 }
 
+function currentHistoryUrl(): string {
+  if (!import.meta.client) return '/'
+  return window.location.pathname + window.location.search + window.location.hash
+}
+
+function stripOverlayState(key: string) {
+  const st = history.state as Record<string, unknown> | null
+  if (!st || typeof st !== 'object' || !(key in st)) return
+  const { [key]: _removed, ...rest } = st
+  history.replaceState(rest, '', currentHistoryUrl())
+}
+
 export function useHistoryBackClose(
   open: MaybeRefOrGetter<boolean>,
   onClose: () => void,
@@ -26,6 +38,10 @@ export function useHistoryBackClose(
 
   /** navigateTo oldidan — history.back() yangi sahifani yeb qo'ymasligi uchun */
   const disarm = () => {
+    if (!import.meta.client) return
+    if (pushed) {
+      stripOverlayState(key)
+    }
     pushed = false
   }
 
@@ -45,23 +61,18 @@ export function useHistoryBackClose(
       if (!import.meta.client) return
       if (val) {
         if (!pushed) {
-          const url = window.location.pathname + window.location.search + window.location.hash
-          history.pushState({ [key]: true, t: Date.now() }, '', url)
+          const url = currentHistoryUrl()
+          history.pushState({ ...((history.state as object) || {}), [key]: true, t: Date.now() }, '', url)
           pushed = true
           window.dispatchEvent(new Event('zt-history-layer'))
         }
         return
       }
-      // Manual yopish — history yozuvini olib tashlash
+      // Manual yopish — history.back() o'rniga state tozalash (router race oldini oladi)
       if (pushed && !closingViaPop) {
-        pushed = false
-        const st = history.state as Record<string, unknown> | null
-        if (st && st[key]) {
-          history.back()
-        }
-      } else {
-        pushed = false
+        stripOverlayState(key)
       }
+      pushed = false
     },
     { immediate: true },
   )
@@ -72,8 +83,7 @@ export function useHistoryBackClose(
 
   onBeforeUnmount(() => {
     window.removeEventListener('popstate', onPopState)
-    // Route o'zgaganda history.back() — router bilan race, URL ga "undefined" qo'shilishi mumkin
-    pushed = false
+    disarm()
   })
 
   return { disarm }
