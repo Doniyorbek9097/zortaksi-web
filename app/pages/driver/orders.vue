@@ -83,6 +83,7 @@
       @agent="onAgent"
       @stop-group="onStopGroup"
       @stop-user="onStopUser"
+      @restrict-user="onRestrictUser"
       @delete="onDelete"
       @add-to-bot="onAddToBot"
     />
@@ -114,6 +115,7 @@
       v-model:show-no-money-dialog="showNoMoneyDialog"
       v-model:show-block-group-dialog="showBlockGroupDialog"
       v-model:show-block-user-dialog="showBlockUserDialog"
+      v-model:show-restrict-user-dialog="showRestrictUserDialog"
       v-model:show-action-error="showActionError"
       v-model:show-interest-dialog="showInterestDialog"
       v-model:interest-dialog="interestDialog"
@@ -128,6 +130,9 @@
         : ''"
       :block-user-message="blockUserTarget
         ? `«${senderLabel(blockUserTarget)}» bloklansinmi?`
+        : ''"
+      :restrict-user-message="restrictUserTarget
+        ? `«${senderLabel(restrictUserTarget)}» guruhdagi xabarlar o'chiriladi va yozish cheklanadi`
         : ''"
       :blocking="blocking"
       :action-error="actionError"
@@ -144,6 +149,8 @@
       @cancel-block-group="blockGroupTarget = null"
       @confirm-block-user="confirmBlockUser"
       @cancel-block-user="blockUserTarget = null"
+      @confirm-restrict-user="confirmRestrictUser"
+      @cancel-restrict-user="restrictUserTarget = null"
       @interest-chat="onInterestChat"
       @interest-view="onInterestView"
     />
@@ -204,8 +211,10 @@ const {
   onAgent,
   showBlockGroupDialog,
   showBlockUserDialog,
+  showRestrictUserDialog,
   blockGroupTarget,
   blockUserTarget,
+  restrictUserTarget,
   blocking,
   actionError,
   showActionError,
@@ -214,8 +223,10 @@ const {
   senderLabel,
   onStopGroup,
   onStopUser,
+  onRestrictUser,
   confirmBlockGroup,
   confirmBlockUser,
+  confirmRestrictUser,
   onDelete,
   onUnlock,
   unreadCount,

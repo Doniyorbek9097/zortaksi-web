@@ -658,6 +658,14 @@ export const useOrderStore = defineStore('order', () => {
         return response
     }
 
+    const restrictSender = async (orderId: string) => {
+        const response = await useApi(`/orders/${orderId}/restrict-sender`, { method: 'POST' })
+        if (response.success) {
+            orders.value = orders.value.filter((o) => o._id !== orderId)
+        }
+        return response
+    }
+
     const patchInterest = (orderId: string, data: { interestCount?: number; interestedUsers?: any[] }) => {
         const idx = orders.value.findIndex((o) => o._id === orderId)
         if (idx === -1) return
@@ -748,6 +756,7 @@ export const useOrderStore = defineStore('order', () => {
         deleteOrder,
         blockGroup,
         blockSender,
+        restrictSender,
         markInterest,
         fetchInterest,
         refreshNewCount,

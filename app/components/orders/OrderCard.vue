@@ -167,6 +167,15 @@
             </button>
           </div>
           <button
+            v-if="order.canRestrictSender"
+            type="button"
+            class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/15 active:scale-[0.98] transition-all"
+            @click.stop="$emit('restrict-user')"
+          >
+            <font-awesome-icon icon="fa-solid fa-comment-slash" class="text-sm shrink-0" />
+            <span class="truncate">Yozish cheklash</span>
+          </button>
+          <button
             v-if="canAddToBot"
             type="button"
             class="w-full min-h-[46px] min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-3 rounded-xl text-[12px] font-black whitespace-nowrap overflow-hidden text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/15 active:scale-[0.98] transition-all"
@@ -225,6 +234,7 @@ const emit = defineEmits<{
   agent: []
   'stop-group': []
   'stop-user': []
+  'restrict-user': []
   delete: []
   unlock: []
   'add-to-bot': []

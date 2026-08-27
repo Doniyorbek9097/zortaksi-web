@@ -8,8 +8,10 @@ import type { useOrderStore } from '~/stores/order.store'
 export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>) {
   const showBlockGroupDialog = ref(false)
   const showBlockUserDialog = ref(false)
+  const showRestrictUserDialog = ref(false)
   const blockGroupTarget = ref<IOrder | null>(null)
   const blockUserTarget = ref<IOrder | null>(null)
+  const restrictUserTarget = ref<IOrder | null>(null)
   const blocking = ref(false)
   const actionError = ref('')
   const showActionError = ref(false)
@@ -45,6 +47,12 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     showBlockUserDialog.value = true
   }
 
+  const onRestrictUser = (order: IOrder) => {
+    if (!order._id) return
+    restrictUserTarget.value = order
+    showRestrictUserDialog.value = true
+  }
+
   const confirmBlockGroup = async () => {
     const order = blockGroupTarget.value
     if (!order?._id || blocking.value) return
@@ -77,6 +85,23 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     }
   }
 
+  const confirmRestrictUser = async () => {
+    const order = restrictUserTarget.value
+    if (!order?._id || blocking.value) return
+    blocking.value = true
+    try {
+      await orderStore.restrictSender(order._id)
+      showRestrictUserDialog.value = false
+      restrictUserTarget.value = null
+      showSuccess('Yozish cheklangan, xabarlar o\'chirildi')
+    } catch (err: any) {
+      showRestrictUserDialog.value = false
+      showError(err?.response?.data?.message || 'Yozishni cheklash amalga oshmadi')
+    } finally {
+      blocking.value = false
+    }
+  }
+
   const onDelete = async (order: IOrder) => {
     if (!order._id) return
     try {
@@ -89,8 +114,10 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
   return {
     showBlockGroupDialog,
     showBlockUserDialog,
+    showRestrictUserDialog,
     blockGroupTarget,
     blockUserTarget,
+    restrictUserTarget,
     blocking,
     actionError,
     showActionError,
@@ -101,8 +128,10 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     senderLabel,
     onStopGroup,
     onStopUser,
+    onRestrictUser,
     confirmBlockGroup,
     confirmBlockUser,
+    confirmRestrictUser,
     onDelete,
   }
 }

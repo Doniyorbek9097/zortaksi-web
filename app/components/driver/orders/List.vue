@@ -20,6 +20,7 @@
             @agent="$emit('agent', order)"
             @stop-group="$emit('stop-group', order)"
             @stop-user="$emit('stop-user', order)"
+            @restrict-user="$emit('restrict-user', order)"
             @delete="$emit('delete', order)"
             @add-to-bot="$emit('add-to-bot', order)"
           />
@@ -51,6 +52,7 @@
             @agent="$emit('agent', order)"
             @stop-group="$emit('stop-group', order)"
             @stop-user="$emit('stop-user', order)"
+            @restrict-user="$emit('restrict-user', order)"
             @delete="$emit('delete', order)"
             @add-to-bot="$emit('add-to-bot', order)"
           />
@@ -80,6 +82,7 @@
           @agent="$emit('agent', order)"
           @stop-group="$emit('stop-group', order)"
           @stop-user="$emit('stop-user', order)"
+          @restrict-user="$emit('restrict-user', order)"
           @delete="$emit('delete', order)"
           @add-to-bot="$emit('add-to-bot', order)"
         />
@@ -125,6 +128,7 @@ defineEmits<{
   agent: [order: IOrder]
   'stop-group': [order: IOrder]
   'stop-user': [order: IOrder]
+  'restrict-user': [order: IOrder]
   delete: [order: IOrder]
   'add-to-bot': [order: IOrder]
 }>()

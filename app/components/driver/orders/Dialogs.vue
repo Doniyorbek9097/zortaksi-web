@@ -73,6 +73,21 @@
       @cancel="$emit('cancel-block-user')"
     />
 
+    <!-- Yozish cheklash -->
+    <BaseConfirmDialog
+      v-model="showRestrictUserDialog"
+      title="Yozish cheklash"
+      description="Xabarlar o'chiriladi va guruhdagi yozish cheklanadi"
+      :message="restrictUserMessage"
+      confirm-text="Cheklash"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="blocking"
+      :close-on-confirm="false"
+      @confirm="$emit('confirm-restrict-user')"
+      @cancel="$emit('cancel-restrict-user')"
+    />
+
     <!-- Amal xatosi -->
     <BaseConfirmDialog
       v-model="showActionError"
@@ -114,6 +129,7 @@ defineProps<{
   noMoneyMessage: string
   blockGroupMessage: string
   blockUserMessage: string
+  restrictUserMessage: string
   blocking: boolean
   actionError: string
   interestUsers: IInterestedUser[]
@@ -132,6 +148,8 @@ defineEmits<{
   'cancel-block-group': []
   'confirm-block-user': []
   'cancel-block-user': []
+  'confirm-restrict-user': []
+  'cancel-restrict-user': []
   'interest-chat': [user: IInterestedUser]
   'interest-view': [user: IInterestedUser]
 }>()
@@ -141,6 +159,7 @@ const showUnbookDialog = defineModel<boolean>('showUnbookDialog', { required: tr
 const showNoMoneyDialog = defineModel<boolean>('showNoMoneyDialog', { required: true })
 const showBlockGroupDialog = defineModel<boolean>('showBlockGroupDialog', { required: true })
 const showBlockUserDialog = defineModel<boolean>('showBlockUserDialog', { required: true })
+const showRestrictUserDialog = defineModel<boolean>('showRestrictUserDialog', { required: true })
 const showActionError = defineModel<boolean>('showActionError', { required: true })
 const showInterestDialog = defineModel<boolean>('showInterestDialog', { required: true })
 
