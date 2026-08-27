@@ -261,7 +261,7 @@ const openDriverPage = (chat: IChat) => {
   const id = chat.peer?.userId
   if (!id) return
   persistScroll()
-  navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
+  navigateTo(`/driver/user/${encodeURIComponent(id)}`)
 }
 
 const bindLoadMore = () => {

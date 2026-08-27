@@ -45,6 +45,9 @@ export function driverTabSection(path: string): DriverMainTab | null {
   if (p.startsWith('/driver/chat') || p.startsWith('/driver/interest-chat')) {
     return '/driver/chats'
   }
+  if (p.startsWith('/driver/user/')) {
+    return '/driver/chats'
+  }
   if (
     p.startsWith('/driver/payment') ||
     p.startsWith('/driver/bonus') ||

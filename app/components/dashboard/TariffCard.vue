@@ -27,7 +27,7 @@
 
     <!-- Warning when inactive -->
     <div
-      v-if="!active"
+      v-if="!active && inactiveHint"
       class="mt-4 rounded-xl px-4 py-3 text-center text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-400/30 dark:border-amber-500/20"
     >
       Buyurtmalarni olish uchun tarif faollashtiring
@@ -95,7 +95,7 @@
     </div>
 
     <button
-      v-if="!active"
+      v-if="!active && showBuy"
       type="button"
       class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/15 active:scale-[0.98] transition-all"
       @click="$emit('buy')"
@@ -118,6 +118,8 @@ interface Props {
   startedAt?: string | Date | null
   expireAt?: string | Date | null
   active?: boolean
+  showBuy?: boolean
+  inactiveHint?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -130,6 +132,8 @@ const props = withDefaults(defineProps<Props>(), {
   startedAt: null,
   expireAt: null,
   active: false,
+  showBuy: true,
+  inactiveHint: true,
 })
 
 defineEmits<{ buy: [] }>()

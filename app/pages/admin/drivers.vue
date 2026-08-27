@@ -51,7 +51,7 @@
         @balance="openBalance(d)"
         @tariff="openTariff(d)"
         @block="onBlock(d)"
-        @open="navigateTo(`/admin/driver/${encodeURIComponent(d.id)}`)"
+        @open="navigateTo(`/driver/user/${encodeURIComponent(d.id)}`)"
       />
 
       <!-- Infinite scroll sentinel -->
