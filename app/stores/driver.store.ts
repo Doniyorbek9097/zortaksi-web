@@ -194,6 +194,26 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
+  const applyCustomLimit = async (
+    userId: string,
+    opts: { days: number; hours: number }
+  ) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/custom-limit`, {
+        method: 'POST',
+        body: opts,
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('ApplyCustomLimit error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   const sendMessage = async (userIds: string[], text: string) => {
     try {
       isSaving.value = true
@@ -262,6 +282,7 @@ export const useDriverStore = defineStore('driver', () => {
     setBalance,
     adjustBalance,
     assignTariff,
+    applyCustomLimit,
     sendMessage,
     bulkAction,
     deleteDriver,

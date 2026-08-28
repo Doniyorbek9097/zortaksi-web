@@ -149,6 +149,14 @@
         </button>
         <button
           type="button"
+          class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all"
+          @click="limitOpen = true"
+        >
+          <font-awesome-icon icon="fa-solid fa-clock" />
+          Limit berish (kun/soat)
+        </button>
+        <button
+          type="button"
           class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-700 shadow-lg shadow-violet-500/25 active:scale-[0.98] transition-all"
           @click="openTariff"
         >
@@ -250,13 +258,22 @@
       @confirm="saveTariff"
     />
 
+    <AdminDriversLimitDialog
+      v-model="limitOpen"
+      :name="driver?.name || ''"
+      :loading="store.isSaving"
+      @confirm="saveLimit"
+    />
+
     <BaseConfirmDialog
       v-model="blockOpen"
       :title="driver?.active ? 'Bloklash' : 'Blokdan chiqarish'"
       :message="driver
         ? driver.active
           ? `«${driver.name}» ni bloklamoqchimisiz?`
-          : `«${driver.name}» ni faollashtirmoqchimisiz?`
+          : canActivateDriver
+            ? `«${driver.name}» ni faollashtirmoqchimisiz?`
+            : `«${driver.name}» tarif muddati tugagan. Avval limit yoki tarif bering.`
         : ''"
       :confirm-text="driver?.active ? 'Blokla' : 'Faollashtir'"
       cancel-text="Bekor"
@@ -286,7 +303,7 @@
 import type { DriverRow } from '~/stores/driver.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
-import { isTariffActive } from '~/utils/tariffActive'
+import { isTariffActive, isTariffValid } from '~/utils/tariffActive'
 
 definePageMeta({ layout: 'admin' })
 
@@ -310,6 +327,7 @@ const error = ref('')
 const success = ref('')
 const balanceOpen = ref(false)
 const tariffOpen = ref(false)
+const limitOpen = ref(false)
 const blockOpen = ref(false)
 const deleteOpen = ref(false)
 
@@ -335,6 +353,13 @@ const formatRegistered = (value?: string | Date | null) => {
   const s = formatDate(value)
   return s === '—' ? undefined : s
 }
+
+const canActivateDriver = computed(() =>
+  isTariffValid({
+    tariff: driver.value?.tariff || (driver.value?.tariffName ? { name: driver.value.tariffName } : null),
+    tariffExpireAt: driver.value?.tariffExpireAt,
+  })
+)
 
 const tariffCard = computed(() => {
   const d = driver.value
@@ -440,6 +465,20 @@ const openTariff = async () => {
   }
 }
 
+const saveLimit = async (payload: { days: number; hours: number }) => {
+  if (!driver.value) return
+  error.value = ''
+  success.value = ''
+  try {
+    await store.applyCustomLimit(driver.value.id, payload)
+    limitOpen.value = false
+    success.value = 'Limit berildi'
+    await load()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Limit berilmadi'
+  }
+}
+
 const saveTariff = async (payload: { tariffId: string; deductFromBalance: boolean }) => {
   if (!driver.value) return
   error.value = ''
@@ -458,6 +497,11 @@ const saveTariff = async (payload: { tariffId: string; deductFromBalance: boolea
 
 const confirmBlock = async () => {
   if (!driver.value) return
+  if (!driver.value.active && !canActivateDriver.value) {
+    error.value = 'Tarif muddati tugagan. Avval limit yoki tarif bering.'
+    blockOpen.value = false
+    return
+  }
   error.value = ''
   success.value = ''
   try {
