@@ -9,7 +9,6 @@ import {
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
   clearOrderFilterKeywords,
-  filterOrdersByKeywords,
   markOrderFilterConfigured,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
@@ -55,13 +54,8 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     ...(appliedOrderQuery.value.trim() ? { text: appliedOrderQuery.value.trim() } : {}),
   })
 
-  /** Server natijasi — bot guruh filtrida client qo'shimcha kesmaydi */
-  const displayOrders = computed(() => {
-    if (appliedBotGroupId.value.trim()) return orderStore.orders
-    const raw = appliedKeywords.value.trim()
-    if (!raw) return orderStore.orders
-    return filterOrdersByKeywords(orderStore.orders, raw)
-  })
+  /** Server allaqachon filter qiladi — qayta kesmaslik (pagination buzilmasin) */
+  const displayOrders = computed(() => orderStore.orders)
 
   const load = async () => {
     return orderStore.fetchOrders({ page: 1, ...queryParams() })

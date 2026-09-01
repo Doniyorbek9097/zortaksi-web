@@ -152,6 +152,7 @@ export const useOrderStore = defineStore('order', () => {
         total.value = 0
         page.value = 1
         totalPages.value = 1
+        lastFetchedCount.value = 0
         ordersListScrollY.value = 0
         isLoadingMore.value = false
         if (import.meta.client) {
@@ -386,7 +387,16 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
-    const hasMore = computed(() => page.value < totalPages.value)
+    /** Oxirgi API javobidagi buyurtmalar soni — sahifa to'ldimi */
+    const lastFetchedCount = ref(0)
+
+    const hasMore = computed(() => {
+        const t = Number(total.value) || 0
+        if (t > 0 && orders.value.length >= t) return false
+        if (page.value < totalPages.value) return true
+        const limit = ORDERS_PAGE_LIMIT
+        return lastFetchedCount.value >= limit && orders.value.length < t
+    })
 
     const refreshNewCount = async () => {
         try {
@@ -481,7 +491,9 @@ export const useOrderStore = defineStore('order', () => {
             })
             if (!response.success) return response
             if (!paramsMatchListFilter(params)) return response
-            let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+            const rawList = response.data.orders ?? []
+            lastFetchedCount.value = rawList.length
+            let list: IOrder[] = uniqueOrdersByContent(rawList)
             const hasServerFilter = Boolean(params.search || params.botGroupId)
             const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
             const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
@@ -528,12 +540,17 @@ export const useOrderStore = defineStore('order', () => {
 
             const response = await useApi('/orders', {
                 method: 'GET',
-                params,
+                params: {
+                    limit: ORDERS_PAGE_LIMIT,
+                    ...params,
+                },
             })
             if (response.success) {
                 if (isFreshLoad && reqSeq !== listFetchSeq) return response
                 if (isFreshLoad && !paramsMatchListFilter(params)) return response
-                let list: IOrder[] = uniqueOrdersByContent(response.data.orders ?? [])
+                const rawList = response.data.orders ?? []
+                lastFetchedCount.value = rawList.length
+                let list: IOrder[] = uniqueOrdersByContent(rawList)
                 const hasServerFilter = Boolean(params.search || params.botGroupId)
                 const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
                 const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
@@ -570,7 +587,19 @@ export const useOrderStore = defineStore('order', () => {
     const loadMore = async (params: FetchOrdersParams = {}) => {
         if (isLoading.value || isLoadingMore.value || !hasMore.value) return
         if (orders.value.length >= MAX_ORDERS_IN_MEMORY) return
-        return fetchOrders({ ...params, page: page.value + 1 }, { append: true })
+        const prevLen = orders.value.length
+        await fetchOrders({ ...params, page: page.value + 1 }, { append: true })
+        // Dublikatlar tufayli ro'yxat o'smasa — keyingi sahifani urinib ko'rish
+        let guard = 0
+        while (
+            guard < 5 &&
+            hasMore.value &&
+            orders.value.length === prevLen &&
+            page.value < totalPages.value
+        ) {
+            guard += 1
+            await fetchOrders({ ...params, page: page.value + 1 }, { append: true })
+        }
     }
 
     const fetchOrderById = async (orderId: string) => {
@@ -723,6 +752,7 @@ export const useOrderStore = defineStore('order', () => {
         total.value = 0
         page.value = 1
         totalPages.value = 1
+        lastFetchedCount.value = 0
         ordersListScrollY.value = 0
         isLoading.value = false
         isLoadingMore.value = false
