@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
 import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
-import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
+import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, ORDERS_SCROLL_MAX, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
 
 export interface FetchOrdersParams {
     page?: number
@@ -152,7 +152,6 @@ export const useOrderStore = defineStore('order', () => {
         total.value = 0
         page.value = 1
         totalPages.value = 1
-        lastFetchedCount.value = 0
         ordersListScrollY.value = 0
         isLoadingMore.value = false
         if (import.meta.client) {
@@ -172,8 +171,8 @@ export const useOrderStore = defineStore('order', () => {
     const UNREAD_WINDOW_MS = 60 * 60 * 1000
     const SEEN_STORAGE_KEY = 'zortaksi:seen-order-ids'
 
-    /** Infinite scroll — xotirada saqlanadigan buyurtmalar (memoryBudget) */
-    const trimOrdersInMemory = () => {
+    /** Socket/prepend — ro'yxat juda uzun bo'lsa yuqoridan kesish */
+    const trimOrdersAfterPrepend = () => {
         if (orders.value.length <= MAX_ORDERS_IN_MEMORY) return
         orders.value = orders.value.slice(0, MAX_ORDERS_IN_MEMORY)
     }
@@ -387,15 +386,12 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
-    /** Oxirgi API javobidagi buyurtmalar soni — sahifa to'ldimi */
-    const lastFetchedCount = ref(0)
-
     const hasMore = computed(() => {
         const t = Number(total.value) || 0
-        if (t > 0 && orders.value.length >= t) return false
-        if (page.value < totalPages.value) return true
-        const limit = ORDERS_PAGE_LIMIT
-        return lastFetchedCount.value >= limit && orders.value.length < t
+        const loaded = orders.value.length
+        if (loaded >= ORDERS_SCROLL_MAX) return false
+        if (t > 0 && loaded >= t) return false
+        return page.value < totalPages.value
     })
 
     const refreshNewCount = async () => {
@@ -469,7 +465,7 @@ export const useOrderStore = defineStore('order', () => {
         })
         if (isDup) return false
         orders.value = [order, ...list]
-        trimOrdersInMemory()
+        trimOrdersAfterPrepend()
         total.value = (total.value || 0) + 1
         if ((order.status || 'new') === 'new') bumpNewCount(1)
         noteRecentOrder(order)
@@ -492,11 +488,13 @@ export const useOrderStore = defineStore('order', () => {
             if (!response.success) return response
             if (!paramsMatchListFilter(params)) return response
             const rawList = response.data.orders ?? []
-            lastFetchedCount.value = rawList.length
             let list: IOrder[] = uniqueOrdersByContent(rawList)
             const hasServerFilter = Boolean(params.search || params.botGroupId)
             const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
-            const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
+            const clientKw =
+                hasServerFilter && !useBotGroup && !params.search
+                    ? loadOrderFilterKeywords().trim()
+                    : ''
             if (clientKw) {
                 list = filterOrdersByKeywords(list, clientKw)
             }
@@ -510,7 +508,7 @@ export const useOrderStore = defineStore('order', () => {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
                     orders.value = uniqueOrdersByContent([...fresh, ...orders.value])
-                    trimOrdersInMemory()
+                    trimOrdersAfterPrepend()
                 }
             }
             // Catch-up: faqat oxirgi 1 daqiqada yaratilgan yangilar
@@ -549,11 +547,13 @@ export const useOrderStore = defineStore('order', () => {
                 if (isFreshLoad && reqSeq !== listFetchSeq) return response
                 if (isFreshLoad && !paramsMatchListFilter(params)) return response
                 const rawList = response.data.orders ?? []
-                lastFetchedCount.value = rawList.length
                 let list: IOrder[] = uniqueOrdersByContent(rawList)
                 const hasServerFilter = Boolean(params.search || params.botGroupId)
                 const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
-                const clientKw = hasServerFilter && !useBotGroup ? loadOrderFilterKeywords().trim() : ''
+                const clientKw =
+                    hasServerFilter && !useBotGroup && !params.search
+                        ? loadOrderFilterKeywords().trim()
+                        : ''
                 if (clientKw) {
                     list = filterOrdersByKeywords(list, clientKw)
                 }
@@ -561,7 +561,6 @@ export const useOrderStore = defineStore('order', () => {
                     if (!paramsMatchListFilter(params)) return response
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
-                    trimOrdersInMemory()
                 } else {
                     orders.value = list
                     rememberListFilter(params)
@@ -586,15 +585,16 @@ export const useOrderStore = defineStore('order', () => {
     // Keyingi sahifani yuklab, mavjud ro'yxatga qo'shadi (infinite scroll)
     const loadMore = async (params: FetchOrdersParams = {}) => {
         if (isLoading.value || isLoadingMore.value || !hasMore.value) return
-        if (orders.value.length >= MAX_ORDERS_IN_MEMORY) return
         const prevLen = orders.value.length
+        const prevPage = page.value
         await fetchOrders({ ...params, page: page.value + 1 }, { append: true })
-        // Dublikatlar tufayli ro'yxat o'smasa — keyingi sahifani urinib ko'rish
+        // Dublikatlar tufayli ro'yxat o'smasa — keyingi sahifalarni urinib ko'rish
         let guard = 0
         while (
-            guard < 5 &&
+            guard < 8 &&
             hasMore.value &&
             orders.value.length === prevLen &&
+            page.value > prevPage &&
             page.value < totalPages.value
         ) {
             guard += 1
@@ -752,7 +752,6 @@ export const useOrderStore = defineStore('order', () => {
         total.value = 0
         page.value = 1
         totalPages.value = 1
-        lastFetchedCount.value = 0
         ordersListScrollY.value = 0
         isLoading.value = false
         isLoadingMore.value = false

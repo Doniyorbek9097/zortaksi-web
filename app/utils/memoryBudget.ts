@@ -28,8 +28,11 @@ export const MEDIA_PREFETCH_BATCH = 8
 /** Sessiya blob URL keshi — har bir rasm/audio uchun RAM */
 export const MAX_MEDIA_BLOB_CACHE = 48
 
-/** Buyurtmalar ro'yxati — infinite scroll dan keyin xotirada qoladi */
-export const MAX_ORDERS_IN_MEMORY = 40
+/** Buyurtmalar ro'yxati — scroll sessiyasida xotirada saqlanadigan maksimum */
+export const ORDERS_SCROLL_MAX = 200
+
+/** Socket/prepend — yangi buyurtma kelganda yuqoridan qo'shilganda kesish */
+export const MAX_ORDERS_IN_MEMORY = ORDERS_SCROLL_MAX
 
 /** Ko'rilgan buyurtma ID lari keshi */
 export const MAX_SEEN_ORDER_IDS = 200

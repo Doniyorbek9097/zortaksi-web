@@ -91,6 +91,43 @@ export function useOrdersListSync(options: {
     })
   }
 
+  const sentinelInView = () => {
+    const el = sentinel.value
+    if (!el) return false
+    const rect = el.getBoundingClientRect()
+    return rect.top <= window.innerHeight + 520
+  }
+
+  const tryLoadMore = async () => {
+    if (orderStore.isLoading || orderStore.isLoadingMore || !orderStore.hasMore) return
+    await loadMore()
+  }
+
+  /** Ekran bo'sh bo'lsa — ketma-ket sahifalar yuklash */
+  const fillViewport = async () => {
+    let guard = 0
+    while (guard < 12 && sentinelInView() && orderStore.hasMore) {
+      if (orderStore.isLoading || orderStore.isLoadingMore) {
+        await new Promise((r) => setTimeout(r, 80))
+        continue
+      }
+      const before = orderStore.orders.length
+      await tryLoadMore()
+      await nextTick()
+      guard += 1
+      if (orderStore.orders.length === before) break
+    }
+  }
+
+  const onSentinelIntersect = (entries: IntersectionObserverEntry[]) => {
+    if (!entries[0]?.isIntersecting) return
+    void (async () => {
+      await tryLoadMore()
+      await nextTick()
+      await fillViewport()
+    })()
+  }
+
   const onVisibility = () => {
     if (!document.hidden) syncIfVisible()
   }
@@ -126,15 +163,13 @@ export function useOrdersListSync(options: {
       await load()
     }
 
+    await nextTick()
+    await fillViewport()
+
     pollTimer = setInterval(syncIfVisible, POLL_MS)
     document.addEventListener('visibilitychange', onVisibility)
 
-    observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) loadMore()
-      },
-      { rootMargin: '520px' },
-    )
+    observer = new IntersectionObserver(onSentinelIntersect, { rootMargin: '520px' })
     if (sentinel.value) observer.observe(sentinel.value)
     bindSeenObserver()
   })
@@ -146,7 +181,10 @@ export function useOrdersListSync(options: {
   // Faqat uzunlik o'zgarsa — to'liq id join emas
   watch(
     () => displayOrders.value.length,
-    () => bindSeenObserver(),
+    () => {
+      bindSeenObserver()
+      void nextTick().then(() => fillViewport())
+    },
   )
 
   onBeforeUnmount(() => {
