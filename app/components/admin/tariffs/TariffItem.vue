@@ -8,6 +8,12 @@
           {{ name }}
         </h2>
         <span
+          v-if="slug"
+          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border border-sky-200/80 dark:border-sky-800/60 font-mono"
+        >
+          /{{ slug }}
+        </span>
+        <span
           class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300 border border-violet-200/80 dark:border-violet-800/60"
         >
           {{ expireDays }} kun
@@ -47,6 +53,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   name: string
+  slug?: string
   info?: string
   price: number
   expireDays: number

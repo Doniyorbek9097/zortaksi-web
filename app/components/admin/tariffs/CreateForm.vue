@@ -14,6 +14,16 @@
     />
 
     <BaseInput
+      :model-value="modelValue.slug"
+      label="Slug (komanda)"
+      placeholder="oylik"
+      @update:model-value="patch('slug', $event)"
+    />
+    <p class="px-1 text-[10px] text-slate-400 leading-snug">
+      Admin komanda: <code class="font-mono">/{{ modelValue.slug || 'oylik' }}</code>
+    </p>
+
+    <BaseInput
       :model-value="modelValue.info"
       label="Tavsif"
       placeholder="30 kunlik buyurtmalar"
@@ -62,6 +72,7 @@
 <script setup lang="ts">
 export interface TariffFormModel {
   name: string
+  slug: string
   info: string
   price: number | null
   expireDays: number | null
@@ -83,8 +94,9 @@ const patch = <K extends keyof TariffFormModel>(key: K, value: TariffFormModel[K
 }
 
 const onSubmit = () => {
-  const { name, price, expireDays } = props.modelValue
+  const { name, slug, price, expireDays } = props.modelValue
   if (!name.trim()) return
+  if (!slug.trim()) return
   if (price == null || price < 0) return
   if (expireDays == null || expireDays < 1) return
   emit('submit')

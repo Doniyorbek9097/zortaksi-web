@@ -29,6 +29,7 @@
         v-for="t in store.tariffs"
         :key="t.id"
         :name="t.name"
+        :slug="t.slug"
         :info="t.info"
         :price="t.price"
         :expire-days="t.expireDays"
@@ -63,6 +64,7 @@ const store = useTariffStore()
 
 const emptyForm = (): TariffFormModel => ({
   name: '',
+  slug: '',
   info: '',
   price: 0,
   expireDays: 30,
@@ -83,6 +85,7 @@ const onSubmit = async () => {
   error.value = ''
   const payload = {
     name: form.value.name.trim(),
+    slug: form.value.slug.trim(),
     info: form.value.info.trim() || undefined,
     price: form.value.price ?? 0,
     expireDays: form.value.expireDays ?? 30,
@@ -104,6 +107,7 @@ const startEdit = (t: TariffRow) => {
   editingId.value = t.id
   form.value = {
     name: t.name,
+    slug: t.slug,
     info: t.info ?? '',
     price: t.price,
     expireDays: t.expireDays,

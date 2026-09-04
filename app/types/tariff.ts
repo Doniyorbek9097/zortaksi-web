@@ -1,6 +1,7 @@
 export interface ITariff {
     _id?: string;
     name: string;
+    slug: string;
     info?: string;
     icon?: string;
     badge?: string;

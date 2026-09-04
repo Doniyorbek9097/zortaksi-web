@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 export interface TariffRow {
   id: string
   name: string
+  slug: string
   info?: string
   icon?: string
   badge?: string
@@ -12,6 +13,7 @@ export interface TariffRow {
 
 export type TariffPayload = {
   name: string
+  slug: string
   info?: string
   price: number
   expireDays: number
@@ -22,6 +24,7 @@ export type TariffPayload = {
 const toRow = (t: any): TariffRow => ({
   id: String(t.id || t._id),
   name: t.name,
+  slug: String(t.slug || ''),
   info: t.info,
   icon: t.icon,
   badge: t.badge,
