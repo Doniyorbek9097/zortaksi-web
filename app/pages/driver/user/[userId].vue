@@ -138,6 +138,15 @@
             </div>
           </section>
 
+          <AdminDriversRolePanel
+            v-if="isAdmin && driver"
+            :driver-id="driver.id"
+            :role="driver.role"
+            :active="driver.active"
+            :tariff-expire-at="driver.tariffExpireAt"
+            @saved="load"
+          />
+
           <template v-if="isAdmin">
             <section class="grid grid-cols-1 gap-2">
               <button
