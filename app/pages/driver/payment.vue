@@ -74,16 +74,57 @@
     <!-- TARIF -->
     <template v-if="mode === 'tariff'">
       <section
-        v-if="tariffActive"
+        v-if="selectedRegionActive"
         class="rounded-2xl p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 space-y-2"
       >
-        <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">Tarif faol</p>
+        <p class="text-sm font-black text-emerald-600 dark:text-emerald-400">Bu hudud uchun tarif faol</p>
         <p class="text-[13px] font-medium text-slate-600 dark:text-slate-400">
-          Tarif muddati tugaguncha yangi tarif sotib olish yoki yangilash mumkin emas.
+          Muddati tugaguncha shu yo'nalish uchun yangi tarif sotib olish mumkin emas.
         </p>
       </section>
 
       <template v-else>
+      <section class="space-y-3">
+        <div class="px-0.5">
+          <h2 class="text-sm font-black text-slate-900 dark:text-white">Hudud tanlang</h2>
+          <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+            Har bir yo'nalish uchun alohida to'lov qilinadi
+          </p>
+        </div>
+
+        <div v-if="regionsLoading" class="h-12 rounded-xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
+
+        <div v-else class="space-y-2">
+          <button
+            v-for="region in regionOptions"
+            :key="`${region.scopeUserId}:${region.regionSlug}`"
+            type="button"
+            class="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl border text-left transition-all"
+            :class="isRegionSelected(region)
+              ? 'border-sky-500 bg-sky-50 dark:bg-sky-950/40'
+              : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
+            @click="selectRegion(region)"
+          >
+            <span class="flex-1 min-w-0">
+              <span class="block text-sm font-black text-slate-900 dark:text-white truncate">
+                {{ region.title }}
+              </span>
+              <span
+                v-if="region.subscriptionActive"
+                class="text-[11px] font-bold text-emerald-500"
+              >
+                Faol — muddati tugaguncha yangilay olmaysiz
+              </span>
+            </span>
+            <font-awesome-icon
+              v-if="isRegionSelected(region)"
+              icon="fa-solid fa-check"
+              class="text-sky-500 shrink-0"
+            />
+          </button>
+        </div>
+      </section>
+
       <section class="space-y-3">
         <div class="px-0.5">
           <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
@@ -127,7 +168,7 @@
       </section>
 
       <section
-        v-if="selected"
+        v-if="selected && selectedRegion && !selectedRegionActive"
         class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4"
       >
         <div class="flex items-center justify-between gap-2">
@@ -272,10 +313,21 @@ const route = useRoute()
 const authStore = useAuthStore()
 const tariffStore = useTariffStore()
 
+type RegionOption = {
+  id: string
+  title: string
+  regionSlug: string
+  scopeUserId: string
+  subscriptionActive?: boolean
+}
+
 type PayMode = 'tariff' | 'topup'
 const mode = ref<PayMode>('tariff')
 
 const selectedId = ref<string | null>(null)
+const selectedRegion = ref<RegionOption | null>(null)
+const regionOptions = ref<RegionOption[]>([])
+const regionsLoading = ref(false)
 const topupText = ref('')
 const savingBuy = ref(false)
 const savingRequest = ref(false)
@@ -286,6 +338,60 @@ const methods = ref<{ click: boolean; payme: boolean }>({ click: false, payme: f
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
+const selectedRegionActive = computed(() => !!selectedRegion.value?.subscriptionActive)
+
+const regionPaymentBody = () => {
+  if (!selectedRegion.value) return {}
+  return {
+    scopeUserId: selectedRegion.value.scopeUserId,
+    regionSlug: selectedRegion.value.regionSlug,
+  }
+}
+
+const isRegionSelected = (region: RegionOption) =>
+  selectedRegion.value?.scopeUserId === region.scopeUserId
+  && selectedRegion.value?.regionSlug === region.regionSlug
+
+const selectRegion = (region: RegionOption) => {
+  selectedRegion.value = region
+}
+
+const loadRegionOptions = async () => {
+  regionsLoading.value = true
+  try {
+    const res = await useApi('/bot-groups/filter-presets?purpose=payment')
+    const presets = (res.data?.presets ?? []) as Array<{
+      id: string
+      title: string
+      regionSlug?: string
+      scopeUserId?: string
+      subscriptionActive?: boolean
+    }>
+    regionOptions.value = presets
+      .filter((p) => p.regionSlug && p.scopeUserId)
+      .map((p) => ({
+        id: p.id,
+        title: p.title,
+        regionSlug: String(p.regionSlug),
+        scopeUserId: String(p.scopeUserId),
+        subscriptionActive: !!p.subscriptionActive,
+      }))
+
+    const qScope = String(route.query.scopeUserId || '').trim()
+    const qSlug = String(route.query.regionSlug || '').trim()
+    const fromQuery = regionOptions.value.find(
+      (r) => r.scopeUserId === qScope && r.regionSlug === qSlug,
+    )
+    const fromUser = regionOptions.value.find(
+      (r) => r.regionSlug === String(authStore.user?.regionSlug || ''),
+    )
+    selectedRegion.value = fromQuery || fromUser || regionOptions.value[0] || null
+  } catch {
+    regionOptions.value = []
+  } finally {
+    regionsLoading.value = false
+  }
+}
 
 const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
 
@@ -394,7 +500,7 @@ const payOnline = async (provider: 'click' | 'payme') => {
     const path = provider === 'click' ? '/me/tariff/pay-click' : '/me/tariff/pay-payme'
     const res = await useApi(path, {
       method: 'POST',
-      body: { tariffId: selected.value.id },
+      body: { tariffId: selected.value.id, ...regionPaymentBody() },
       timeout: 30000,
     })
     openPayUrl(res)
@@ -430,8 +536,12 @@ const payTopupOnline = async (provider: 'click' | 'payme') => {
 
 const buyTariff = async () => {
   if (!selected.value) return
-  if (tariffActive.value) {
-    error.value = 'Tarif allaqachon faol. Muddati tugaguncha yangilay olmaysiz.'
+  if (!selectedRegion.value) {
+    error.value = 'Avval hudud tanlang'
+    return
+  }
+  if (selectedRegionActive.value) {
+    error.value = 'Bu hudud uchun tarif allaqachon faol.'
     return
   }
   if (shortage.value > 0) {
@@ -444,7 +554,7 @@ const buyTariff = async () => {
   try {
     const res = await useApi('/me/tariff/buy', {
       method: 'POST',
-      body: { tariffId: selected.value.id },
+      body: { tariffId: selected.value.id, ...regionPaymentBody() },
     })
     if (res.success) {
       await authStore.getMe()
@@ -500,7 +610,7 @@ onMounted(async () => {
   }
 
   try {
-    await Promise.all([tariffStore.fetchTariffs(), fetchPaymentMethods()])
+    await Promise.all([tariffStore.fetchTariffs(), fetchPaymentMethods(), loadRegionOptions()])
     const qTariffId = String(route.query.tariffId || '').trim()
     if (qTariffId && tariffStore.tariffs.some(t => t.id === qTariffId)) {
       selectedId.value = qTariffId
@@ -515,5 +625,6 @@ onMounted(async () => {
 usePullToRefresh(async () => {
   await authStore.getMe().catch(() => {})
   await tariffStore.fetchTariffs().catch(() => {})
+  await loadRegionOptions().catch(() => {})
 })
 </script>

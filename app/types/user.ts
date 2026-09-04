@@ -1,5 +1,17 @@
 import type { ITariff } from './tariff';
 
+export interface IRegionSubscription {
+    scopeUserId: string;
+    regionSlug: string;
+    regionTitle: string;
+    tariff: ITariff | null;
+    tariffExpireAt?: string | Date | null;
+    startedAt?: string | Date | null;
+    active: boolean;
+    subscriptionActive: boolean;
+    daysLeft: number;
+}
+
 export interface IUser {
     _id?: string;
     userId: string;
@@ -18,6 +30,8 @@ export interface IUser {
     tariffExpireAt?: string | Date;
     role: 'admin' | 'subadmin' | 'driver' | 'customer';
     regionSlug?: string | null;
+    perRegionBilling?: boolean;
+    regionSubscriptions?: IRegionSubscription[];
     createdAt?: string | Date;
     updatedAt?: string | Date;
 }

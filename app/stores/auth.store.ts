@@ -40,7 +40,12 @@ export const useAuthStore = defineStore('auth', () => {
 
     const tariffActive = computed(() => {
         liveNowMs.value
-        return isTariffActive(user.value)
+        const u = user.value
+        if (!u) return false
+        if (u.perRegionBilling && Array.isArray(u.regionSubscriptions) && u.regionSubscriptions.length) {
+            return u.regionSubscriptions.some((s) => s.subscriptionActive)
+        }
+        return isTariffActive(u)
     })
 
     let expireTimer: ReturnType<typeof setTimeout> | null = null
