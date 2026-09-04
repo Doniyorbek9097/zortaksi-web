@@ -4,9 +4,11 @@ export interface IRegionSubscription {
     scopeUserId: string;
     regionSlug: string;
     regionTitle: string;
+    scopeOwnerName?: string;
     tariff: ITariff | null;
     tariffExpireAt?: string | Date | null;
     startedAt?: string | Date | null;
+    assignedAt?: string | Date | null;
     active: boolean;
     subscriptionActive: boolean;
     daysLeft: number;

@@ -85,10 +85,10 @@ const tariffActive = computed(() => authStore.tariffActive)
 const perRegionBilling = computed(() => !!authStore.user?.perRegionBilling)
 const regionSubscriptions = computed(() => authStore.user?.regionSubscriptions ?? [])
 const showRegionSubscriptions = computed(
-  () => perRegionBilling.value && regionSubscriptions.value.length > 0,
+  () => regionSubscriptions.value.length > 0,
 )
 const showLegacyTariff = computed(
-  () => !perRegionBilling.value || regionSubscriptions.value.length === 0,
+  () => !perRegionBilling.value && regionSubscriptions.value.length === 0,
 )
 
 // --- Greeting based on hour ---
