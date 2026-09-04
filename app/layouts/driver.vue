@@ -14,6 +14,7 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
+import { hasPanelShellAccess } from '~/utils/userRole'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 
 const authStore = useAuthStore()
@@ -41,6 +42,19 @@ onMounted(() => {
 onBeforeUnmount(() => {
   orderStore.stopRecentMinuteTicker()
 })
+
+const route = useRoute()
+
+watch(
+  () => [authStore.sessionReady, authStore.user?.role, route.path] as const,
+  ([ready, , path]) => {
+    if (!ready || !import.meta.client) return
+    if (hasPanelShellAccess(authStore.user) && path === '/driver/dashboard') {
+      void navigateTo('/admin/dashboard', { replace: true })
+    }
+  },
+  { immediate: true },
+)
 
 watch(
   () => [authStore.sessionReady, authStore.user?.userId] as const,

@@ -10,6 +10,7 @@ import {
 } from '~/utils/activeAccount'
 import {
     isAdminUser,
+    hasPanelShellAccess,
     isPanelUser,
     resolveHomePath,
     resolveSafeNextPath,
@@ -210,7 +211,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     // Redirectlar — sessionReady hali false (loading), keyin yangi sahifada true
     if (isAuthEntryPath(to.path)) {
         const canSkipAuth =
-            !!authStore.user?.verified || isPanelUser(authStore.user)
+            !!authStore.user?.verified || hasPanelShellAccess(authStore.user)
         if (to.path === '/auth') {
             const next = resolveSafeNextPath(to.query.next, authStore.user)
             if (next && canSkipAuth) return navigateTo(next)
@@ -244,17 +245,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         )
     }
 
-    if (to.path.startsWith('/admin') && !isPanelUser(authStore.user)) {
+    if (to.path.startsWith('/admin') && !hasPanelShellAccess(authStore.user)) {
         return navigateTo(resolveHomePath(authStore.user))
     }
 
-    // Panel user tanlangan, lekin URL driver dashboard — admin home
-    if (isPanelUser(authStore.user) && to.path === '/driver/dashboard') {
+    // Panel roli — driver dashboard emas, admin home
+    if (hasPanelShellAccess(authStore.user) && to.path === '/driver/dashboard') {
         return navigateTo('/admin/dashboard')
     }
 
     // Driver tanlangan, lekin URL admin — driver home
-    if (!isPanelUser(authStore.user) && to.path.startsWith('/admin')) {
+    if (!hasPanelShellAccess(authStore.user) && to.path.startsWith('/admin')) {
         return navigateTo('/driver/dashboard')
     }
 

@@ -31,6 +31,13 @@ export function isAdminUser(
   return isAdminRole(user?.role)
 }
 
+/** Admin yoki subadmin roli (faollik/limitdan qat'iy nazar — UI yo'nalishi) */
+export function hasPanelShellAccess(
+  user?: { role?: string | null } | null
+): boolean {
+  return isPanelRole(user?.role)
+}
+
 /** Admin yoki faol subadmin — panel va buyurtmalar boshqaruvi */
 export function isPanelUser(
   user?: { role?: string | null; active?: boolean; tariffExpireAt?: string | Date | null } | null
@@ -47,7 +54,7 @@ export function isPanelUser(
 export function resolveHomePath(
   user?: { role?: string | null; active?: boolean; tariffExpireAt?: string | Date | null } | null
 ): '/admin/dashboard' | '/driver/dashboard' {
-  return isPanelUser(user) ? '/admin/dashboard' : '/driver/dashboard'
+  return hasPanelShellAccess(user) ? '/admin/dashboard' : '/driver/dashboard'
 }
 
 /**
@@ -61,7 +68,7 @@ export function resolveSafeNextPath(
   if (typeof next !== 'string' || !next) return null
   if (!next.startsWith('/') || next.startsWith('//')) return null
   if (next.startsWith('/auth')) return null
-  if (next.startsWith('/admin') && !isPanelUser(user)) return null
+  if (next.startsWith('/admin') && !hasPanelShellAccess(user)) return null
   return next
 }
 
