@@ -138,7 +138,7 @@ export function useOrdersListSync(options: {
 
     const q = queryParams()
     const wantSearch = String(q.search || '').trim()
-    const wantBotGroup = String(q.botGroupId || '').trim()
+    const wantBotGroup = formatBotGroupIds(parseBotGroupIds(String(q.botGroupId || '')))
     const wantText = String(q.text || '').trim()
     const hasCachedList = orderStore.orders.length > 0
     const sameServerFilter =

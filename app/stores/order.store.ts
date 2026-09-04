@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, parseBotGroupIds, formatBotGroupIds, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
 import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, ORDERS_SCROLL_MAX, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
 
 export interface FetchOrdersParams {
@@ -40,7 +40,7 @@ export const useOrderStore = defineStore('order', () => {
     let listFetchSeq = 0
 
     const rememberListFilter = (params: FetchOrdersParams) => {
-        listBotGroupId.value = String(params.botGroupId || '').trim()
+        listBotGroupId.value = formatBotGroupIds(parseBotGroupIds(String(params.botGroupId || '')))
         listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
         listText.value = String(params.text || '').trim()
         listScope.value = 'all'
@@ -133,7 +133,7 @@ export const useOrderStore = defineStore('order', () => {
     const paramsMatchListFilter = (params: FetchOrdersParams) => {
         const wantScope = params.scope === 'mine' ? 'mine' : 'all'
         if (wantScope !== listScope.value) return false
-        const wantBot = String(params.botGroupId || '').trim()
+        const wantBot = formatBotGroupIds(parseBotGroupIds(String(params.botGroupId || '')))
         const wantSearch = wantBot ? '' : String(params.search || '').trim()
         if (wantBot !== listBotGroupId.value.trim()) return false
         if (wantSearch !== listSearch.value.trim()) return false

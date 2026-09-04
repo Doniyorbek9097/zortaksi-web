@@ -5,6 +5,8 @@ import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
   parseKeywords,
+  parseBotGroupIds,
+  formatBotGroupIds,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
@@ -34,12 +36,12 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const appliedOrderQuery = ref('')
   const scope = ref<OrdersScopeTab>('all')
   const filterActive = computed(
-    () => !!appliedBotGroupId.value.trim() || !!appliedKeywords.value.trim(),
+    () => parseBotGroupIds(appliedBotGroupId.value).length > 0 || !!appliedKeywords.value.trim(),
   )
   const orderSearchActive = computed(() => !!appliedOrderQuery.value.trim())
 
   const buildFilterParams = () => {
-    const botGroupId = appliedBotGroupId.value.trim()
+    const botGroupId = formatBotGroupIds(parseBotGroupIds(appliedBotGroupId.value))
     if (botGroupId) {
       return { botGroupId }
     }
@@ -84,7 +86,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   const onSaveFilter = async () => {
     const kw = draftKeywords.value.trim()
-    const gid = String(draftBotGroupId.value || '').trim()
+    const gid = formatBotGroupIds(parseBotGroupIds(draftBotGroupId.value))
 
     appliedKeywords.value = gid ? '' : kw
     appliedBotGroupId.value = gid
@@ -144,7 +146,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
 
   const hydrateFilter = () => {
     const saved = loadOrderFilterKeywords()
-    const savedGroup = loadOrderFilterBotGroupId()
+    const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
     draftKeywords.value = saved
     appliedKeywords.value = saved
     draftBotGroupId.value = savedGroup

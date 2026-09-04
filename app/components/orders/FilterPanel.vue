@@ -25,7 +25,7 @@
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                     {{ mandatory
                       ? 'Davom etish uchun bot guruh (yo‘nalish) tanlang yoki barcha joylar'
-                      : 'Bot guruh tanlang — faqat shu tinglovchilardan kelgan buyurtmalar' }}
+                      : 'Bir yoki bir nechta bot guruh tanlang — shu tinglovchilardan kelgan buyurtmalar' }}
                   </p>
                 </div>
                 <button
@@ -54,18 +54,24 @@
 
               <div v-else-if="presets.length" class="space-y-2">
                 <p class="px-0.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                  Yo'nalish tanlang
+                  Yo'nalish tanlang (bir nechta mumkin)
                 </p>
                 <ul class="max-h-[min(36vh,280px)] overflow-y-auto overscroll-contain flex flex-col gap-2 pr-0.5">
                   <li v-for="preset in presets" :key="preset.id">
                     <button
                       type="button"
                       class="w-full inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-left text-[12px] font-bold transition-all active:scale-[0.98]"
-                      :class="selectedPresetId === preset.id
+                      :class="isPresetSelected(preset.id)
                         ? 'border-indigo-400 bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
                         : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-200 hover:border-indigo-300 dark:hover:border-indigo-600'"
                       @click="onPresetClick(preset)"
                     >
+                      <font-awesome-icon
+                        v-if="isPresetSelected(preset.id)"
+                        icon="fa-solid fa-check"
+                        class="text-[11px] shrink-0 opacity-90"
+                      />
+                      <span v-else class="w-3 shrink-0" aria-hidden="true" />
                       <font-awesome-icon
                         icon="fa-solid fa-bullhorn"
                         class="text-[10px] shrink-0 opacity-70"
@@ -100,7 +106,7 @@
               </p>
 
               <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
-                «Barcha joylar» — filtrsiz. Yoki bot guruh nomini tanlang — faqat shu guruh tinglovchilarining buyurtmalari.
+                «Barcha joylar» — filtrsiz. Yoki bir nechta bot guruh tanlang — tanlangan tinglovchilarning buyurtmalari.
               </p>
             </div>
 
@@ -134,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { parseKeywords } from '~/utils/orderFilterKeywords'
+import { parseKeywords, parseBotGroupIds, formatBotGroupIds } from '~/utils/orderFilterKeywords'
 
 export type BotGroupFilterPreset = {
   id: string
@@ -159,10 +165,13 @@ const emit = defineEmits<{ save: []; cancel: [] }>()
 const open = ref(true)
 const presets = ref<BotGroupFilterPreset[]>([])
 const presetsLoading = ref(false)
-const selectedPresetId = ref<string | null>(null)
 const saveError = ref('')
 /** Barcha joylar — kalit so'zsiz, filtrsiz rejim */
 const allRegionsSelected = ref(false)
+
+const selectedPresetIds = computed(() => new Set(parseBotGroupIds(botGroupId.value || '')))
+
+const isPresetSelected = (id: string) => selectedPresetIds.value.has(id)
 
 const loadPresets = async () => {
   presetsLoading.value = true
@@ -183,33 +192,28 @@ const keywordsFromPreset = (preset: BotGroupFilterPreset) =>
   (preset.keywords || []).map((k) => String(k).trim()).filter(Boolean).join(', ')
 
 const syncSelectedPresetFromKeywords = () => {
-  if (botGroupId.value) {
-    selectedPresetId.value = botGroupId.value
-    return
-  }
+  if (parseBotGroupIds(botGroupId.value || '').length) return
   const current = String(keywords.value || '').trim()
-  if (!current) {
-    selectedPresetId.value = null
-    return
-  }
+  if (!current) return
   const match = presets.value.find((p) => keywordsFromPreset(p) === current)
-  selectedPresetId.value = match?.id ?? null
+  if (match) botGroupId.value = match.id
 }
 
 const onPresetClick = (preset: BotGroupFilterPreset) => {
   saveError.value = ''
   allRegionsSelected.value = false
-  // Bot guruh tanlash — server listenerUserId bo'yicha filtrlaydi
   keywords.value = ''
-  selectedPresetId.value = preset.id
-  botGroupId.value = preset.id
+
+  const next = new Set(parseBotGroupIds(botGroupId.value || ''))
+  if (next.has(preset.id)) next.delete(preset.id)
+  else next.add(preset.id)
+  botGroupId.value = formatBotGroupIds([...next]) || null
 }
 
 const onSelectAllRegions = () => {
   saveError.value = ''
   allRegionsSelected.value = true
   keywords.value = ''
-  selectedPresetId.value = null
   botGroupId.value = null
 }
 
@@ -217,8 +221,7 @@ watch(keywords, () => {
   saveError.value = ''
   const current = String(keywords.value || '').trim()
   if (!current) {
-    // botGroupId saqlangan bo'lsa — preset tanlangan deb qoladi
-    if (!botGroupId.value) selectedPresetId.value = null
+    if (!parseBotGroupIds(botGroupId.value || '').length) return
     return
   }
   allRegionsSelected.value = false
@@ -253,7 +256,7 @@ const onBackdropClick = () => {
 
 const onSave = () => {
   const hasKeywords = parseKeywords(keywords.value).length > 0
-  const hasBotGroup = !!String(botGroupId.value || '').trim()
+  const hasBotGroup = parseBotGroupIds(botGroupId.value || '').length > 0
   if (props.mandatory && !hasKeywords && !hasBotGroup && !allRegionsSelected.value) {
     saveError.value = 'Yo\'nalish tanlang yoki «Barcha joylar» ni bosing'
     return
@@ -266,11 +269,7 @@ const onSave = () => {
 
 onMounted(() => {
   document.body.style.overflow = 'hidden'
-  void loadPresets().then(() => {
-    if (botGroupId.value) {
-      selectedPresetId.value = botGroupId.value
-    }
-  })
+  void loadPresets()
 })
 
 onBeforeUnmount(() => {

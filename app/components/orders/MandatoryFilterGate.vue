@@ -15,6 +15,8 @@ import { usePostStore } from '~/stores/post.store'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
+  parseBotGroupIds,
+  formatBotGroupIds,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterKeywords,
@@ -39,7 +41,7 @@ const showGate = computed(() => {
 
 const onSave = async () => {
   const kw = draftKeywords.value.trim()
-  const gid = String(draftBotGroupId.value || '').trim()
+  const gid = formatBotGroupIds(parseBotGroupIds(String(draftBotGroupId.value || '')))
 
   if (kw && !gid) saveOrderFilterKeywords(kw)
   else clearOrderFilterKeywords()
@@ -73,7 +75,7 @@ watch(
   (v) => {
     if (!v) return
     draftKeywords.value = loadOrderFilterKeywords()
-    draftBotGroupId.value = loadOrderFilterBotGroupId() || null
+    draftBotGroupId.value = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId())) || null
   },
   { immediate: true },
 )

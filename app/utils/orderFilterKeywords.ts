@@ -118,6 +118,18 @@ export function clearOrderFilterKeywords(): void {
   saveOrderFilterKeywords('')
 }
 
+/** Vergul bilan ajratilgan bot guruh ID lari */
+export function parseBotGroupIds(raw: string): string[] {
+  return String(raw || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+export function formatBotGroupIds(ids: string[]): string {
+  return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))].join(',')
+}
+
 export function loadOrderFilterBotGroupId(): string {
   if (!import.meta.client) return ''
   try {
@@ -127,10 +139,14 @@ export function loadOrderFilterBotGroupId(): string {
   }
 }
 
+export function loadOrderFilterBotGroupIds(): string[] {
+  return parseBotGroupIds(loadOrderFilterBotGroupId())
+}
+
 export function saveOrderFilterBotGroupId(id: string): void {
   if (!import.meta.client) return
   try {
-    const clean = String(id || '').trim()
+    const clean = formatBotGroupIds(parseBotGroupIds(id))
     if (clean) localStorage.setItem(ORDER_FILTER_BOT_GROUP_KEY, clean)
     else localStorage.removeItem(ORDER_FILTER_BOT_GROUP_KEY)
   } catch { /* private mode */ }

@@ -278,6 +278,8 @@ import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
+  parseBotGroupIds,
+  formatBotGroupIds,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
@@ -300,7 +302,7 @@ const draftBotGroupId = ref<string | null>(null)
 const appliedKeywords = ref('')
 const appliedBotGroupId = ref('')
 const filterActive = computed(
-  () => !!appliedBotGroupId.value.trim() || !!appliedKeywords.value.trim(),
+  () => parseBotGroupIds(appliedBotGroupId.value).length > 0 || !!appliedKeywords.value.trim(),
 )
 const showJoinDialog = ref(false)
 const showLeaveDialog = ref(false)
@@ -323,23 +325,26 @@ const leaveMessage = computed(() => (
 
 const onSaveFilter = async () => {
   const kw = draftKeywords.value.trim()
-  const gid = kw ? String(draftBotGroupId.value || '').trim() : ''
+  const gid = formatBotGroupIds(parseBotGroupIds(String(draftBotGroupId.value || '')))
 
-  appliedKeywords.value = kw
+  appliedKeywords.value = gid ? '' : kw
   appliedBotGroupId.value = gid
-  draftKeywords.value = kw
+  draftKeywords.value = appliedKeywords.value
   draftBotGroupId.value = gid || null
 
-  if (kw) saveOrderFilterKeywords(kw)
-  else clearOrderFilterKeywords()
-
-  if (gid) saveOrderFilterBotGroupId(gid)
-  else clearOrderFilterBotGroupId()
+  if (gid) {
+    clearOrderFilterKeywords()
+    saveOrderFilterBotGroupId(gid)
+  } else {
+    clearOrderFilterBotGroupId()
+    if (kw) saveOrderFilterKeywords(kw)
+    else clearOrderFilterKeywords()
+  }
 
   markOrderFilterConfigured()
 
   showFilter.value = false
-  await store.setSearch(kw, gid)
+  await store.setSearch(appliedKeywords.value, gid)
 }
 
 const onCancelFilter = () => {
@@ -456,7 +461,7 @@ let observer: IntersectionObserver | null = null
 onMounted(async () => {
   if (store.isAdmin) {
     const saved = loadOrderFilterKeywords()
-    const savedGroup = loadOrderFilterBotGroupId()
+    const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
     draftKeywords.value = saved
     appliedKeywords.value = saved
     draftBotGroupId.value = savedGroup || null
