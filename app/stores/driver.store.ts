@@ -28,6 +28,7 @@ export interface DriverRow {
     price?: number
     expireDays?: number
   } | null
+  role?: string
 }
 
 export const useDriverStore = defineStore('driver', () => {

@@ -244,10 +244,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         )
     }
 
-    if (to.path.startsWith('/admin/subadmins') && !isAdminUser(authStore.user)) {
-        return navigateTo('/admin/dashboard')
-    }
-
     if (to.path.startsWith('/admin') && !isPanelUser(authStore.user)) {
         return navigateTo(resolveHomePath(authStore.user))
     }

@@ -62,7 +62,6 @@ export function resolveSafeNextPath(
   if (!next.startsWith('/') || next.startsWith('//')) return null
   if (next.startsWith('/auth')) return null
   if (next.startsWith('/admin') && !isPanelUser(user)) return null
-  if (next.startsWith('/admin/subadmins') && !isAdminUser(user)) return null
   return next
 }
 
