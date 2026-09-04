@@ -83,6 +83,20 @@
               {{ statusLabel(item.status) }}
             </p>
           </div>
+          <button
+            v-if="deletable"
+            type="button"
+            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 transition-all disabled:opacity-50"
+            aria-label="To'lovni o'chirish"
+            :disabled="deletingId === item.id"
+            @click="askDelete(item)"
+          >
+            <font-awesome-icon
+              :icon="deletingId === item.id ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
+              :class="deletingId === item.id ? 'animate-spin' : ''"
+              class="text-xs"
+            />
+          </button>
         </li>
       </ul>
 
@@ -115,6 +129,18 @@
       </NuxtLink>
     </div>
   </section>
+
+  <BaseConfirmDialog
+    v-if="deletable"
+    v-model="deleteOpen"
+    title="To'lovni o'chirish"
+    :message="deleteTarget ? deleteMessage(deleteTarget) : ''"
+    confirm-text="O'chirish"
+    cancel-text="Bekor qilish"
+    variant="danger"
+    :loading="Boolean(deletingId)"
+    @confirm="confirmDelete"
+  />
 </template>
 
 <script setup lang="ts">
@@ -142,6 +168,7 @@ const props = withDefaults(defineProps<{
   subtitle?: string
   paginated?: boolean
   pageSize?: number
+  deletable?: boolean
 }>(), {
   refreshable: true,
   moreTo: '',
@@ -151,6 +178,7 @@ const props = withDefaults(defineProps<{
   subtitle: "Hisob to'ldirish va to'lovlar",
   paginated: true,
   pageSize: PAYMENT_PAGE_SIZE,
+  deletable: false,
 })
 
 const items = ref<PaymentHistoryItem[]>([])
@@ -160,7 +188,12 @@ const error = ref('')
 const page = ref(1)
 const hasMore = ref(true)
 const sentinelEl = ref<HTMLElement | null>(null)
+const deleteOpen = ref(false)
+const deleteTarget = ref<PaymentHistoryItem | null>(null)
+const deletingId = ref('')
 let loadMoreObserver: IntersectionObserver | null = null
+
+const emit = defineEmits<{ deleted: [] }>()
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
@@ -248,6 +281,41 @@ const load = async () => {
 }
 
 const reload = () => void load()
+
+const deleteMessage = (item: PaymentHistoryItem) => {
+  const amount = formatMoney(item.amount)
+  const title = titleFor(item)
+  const who = item.driverName || item.userId
+  if (who) return `«${title}» (+${amount} so'm) — ${who}. Tarixdan o'chirilsinmi?`
+  return `«${title}» (+${amount} so'm) tarixdan o'chirilsinmi?`
+}
+
+const askDelete = (item: PaymentHistoryItem) => {
+  deleteTarget.value = item
+  deleteOpen.value = true
+}
+
+const confirmDelete = async () => {
+  const item = deleteTarget.value
+  if (!item?.id || deletingId.value) return
+  deletingId.value = item.id
+  error.value = ''
+  try {
+    const res = await useApi(`/drivers/payments/${item.id}`, { method: 'DELETE' })
+    if (!res.success) {
+      error.value = res.message || "To'lovni o'chirib bo'lmadi"
+      return
+    }
+    items.value = items.value.filter((i) => i.id !== item.id)
+    deleteOpen.value = false
+    deleteTarget.value = null
+    emit('deleted')
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || e?.message || "To'lovni o'chirib bo'lmadi"
+  } finally {
+    deletingId.value = ''
+  }
+}
 
 const loadMore = () => {
   if (!props.paginated || loading.value || loadingMore.value || !hasMore.value) return

@@ -20,6 +20,7 @@
     <DriverPaymentHistoryList
       api-path="/drivers/payments"
       show-driver
+      deletable
       subtitle="Hisob to'ldirish va tarif to'lovlari"
     />
   </div>

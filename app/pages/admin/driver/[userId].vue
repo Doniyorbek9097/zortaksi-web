@@ -228,6 +228,7 @@
       <DriverPaymentHistoryList
         v-if="paymentsApiPath"
         :api-path="paymentsApiPath"
+        deletable
         subtitle="Shu haydovchi bo'yicha"
       />
     </template>

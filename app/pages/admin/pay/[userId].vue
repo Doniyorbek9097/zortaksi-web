@@ -216,6 +216,7 @@
         v-if="paymentsApiPath"
         ref="historyList"
         :api-path="paymentsApiPath"
+        deletable
         subtitle="Shu haydovchi bo'yicha"
       />
     </template>
