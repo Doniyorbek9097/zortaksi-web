@@ -241,10 +241,10 @@ const navItems = computed(() => {
   ]
   if (isMainAdmin.value) {
     items.splice(3, 0, { title: 'Bannerlar', icon: 'fa-solid fa-image', tone: 'blue' as const, to: '/admin/banners' })
-    items.push({ title: 'Subadminlar', icon: 'fa-solid fa-user-shield', tone: 'sky' as const, to: '/admin/subadmins' })
+    items.push({ title: 'Subadminlar', icon: 'fa-solid fa-user-shield', tone: 'blue' as const, to: '/admin/subadmins' })
   }
   if (isSubadmin.value) {
-    items.push({ title: "To'lov kartalari", icon: 'fa-solid fa-credit-card', tone: 'sky' as const, to: '/admin/payment-cards' })
+    items.push({ title: "To'lov kartalari", icon: 'fa-solid fa-credit-card', tone: 'blue' as const, to: '/admin/payment-cards' })
   }
   return items
 })

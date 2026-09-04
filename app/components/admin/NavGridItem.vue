@@ -2,25 +2,25 @@
   <button
     type="button"
     class="flex items-center gap-2 px-2.5 py-2 rounded-xl border min-w-0 w-full active:scale-[0.98] transition-transform"
-    :class="toneMap[tone].surface"
+    :class="styles.surface"
     @click="$emit('click')"
   >
     <div
       class="w-7 h-7 rounded-lg flex items-center justify-center text-[11px] shrink-0 shadow-sm"
-      :class="toneMap[tone].icon"
+      :class="styles.icon"
     >
       <font-awesome-icon :icon="icon" />
     </div>
     <p
       class="flex-1 min-w-0 text-[11px] font-bold leading-tight text-left line-clamp-2"
-      :class="toneMap[tone].label"
+      :class="styles.label"
     >
       {{ title }}
     </p>
     <font-awesome-icon
       icon="fa-solid fa-chevron-right"
       class="text-[8px] shrink-0 opacity-35"
-      :class="toneMap[tone].chevron"
+      :class="styles.chevron"
     />
   </button>
 </template>
@@ -31,10 +31,10 @@ type Tone = 'green' | 'violet' | 'blue' | 'amber' | 'rose'
 interface Props {
   title: string
   icon: string
-  tone?: Tone
+  tone?: Tone | string
 }
 
-withDefaults(defineProps<Props>(), { tone: 'blue' })
+const props = withDefaults(defineProps<Props>(), { tone: 'blue' })
 defineEmits<{ click: [] }>()
 
 const toneMap: Record<Tone, { surface: string; icon: string; label: string; chevron: string }> = {
@@ -69,4 +69,9 @@ const toneMap: Record<Tone, { surface: string; icon: string; label: string; chev
     chevron: 'text-rose-600 dark:text-rose-400',
   },
 }
+
+const styles = computed(() => {
+  const key = String(props.tone || 'blue') as Tone
+  return toneMap[key] ?? toneMap.blue
+})
 </script>
