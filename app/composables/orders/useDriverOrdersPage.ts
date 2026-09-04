@@ -2,6 +2,7 @@ import type { IOrder } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
+import { isPanelUser } from '~/utils/userRole'
 import { useOrdersFilter } from './useOrdersFilter'
 import { useOrdersListSync } from './useOrdersListSync'
 import { useOrdersBooking } from './useOrdersBooking'
@@ -20,7 +21,7 @@ export function useDriverOrdersPage() {
 
   const role = computed(() => authStore.user?.role)
   const active = computed(() => authStore.tariffActive)
-  const isAdmin = computed(() => role.value === 'admin')
+  const isAdmin = computed(() => isPanelUser(authStore.user))
 
   const filter = useOrdersFilter(orderStore)
 

@@ -1,6 +1,6 @@
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { isAdminUser } from '~/utils/userRole'
+import { isPanelUser } from '~/utils/userRole'
 import {
   loadOrderFilterKeywords,
   loadOrderFilterBotGroupId,
@@ -25,7 +25,7 @@ export type OrdersScopeTab = 'all' | 'mine'
  */
 export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const authStore = useAuthStore()
-  const isAdmin = computed(() => isAdminUser(authStore.user))
+  const isAdmin = computed(() => isPanelUser(authStore.user))
   const showFilter = ref(false)
   const draftKeywords = ref('')
   const draftBotGroupId = ref('')

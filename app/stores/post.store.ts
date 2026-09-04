@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { useAuthStore } from '~/stores/auth.store'
+import { isPanelUser } from '~/utils/userRole'
 import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export type PostTab = 'mine' | 'ads'
@@ -52,7 +53,7 @@ export const usePostStore = defineStore('post', () => {
   /** Guruh nomi / username qidiruvi — server `q` */
   const query = ref('')
 
-  const isAdmin = computed(() => authStore.user?.role === 'admin')
+  const isAdmin = computed(() => isPanelUser(authStore.user))
   const balance = computed(() => authStore.user?.balance ?? 0)
 
   const groups = computed(() => (tab.value === 'mine' ? mineGroups.value : adsGroups.value))

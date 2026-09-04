@@ -202,6 +202,7 @@ import { useReferralStore } from '~/stores/referral.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
+import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'admin',
@@ -210,6 +211,8 @@ definePageMeta({
 const referralStore = useReferralStore()
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
+const isMainAdmin = computed(() => isAdminUser(authStore.user))
+const isSubadmin = computed(() => authStore.user?.role === 'subadmin')
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
 
@@ -228,14 +231,23 @@ const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payme
 const weekIncome = computed(() => store.data?.weekIncome ?? { amount: 0, payments: 0, total: 0 })
 const growth = computed(() => store.data?.growth)
 
-const navItems = [
-  { title: 'Haydovchilar', icon: 'fa-solid fa-users', tone: 'green' as const, to: '/admin/drivers' },
-  { title: "To'lovlar", icon: 'fa-solid fa-receipt', tone: 'amber' as const, to: '/admin/payments' },
-  { title: 'Tariflar', icon: 'fa-solid fa-tags', tone: 'violet' as const, to: '/admin/tariffs' },
-  { title: 'Bannerlar', icon: 'fa-solid fa-image', tone: 'blue' as const, to: '/admin/banners' },
-  { title: 'Bot guruhlari', icon: 'fa-solid fa-bullhorn', tone: 'rose' as const, to: '/admin/bot-groups' },
-  { title: 'Bloklanganlar', icon: 'fa-solid fa-ban', tone: 'rose' as const, to: '/admin/blocked' },
-]
+const navItems = computed(() => {
+  const items = [
+    { title: 'Haydovchilar', icon: 'fa-solid fa-users', tone: 'green' as const, to: '/admin/drivers' },
+    { title: "To'lovlar", icon: 'fa-solid fa-receipt', tone: 'amber' as const, to: '/admin/payments' },
+    { title: 'Tariflar', icon: 'fa-solid fa-tags', tone: 'violet' as const, to: '/admin/tariffs' },
+    { title: 'Bot guruhlari', icon: 'fa-solid fa-bullhorn', tone: 'rose' as const, to: '/admin/bot-groups' },
+    { title: 'Bloklanganlar', icon: 'fa-solid fa-ban', tone: 'rose' as const, to: '/admin/blocked' },
+  ]
+  if (isMainAdmin.value) {
+    items.splice(3, 0, { title: 'Bannerlar', icon: 'fa-solid fa-image', tone: 'blue' as const, to: '/admin/banners' })
+    items.push({ title: 'Subadminlar', icon: 'fa-solid fa-user-shield', tone: 'sky' as const, to: '/admin/subadmins' })
+  }
+  if (isSubadmin.value) {
+    items.push({ title: "To'lov kartalari", icon: 'fa-solid fa-credit-card', tone: 'sky' as const, to: '/admin/payment-cards' })
+  }
+  return items
+})
 
 const num = (...vals: Array<number | undefined | null>) => {
   for (const v of vals) {

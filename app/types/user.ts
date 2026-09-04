@@ -16,7 +16,7 @@ export interface IUser {
     referrerId?: string;
     tariff?: ITariff | null;
     tariffExpireAt?: string | Date;
-    role: 'admin' | 'driver' | 'customer';
+    role: 'admin' | 'subadmin' | 'driver' | 'customer';
     regionSlug?: string | null;
     createdAt?: string | Date;
     updatedAt?: string | Date;

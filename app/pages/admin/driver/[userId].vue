@@ -137,6 +137,23 @@
         </div>
       </section>
 
+      <section
+        v-if="isMainAdmin"
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3"
+      >
+        <h2 class="text-sm font-black text-slate-900 dark:text-white">Rol</h2>
+        <select
+          v-model="selectedRole"
+          class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-semibold"
+          @change="saveRole"
+        >
+          <option value="driver">Haydovchi</option>
+          <option value="subadmin">Subadmin</option>
+          <option value="admin">Admin</option>
+        </select>
+        <p v-if="roleMsg" class="text-[11px] font-bold text-emerald-500">{{ roleMsg }}</p>
+      </section>
+
       <!-- Asosiy amallar -->
       <section class="grid grid-cols-1 gap-2">
         <button
@@ -304,6 +321,8 @@ import type { DriverRow } from '~/stores/driver.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { isTariffActive, isTariffValid } from '~/utils/tariffActive'
+import { isAdminUser } from '~/utils/userRole'
+import { useAuthStore } from '~/stores/auth.store'
 
 definePageMeta({ layout: 'admin' })
 
@@ -311,6 +330,8 @@ const route = useRoute()
 const router = useRouter()
 const store = useDriverStore()
 const tariffStore = useTariffStore()
+const authStore = useAuthStore()
+const isMainAdmin = computed(() => isAdminUser(authStore.user))
 
 const userId = computed(() => decodeURIComponent(String(route.params.userId || '')).trim())
 const payApiPath = computed(() =>
@@ -330,6 +351,8 @@ const tariffOpen = ref(false)
 const limitOpen = ref(false)
 const blockOpen = ref(false)
 const deleteOpen = ref(false)
+const selectedRole = ref<'admin' | 'subadmin' | 'driver'>('driver')
+const roleMsg = ref('')
 
 const { avatarUrl } = useMediaUrl()
 const avatarBroken = ref(false)
@@ -401,12 +424,33 @@ const load = async () => {
   try {
     // Bitta haydovchi — to'liq maydonlar (tariffExpireAt, startedAt)
     const res = await useApi(`/drivers/${encodeURIComponent(userId.value)}`)
-    if (res?.success) driver.value = res.data
+    if (res?.success) {
+      driver.value = res.data
+      selectedRole.value = (res.data?.role as 'admin' | 'subadmin' | 'driver') || 'driver'
+    }
     else error.value = res?.message || 'Haydovchi topilmadi'
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ma\'lumot yuklanmadi'
   } finally {
     loading.value = false
+  }
+}
+
+const saveRole = async () => {
+  if (!driver.value || !isMainAdmin.value) return
+  roleMsg.value = ''
+  try {
+    const res = await useApi(`/drivers/${encodeURIComponent(driver.value.id)}/role`, {
+      method: 'PATCH',
+      body: { role: selectedRole.value },
+    })
+    if (!res?.success) throw new Error(res?.message || 'Xato')
+    roleMsg.value = 'Rol yangilandi'
+    if (selectedRole.value !== 'driver') {
+      await navigateTo('/admin/drivers')
+    }
+  } catch (e: any) {
+    roleMsg.value = e?.response?.data?.message || e?.message || 'Rol o\'zgartirilmadi'
   }
 }
 
