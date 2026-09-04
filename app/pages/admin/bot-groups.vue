@@ -9,6 +9,9 @@
       :editing-has-token="editingHasToken"
       :editing-token-masked="editingTokenMasked"
       :listener-candidates="store.listenerCandidates"
+      :show-listener-select="showListenerSelect"
+      :show-private-section="showPrivateSection"
+      :token-usage="tokenUsage"
       :tariffs="tariffStore.tariffs"
       :saving="store.isSaving"
       @submit="onSubmit"
@@ -65,11 +68,59 @@ import type { BotGroupFormModel } from '~/components/admin/bot-groups/CreateForm
 import type { BotGroupRow, BotRegionCard } from '~/stores/bot-group.store'
 import { useBotGroupStore } from '~/stores/bot-group.store'
 import { useTariffStore } from '~/stores/tariff.store'
+import { useAuthStore } from '~/stores/auth.store'
+import { isAdminUser, isSubadminRole } from '~/utils/userRole'
 
 definePageMeta({ layout: 'admin' })
 
 const store = useBotGroupStore()
 const tariffStore = useTariffStore()
+const authStore = useAuthStore()
+
+const isSubadmin = computed(() => isSubadminRole(authStore.user?.role))
+const isMainAdmin = computed(() => isAdminUser(authStore.user))
+const showListenerSelect = computed(() =>
+  isMainAdmin.value || (isSubadmin.value && store.listenerCandidates.length > 0)
+)
+
+const tokenUsage = ref<{
+  publicCount: number
+  privateCount: number
+  hasPrivate: boolean
+  canAddPublic: boolean
+  maxPublic: number
+  maxPrivate: number
+} | null>(null)
+
+const showPrivateSection = computed(() => {
+  if (editingSlug.value) return true
+  if (!form.value.botToken.trim()) return true
+  return !tokenUsage.value?.hasPrivate
+})
+
+const fetchTokenUsage = async () => {
+  const token = form.value.botToken.trim()
+  if (!token) {
+    tokenUsage.value = null
+    return
+  }
+  try {
+    const res = await useApi('/bot-groups/token-usage', {
+      params: {
+        botToken: token,
+        excludeRegionSlug: editingSlug.value || undefined,
+      },
+    })
+    if (res?.success) tokenUsage.value = res.data
+  } catch {
+    tokenUsage.value = null
+  }
+}
+
+watch(
+  () => form.value.botToken,
+  () => { void fetchTokenUsage() },
+)
 
 const emptyForm = (): BotGroupFormModel => ({
   regionSlug: '',
@@ -78,6 +129,8 @@ const emptyForm = (): BotGroupFormModel => ({
   tariffIds: [],
   botToken: '',
   active: true,
+  postOrdersToPublic: true,
+  groupInviteRewardAmount: 500,
   public: { username: '' },
   private: { inviteLink: '' },
 })
@@ -122,6 +175,8 @@ const onSubmit = async () => {
     tariffIds: form.value.tariffIds,
     botToken: form.value.botToken.trim() || undefined,
     active: form.value.active,
+    postOrdersToPublic: form.value.postOrdersToPublic,
+    groupInviteRewardAmount: form.value.groupInviteRewardAmount,
     public: {
       username: form.value.public.username.trim(),
     },
@@ -138,8 +193,14 @@ const onSubmit = async () => {
         error.value = 'Bot token kiriting'
         return
       }
-      if (!payload.private.inviteLink) {
+      if (!showPrivateSection.value && !payload.private.inviteLink) {
+        // shared private — invite shart emas
+      } else if (showPrivateSection.value && !payload.private.inviteLink) {
         error.value = 'Private guruh invite link kiriting'
+        return
+      }
+      if (tokenUsage.value && !tokenUsage.value.canAddPublic) {
+        error.value = `Bu bot uchun maksimum ${tokenUsage.value.maxPublic} ta public guruh`
         return
       }
       await store.createRegion(payload as any)
@@ -162,6 +223,8 @@ const startEdit = (card: BotRegionCard) => {
     tariffIds: [...(card.tariffIds || [])],
     botToken: '',
     active: card.active,
+    postOrdersToPublic: card.postOrdersToPublic !== false,
+    groupInviteRewardAmount: card.groupInviteRewardAmount ?? 500,
     public: {
       username: card.public?.username || '',
     },

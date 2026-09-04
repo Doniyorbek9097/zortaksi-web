@@ -29,6 +29,7 @@ export interface DriverRow {
     expireDays?: number
   } | null
   role?: string
+  allowedListenerUserIds?: string[]
 }
 
 export const useDriverStore = defineStore('driver', () => {

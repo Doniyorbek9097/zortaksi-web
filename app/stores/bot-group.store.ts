@@ -22,6 +22,8 @@ export interface BotGroupRow {
   botIsAdmin?: boolean
   lastPostAt?: string
   lastError?: string
+  postOrdersToPublic?: boolean
+  groupInviteRewardAmount?: number
 }
 
 export interface BotRegionCard {
@@ -31,6 +33,8 @@ export interface BotRegionCard {
   listenerUserId: string
   tariffIds: string[]
   active: boolean
+  postOrdersToPublic?: boolean
+  groupInviteRewardAmount?: number
   public?: BotGroupRow
   private?: BotGroupRow
 }
@@ -58,6 +62,8 @@ export type BotRegionPayload = {
   active?: boolean
   /** Bitta bot — public va private guruhlar uchun */
   botToken?: string
+  postOrdersToPublic?: boolean
+  groupInviteRewardAmount?: number
   public: BotRegionSidePayload
   private: BotRegionSidePayload
 }
@@ -93,6 +99,8 @@ const toRow = (g: any): BotGroupRow => ({
   botIsAdmin: g.botIsAdmin,
   lastPostAt: g.lastPostAt,
   lastError: g.lastError,
+  postOrdersToPublic: g.postOrdersToPublic !== false,
+  groupInviteRewardAmount: Number(g.groupInviteRewardAmount ?? 500),
 })
 
 function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
@@ -111,6 +119,8 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
         listenerUserId: row.listenerUserId || '',
         tariffIds: row.tariffIds || [],
         active: row.active,
+        postOrdersToPublic: row.postOrdersToPublic !== false,
+        groupInviteRewardAmount: row.groupInviteRewardAmount ?? 500,
       })
     }
     const card = map.get(slug)!
@@ -120,6 +130,10 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
     if (row.keywords?.length) card.keywords = row.keywords
     if (row.listenerUserId) card.listenerUserId = row.listenerUserId
     if (row.tariffIds?.length) card.tariffIds = row.tariffIds
+    if (row.postOrdersToPublic !== undefined) card.postOrdersToPublic = row.postOrdersToPublic !== false
+    if (row.groupInviteRewardAmount !== undefined) {
+      card.groupInviteRewardAmount = Number(row.groupInviteRewardAmount)
+    }
     card.active = card.active || row.active
   }
   return [...map.values()].sort((a, b) => a.title.localeCompare(b.title, 'uz'))
@@ -189,6 +203,8 @@ export const useBotGroupStore = defineStore('botGroup', () => {
           listenerUserId: payload.listenerUserId?.trim() || '',
           tariffIds: payload.tariffIds || [],
           active: payload.active !== false,
+          postOrdersToPublic: payload.postOrdersToPublic !== false,
+          groupInviteRewardAmount: payload.groupInviteRewardAmount ?? 500,
           botToken: payload.botToken?.trim(),
           public: {
             username: payload.public.username?.trim(),
@@ -224,6 +240,10 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         body.tariffIds = payload.tariffIds
       }
       if (payload.active !== undefined) body.active = !!payload.active
+      if (payload.postOrdersToPublic !== undefined) body.postOrdersToPublic = !!payload.postOrdersToPublic
+      if (payload.groupInviteRewardAmount !== undefined) {
+        body.groupInviteRewardAmount = Number(payload.groupInviteRewardAmount)
+      }
       if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
       if (payload.public) {
         body.public = {

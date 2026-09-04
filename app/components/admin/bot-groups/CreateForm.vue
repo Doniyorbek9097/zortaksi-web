@@ -34,7 +34,9 @@
       </p>
 
       <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-        Har bir hudud uchun slug, tinglovchi userbot, bot token, public @username va private invite link.
+        Har bir hudud uchun slug, bot token va public @username.
+        <span v-if="showPrivateSection">Birinchi hudud uchun private invite link ham kerak.</span>
+        <span v-else>Bu token uchun private allaqachon mavjud — faqat public qo'shiladi.</span>
       </p>
 
       <form class="space-y-3" @submit.prevent="onSubmit">
@@ -58,7 +60,7 @@
           @update:model-value="patch('title', $event)"
         />
 
-        <div class="space-y-1.5">
+        <div v-if="showListenerSelect" class="space-y-1.5">
           <label class="px-1 text-xs text-slate-600 dark:text-slate-300">Tinglovchi userbot</label>
           <p class="px-1 text-[10px] text-slate-400 leading-snug">
             Faqat <strong>listenGroups</strong> yoqilgan userbotlar.
@@ -80,7 +82,7 @@
             </option>
           </select>
           <p v-if="!listenerCandidates.length" class="px-1 text-[10px] font-semibold text-amber-600">
-            listenGroups yoqilgan userbot yo'q.
+            Admin sizga tinglovchi biriktirmagan.
           </p>
         </div>
 
@@ -133,8 +135,12 @@
           <p v-if="editingHasToken && editingTokenMasked" class="px-1 text-[10px] text-slate-400 font-mono">
             Joriy: {{ editingTokenMasked }}
           </p>
+          <p v-if="tokenUsage" class="px-1 text-[10px] font-semibold text-sky-600 dark:text-sky-400">
+            Bu token: {{ tokenUsage.publicCount }}/{{ tokenUsage.maxPublic }} public,
+            {{ tokenUsage.hasPrivate ? 1 : 0 }}/{{ tokenUsage.maxPrivate }} private
+          </p>
           <p class="px-1 text-[10px] text-slate-400">
-            Bitta bot ikkala guruhga ham admin bo'lishi kerak.
+            Bitta bot — 10 tagacha public va 1 ta private guruh.
           </p>
         </div>
 
@@ -150,7 +156,10 @@
           />
         </div>
 
-        <div class="rounded-xl border border-violet-200/80 dark:border-violet-900/50 bg-violet-50/60 dark:bg-violet-950/25 p-3 space-y-2">
+        <div
+          v-if="showPrivateSection"
+          class="rounded-xl border border-violet-200/80 dark:border-violet-900/50 bg-violet-50/60 dark:bg-violet-950/25 p-3 space-y-2"
+        >
           <p class="text-[11px] font-black text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
             <font-awesome-icon icon="fa-solid fa-lock" class="text-[10px]" />
             Private guruh
@@ -162,6 +171,39 @@
           />
           <p class="text-[10px] text-slate-400 px-1">
             Botni invite link orqali guruhga qo'shing va admin qiling.
+          </p>
+        </div>
+
+        <label class="flex items-center gap-2.5 px-1 py-1 cursor-pointer select-none">
+          <input
+            :checked="modelValue.postOrdersToPublic"
+            type="checkbox"
+            class="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+            @change="patch('postOrdersToPublic', ($event.target as HTMLInputElement).checked)"
+          />
+          <span class="text-[13px] font-bold text-slate-700 dark:text-slate-200">
+            Public guruhga buyurtma tashlash
+          </span>
+        </label>
+        <p class="px-1 text-[10px] text-slate-400 leading-snug -mt-1">
+          O'chirilsa — buyurtmalar faqat private guruhga yuboriladi.
+        </p>
+
+        <div class="space-y-1.5">
+          <label class="px-1 text-xs text-slate-600 dark:text-slate-300">
+            Guruhga odam qo'shganda bonus (so'm)
+          </label>
+          <input
+            :value="modelValue.groupInviteRewardAmount"
+            type="number"
+            min="0"
+            step="100"
+            placeholder="500"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-3 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-emerald-500/30"
+            @input="patch('groupInviteRewardAmount', Number(($event.target as HTMLInputElement).value || 0))"
+          />
+          <p class="px-1 text-[10px] text-slate-400 leading-snug">
+            0 bo'lsa — haydovchiga pul o'rniga minnatdorlik xabari yuboriladi.
           </p>
         </div>
 
@@ -210,6 +252,8 @@ export interface BotGroupFormModel {
   tariffIds: string[]
   botToken: string
   active: boolean
+  postOrdersToPublic: boolean
+  groupInviteRewardAmount: number
   public: { username: string }
   private: { inviteLink: string }
 }
@@ -221,6 +265,16 @@ const props = defineProps<{
   editingHasToken?: boolean
   editingTokenMasked?: string
   listenerCandidates: ListenerCandidate[]
+  showListenerSelect?: boolean
+  showPrivateSection?: boolean
+  tokenUsage?: {
+    publicCount: number
+    privateCount: number
+    hasPrivate: boolean
+    canAddPublic: boolean
+    maxPublic: number
+    maxPrivate: number
+  } | null
   tariffs: Array<{ id: string; name: string; price: number; expireDays: number }>
   saving?: boolean
 }>()
@@ -232,6 +286,9 @@ const emit = defineEmits<{
 }>()
 
 const expanded = ref(false)
+
+const showListenerSelect = computed(() => props.showListenerSelect !== false)
+const showPrivateSection = computed(() => props.showPrivateSection !== false)
 
 watch(
   () => props.editing,
