@@ -196,6 +196,15 @@ definePageMeta({
 
 const authStore = useAuthStore()
 const accountStore = useAccountStore()
+
+watch(
+  () => [authStore.sessionReady, authStore.user?.role, authStore.user?.active, authStore.user?.tariffExpireAt] as const,
+  ([ready]) => {
+    if (!ready || !import.meta.client) return
+    setPageLayout(isPanelUser(authStore.user) ? 'admin' : 'driver')
+  },
+  { immediate: true },
+)
 const { theme, toggleTheme } = useTheme()
 const { script } = useAppScript()
 
