@@ -248,8 +248,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         return navigateTo(resolveHomePath(authStore.user))
     }
 
-    // Panel user tanlangan, lekin URL driver dashboard — avval admin home (flash yo'q)
+    // Panel user tanlangan, lekin URL driver dashboard — admin home
     if (isPanelUser(authStore.user) && to.path === '/driver/dashboard') {
+        return navigateTo('/admin/dashboard')
+    }
+
+    // Panel user driver profiliga kirmasligi kerak
+    if (isPanelUser(authStore.user) && to.path === '/driver/profile') {
         return navigateTo('/admin/dashboard')
     }
 

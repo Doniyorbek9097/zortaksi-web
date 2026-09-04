@@ -141,8 +141,6 @@
         v-if="isMainAdmin && driver"
         :driver-id="driver.id"
         :role="driver.role"
-        :active="driver.active"
-        :tariff-expire-at="driver.tariffExpireAt"
         @saved="load"
       />
 

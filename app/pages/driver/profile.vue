@@ -12,7 +12,7 @@
       :active="user.active"
       :balance="user.balance"
       :tariff-name="user.tariffName"
-      :show-billing="!isAdmin"
+      :show-billing="!isPanel"
       @topup="onTopup"
       @buy="onBuyTariff"
     />
@@ -188,7 +188,7 @@
 import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import { isAdminUser, resolveHomePath } from '~/utils/userRole'
+import { isAdminUser, isPanelUser, resolveHomePath } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'driver',
@@ -201,6 +201,7 @@ const { script } = useAppScript()
 
 const isDark = computed(() => theme.value === 'dark')
 const isAdmin = computed(() => isAdminUser(authStore.user))
+const isPanel = computed(() => isPanelUser(authStore.user))
 
 // --- Current user (profile info) ---
 const user = computed(() => ({
