@@ -55,6 +55,19 @@
         </div>
       </div>
 
+      <div
+        v-if="tariffLabels"
+        class="flex items-start gap-2 text-[12px]"
+      >
+        <span class="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0 text-emerald-600">
+          <font-awesome-icon icon="fa-solid fa-tags" class="text-[11px]" />
+        </span>
+        <div class="min-w-0">
+          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Tariflar</p>
+          <p class="font-semibold text-slate-700 dark:text-slate-200 leading-snug">{{ tariffLabels }}</p>
+        </div>
+      </div>
+
       <div class="space-y-2">
         <AdminBotGroupsGroupSidePanel
           v-if="card.public"
@@ -98,6 +111,7 @@ import type { BotGroupRow, BotRegionCard } from '~/stores/bot-group.store'
 const props = defineProps<{
   card: BotRegionCard
   listenerLabel: string
+  tariffLabels?: string
   refreshingId?: string | null
 }>()
 

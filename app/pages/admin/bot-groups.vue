@@ -9,6 +9,7 @@
       :editing-has-token="editingHasToken"
       :editing-token-masked="editingTokenMasked"
       :listener-candidates="store.listenerCandidates"
+      :tariffs="tariffStore.tariffs"
       :saving="store.isSaving"
       @submit="onSubmit"
       @cancel="resetForm"
@@ -36,6 +37,7 @@
         :key="card.slug"
         :card="card"
         :listener-label="listenerLabel(card.listenerUserId)"
+        :tariff-labels="tariffLabels(card.tariffIds)"
         :refreshing-id="refreshingId"
         @edit="startEdit(card)"
         @delete="askDelete(card)"
@@ -62,15 +64,18 @@
 import type { BotGroupFormModel } from '~/components/admin/bot-groups/CreateForm.vue'
 import type { BotGroupRow, BotRegionCard } from '~/stores/bot-group.store'
 import { useBotGroupStore } from '~/stores/bot-group.store'
+import { useTariffStore } from '~/stores/tariff.store'
 
 definePageMeta({ layout: 'admin' })
 
 const store = useBotGroupStore()
+const tariffStore = useTariffStore()
 
 const emptyForm = (): BotGroupFormModel => ({
   regionSlug: '',
   title: '',
   listenerUserId: '',
+  tariffIds: [],
   botToken: '',
   active: true,
   public: { username: '' },
@@ -93,6 +98,14 @@ const listenerLabel = (userId: string) => {
   return userId
 }
 
+const tariffLabels = (ids: string[]) => {
+  if (!ids?.length) return 'Tanlanmagan'
+  const names = ids
+    .map((id) => tariffStore.tariffs.find((t) => t.id === id)?.name)
+    .filter(Boolean)
+  return names.length ? names.join(', ') : `${ids.length} ta tarif`
+}
+
 const resetForm = () => {
   form.value = emptyForm()
   editingSlug.value = null
@@ -106,6 +119,7 @@ const onSubmit = async () => {
     regionSlug: form.value.regionSlug.trim(),
     title: form.value.title.trim(),
     listenerUserId: form.value.listenerUserId.trim(),
+    tariffIds: form.value.tariffIds,
     botToken: form.value.botToken.trim() || undefined,
     active: form.value.active,
     public: {
@@ -145,6 +159,7 @@ const startEdit = (card: BotRegionCard) => {
     regionSlug: card.slug,
     title: card.title,
     listenerUserId: card.listenerUserId || '',
+    tariffIds: [...(card.tariffIds || [])],
     botToken: '',
     active: card.active,
     public: {
@@ -189,8 +204,11 @@ const confirmDelete = async () => {
 }
 
 const loadAll = async () => {
-  await store.fetchGroups()
-  await store.fetchListenerCandidates()
+  await Promise.all([
+    store.fetchGroups(),
+    store.fetchListenerCandidates(),
+    tariffStore.fetchTariffs(),
+  ])
 }
 
 onMounted(() => {

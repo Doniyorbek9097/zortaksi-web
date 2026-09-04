@@ -233,11 +233,11 @@
     </div>
 
     <!-- O'z hisob ishlamadi — proxy orqali ulanish uchun RUXSAT so'raladi -->
-    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-          {{ connReason || "O'z hisobingiz orqali bog'lanib bo'lmadi. Proksi orqali bog'lanib ko'rishga ruxsat berasizmi?" }}
+          {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?" }}
         </p>
         <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
           <button
@@ -828,12 +828,17 @@ const onPhoto = async (file: File) => {
   scrollToBottom()
 }
 
-/** O'z hisob ishlamaganda — haydovchi ruxsat berib owner (proksi) orqali ulanish */
+/** O'z hisob spam/blok — proksi orqali ulanish */
 const confirmProxyConnect = async () => {
   if (proxyConnecting.value) return
   proxyConnecting.value = true
   try {
-    await chatStore.connect(chatId.value, { viaProxy: true })
+    const res = await chatStore.connect(chatId.value, { viaProxy: true })
+    const status = res?.data?.status
+    if (status === 'ready') {
+      chatStore.connectionStatus = 'ready'
+      chatStore.connectionReason = ''
+    }
   } finally {
     proxyConnecting.value = false
   }
@@ -841,8 +846,9 @@ const confirmProxyConnect = async () => {
 
 /** Proksi orqali ulanish rad etildi */
 const dismissProxyConfirm = () => {
-  chatStore.connectionStatus = 'unreachable'
-  chatStore.connectionReason = "O'z hisobingiz orqali bog'lanib bo'lmadi. Proksi orqali ulanish rad etildi."
+  chatStore.connectionStatus = 'restricted'
+  chatStore.connectionReason =
+    "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozish rad etildi."
 }
 
 const goChats = () => navigateTo('/driver/chats')

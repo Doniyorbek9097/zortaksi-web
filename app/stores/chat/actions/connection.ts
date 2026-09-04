@@ -431,6 +431,16 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (peerTypingChatId.value === chatId) peerTypingChatId.value = null
     }
 
+    const offerSendProxy = (chatId: string, reason?: string) => {
+        const isRelevant =
+            currentChat.value?._id === chatId || activeConnectChatId === chatId
+        if (!isRelevant) return
+        connectionStatus.value = 'proxy-required'
+        connectionReason.value =
+            reason?.trim() ||
+            "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?"
+    }
+
     return {
         connect,
         ensureTelegramReady,
@@ -444,5 +454,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         onPeerPresence,
         onPeerTyping,
         clearTypingForChat,
+        offerSendProxy,
     }
 }

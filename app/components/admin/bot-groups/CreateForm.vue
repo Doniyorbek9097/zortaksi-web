@@ -84,6 +84,42 @@
           </p>
         </div>
 
+        <div class="space-y-1.5">
+          <label class="px-1 text-xs text-slate-600 dark:text-slate-300">Tariflar (bir nechta)</label>
+          <p class="px-1 text-[10px] text-slate-400 leading-snug">
+            Admin haydovchiga reply qilib <strong>/tarif</strong> yuborganda faqat shu tariflar ko'rsatiladi.
+          </p>
+          <div
+            v-if="!tariffs.length"
+            class="px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 text-[11px] font-semibold text-amber-700 dark:text-amber-300"
+          >
+            Tariflar yo'q — avval «Tariflar» bo'limida qo'shing.
+          </div>
+          <ul
+            v-else
+            class="max-h-40 overflow-y-auto rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800"
+          >
+            <li v-for="t in tariffs" :key="t.id">
+              <label
+                class="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900/50"
+              >
+                <input
+                  type="checkbox"
+                  class="w-4 h-4 rounded border-slate-300 text-rose-500 focus:ring-rose-500"
+                  :checked="modelValue.tariffIds.includes(t.id)"
+                  @change="toggleTariff(t.id, ($event.target as HTMLInputElement).checked)"
+                />
+                <span class="min-w-0 flex-1 text-[12px] font-bold text-slate-800 dark:text-slate-100 truncate">
+                  {{ t.name }}
+                </span>
+                <span class="shrink-0 text-[10px] font-semibold text-slate-400">
+                  {{ formatPrice(t.price) }}
+                </span>
+              </label>
+            </li>
+          </ul>
+        </div>
+
         <div class="space-y-1">
           <label class="px-1 text-xs text-slate-600 dark:text-slate-300">Bot token (BotFather)</label>
           <input
@@ -171,6 +207,7 @@ export interface BotGroupFormModel {
   regionSlug: string
   title: string
   listenerUserId: string
+  tariffIds: string[]
   botToken: string
   active: boolean
   public: { username: string }
@@ -184,6 +221,7 @@ const props = defineProps<{
   editingHasToken?: boolean
   editingTokenMasked?: string
   listenerCandidates: ListenerCandidate[]
+  tariffs: Array<{ id: string; name: string; price: number; expireDays: number }>
   saving?: boolean
 }>()
 
@@ -219,6 +257,16 @@ const patchPrivate = (key: 'inviteLink', value: string | number | null) => {
     private: { ...props.modelValue.private, [key]: String(value ?? '') },
   })
 }
+
+const toggleTariff = (id: string, checked: boolean) => {
+  const set = new Set(props.modelValue.tariffIds || [])
+  if (checked) set.add(id)
+  else set.delete(id)
+  patch('tariffIds', [...set])
+}
+
+const formatPrice = (n: number) =>
+  `${Math.round(Number(n || 0)).toLocaleString('ru-RU')} so'm`
 
 const onSubmit = () => {
   emit('submit')

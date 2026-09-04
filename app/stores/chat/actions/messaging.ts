@@ -30,10 +30,11 @@ export function createMessagingActions(
     deps: {
         patchChat: (chatId: string, patch: Partial<IChat>) => void
         appendMessage: (msg: IChatMessage) => void
+        onProxyRequired?: (chatId: string, reason?: string) => void
     },
 ) {
     const { messages, isSending } = refs
-    const { patchChat, appendMessage } = deps
+    const { patchChat, appendMessage, onProxyRequired } = deps
 
     /** temp→real: mahalliy blob URL ni real id ga o'tkazish (splice dan oldin) */
     const handoffMediaTemp = (
@@ -108,6 +109,9 @@ export function createMessagingActions(
                     lastMessage: lastMessagePreview(real),
                     lastMessageAt: real.date,
                 })
+                if ((real as any).proxyRequired) {
+                    onProxyRequired?.(chatId, String((real as any).error || ''))
+                }
             } else {
                 const idx = messages.value.findIndex((m) => m._id === tempId)
                 if (idx !== -1) {

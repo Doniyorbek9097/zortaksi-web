@@ -69,7 +69,11 @@ export const useChatStore = defineStore('chat', () => {
     const { patchChat, appendMessage } = createLocalStateActions(refs)
     const connection = createConnectionActions(refs)
     const list = createListActions(refs, patchChat)
-    const messaging = createMessagingActions(refs, { patchChat, appendMessage })
+    const messaging = createMessagingActions(refs, {
+        patchChat,
+        appendMessage,
+        onProxyRequired: (chatId, reason) => connection.offerSendProxy(chatId, reason),
+    })
     const socket = createSocketActions(refs, {
         appendMessage,
         handoffMediaTemp: messaging.handoffMediaTemp,

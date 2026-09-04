@@ -8,6 +8,7 @@ export interface BotGroupRow {
   inviteLink?: string
   keywords: string[]
   listenerUserId: string
+  tariffIds: string[]
   active: boolean
   hasBotToken?: boolean
   tokenMasked?: string
@@ -28,6 +29,7 @@ export interface BotRegionCard {
   title: string
   keywords: string[]
   listenerUserId: string
+  tariffIds: string[]
   active: boolean
   public?: BotGroupRow
   private?: BotGroupRow
@@ -52,6 +54,7 @@ export type BotRegionPayload = {
   regionSlug: string
   title?: string
   listenerUserId: string
+  tariffIds?: string[]
   active?: boolean
   /** Bitta bot — public va private guruhlar uchun */
   botToken?: string
@@ -76,6 +79,7 @@ const toRow = (g: any): BotGroupRow => ({
   inviteLink: g.inviteLink || '',
   keywords: Array.isArray(g.keywords) ? g.keywords : [],
   listenerUserId: readListenerId(g),
+  tariffIds: Array.isArray(g.tariffIds) ? g.tariffIds.map(String) : [],
   active: !!g.active,
   hasBotToken: !!g.hasBotToken,
   tokenMasked: g.tokenMasked || '',
@@ -105,6 +109,7 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
         title: row.title || row.telegramTitle || slug,
         keywords: row.keywords,
         listenerUserId: row.listenerUserId || '',
+        tariffIds: row.tariffIds || [],
         active: row.active,
       })
     }
@@ -114,6 +119,7 @@ function buildRegionCards(rows: BotGroupRow[]): BotRegionCard[] {
     if (row.title) card.title = row.title
     if (row.keywords?.length) card.keywords = row.keywords
     if (row.listenerUserId) card.listenerUserId = row.listenerUserId
+    if (row.tariffIds?.length) card.tariffIds = row.tariffIds
     card.active = card.active || row.active
   }
   return [...map.values()].sort((a, b) => a.title.localeCompare(b.title, 'uz'))
@@ -181,6 +187,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
           regionSlug: payload.regionSlug.trim(),
           title: payload.title?.trim() || undefined,
           listenerUserId: payload.listenerUserId?.trim() || '',
+          tariffIds: payload.tariffIds || [],
           active: payload.active !== false,
           botToken: payload.botToken?.trim(),
           public: {
@@ -212,6 +219,9 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       if (payload.title !== undefined) body.title = payload.title?.trim() || ''
       if (payload.listenerUserId !== undefined) {
         body.listenerUserId = String(payload.listenerUserId || '').trim()
+      }
+      if (payload.tariffIds !== undefined) {
+        body.tariffIds = payload.tariffIds
       }
       if (payload.active !== undefined) body.active = !!payload.active
       if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()

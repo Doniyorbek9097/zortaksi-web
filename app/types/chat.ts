@@ -59,6 +59,8 @@ export interface IChatMessage {
     status: ChatMessageStatus
     /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok va h.k.) */
     error?: string
+    /** O'z hisob spam/blok — proksi ruxsati kerak */
+    proxyRequired?: boolean
     tgMessageId?: number
     mediaPath?: string
     mimeType?: string
