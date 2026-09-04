@@ -38,10 +38,11 @@
 
               <p class="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed px-0.5">
                 <template v-if="groups.telegramSessionOk === false">
+                  Telegramda ko'k rangdagi havolani bosing va guruhlarga qo'shiling.
                   Public guruhda e'lon bering, private guruhdan buyurtmalar oling.
                 </template>
                 <template v-else>
-                  Hudud guruhingiz tayyor. E'lon va buyurtmalar uchun quyidagi guruhlarga qo'shiling.
+                  Guruhlarga qo'shilish uchun ko'k rangdagi havolani bosing yoki quyidagi tugmalardan foydalaning.
                 </template>
               </p>
 
@@ -60,7 +61,7 @@
                       {{ groups.public.title }}
                     </p>
                     <p class="text-[11px] font-bold text-sky-700 dark:text-sky-300 mt-1">
-                      {{ groups.public.title }} guruhiga qo'shiling
+                      Ko'k havolani bosing — {{ groups.public.title }} guruhiga qo'shiling
                     </p>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {{ groups.public.hint }}
@@ -89,7 +90,7 @@
                   {{ groups.private.title }}
                 </p>
                 <p class="text-[11px] font-bold text-violet-700 dark:text-violet-300 mt-1">
-                  {{ groups.private.title }} guruhiga qo'shiling
+                  Ko'k havolani bosing — {{ groups.private.title }} guruhiga qo'shiling
                 </p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {{ groups.private.hint }}
