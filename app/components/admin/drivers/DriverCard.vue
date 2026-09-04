@@ -50,12 +50,6 @@
         </p>
         <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span
-            v-if="role === 'subadmin'"
-            class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-blue-500/15 text-blue-600 dark:text-blue-400"
-          >
-            Subadmin
-          </span>
-          <span
             class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black"
             :class="active
               ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'

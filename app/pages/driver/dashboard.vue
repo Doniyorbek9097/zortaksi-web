@@ -21,16 +21,8 @@
     <!-- Balance -->
     <DashboardBalanceCard :balance="balance" :active="tariffActive" @buy="onBuyTariff" />
 
-    <!-- Per-region subscriptions -->
-    <DashboardRegionSubscriptionsList
-      v-if="showRegionSubscriptions"
-      :subscriptions="regionSubscriptions"
-      @buy="onBuyRegionTariff"
-    />
-
-    <!-- Legacy global tariff -->
+    <!-- Tarif -->
     <DashboardTariffCard
-      v-if="showLegacyTariff"
       :name="tariff.name"
       :info="tariff.info"
       :price="tariff.price"
@@ -82,14 +74,6 @@ const authStore = useAuthStore()
 const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
-const perRegionBilling = computed(() => !!authStore.user?.perRegionBilling)
-const regionSubscriptions = computed(() => authStore.user?.regionSubscriptions ?? [])
-const showRegionSubscriptions = computed(
-  () => regionSubscriptions.value.length > 0,
-)
-const showLegacyTariff = computed(
-  () => !perRegionBilling.value && regionSubscriptions.value.length === 0,
-)
 
 // --- Greeting based on hour ---
 const greeting = computed(() => {
@@ -267,16 +251,6 @@ const onBonus = () => {
 
 const onBuyTariff = () => {
   navigateTo('/driver/payment')
-}
-
-const onBuyRegionTariff = (sub: { scopeUserId: string; regionSlug: string }) => {
-  navigateTo({
-    path: '/driver/payment',
-    query: {
-      scopeUserId: sub.scopeUserId,
-      regionSlug: sub.regionSlug,
-    },
-  })
 }
 
 usePullToRefresh(async () => {

@@ -69,7 +69,7 @@ import type { BotGroupRow, BotRegionCard } from '~/stores/bot-group.store'
 import { useBotGroupStore } from '~/stores/bot-group.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { isAdminUser, isSubadminRole } from '~/utils/userRole'
+import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({ layout: 'admin' })
 
@@ -77,11 +77,8 @@ const store = useBotGroupStore()
 const tariffStore = useTariffStore()
 const authStore = useAuthStore()
 
-const isSubadmin = computed(() => isSubadminRole(authStore.user?.role))
 const isMainAdmin = computed(() => isAdminUser(authStore.user))
-const showListenerSelect = computed(() =>
-  isMainAdmin.value || (isSubadmin.value && store.listenerCandidates.length > 0)
-)
+const showListenerSelect = computed(() => isMainAdmin.value)
 
 const tokenUsage = ref<{
   publicCount: number

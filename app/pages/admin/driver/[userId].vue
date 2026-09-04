@@ -137,20 +137,6 @@
         </div>
       </section>
 
-      <AdminDriversRolePanel
-        v-if="isMainAdmin && driver"
-        :driver-id="driver.id"
-        :role="driver.role"
-        @saved="load"
-      />
-
-      <AdminDriversAllowedListenersPanel
-        v-if="isMainAdmin && driver?.role === 'subadmin'"
-        :driver-id="driver.id"
-        :allowed-ids="driver.allowedListenerUserIds"
-        @saved="load"
-      />
-
       <!-- Asosiy amallar -->
       <section class="grid grid-cols-1 gap-2">
         <button

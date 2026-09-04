@@ -13,10 +13,6 @@
       </p>
     </div>
 
-    <p v-if="subadminInactive" class="mx-1 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-[12px] font-bold text-amber-700 dark:text-amber-400">
-      Subadmin limiti tugagan yoki faol emas. Admin sizga limit/tarif berishi kerak.
-    </p>
-
     <AdminIncomeCard
       :amount="monthIncome.amount"
       :payments="monthIncome.payments"
@@ -206,7 +202,7 @@ import { useReferralStore } from '~/stores/referral.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import { isAdminUser, isPanelUser } from '~/utils/userRole'
+import { isAdminUser } from '~/utils/userRole'
 
 definePageMeta({
   layout: 'admin',
@@ -216,8 +212,6 @@ const referralStore = useReferralStore()
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
 const isMainAdmin = computed(() => isAdminUser(authStore.user))
-const isSubadmin = computed(() => authStore.user?.role === 'subadmin')
-const subadminInactive = computed(() => isSubadmin.value && !isPanelUser(authStore.user))
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
 
@@ -246,9 +240,6 @@ const navItems = computed(() => {
   ]
   if (isMainAdmin.value) {
     items.splice(3, 0, { title: 'Bannerlar', icon: 'fa-solid fa-image', tone: 'blue' as const, to: '/admin/banners' })
-  }
-  if (isSubadmin.value) {
-    items.push({ title: "To'lov kartalari", icon: 'fa-solid fa-credit-card', tone: 'blue' as const, to: '/admin/payment-cards' })
   }
   return items
 })

@@ -42,9 +42,6 @@ export const useAuthStore = defineStore('auth', () => {
         liveNowMs.value
         const u = user.value
         if (!u) return false
-        if (u.perRegionBilling && Array.isArray(u.regionSubscriptions) && u.regionSubscriptions.length) {
-            return u.regionSubscriptions.some((s) => s.subscriptionActive)
-        }
         return isTariffActive(u)
     })
 
