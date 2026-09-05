@@ -7,16 +7,16 @@
       </h1>
 
       <button
-        v-if="actionButton !== 'none' && showAction"
+        v-if="actionButton !== 'none'"
         type="button"
         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all shadow-sm shrink-0 border"
-        :class="actionButton === 'download'
+        :class="effectiveAction === 'download'
           ? 'bg-sky-500/10 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400'
           : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-amber-500'"
         @click="onAction"
       >
-        <font-awesome-icon :icon="actionButton === 'download' ? 'fa-solid fa-download' : 'fa-solid fa-gift'" />
-        {{ actionButton === 'download' ? 'Yuklab olish' : 'Bonus' }}
+        <font-awesome-icon :icon="effectiveAction === 'download' ? 'fa-solid fa-download' : 'fa-solid fa-gift'" />
+        {{ effectiveAction === 'download' ? 'Yuklab olish' : 'Bonus' }}
       </button>
     </div>
   </header>
@@ -33,13 +33,16 @@ const props = withDefaults(
 const emit = defineEmits<{ bonus: []; download: [] }>()
 const { showDownloadButton } = useApkDownload()
 
-const showAction = computed(() => {
-  if (props.actionButton === 'download') return showDownloadButton.value
-  return true
+const effectiveAction = computed<'download' | 'bonus'>(() => {
+  if (props.actionButton === 'download') {
+    return showDownloadButton.value ? 'download' : 'bonus'
+  }
+  if (props.actionButton === 'bonus') return 'bonus'
+  return 'bonus'
 })
 
 function onAction() {
-  if (props.actionButton === 'download') emit('download')
-  else if (props.actionButton === 'bonus') emit('bonus')
+  if (effectiveAction.value === 'download') emit('download')
+  else emit('bonus')
 }
 </script>
