@@ -73,6 +73,9 @@ import {
   faReply,
   faWifi,
   faServer,
+  faDownload,
+  faMobileScreen,
+  faListOl,
 } from '@fortawesome/free-solid-svg-icons'
 
 config.autoAddCss = false
@@ -150,6 +153,9 @@ library.add(
   faReply,
   faWifi,
   faServer,
+  faDownload,
+  faMobileScreen,
+  faListOl,
 )
 
 export default defineNuxtPlugin((nuxtApp) => {

@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28">
-    <AdminHeader />
+    <AdminHeader action-button="none" />
     <BaseEmptyState
       icon="fa-solid fa-image"
       title="Reklama bannerlari"

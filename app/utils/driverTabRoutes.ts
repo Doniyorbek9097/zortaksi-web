@@ -51,6 +51,7 @@ export function driverTabSection(path: string): DriverMainTab | null {
   if (
     p.startsWith('/driver/payment') ||
     p.startsWith('/driver/bonus') ||
+    p.startsWith('/driver/download-app') ||
     p.startsWith('/driver/topup') ||
     p.startsWith('/driver/accounts')
   ) {

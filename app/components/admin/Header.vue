@@ -6,17 +6,36 @@
         <span class="text-slate-900 dark:text-white"> Taksi</span>
       </h1>
       <button
+        v-if="actionButton !== 'none'"
         type="button"
-        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-black text-amber-600 dark:text-amber-400 bg-amber-500/10 active:scale-95 transition-transform shrink-0"
-        @click="$emit('bonus')"
+        class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-black active:scale-95 transition-transform shrink-0"
+        :class="actionButton === 'download'
+          ? 'text-sky-600 dark:text-sky-400 bg-sky-500/10'
+          : 'text-amber-600 dark:text-amber-400 bg-amber-500/10'"
+        @click="onAction"
       >
-        <font-awesome-icon icon="fa-solid fa-gift" class="text-xs" />
-        Bonus
+        <font-awesome-icon
+          :icon="actionButton === 'download' ? 'fa-solid fa-download' : 'fa-solid fa-gift'"
+          class="text-xs"
+        />
+        {{ actionButton === 'download' ? 'Yuklab olish' : 'Bonus' }}
       </button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-defineEmits<{ bonus: [] }>()
+const props = withDefaults(
+  defineProps<{
+    actionButton?: 'download' | 'bonus' | 'none'
+  }>(),
+  { actionButton: 'bonus' }
+)
+
+const emit = defineEmits<{ bonus: []; download: [] }>()
+
+function onAction() {
+  if (props.actionButton === 'download') emit('download')
+  else if (props.actionButton === 'bonus') emit('bonus')
+}
 </script>

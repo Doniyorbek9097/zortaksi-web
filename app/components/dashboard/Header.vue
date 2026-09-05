@@ -7,17 +7,33 @@
       </h1>
 
       <button
+        v-if="actionButton !== 'none'"
         type="button"
-        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-500 active:scale-95 transition-all shadow-sm shrink-0"
-        @click="$emit('bonus')"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all shadow-sm shrink-0 border"
+        :class="actionButton === 'download'
+          ? 'bg-sky-500/10 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400'
+          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-amber-500'"
+        @click="onAction"
       >
-        <font-awesome-icon icon="fa-solid fa-gift" />
-        Bonus
+        <font-awesome-icon :icon="actionButton === 'download' ? 'fa-solid fa-download' : 'fa-solid fa-gift'" />
+        {{ actionButton === 'download' ? 'Yuklab olish' : 'Bonus' }}
       </button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
-defineEmits<{ bonus: [] }>()
+const props = withDefaults(
+  defineProps<{
+    actionButton?: 'download' | 'bonus' | 'none'
+  }>(),
+  { actionButton: 'bonus' }
+)
+
+const emit = defineEmits<{ bonus: []; download: [] }>()
+
+function onAction() {
+  if (props.actionButton === 'download') emit('download')
+  else if (props.actionButton === 'bonus') emit('bonus')
+}
 </script>

@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
-    <AdminHeader @bonus="onBonus" />
+    <AdminHeader action-button="download" @download="onDownloadApp" />
 
     <div class="flex items-center gap-2 px-1">
       <font-awesome-icon
@@ -367,7 +367,7 @@ const incomeDailyItems = computed(() => {
 
 const referrals = computed(() => referralStore.leaderboard)
 
-const onBonus = () => navigateTo('/admin/bonus')
+const onDownloadApp = () => navigateTo('/admin/download-app')
 
 usePullToRefresh(async () => {
   await Promise.all([

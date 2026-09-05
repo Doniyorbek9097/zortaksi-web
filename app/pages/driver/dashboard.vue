@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-5">
     <!-- Header -->
-    <DashboardHeader @bonus="onBonus" />
+    <DashboardHeader action-button="download" @download="onDownloadApp" />
 
     <!-- Caption — header emas, sahifa ichida -->
     <div class="flex items-center gap-2 -mt-1 px-0.5">
@@ -245,8 +245,8 @@ const fetchPlatformStats = async (opts?: { background?: boolean }) => {
 }
 
 // --- Actions ---
-const onBonus = () => {
-  navigateTo('/driver/bonus')
+const onDownloadApp = () => {
+  navigateTo('/driver/download-app')
 }
 
 const onBuyTariff = () => {
