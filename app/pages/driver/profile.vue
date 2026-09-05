@@ -205,10 +205,10 @@ watch(
   },
   { immediate: true },
 )
-const { theme, toggleTheme } = useTheme()
+const { effectiveTheme, toggleTheme } = useTheme()
 const { script } = useAppScript()
 
-const isDark = computed(() => theme.value === 'dark')
+const isDark = computed(() => effectiveTheme.value === 'dark')
 const isAdmin = computed(() => isAdminUser(authStore.user))
 const isPanel = computed(() => isPanelUser(authStore.user))
 

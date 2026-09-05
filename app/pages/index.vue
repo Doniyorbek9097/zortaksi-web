@@ -21,10 +21,10 @@
                bg-neutral-100 border border-neutral-200 hover:scale-105 hover:border-emerald-500
                dark:bg-neutral-900 dark:border-neutral-800 dark:hover:border-emerald-400
                transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500 focus-visible:outline-offset-2"
-        :aria-label="theme === 'dark' ? 'Yorug\' rejimga o\'tish' : 'Qorong\'i rejimga o\'tish'"
+        :aria-label="effectiveTheme === 'dark' ? 'Yorug\' rejimga o\'tish' : 'Qorong\'i rejimga o\'tish'"
         @click="toggleTheme"
       >
-        {{ theme === 'dark' ? '☀️' : '🌙' }}
+        {{ effectiveTheme === 'dark' ? '☀️' : '🌙' }}
       </button>
   
       <!-- Hero -->
@@ -206,7 +206,7 @@
     return authStore.sessionReady
   })
 
-  const { theme, toggleTheme } = useTheme();
+  const { effectiveTheme, toggleTheme } = useTheme();
   
   const features = [
     {

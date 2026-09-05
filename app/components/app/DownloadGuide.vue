@@ -40,6 +40,27 @@
       </div>
     </section>
 
+    <section
+      class="rounded-2xl p-4 border border-rose-300/80 dark:border-rose-800/50 bg-rose-50 dark:bg-rose-950/30"
+    >
+      <p class="text-[12px] font-black text-rose-900 dark:text-rose-100 flex items-start gap-2 leading-relaxed">
+        <font-awesome-icon
+          icon="fa-solid fa-circle-exclamation"
+          class="mt-0.5 shrink-0 text-rose-600 dark:text-rose-400"
+        />
+        <span>
+          <strong>Firibgarlardan ehtiyot bo'ling!</strong>
+          Agar birov Telegramda ilova (APK) yuborsa — <strong>yuklab olmang</strong>.
+          Soxta fayllar orqali akkauntingiz yoki pulingiz xavf ostida bo'lishi mumkin.
+        </span>
+      </p>
+      <p class="mt-2.5 text-[12px] font-bold text-rose-800 dark:text-rose-200 leading-relaxed pl-7">
+        Ilovani faqat rasmiy saytlardan yuklab oling:
+        <span class="block mt-1 font-black text-rose-700 dark:text-rose-300">zortaxi.uz</span>
+        <span class="block font-black text-rose-700 dark:text-rose-300">zortaksi.uz</span>
+      </p>
+    </section>
+
     <section class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
       <h2 class="text-[13px] font-black text-slate-900 dark:text-white flex items-center gap-2">
         <font-awesome-icon icon="fa-solid fa-list-ol" class="text-sky-500 text-sm" />
@@ -68,7 +89,7 @@
         <font-awesome-icon icon="fa-solid fa-shield-alt" class="mt-0.5 shrink-0 text-amber-600 dark:text-amber-400" />
         <span>
           Telefon «Bu ilova xavfsiz emas» deb ogohlantirishi mumkin — Play Marketdan o'rnatilmagani uchun.
-          Bu normal holat. Fayl rasmiy <strong>ZorTaksi.Uz</strong> saytidan yuklanadi.
+          Bu normal holat. Faylni faqat <strong>zortaxi.uz</strong> yoki <strong>zortaksi.uz</strong> saytidan yuklang.
         </span>
       </p>
     </section>

@@ -19,21 +19,20 @@
 <script setup lang="ts">
 import { THEME_CHROME, applyBrowserChrome } from '~/composables/useTheme'
 
-const { theme, initTheme } = useTheme()
+const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
 const { open, iosHint, manualHint, install, remindLater } = usePwaInstall()
 
 const chromeColor = computed(() =>
-  theme.value === 'light' ? THEME_CHROME.light : THEME_CHROME.dark,
+  effectiveTheme.value === 'light' ? THEME_CHROME.light : THEME_CHROME.dark,
 )
 
 useHead({
   htmlAttrs: {
-    class: computed(() => (theme.value === 'dark' ? 'dark' : '')),
+    class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
-    // `only` — OS dark bo'lsa ham app light da pastki system nav bar ochiq qoladi
     style: computed(() => {
-      const scheme = theme.value === 'light' ? 'only light' : 'only dark'
+      const scheme = effectiveTheme.value === 'light' ? 'only light' : 'only dark'
       return `color-scheme: ${scheme}; background-color: ${chromeColor.value}`
     }),
   },
@@ -42,24 +41,21 @@ useHead({
   },
 })
 
-// theme-color meta faqat applyBrowserChrome orqali (media query + unconditional)
-
 watch(
-  theme,
+  effectiveTheme,
   (value) => {
-    applyBrowserChrome(value === 'light' ? 'light' : 'dark')
+    applyBrowserChrome(value)
   },
   { flush: 'post' },
 )
 
 onMounted(() => {
   initTheme()
-  // PWA standalone: Nuxt head / manifest dan keyin qayta sync
   requestAnimationFrame(() => {
-    applyBrowserChrome(theme.value === 'light' ? 'light' : 'dark')
+    applyBrowserChrome(effectiveTheme.value)
   })
   setTimeout(() => {
-    applyBrowserChrome(theme.value === 'light' ? 'light' : 'dark')
+    applyBrowserChrome(effectiveTheme.value)
   }, 100)
 })
 </script>

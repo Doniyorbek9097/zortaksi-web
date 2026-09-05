@@ -4,29 +4,10 @@
  * Aks holda katta env() (50–100px+) tabbar ostida bo'shliq ochadi.
  */
 
+import { isFlutterWebView } from '~/utils/appEmbed'
+
 const MAX_TOP = 28
 const MAX_BOTTOM = 34
-
-function isFlutterWebView(): boolean {
-  if (!import.meta.client) return false
-  const w = window as Window & {
-    flutter_inappwebview?: unknown
-    FlutterWebView?: unknown
-    flutterBytedanceWebView?: unknown
-  }
-  if (w.flutter_inappwebview != null || w.FlutterWebView != null) return true
-  const ua = navigator.userAgent || ''
-  // Flutter WebView / InAppWebView odatda "Flutter" yozadi
-  if (/Flutter/i.test(ua)) return true
-  // Ilova ?embed=flutter yoki localStorage orqali belgilashi mumkin
-  try {
-    if (new URLSearchParams(location.search).get('embed') === 'flutter') return true
-    if (localStorage.getItem('zt-embed') === 'flutter') return true
-  } catch {
-    /* */
-  }
-  return false
-}
 
 /** Android system WebView (Chrome Custom Tab emas) */
 function isAndroidSystemWebView(): boolean {

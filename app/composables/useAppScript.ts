@@ -2,11 +2,11 @@ import type { ScriptType } from '~/components/profile/ScriptToggle.vue'
 
 /**
  * Ilova yozuvi: Lotin / Kirill.
- * Birinchi kirishda default — Kirill.
+ * Birinchi kirishda default — Lotin.
  */
 export function useAppScript() {
   const script = useCookie<ScriptType>('zt-script', {
-    default: () => 'cyrillic',
+    default: () => 'latin',
     maxAge: 60 * 60 * 24 * 365,
     path: '/',
     sameSite: 'lax',

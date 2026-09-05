@@ -5,10 +5,18 @@
 </template>
 
 <script setup lang="ts">
+import { shouldShowApkDownload } from '~/utils/appEmbed'
+
 definePageMeta({ layout: 'admin' })
 
 useSeoMeta({
   title: "Ilovani yuklab olish — Zo'r Taksi",
   description: 'ZorTaksi Android ilovasini yuklab olish va o\'rnatish bo\'yicha qo\'llanma.',
+})
+
+onMounted(() => {
+  if (!shouldShowApkDownload()) {
+    void navigateTo('/admin/dashboard', { replace: true })
+  }
 })
 </script>

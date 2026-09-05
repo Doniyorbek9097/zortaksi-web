@@ -6,7 +6,7 @@
         <span class="text-slate-900 dark:text-white"> Taksi</span>
       </h1>
       <button
-        v-if="actionButton !== 'none'"
+        v-if="actionButton !== 'none' && showAction"
         type="button"
         class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-black active:scale-95 transition-transform shrink-0"
         :class="actionButton === 'download'
@@ -33,6 +33,12 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{ bonus: []; download: [] }>()
+const { showDownloadButton } = useApkDownload()
+
+const showAction = computed(() => {
+  if (props.actionButton === 'download') return showDownloadButton.value
+  return true
+})
 
 function onAction() {
   if (props.actionButton === 'download') emit('download')
