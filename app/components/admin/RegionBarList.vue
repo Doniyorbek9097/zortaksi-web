@@ -5,17 +5,18 @@
       :key="item.slug || item.title"
       class="space-y-1"
     >
-      <div class="flex items-center justify-between gap-2 text-[12px]">
-        <span class="font-semibold text-slate-700 dark:text-slate-300 min-w-0 leading-snug">
+      <div class="text-[12px]">
+        <p class="font-semibold text-slate-700 dark:text-slate-300 leading-snug">
           <span v-if="idx < 3" class="font-black text-slate-400 mr-1">{{ idx + 1 }}.</span>
           {{ item.title }}
-        </span>
-        <span class="font-black text-slate-900 dark:text-white shrink-0 tabular-nums text-[11px] text-right">
+        </p>
+        <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-bold tabular-nums">
           <span class="text-emerald-600 dark:text-emerald-400">{{ formatMoney(item.income) }} so'm</span>
-          <span class="text-slate-400 font-semibold mx-1">·</span>
-          {{ item.count.toLocaleString('ru-RU') }}
-          <span class="text-sky-600 dark:text-sky-400 font-bold"> · {{ item.active }} faol</span>
-        </span>
+          <span class="text-slate-300 dark:text-slate-600">·</span>
+          <span class="text-slate-600 dark:text-slate-400">{{ item.count.toLocaleString('ru-RU') }} a'zo</span>
+          <span class="text-slate-300 dark:text-slate-600">·</span>
+          <span class="text-sky-600 dark:text-sky-400">{{ item.active.toLocaleString('ru-RU') }} faol</span>
+        </p>
       </div>
       <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
         <div
