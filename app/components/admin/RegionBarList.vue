@@ -5,17 +5,20 @@
       :key="item.slug || item.title"
       class="space-y-1"
     >
-      <div class="text-[12px]">
-        <p class="font-semibold text-slate-700 dark:text-slate-300 leading-snug">
-          <span v-if="idx < 3" class="font-black text-slate-400 mr-1">{{ idx + 1 }}.</span>
-          {{ item.title }}
-        </p>
-        <p class="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-bold tabular-nums">
-          <span class="text-emerald-600 dark:text-emerald-400">{{ formatMoney(item.income) }} so'm</span>
-          <span class="text-slate-300 dark:text-slate-600">·</span>
-          <span class="text-slate-600 dark:text-slate-400">{{ item.count.toLocaleString('ru-RU') }} a'zo</span>
-          <span class="text-slate-300 dark:text-slate-600">·</span>
-          <span class="text-sky-600 dark:text-sky-400">{{ item.active.toLocaleString('ru-RU') }} faol</span>
+      <div class="text-[12px] space-y-0.5">
+        <div class="flex items-start justify-between gap-3">
+          <p class="font-semibold text-slate-700 dark:text-slate-300 leading-snug min-w-0">
+            <span v-if="idx < 3" class="font-black text-slate-400 mr-1">{{ idx + 1 }}.</span>
+            {{ item.title }}
+          </p>
+          <p class="shrink-0 text-[11px] font-bold tabular-nums text-right leading-snug">
+            <span class="text-slate-600 dark:text-slate-400">{{ item.count.toLocaleString('ru-RU') }} a'zo</span>
+            <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
+            <span class="text-sky-600 dark:text-sky-400">{{ item.active.toLocaleString('ru-RU') }} faol</span>
+          </p>
+        </div>
+        <p class="text-right text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">
+          {{ formatMoney(item.income) }} so'm
         </p>
       </div>
       <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
