@@ -10,9 +10,11 @@
           <span v-if="idx < 3" class="font-black text-slate-400 mr-1">{{ idx + 1 }}.</span>
           {{ item.title }}
         </span>
-        <span class="font-black text-slate-900 dark:text-white shrink-0 tabular-nums text-[11px]">
+        <span class="font-black text-slate-900 dark:text-white shrink-0 tabular-nums text-[11px] text-right">
+          <span class="text-emerald-600 dark:text-emerald-400">{{ formatMoney(item.income) }} so'm</span>
+          <span class="text-slate-400 font-semibold mx-1">·</span>
           {{ item.count.toLocaleString('ru-RU') }}
-          <span class="text-emerald-600 font-bold">· {{ item.active }} faol</span>
+          <span class="text-sky-600 dark:text-sky-400 font-bold"> · {{ item.active }} faol</span>
         </span>
       </div>
       <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -38,9 +40,13 @@ interface RegionItem {
   title: string
   count: number
   active: number
+  income?: number
+  incomePayments?: number
 }
 
 const props = defineProps<{ items: RegionItem[] }>()
+
+const formatMoney = (n?: number) => (Number(n) || 0).toLocaleString('ru-RU')
 
 const maxCount = computed(() =>
   Math.max(...props.items.map((i) => i.count), 1)

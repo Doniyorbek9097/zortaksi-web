@@ -24,6 +24,8 @@ export interface RegionDriverStat {
   title: string
   count: number
   active: number
+  income?: number
+  incomePayments?: number
 }
 
 export interface TariffStatItem {
