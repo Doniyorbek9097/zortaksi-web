@@ -25,7 +25,7 @@
             : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700',
         dragging ? '' : 'transition-transform duration-200',
       ]"
-      :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: selectionMode ? 'auto' : 'pan-y' }"
+      :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: selectionMode ? 'auto' : 'pan-y pinch-zoom' }"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"

@@ -195,7 +195,7 @@ async function onTouchEnd() {
   min-height: inherit;
 }
 .ptr-root.ptr-pulling {
-  touch-action: pan-x;
+  touch-action: pan-x pinch-zoom;
 }
 .ptr-badge {
   will-change: transform, opacity;

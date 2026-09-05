@@ -38,7 +38,7 @@
         ]"
         :style="{
           transform: `translate3d(${swipeX}px,0,0)`,
-          touchAction: selectionMode ? 'auto' : 'pan-y',
+          touchAction: selectionMode ? 'auto' : 'pan-y pinch-zoom',
         }"
         @pointerdown="onSwipePointerDown"
         @pointermove="onSwipePointerMove"
@@ -46,7 +46,7 @@
         @pointercancel="onSwipePointerUp"
       >
     <div
-      class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-none touch-manipulation"
+      class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-text"
       :class="[
         'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600',
         out ? 'rounded-br-md' : 'rounded-bl-md',
@@ -160,7 +160,7 @@
         </button>
         <p
           v-if="text"
-          class="px-2 text-[15px] leading-relaxed"
+          class="px-2 text-[15px] leading-relaxed select-text"
         >
           <ChatHtmlText v-if="textFormat === 'html'" :html="text" :out="out" />
           <ChatLinkifiedText v-else :text="text" :out="out" :mask-phones="maskPhones" />
@@ -185,7 +185,7 @@
         </div>
         <p
           v-if="text && text !== fileTypeLabel"
-          class="px-1 text-[15px] leading-relaxed"
+          class="px-1 text-[15px] leading-relaxed select-text"
         >
           <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
@@ -219,13 +219,13 @@
       <!-- Matn (link / telefon bosiladi) -->
       <div
         v-else-if="textFormat === 'html' && text"
-        class="text-[15px] leading-relaxed"
+        class="text-[15px] leading-relaxed select-text"
       >
         <ChatHtmlText :html="text" :out="out" />
       </div>
       <p
         v-else
-        class="text-[15px] leading-relaxed"
+        class="text-[15px] leading-relaxed select-text"
       >
         <ChatLinkifiedText :text="text" :out="out" :mask-phones="maskPhones" />
       </p>

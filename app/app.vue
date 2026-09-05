@@ -75,4 +75,44 @@ html[data-zt-embed='webview'] {
   --zt-safe-top: 0px !important;
   --zt-safe-bottom: 0px !important;
 }
+
+/* Yaqinlashtirish va matnni ko'chirib olish */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body,
+.theme-page {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+p,
+span,
+li,
+td,
+th,
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.select-text,
+[data-selectable='true'] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+button,
+a[role='button'],
+nav,
+.ptr-badge,
+[aria-hidden='true'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
 </style>

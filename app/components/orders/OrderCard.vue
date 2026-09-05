@@ -40,7 +40,7 @@
             : 'border-l-sky-400 dark:border-l-sky-500 opacity-90',
           dragging ? '' : 'transition-transform duration-200',
         ]"
-        :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: 'pan-y' }"
+        :style="{ transform: `translate3d(${translateX}px,0,0)`, touchAction: 'pan-y pinch-zoom' }"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
         @pointerup="onPointerUp"
@@ -70,7 +70,7 @@
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
 
       <!-- Message -->
-      <p class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words">{{
+      <p class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words select-text">{{
         orderMessageText }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
