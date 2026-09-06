@@ -5,8 +5,18 @@
 const TG_CLOSE_ON_BACK = 'zt:tg-close-on-back'
 const TG_BACK_TRAP = 'zt:tg-back-trap-installed'
 
-/** history.pushState — overlay emas (zt prefiks ishlatilmaydi) */
-export const TG_BACK_TRAP_STATE = { tgBackTrap: true as const }
+/** Vue Router history.state ni saqlab trap belgisi qo'shish */
+function buildBackTrapState(): Record<string, unknown> {
+  try {
+    const cur = window.history.state
+    if (cur && typeof cur === 'object') {
+      return { ...(cur as Record<string, unknown>), tgBackTrap: true }
+    }
+  } catch {
+    /* */
+  }
+  return { tgBackTrap: true }
+}
 
 export function markTelegramCloseOnBack(): void {
   if (!import.meta.client) return
@@ -60,7 +70,7 @@ export function installTelegramChatBackTrap(): void {
   if (!import.meta.client || !shouldTelegramCloseOnBack()) return
   try {
     if (sessionStorage.getItem(TG_BACK_TRAP) === '1') return
-    history.pushState(TG_BACK_TRAP_STATE, '', window.location.href)
+    history.pushState(buildBackTrapState(), '', window.location.href)
     sessionStorage.setItem(TG_BACK_TRAP, '1')
   } catch {
     /* */
@@ -91,18 +101,12 @@ export function closeTelegramMiniApp(): boolean {
   return false
 }
 
-/** Chat sahifasida orqaga — Mini App yopish */
-export function tryTelegramCloseOnChatBack(path: string): boolean {
-  if (!shouldTelegramCloseOnBack() || !isTelegramChatEntryPath(path)) return false
-  return closeTelegramMiniApp()
-}
-
 /** OS / telefon back (popstate) */
 export function handleTelegramPopstateClose(path: string): boolean {
   if (!shouldTelegramCloseOnBack()) return false
   if (isTelegramChatEntryPath(path)) {
     try {
-      history.pushState(TG_BACK_TRAP_STATE, '', window.location.href)
+      history.pushState(buildBackTrapState(), '', window.location.href)
     } catch {
       /* */
     }

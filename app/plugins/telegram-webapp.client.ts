@@ -3,13 +3,22 @@
  */
 import { scheduleTelegramStartRedirect } from '~/utils/telegramStartRedirect'
 import {
-  clearTelegramCloseOnBack,
+  closeTelegramMiniApp,
   handleTelegramPopstateClose,
   installTelegramChatBackTrap,
   isTelegramBackTrapState,
   isTelegramChatEntryPath,
   shouldTelegramCloseOnBack,
 } from '~/utils/telegramMiniAppBack'
+
+function closeTelegramMiniAppFromPlugin(tg: TgWebApp): void {
+  if (closeTelegramMiniApp()) return
+  try {
+    tg.close()
+  } catch {
+    /* */
+  }
+}
 
 type TgBackButton = {
   show: () => void
@@ -157,15 +166,11 @@ export default defineNuxtPlugin(() => {
       }
     }
 
+    /** Telegram / qurilma back — botdan kirilgan chatda Mini App yopiladi */
     const onTgBack = () => {
       const path = router.currentRoute.value.path
       if (shouldTelegramCloseOnBack() && isTelegramChatEntryPath(path)) {
-        try {
-          tg.close()
-          clearTelegramCloseOnBack()
-        } catch {
-          /* */
-        }
+        closeTelegramMiniAppFromPlugin(tg)
         return
       }
       if (hasOverlayHistoryLayer()) {
@@ -197,17 +202,21 @@ export default defineNuxtPlugin(() => {
       setTimeout(syncBackButton, 0)
     })
 
-    window.addEventListener('popstate', () => {
-      if (hasOverlayHistoryLayer()) {
+    window.addEventListener(
+      'popstate',
+      () => {
+        if (hasOverlayHistoryLayer()) {
+          setTimeout(syncBackButton, 0)
+          return
+        }
+        const path = router.currentRoute.value.path
+        if (shouldTelegramCloseOnBack() && isTelegramChatEntryPath(path)) {
+          handleTelegramPopstateClose(path)
+        }
         setTimeout(syncBackButton, 0)
-        return
-      }
-      const path = router.currentRoute.value.path
-      if (shouldTelegramCloseOnBack()) {
-        handleTelegramPopstateClose(path)
-      }
-      setTimeout(syncBackButton, 0)
-    })
+      },
+      true,
+    )
 
     // Overlay pushState dan keyin BackButton ni ko'rsatish
     window.addEventListener('zt-history-layer', () => {

@@ -377,7 +377,6 @@ import {
   installTelegramChatBackTrap,
   markTelegramCloseOnBack,
   shouldTelegramCloseOnBack,
-  tryTelegramCloseOnChatBack,
 } from '~/utils/telegramMiniAppBack'
 import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
 import { isAdminUser } from '~/utils/userRole'
@@ -848,7 +847,10 @@ const goOrders = () => {
 }
 
 const goBackFromOpen = () => {
-  if (tryTelegramCloseOnChatBack(route.path)) return
+  if (shouldTelegramCloseOnBack()) {
+    goChats()
+    return
+  }
   if (import.meta.client && window.history.length > 1) {
     router.back()
     return
@@ -856,8 +858,8 @@ const goBackFromOpen = () => {
   void navigateTo('/driver/orders')
 }
 
+/** Header orqaga — chatlar ro'yxatiga (telefon back alohida yopadi) */
 const goBack = () => {
-  if (tryTelegramCloseOnChatBack(route.path)) return
   if (isOpening.value || openFailed.value) goBackFromOpen()
   else goChats()
 }
