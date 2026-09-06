@@ -396,6 +396,13 @@ const { ensureAccess: ensureOrderTakeAccessFromApi, redirectIfBlocked: redirectO
   useOrderTakeAccess()
 
 const chatId = computed(() => route.params.id as string)
+/** Route hali `open` bo'lsa ham API dan kelgan haqiqiy chat id */
+const effectiveChatId = computed(() => {
+  const routeId = String(chatId.value || '').trim()
+  if (routeId && routeId !== 'open') return routeId
+  const fromChat = String(chatStore.currentChat?._id || '').trim()
+  return fromChat || routeId
+})
 /** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
 const isOpening = computed(() => chatId.value === 'open')
 
@@ -462,9 +469,11 @@ const isOrderSenderChat = computed(
 )
 
 /** Joriy chat xabarlari yuklangan/yuklanmoqda */
-const messagesMatchChat = computed(
-  () => chatStore.messagesChatId === chatId.value,
-)
+const messagesMatchChat = computed(() => {
+  const id = effectiveChatId.value
+  if (!id || id === 'open') return false
+  return chatStore.messagesChatId === id
+})
 
 const showMessageSkeleton = computed(() => {
   if (isOpening.value || chatId.value === 'open') return false
@@ -619,7 +628,7 @@ const executeDeleteMessages = async () => {
 
   isDeletingMessages.value = true
   try {
-    await chatStore.deleteMessages(chatId.value, ids)
+    await chatStore.deleteMessages(effectiveChatId.value, ids)
     exitSelectionMode()
     showDeleteDialog.value = false
     pendingDeleteIds.value = []
@@ -635,7 +644,7 @@ const executeClearHistory = async () => {
 
   isClearingHistory.value = true
   try {
-    await chatStore.clearChatHistory(chatId.value)
+    await chatStore.clearChatHistory(effectiveChatId.value)
     exitSelectionMode()
     showClearHistoryDialog.value = false
   } catch (err) {
@@ -761,43 +770,48 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  if (isOpening.value || !canSendTelegram.value) return
+  const id = effectiveChatId.value
+  if (!id || id === 'open' || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    const ok = await chatStore.ensureTelegramReady(id)
     if (!ok) return
   }
   const replyId = replyTarget.value?.id
-  await chatStore.sendMessage(chatId.value, text, replyId)
+  await chatStore.sendMessage(id, text, replyId)
   replyTarget.value = null
   scrollToBottom()
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  if (isOpening.value || !canSendTelegram.value) return
+  const id = effectiveChatId.value
+  if (!id || id === 'open' || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    const ok = await chatStore.ensureTelegramReady(id)
     if (!ok) return
   }
-  await chatStore.sendVoice(chatId.value, blob, seconds)
+  await chatStore.sendVoice(id, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  if (isOpening.value || !canSendTelegram.value) return
+  const id = effectiveChatId.value
+  if (!id || id === 'open' || !canSendTelegram.value) return
   if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(chatId.value)
+    const ok = await chatStore.ensureTelegramReady(id)
     if (!ok) return
   }
-  await chatStore.sendPhoto(chatId.value, file)
+  await chatStore.sendPhoto(id, file)
   scrollToBottom()
 }
 
 /** O'z hisob spam/blok — proksi orqali ulanish */
 const confirmProxyConnect = async () => {
   if (proxyConnecting.value) return
+  const id = effectiveChatId.value
+  if (!id || id === 'open') return
   proxyConnecting.value = true
   try {
-    const res = await chatStore.connect(chatId.value, { viaProxy: true })
+    const res = await chatStore.connect(id, { viaProxy: true })
     const status = res?.data?.status
     if (status === 'ready') {
       chatStore.connectionStatus = 'ready'
@@ -1067,6 +1081,7 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
   }
 
   preconnectChatOpen(newId, merged)
+  void chatStore.fetchMessages(newId)
 
   const nextQuery = pickQuickLinkQuery(q)
   if (isFromGroupTakeClient(q)) {
@@ -1272,7 +1287,7 @@ watch(chatId, (id) => {
 }, { immediate: true })
 
 usePullToRefresh(async () => {
-  const id = chatId.value
+  const id = effectiveChatId.value
   if (!id || id === 'open') return
   await chatStore.fetchMessages(id)
   scrollToFocus()

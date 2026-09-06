@@ -33,7 +33,7 @@ export function createMessagingActions(
         onProxyRequired?: (chatId: string, reason?: string) => void
     },
 ) {
-    const { messages, isSending } = refs
+    const { messages, isSending, messagesChatId } = refs
     const { patchChat, appendMessage, onProxyRequired } = deps
 
     /** temp→real: mahalliy blob URL ni real id ga o'tkazish (splice dan oldin) */
@@ -72,6 +72,9 @@ export function createMessagingActions(
     ) => {
         const tempId = createTempId()
         const temp = createTempTextMessage(chatId, text, tempId)
+        if (messagesChatId.value !== chatId) {
+            messagesChatId.value = chatId
+        }
         if (replyToMessageId) {
             const ref = messages.value.find((m) => String(m._id) === String(replyToMessageId))
             if (ref) {
