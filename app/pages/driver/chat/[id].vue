@@ -1118,9 +1118,10 @@ const bootstrapOpenChat = async (seq: number) => {
     if (seq !== loadSeq) return true
 
     if (
-      res?.code === 'TARIFF_INACTIVE' ||
+      mode !== 'order' &&
+      (res?.code === 'TARIFF_INACTIVE' ||
       res?.code === 'NOT_VERIFIED' ||
-      /tarif faol emas/i.test(String(res?.message || ''))
+      /tarif faol emas/i.test(String(res?.message || '')))
     ) {
       chatStore.isLoadingMessages = false
       if ((await redirectOrderTakeBlocked(route.fullPath)) || seq !== loadSeq) return true
@@ -1150,7 +1151,7 @@ const bootstrapOpenChat = async (seq: number) => {
 
   primeInstantOrderUi()
 
-  const needsAccess = !!(mode === 'order' && orderId) || !!(mode === 'user' && userId)
+  const needsAccess = !!(mode === 'user' && userId)
   const skipAccessCheck = needsAccess && canSkipOrderTakeAccessCheck()
 
   const localChat = resolveChatFromOpenQuery(q, chatStore.chats)

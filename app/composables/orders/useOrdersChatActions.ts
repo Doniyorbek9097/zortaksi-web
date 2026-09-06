@@ -32,6 +32,15 @@ export function useOrdersChatActions(options: {
     )
   }
 
+  /** orderId bo'yicha — peer id ro'yxatda yo'q bo'lsa ham */
+  const findChatForOrder = (order: IOrder) => {
+    const orderId = String(order._id || '')
+    if (!orderId) return undefined
+    const byPeer = findChatByOrderPeer(orderId, order.sender?.userId)
+    if (byPeer) return byPeer
+    return chatStore.chats.find((c) => String(c.orderId || '') === orderId)
+  }
+
   const findDirectChatWithUser = (peerUserId: string, orderId?: string) => {
     return chatStore.chats.find((c) => {
       if (c.kind !== 'direct') return false
@@ -127,30 +136,44 @@ export function useOrdersChatActions(options: {
     if (!order._id) return
     markOrderInterest(order)
 
-    const peerId = order.sender?.userId
-    const existing = findChatByOrderPeer(order._id, peerId)
+    const orderId = String(order._id)
     const linkQ = orderQuickLinkQuery(order)
+    const query = { open: 'order', ...linkQ }
+
+    // pointerdown prefetch jarayonda bo'lsa — API tugashini kutamiz (qo'shimcha so'rov yo'q)
+    const prefetchWasInflight = prefetchInflight.has(orderId)
+    prefetchOrderChat(order)
+
+    let existing = findChatForOrder(order)
+    if (!existing?._id) {
+      await nextTick()
+      existing = findChatForOrder(order)
+    }
+
+    if (!existing?._id && prefetchWasInflight) {
+      const res = (await chatStore.startChatFromOrder(orderId)) as {
+        success?: boolean
+        data?: IChat
+      }
+      if (res?.success && res.data?._id) {
+        adoptStartedChat(res.data)
+        existing = res.data
+      }
+    }
 
     if (existing?._id) {
-      return openExistingChat(existing, {
-        open: 'order',
-        ...linkQ,
-      }, order)
+      return openExistingChat(existing, query, order)
     }
 
     beforeNavigate?.()
 
-    // Chat yaratishni navigatsiya bilan parallel boshlash
-    void chatStore.startChatFromOrder(order._id).then((res: { success?: boolean; data?: IChat }) => {
+    void chatStore.startChatFromOrder(orderId).then((res: { success?: boolean; data?: IChat }) => {
       if (res?.success && res.data?._id) {
         adoptStartedChat(res.data)
       }
     })
 
-    return goOpenChat({
-      open: 'order',
-      ...linkQ,
-    }, order)
+    return goOpenChat(query, order)
   }
 
   const onCall = (order: IOrder) => {
