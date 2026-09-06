@@ -76,6 +76,7 @@ import {
   faDownload,
   faMobileScreen,
   faListOl,
+  faCreditCard,
 } from '@fortawesome/free-solid-svg-icons'
 
 config.autoAddCss = false
@@ -156,6 +157,7 @@ library.add(
   faDownload,
   faMobileScreen,
   faListOl,
+  faCreditCard,
 )
 
 export default defineNuxtPlugin((nuxtApp) => {
