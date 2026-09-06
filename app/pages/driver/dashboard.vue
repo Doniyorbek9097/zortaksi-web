@@ -48,6 +48,12 @@
       @buy="onBuyTariff"
     />
 
+    <!-- Guruh taklifi TOP 10 -->
+    <DashboardGroupInviteLeaderboardCard
+      :data="groupInviteLeaderboard"
+      :loading="groupInviteLoading"
+    />
+
     <!-- Platform statistics -->
     <section
       class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
@@ -98,6 +104,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import type { IBanner } from '~/types/banner'
+import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
 definePageMeta({
   layout: 'driver',
@@ -112,6 +119,10 @@ const tariffActive = computed(() => authStore.tariffActive)
 
 const promoBanners = ref<IBanner[]>([])
 const BANNERS_CACHE_KEY = 'zt:dashboard-banners'
+
+const groupInviteLeaderboard = ref<GroupInviteLeaderboardData | null>(null)
+const groupInviteLoading = ref(false)
+const GROUP_INVITE_CACHE_KEY = 'zt:dashboard-group-invite-lb'
 
 const loadCachedBanners = () => {
   if (!import.meta.client) return
@@ -143,6 +154,47 @@ const fetchPromoBanners = async () => {
     }
   } catch {
     /* */
+  }
+}
+
+const loadCachedGroupInviteLeaderboard = () => {
+  if (!import.meta.client) return
+  try {
+    const raw = sessionStorage.getItem(GROUP_INVITE_CACHE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw) as GroupInviteLeaderboardData
+    if (data?.available) groupInviteLeaderboard.value = data
+  } catch {
+    /* */
+  }
+}
+
+const saveCachedGroupInviteLeaderboard = () => {
+  if (!import.meta.client || !groupInviteLeaderboard.value) return
+  try {
+    sessionStorage.setItem(GROUP_INVITE_CACHE_KEY, JSON.stringify(groupInviteLeaderboard.value))
+  } catch {
+    /* */
+  }
+}
+
+const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
+  if (!tariffActive.value || !String(authStore.user?.regionSlug || '').trim()) return
+  if (!opts?.background && !groupInviteLeaderboard.value) {
+    groupInviteLoading.value = true
+  }
+  try {
+    const res = await useApi<{ success: boolean; data: GroupInviteLeaderboardData }>(
+      '/me/region/group-invite-leaderboard'
+    )
+    if (res?.success && res.data) {
+      groupInviteLeaderboard.value = res.data
+      saveCachedGroupInviteLeaderboard()
+    }
+  } catch (e) {
+    console.warn('[Dashboard] group invite leaderboard:', e)
+  } finally {
+    groupInviteLoading.value = false
   }
 }
 
@@ -329,6 +381,7 @@ usePullToRefresh(async () => {
   await Promise.all([
     fetchPlatformStats(),
     fetchPromoBanners(),
+    fetchGroupInviteLeaderboard({ background: true }),
     authStore.getMe().catch(() => {}),
   ])
 })
@@ -336,7 +389,9 @@ usePullToRefresh(async () => {
 onMounted(() => {
   loadCachedStats()
   loadCachedBanners()
+  loadCachedGroupInviteLeaderboard()
   void fetchPlatformStats({ background: statsReady.value })
   void fetchPromoBanners()
+  void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
 })
 </script>
