@@ -2,7 +2,7 @@ import type { IInterestedUser, IOrder, IChat } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { orderQuickLinkQuery, buildChatStubFromOrder, mergeOrderChatContext, primeOrderContext } from '~/utils/orderChatQuery'
+import { orderQuickLinkQuery, buildChatStubFromOrder, buildChatStubFromOrderQuery, mergeOrderChatContext, primeOrderContext } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
 
 /**
@@ -17,6 +17,7 @@ export function useOrdersChatActions(options: {
   beforeNavigate?: () => void
 }) {
   const { orderStore, chatStore, beforeNavigate } = options
+  const route = useRoute()
 
   const markOrderInterest = (order: IOrder) => {
     if (!order._id) return
@@ -142,6 +143,24 @@ export function useOrdersChatActions(options: {
     } else {
       chatStore.chats.unshift(chat)
     }
+
+    const orderId = String(chat.orderId || '')
+    const onOpenRoute =
+      import.meta.client &&
+      route.path === '/driver/chat/open' &&
+      orderId &&
+      String(route.query.orderId || '') === orderId
+
+    if (onOpenRoute) {
+      const stub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+      chatStore.currentChat = mergeOrderChatContext(
+        chatStore.currentChat,
+        stub,
+        chat,
+      ) as IChat
+      chatStore.primeFromChat(chatStore.currentChat)
+    }
+
     chatStore.hydrateMessagesFromCache(id)
     void chatStore.connect(id, { silent: true })
     void chatStore.fetchMessages(id)

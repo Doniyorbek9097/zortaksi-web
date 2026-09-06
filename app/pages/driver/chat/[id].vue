@@ -411,6 +411,11 @@ const effectiveChatId = computed(() => {
   const fromChat = String(chatStore.currentChat?._id || '').trim()
   return fromChat || routeId
 })
+
+const hasRealChatId = computed(() => {
+  const id = effectiveChatId.value
+  return !!id && id !== 'open'
+})
 /** Order/interest dan darhol ochilish — API chat sahifasida ishlaydi */
 const isOpening = computed(() => chatId.value === 'open')
 
@@ -677,7 +682,9 @@ const hasPeerLink = computed(() =>
 )
 
 const canSendTelegram = computed(
-  () => isInAppChat.value || hasPeerLink.value || conn.value === 'ready',
+  () =>
+    hasRealChatId.value &&
+    (isInAppChat.value || hasPeerLink.value || conn.value === 'ready'),
 )
 
 /** Loading / open — faqat bootstrap va kontekst yo'q bo'lsa */
@@ -699,11 +706,13 @@ const showComposer = computed(
 
 const composerDisabled = computed(
   () =>
+    !hasRealChatId.value ||
     composerBusy.value ||
     (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value),
 )
 
 const composerPlaceholder = computed(() => {
+  if (!hasRealChatId.value) return 'Ulanmoqda...'
   if (
     isOrderSenderChat.value &&
     !isInAppChat.value &&
@@ -1205,9 +1214,8 @@ const bootstrapOpenChat = async (seq: number) => {
     }
 
     if (mode === 'order' && orderId) {
-      void chatApi.then((res) => {
-        void handleStartChatResponse(res)
-      })
+      const res = await chatApi
+      await handleStartChatResponse(res)
       return
     }
 
@@ -1242,11 +1250,13 @@ const loadChat = async (id: string) => {
     applyInstantOrderUiFromQuery()
     const early = resolveChatFromOpenQuery(route.query as Record<string, unknown>, chatStore.chats)
     if (early?._id) {
-      const earlyId = String(early._id)
-      chatStore.primeFromChat(early)
-      chatStore.hydrateMessagesFromCache(earlyId)
-      preconnectChatOpen(earlyId, early)
-      void chatStore.fetchMessages(earlyId)
+      const stub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+      const merged = mergeOrderChatContext(
+        early,
+        stub,
+        chatStore.currentChat,
+      ) as import('~/types').IChat
+      adoptOpenChatInPlace(merged)
     }
     await bootstrapOpenChat(seq)
     return
