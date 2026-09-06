@@ -372,6 +372,7 @@ import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { compactQuery } from '~/utils/navigationQuery'
+import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
@@ -1087,6 +1088,8 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
   if (isFromGroupTakeClient(q)) {
     nextQuery.fromGroup = '1'
   }
+
+  clearTelegramStartParamStorage()
 
   await navigateTo({
     path: `/driver/chat/${newId}`,

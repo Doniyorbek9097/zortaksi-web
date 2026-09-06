@@ -55,10 +55,22 @@ export function applyTelegramStartRedirect(router: Router): boolean {
   return false
 }
 
+const TELEGRAM_START_REDIRECT_PATHS = new Set([
+  '/',
+  '/auth',
+  '/login',
+  '/register',
+  '/driver/dashboard',
+])
+
 export function scheduleTelegramStartRedirect(router: Router): void {
   if (!import.meta.client || !mightBeTelegramMiniApp()) return
 
-  const tryRedirect = () => applyTelegramStartRedirect(router)
+  const tryRedirect = () => {
+    const path = router.currentRoute.value.path
+    if (!TELEGRAM_START_REDIRECT_PATHS.has(path)) return false
+    return applyTelegramStartRedirect(router)
+  }
 
   // Hash dan start_param ko'pincha SDK dan oldin mavjud — darhol redirect
   tryRedirect()

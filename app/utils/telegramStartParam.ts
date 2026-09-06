@@ -1,6 +1,25 @@
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
 
 const TG_START_STORAGE = 'zt:tg-start-param'
+const TG_START_CONSUMED = 'zt:tg-start-param-consumed'
+
+/** start_param redirect faqat kirish sahifalarida — orders/tablar qayta chatga ketmasin */
+const TELEGRAM_START_ENTRY_PATHS = new Set([
+  '/',
+  '/auth',
+  '/login',
+  '/register',
+  '/driver/dashboard',
+])
+
+function isTelegramStartParamConsumed(): boolean {
+  if (!import.meta.client) return false
+  try {
+    return sessionStorage.getItem(TG_START_CONSUMED) === '1'
+  } catch {
+    return false
+  }
+}
 
 /** Telegram Mini App start_param / startapp → ilova marshruti */
 export function routeFromTelegramStartParam(
@@ -151,6 +170,7 @@ function readStartParamFromTelegramWebApp(): string {
 /** Hash / initData dan start_param ni o'qib sessionStorage ga yozadi */
 export function captureTelegramStartParam(): string {
   if (!import.meta.client) return ''
+  if (isTelegramStartParamConsumed()) return ''
 
   const found =
     readStartParamFromTelegramWebApp() ||
@@ -183,6 +203,7 @@ export function clearTelegramStartParamStorage(): void {
   if (!import.meta.client) return
   try {
     sessionStorage.removeItem(TG_START_STORAGE)
+    sessionStorage.setItem(TG_START_CONSUMED, '1')
   } catch {
     /* */
   }
@@ -205,13 +226,17 @@ export function matchesTelegramStartRoute(
 export function resolveTelegramStartNavigation(
   to: RouteLocationNormalized,
 ): RouteLocationRaw | null {
-  // To'g'ridan-to'g'ri chat/open URL — start_param kerak emas
-  if (to.path === '/driver/chat/open') {
-    const orderId = String(to.query.orderId || '').trim()
-    if (orderId && String(to.query.open || 'order') === 'order') {
+  // Chat ochilgan — start_param qayta ishlatilmasin
+  if (to.path.startsWith('/driver/chat/')) {
+    if (to.path === '/driver/chat/open') {
+      const orderId = String(to.query.orderId || '').trim()
+      if (orderId && String(to.query.open || 'order') === 'order') {
+        clearTelegramStartParamStorage()
+      }
+    } else {
       clearTelegramStartParamStorage()
-      return null
     }
+    return null
   }
 
   const target = routeFromTelegramStartParam(readTelegramStartParam())
@@ -220,6 +245,10 @@ export function resolveTelegramStartNavigation(
     clearTelegramStartParamStorage()
     return null
   }
+
+  // Buyurtmalar va boshqa tablar — redirect qilmasin
+  if (!TELEGRAM_START_ENTRY_PATHS.has(to.path)) return null
+
   return target
 }
 
