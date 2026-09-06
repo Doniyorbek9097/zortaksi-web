@@ -1,5 +1,4 @@
 import { scheduleTelegramStartRedirect, mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
-import { wireTelegramViewportInsets, resetTelegramViewportInsets } from '~/composables/useTelegramViewportInsets'
 
 /** Telegram Mini App: start_param → buyurtma chat (SDK dan oldin ham hash orqali) */
 export default defineNuxtPlugin({
@@ -8,8 +7,6 @@ export default defineNuxtPlugin({
   setup() {
     if (!import.meta.client) return
     if (!mightBeTelegramMiniApp()) return
-    resetTelegramViewportInsets()
-    wireTelegramViewportInsets()
     scheduleTelegramStartRedirect(useRouter())
   },
 })

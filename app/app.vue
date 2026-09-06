@@ -68,11 +68,6 @@ onMounted(() => {
 :root {
   --zt-safe-top: 0px;
   --zt-safe-bottom: 0px;
-  --zt-vv-left: 0px;
-  --zt-vv-top: 0px;
-  --zt-vv-width: 100%;
-  --zt-vv-height: 100dvh;
-  --zt-tg-vh: 100dvh;
 }
 
 /* Flutter / system WebView — hech qachon pastki pad ochilmasin */

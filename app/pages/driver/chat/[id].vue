@@ -1,13 +1,6 @@
 <template>
-  <!-- visualViewport: klaviatura ochilganda header ko'rinib turadi -->
-  <BasePullToRefresh
-    fill
-    scroll-selector=".chat-msg-scroll"
-    class="fixed z-40 overflow-x-hidden touch-pan-y max-w-[100vw]"
-    :style="shellStyle"
-  >
   <div
-    class="flex flex-col overflow-hidden h-full w-full min-w-0 bg-slate-50 dark:bg-slate-950"
+    class="chat-shell fixed inset-0 z-40 flex flex-col overflow-hidden w-full max-w-[100vw] bg-slate-50 dark:bg-slate-950"
   >
     <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
@@ -23,7 +16,7 @@
       <template #actions>
         <div
           v-if="showClearHistoryBtn && !selectionMode"
-          class="mx-auto w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
+          class="w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
         >
           <button
             type="button"
@@ -43,7 +36,7 @@
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
-      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
+      <div class="w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
         <div
           v-if="fallbackOrderText"
           class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
@@ -105,7 +98,7 @@
     </div>
 
     <div v-else ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
-      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
+      <div class="w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
           v-if="showOrderBanner"
@@ -225,7 +218,7 @@
     </div>
 
     <!-- Ulanish banneri — order chatda input placeholder yetarli -->
-    <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="mx-auto w-full max-w-2xl px-3 pb-1">
+    <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         {{ 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
@@ -233,7 +226,7 @@
     </div>
 
     <!-- O'z hisob ishlamadi — proxy orqali ulanish uchun RUXSAT so'raladi -->
-    <div v-else-if="conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="conn === 'proxy-required'" class="w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
@@ -260,7 +253,7 @@
       </div>
     </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
@@ -286,7 +279,7 @@
       </div>
     </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
@@ -367,7 +360,6 @@
       @confirm="executeClearHistory"
     />
   </div>
-  </BasePullToRefresh>
 </template>
 
 <script setup lang="ts">
@@ -385,8 +377,6 @@ import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
-import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
-import { applyTelegramViewportInsets, telegramChatShellStyle, stabilizeTelegramChatViewport, resetTelegramViewportInsets } from '~/composables/useTelegramViewportInsets'
 
 definePageMeta({
   layout: false,
@@ -651,51 +641,6 @@ const executeClearHistory = async () => {
     console.error('clearChatHistory error:', err)
   } finally {
     isClearingHistory.value = false
-  }
-}
-
-/**
- * Klaviatura: brauzer visualViewport.
- * Telegram: plugin CSS vars (--zt-vv-*) — gorizontal siljishni to'g'rilaydi.
- */
-const shellStyle = ref<Record<string, string>>({
-  top: '0px',
-  left: '0px',
-  width: '100%',
-  height: '100dvh',
-  maxWidth: '100vw',
-})
-
-const syncViewport = () => {
-  if (!import.meta.client) return
-  if (isTelegramMiniApp()) {
-    applyTelegramViewportInsets()
-    shellStyle.value = telegramChatShellStyle()
-    return
-  }
-  const vv = window.visualViewport
-  if (!vv) {
-    shellStyle.value = { top: '0px', left: '0px', width: '100%', height: '100dvh', maxWidth: '100vw' }
-    return
-  }
-  const keyboardGap = window.innerHeight - vv.height
-  const keyboardOpen = keyboardGap > 80
-  if (keyboardOpen) {
-    shellStyle.value = {
-      left: `${Math.max(0, vv.offsetLeft)}px`,
-      width: `${Math.max(0, vv.width)}px`,
-      maxWidth: '100vw',
-      top: `${Math.max(0, vv.offsetTop)}px`,
-      height: `${Math.max(0, vv.height)}px`,
-    }
-    return
-  }
-  shellStyle.value = {
-    left: '0px',
-    width: '100%',
-    maxWidth: '100vw',
-    top: '0px',
-    height: '100dvh',
   }
 }
 
@@ -1322,7 +1267,6 @@ const loadChat = async (id: string) => {
 // Chat → chat: component qayta mount bo'lmasa ham yangilanadi
 watch(chatId, (id) => {
   if (!id) return
-  if (isTelegramMiniApp()) stabilizeTelegramChatViewport()
   void loadChat(id)
 }, { immediate: true })
 
@@ -1346,31 +1290,13 @@ onMounted(() => {
   prevHtmlOverflow = document.documentElement.style.overflow
   document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
-  document.body.style.overflowX = 'hidden'
-  document.documentElement.style.overflowX = 'hidden'
-
-  if (isTelegramMiniApp()) {
-    resetTelegramViewportInsets()
-    shellStyle.value = telegramChatShellStyle()
-    stabilizeTelegramChatViewport()
-  }
-
   window.scrollTo(0, 0)
-  syncViewport()
-  window.visualViewport?.addEventListener('resize', syncViewport)
-  window.visualViewport?.addEventListener('scroll', syncViewport)
-  window.addEventListener('resize', syncViewport)
 })
 
 onBeforeUnmount(() => {
   loadSeq += 1
-  window.visualViewport?.removeEventListener('resize', syncViewport)
-  window.visualViewport?.removeEventListener('scroll', syncViewport)
-  window.removeEventListener('resize', syncViewport)
   document.body.style.overflow = prevBodyOverflow
   document.documentElement.style.overflow = prevHtmlOverflow
-  document.body.style.overflowX = ''
-  document.documentElement.style.overflowX = ''
 
   clearPresenceTimer()
   chatStore.currentChat = null
@@ -1382,6 +1308,13 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.chat-shell {
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+  transform: none !important;
+}
 .typing-dots {
   display: inline-flex;
   align-items: center;
