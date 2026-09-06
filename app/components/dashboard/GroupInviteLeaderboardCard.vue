@@ -37,7 +37,15 @@
       >
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0 flex items-center gap-2.5">
-            <ProfileAvatar :name="meName" :src="meAvatar" :user-id="meUserId" size="md" />
+            <div class="relative shrink-0">
+              <ProfileAvatar :name="meName" :src="meAvatar" :user-id="meUserId" size="md" />
+              <span
+                v-if="meRank"
+                class="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full flex items-center justify-center text-[10px] font-black bg-violet-500 text-white shadow-md ring-2 ring-white dark:ring-slate-900"
+              >
+                {{ meRank }}
+              </span>
+            </div>
             <div class="min-w-0">
               <p class="text-[10px] font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-400">
                 Sizning natijangiz
@@ -52,15 +60,6 @@
                 {{ meGroupTitle }}
               </p>
             </div>
-          </div>
-          <div
-            v-if="meRank"
-            class="shrink-0 px-2.5 py-1 rounded-lg bg-white/80 dark:bg-slate-900/80 border border-violet-200/70 dark:border-violet-800/50 text-center"
-          >
-            <p class="text-[9px] font-bold text-slate-400 uppercase">O'rin</p>
-            <p class="text-lg font-black text-violet-600 dark:text-violet-400 leading-none">
-              #{{ meRank }}
-            </p>
           </div>
         </div>
 
@@ -141,9 +140,15 @@
     </div>
 
     <div
-      v-if="showJoinButton"
-      class="p-3 pt-1 border-t border-slate-100 dark:border-slate-800"
+      v-if="showJoinSection"
+      class="p-3 pt-1 border-t border-slate-100 dark:border-slate-800 space-y-2"
     >
+      <p class="text-center text-[11px] font-semibold text-slate-500 dark:text-slate-400 px-1">
+        Do'stlaringizni guruhga qo'shing —
+        <span class="text-amber-600 dark:text-amber-400 font-black">
+          har biri uchun +{{ formattedReward }} so'm
+        </span>
+      </p>
       <button
         type="button"
         class="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white text-[13px] font-black py-3 shadow-md shadow-violet-500/25 transition-all active:scale-[0.99] disabled:opacity-50"
@@ -151,7 +156,7 @@
         @click="onOpenGroup"
       >
         <font-awesome-icon icon="fa-brands fa-telegram" />
-        Guruhga o'tish
+        Guruhga a'zo qo'shish
       </button>
     </div>
   </section>
@@ -221,6 +226,18 @@ const meAvatar = computed(() => authStore.user?.avatar)
 const meUserId = computed(() => String(authStore.user?.userId || ''))
 
 const formattedMeBonus = computed(() => meBonus.value.toLocaleString('ru-RU'))
+const formattedReward = computed(() =>
+  (props.data?.rewardPerInvite ?? 500).toLocaleString('ru-RU'),
+)
+
+const hasRegion = computed(() =>
+  !!String(authStore.user?.regionSlug || '').trim(),
+)
+
+const showJoinSection = computed(() => {
+  if (!props.showJoinButton || props.adminMode) return false
+  return hasRegion.value
+})
 
 const groupUrl = computed(() => {
   const direct = String(props.data?.groupOpenUrl || '').trim()

@@ -374,10 +374,12 @@ import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
 import {
   clearTelegramCloseOnBack,
+  installTelegramChatBackTrap,
   markTelegramCloseOnBack,
+  shouldTelegramCloseOnBack,
   tryTelegramCloseOnChatBack,
 } from '~/utils/telegramMiniAppBack'
-import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
@@ -1329,9 +1331,28 @@ watch(scrollEl, (el, _, onCleanup) => {
 })
 
 watch(
-  () => String(route.query.fromGroup || ''),
-  (v) => {
-    if (String(v).trim() === '1') markTelegramCloseOnBack()
+  () => [route.path, String(route.query.open || ''), String(route.query.orderId || '')],
+  ([path, open, orderId]) => {
+    const isBotEntry =
+      isFromGroupTakeClient(route.query as Record<string, unknown>) ||
+      (path === '/driver/chat/open' &&
+        open === 'order' &&
+        !!orderId &&
+        isTelegramMiniApp())
+    if (isBotEntry) {
+      markTelegramCloseOnBack()
+      installTelegramChatBackTrap()
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => route.path,
+  (path) => {
+    if (shouldTelegramCloseOnBack() && path.startsWith('/driver/chat/')) {
+      installTelegramChatBackTrap()
+    }
   },
   { immediate: true },
 )

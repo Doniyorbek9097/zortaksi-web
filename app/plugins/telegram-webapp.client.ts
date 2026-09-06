@@ -4,6 +4,8 @@
 import { scheduleTelegramStartRedirect } from '~/utils/telegramStartRedirect'
 import {
   clearTelegramCloseOnBack,
+  handleTelegramPopstateClose,
+  installTelegramChatBackTrap,
   isTelegramChatEntryPath,
   shouldTelegramCloseOnBack,
 } from '~/utils/telegramMiniAppBack'
@@ -119,8 +121,11 @@ export default defineNuxtPlugin(() => {
     try {
       tg.ready()
       tg.expand()
-      // Tasodifan yopilishni kamaytiradi (ixtiyoriy API)
-      tg.enableClosingConfirmation?.()
+      if (!shouldTelegramCloseOnBack()) {
+        tg.enableClosingConfirmation?.()
+      } else {
+        tg.disableClosingConfirmation?.()
+      }
     } catch {
       /* eski client */
     }
@@ -180,25 +185,26 @@ export default defineNuxtPlugin(() => {
 
     tg.BackButton.onClick(onTgBack)
 
-    router.afterEach(() => {
-      // Router state yangilangach sync
+    router.afterEach((to) => {
+      if (shouldTelegramCloseOnBack() && isTelegramChatEntryPath(to.path)) {
+        installTelegramChatBackTrap()
+        try {
+          tg.disableClosingConfirmation?.()
+        } catch {
+          /* */
+        }
+      }
       setTimeout(syncBackButton, 0)
     })
 
-    // Brauzer/OS back (Telegram uni BackButton ga ulaydi)
     window.addEventListener('popstate', () => {
+      if (hasOverlayHistoryLayer()) {
+        setTimeout(syncBackButton, 0)
+        return
+      }
+      const path = router.currentRoute.value.path
       if (shouldTelegramCloseOnBack()) {
-        const path = router.currentRoute.value.path
-        if (!isTelegramChatEntryPath(path) && !hasOverlayHistoryLayer()) {
-          setTimeout(() => {
-            try {
-              tg.close()
-              clearTelegramCloseOnBack()
-            } catch {
-              /* */
-            }
-          }, 0)
-        }
+        handleTelegramPopstateClose(path)
       }
       setTimeout(syncBackButton, 0)
     })

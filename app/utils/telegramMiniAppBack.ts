@@ -3,6 +3,7 @@
  * orqaga bosish Mini App ni yopadi (tg.close).
  */
 const TG_CLOSE_ON_BACK = 'zt:tg-close-on-back'
+const TG_BACK_TRAP = 'zt:tg-back-trap-installed'
 
 export function markTelegramCloseOnBack(): void {
   if (!import.meta.client) return
@@ -17,6 +18,7 @@ export function clearTelegramCloseOnBack(): void {
   if (!import.meta.client) return
   try {
     sessionStorage.removeItem(TG_CLOSE_ON_BACK)
+    clearTelegramChatBackTrap()
   } catch {
     /* */
   }
@@ -46,6 +48,27 @@ export function maybeMarkTelegramCloseOnBackFromStartParam(
   }
 }
 
+/** Telefon back — birinchi bosishda popstate ushlanadi, sahifa o'zgarmaydi */
+export function installTelegramChatBackTrap(): void {
+  if (!import.meta.client || !shouldTelegramCloseOnBack()) return
+  try {
+    if (sessionStorage.getItem(TG_BACK_TRAP) === '1') return
+    history.pushState({ ztTgBackTrap: true }, '', window.location.href)
+    sessionStorage.setItem(TG_BACK_TRAP, '1')
+  } catch {
+    /* */
+  }
+}
+
+export function clearTelegramChatBackTrap(): void {
+  if (!import.meta.client) return
+  try {
+    sessionStorage.removeItem(TG_BACK_TRAP)
+  } catch {
+    /* */
+  }
+}
+
 export function closeTelegramMiniApp(): boolean {
   if (!import.meta.client) return false
   try {
@@ -64,5 +87,14 @@ export function closeTelegramMiniApp(): boolean {
 /** Chat sahifasida orqaga — Mini App yopish (botdan kirilgan bo'lsa) */
 export function tryTelegramCloseOnChatBack(path: string): boolean {
   if (!shouldTelegramCloseOnBack() || !isTelegramChatEntryPath(path)) return false
+  return closeTelegramMiniApp()
+}
+
+/** OS back (popstate) — chat yoki undan keyin ham yopish */
+export function handleTelegramPopstateClose(path: string): boolean {
+  if (!shouldTelegramCloseOnBack()) return false
+  if (!isTelegramChatEntryPath(path)) {
+    return closeTelegramMiniApp()
+  }
   return closeTelegramMiniApp()
 }
