@@ -77,7 +77,8 @@ export function createListActions(
         prev: IChatMessage[],
     ): IChatMessage[] => {
         const prevById = new Map(prev.map((m) => [String(m._id), m]))
-        return incoming.map((m) => {
+        const incomingIds = new Set(incoming.map((m) => String(m._id)))
+        const merged = incoming.map((m) => {
             const old = prevById.get(String(m._id))
             if (!old) return m
             const textFormat =
@@ -86,6 +87,14 @@ export function createListActions(
                     : inferTextFormat(m.text || '', m.textFormat)
             return { ...m, textFormat }
         })
+        for (const m of prev) {
+            const id = String(m._id)
+            if (id.startsWith('temp-') && m.status === 'sending' && !incomingIds.has(id)) {
+                merged.push(m)
+            }
+        }
+        sortMessagesByDate(merged)
+        return merged
     }
 
     /** Chatlar ro'yxatini yuklash */

@@ -5,6 +5,8 @@ import { lastMessagePreview } from '../helpers/message-preview'
 import {
     applyMessagesRead,
     findSendingTempMediaIndex,
+    findSendingTempTextIndex,
+    replaceTempWithReal,
 } from '../helpers/merge-messages'
 import type { ChatStoreRefs } from '../types'
 
@@ -41,7 +43,11 @@ export function createSocketActions(
     /** Socket: mavjud xabar matni/status/media yangilandi (voice fonda yuklanganda) */
     const onMessageUpdate = (msg: IChatMessage) => {
         if (!msg?._id) return
-        const idx = messages.value.findIndex((m) => m._id === msg._id)
+        let idx = messages.value.findIndex((m) => m._id === msg._id)
+        if (idx === -1 && msg.direction === 'out') {
+            const tempIdx = findSendingTempTextIndex(messages.value, msg)
+            if (tempIdx !== -1) idx = tempIdx
+        }
         const prev = idx !== -1 ? messages.value[idx] : null
         if (idx !== -1) {
             const merged = { ...messages.value[idx], ...msg } as IChatMessage
@@ -69,6 +75,15 @@ export function createSocketActions(
         }
     }
 
+    /** Socket/HTTP dan kelgan chiquvchi matn — temp bilan birlashtirish */
+    const mergeOutgoingTextFromSocket = (msg: IChatMessage): boolean => {
+        if (msg.direction !== 'out' || msg.type !== 'text') return false
+        const tempIdx = findSendingTempTextIndex(messages.value, msg)
+        if (tempIdx === -1) return false
+        messages.value.splice(tempIdx, 1, msg)
+        return true
+    }
+
     /** Socket: yangi xabar keldi (kiruvchi yoki chiquvchi) */
     const onNewMessage = (msg: IChatMessage) => {
         const normalized = {
@@ -77,6 +92,8 @@ export function createSocketActions(
         } as IChatMessage
         if (mergeOutgoingMediaFromSocket(normalized)) {
             // temp bilan birlashtirildi
+        } else if (mergeOutgoingTextFromSocket(normalized)) {
+            // matn temp bilan birlashtirildi
         } else {
             appendMessage(normalized)
         }

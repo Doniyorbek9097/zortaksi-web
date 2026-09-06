@@ -8,7 +8,7 @@ import {
     createTempVoiceMessage,
     markTempFailed,
 } from '../helpers/temp-message'
-import { replaceTempWithReal } from '../helpers/merge-messages'
+import { replaceTempWithReal, findSendingTempTextIndex } from '../helpers/merge-messages'
 import { lastMessagePreview } from '../helpers/message-preview'
 import { messageReplyPreview } from '~/utils/messageReplyPreview'
 import { inferTextFormat } from '~/utils/telegramHtml'
@@ -96,6 +96,7 @@ export function createMessagingActions(
                     text,
                     ...(replyToMessageId ? { replyToMessageId } : {}),
                 },
+                timeout: 90_000,
             })
             if (res.success) {
                 // Temp bubble'ni serverdagi haqiqiy xabar (sent/failed) bilan almashtiramiz.
@@ -105,8 +106,13 @@ export function createMessagingActions(
                     textFormat: inferTextFormat(res.data.text || '', res.data.textFormat),
                 } as IChatMessage
                 const result = replaceTempWithReal(messages.value, tempId, real)
-                if (result === 'missing' && !messages.value.some((m) => m._id === real._id)) {
-                    appendMessage(real)
+                if (result === 'missing') {
+                    const textIdx = findSendingTempTextIndex(messages.value, real)
+                    if (textIdx !== -1) {
+                        messages.value.splice(textIdx, 1, real)
+                    } else if (!messages.value.some((m) => m._id === real._id)) {
+                        appendMessage(real)
+                    }
                 }
                 patchChat(chatId, {
                     lastMessage: lastMessagePreview(real),

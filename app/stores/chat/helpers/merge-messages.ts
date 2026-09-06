@@ -47,10 +47,23 @@ export function findSendingTempMediaIndex(
     )
 }
 
-/**
- * Temp → real almashtirish: socket allaqachon kelgan bo'lsa temp o'chiriladi,
- * aks holda temp o'rniga real xabar qo'yiladi.
- */
+/** Yuborilayotgan chiquvchi matn temp indeksini topadi */
+export function findSendingTempTextIndex(
+    messages: IChatMessage[],
+    msg: IChatMessage,
+): number {
+    const chatId = String(msg.chatId || '')
+    const text = String(msg.text || '').trim()
+    return messages.findIndex(
+        (m) =>
+            m._id.startsWith('temp-') &&
+            m.status === 'sending' &&
+            m.type === 'text' &&
+            String(m.chatId || '') === chatId &&
+            (!text || String(m.text || '').trim() === text),
+    )
+}
+
 export function replaceTempWithReal(
     messages: IChatMessage[],
     tempId: string,

@@ -817,14 +817,18 @@ const onSend = async (text: string) => {
   const id = resolveActiveChatId()
   if (!id || id === 'open') return
   ensureCurrentChatForId(id)
+  chatStore.messagesChatId = id
 
   if (needsTelegramConnect.value) {
-    // Backend ham yuboradi — ulanishni kutib to'xtatmaymiz
     void chatStore.ensureTelegramReady(id)
   }
 
   const replyId = replyTarget.value?.id
-  await chatStore.sendMessage(id, text, replyId)
+  try {
+    await chatStore.sendMessage(id, text, replyId)
+  } catch {
+    /* temp bubble failed holatiga o'tadi */
+  }
   replyTarget.value = null
   scrollToBottom()
 }
@@ -1151,13 +1155,6 @@ const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
   preconnectChatOpen(newId, merged)
   void chatStore.fetchMessages(newId)
   clearTelegramStartParamStorage()
-
-  if (chatId.value === 'open') {
-    void router.replace({
-      path: `/driver/chat/${encodeURIComponent(newId)}`,
-      query: route.query,
-    })
-  }
   return true
 }
 
