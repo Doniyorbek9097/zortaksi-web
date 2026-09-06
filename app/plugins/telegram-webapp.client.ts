@@ -2,7 +2,6 @@
  * Telegram Mini App: orqaga (Back) history ichida ishlasin,
  * root'da bo'lmasa WebApp yopilmasin.
  */
-import { resolveTelegramStartNavigation } from '~/utils/telegramStartParam'
 type TgBackButton = {
   show: () => void
   hide: () => void
@@ -127,11 +126,6 @@ export default defineNuxtPlugin(() => {
     }
 
     const router = useRouter()
-
-    const startTarget = resolveTelegramStartNavigation(router.currentRoute.value)
-    if (startTarget) {
-      void router.replace(startTarget)
-    }
 
     const syncBackButton = () => {
       try {

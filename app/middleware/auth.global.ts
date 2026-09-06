@@ -20,7 +20,8 @@ import {
     classifyApiError,
     isConnectivityError,
 } from '~/utils/connectionError'
-import { resolveTelegramStartNavigation, captureTelegramStartParam } from '~/utils/telegramStartParam'
+import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam, routeFromTelegramStartParam } from '~/utils/telegramStartParam'
+import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -232,6 +233,17 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             return
         }
         if (canSkipAuth) {
+            captureTelegramStartParam()
+            const startTarget =
+                resolveTelegramStartNavigation(to) ||
+                routeFromTelegramStartParam(readTelegramStartParam())
+            if (startTarget) {
+                return navigateTo(startTarget, { replace: true })
+            }
+            if (to.path === '/' && isTelegramMiniApp()) {
+                markReady()
+                return
+            }
             return navigateTo(resolveHomePath(authStore.user))
         }
         markReady()
