@@ -47,11 +47,28 @@ export function useOrdersChatActions(options: {
     return full || u.username || 'Haydovchi'
   }
 
-  /** Mavjud chat bo'lsa to'g'ridan; aks holda /chat/open orqali darhol UI */
+  /** Yangi chat — /chat/open (darhol UI, API sahifada) */
   const goOpenChat = (query: Record<string, string>) => {
     beforeNavigate?.()
     return navigateTo({
       path: '/driver/chat/open',
+      query: compactQuery(query),
+    })
+  }
+
+  /** Mavjud chat — bir marta navigatsiya, cache + ulanish oldindan */
+  const openExistingChat = (chat: IChat, query: Record<string, string>) => {
+    const chatId = String(chat._id || '').trim()
+    if (!chatId) return goOpenChat(query)
+
+    beforeNavigate?.()
+    chatStore.primeFromChat(chat)
+    chatStore.hydrateMessagesFromCache(chatId)
+    void chatStore.connect(chatId, { silent: true })
+    void chatStore.fetchMessages(chatId)
+
+    return navigateTo({
+      path: `/driver/chat/${chatId}`,
       query: compactQuery(query),
     })
   }
@@ -67,7 +84,9 @@ export function useOrdersChatActions(options: {
     } else {
       chatStore.chats.unshift(chat)
     }
+    chatStore.hydrateMessagesFromCache(id)
     void chatStore.connect(id, { silent: true })
+    void chatStore.fetchMessages(id)
   }
 
   const onMessage = async (order: IOrder) => {
@@ -78,19 +97,14 @@ export function useOrdersChatActions(options: {
     const existing = findChatByOrderPeer(order._id, peerId)
     const linkQ = orderQuickLinkQuery(order)
 
-    beforeNavigate?.()
-
     if (existing?._id) {
-      const chatId = String(existing._id).trim()
-      chatStore.primeFromChat(existing)
-      void chatStore.connect(chatId, { silent: true })
-      // Guruh tugmasi bilan bir xil tez yo'l — /chat/open (to'liq loadChat emas)
-      return goOpenChat({
+      return openExistingChat(existing, {
         open: 'order',
-        chatId,
         ...linkQ,
       })
     }
+
+    beforeNavigate?.()
 
     // Chat yaratishni navigatsiya bilan parallel boshlash
     void chatStore.startChatFromOrder(order._id).then((res: { success?: boolean; data?: IChat }) => {
@@ -197,13 +211,9 @@ export function useOrdersChatActions(options: {
       : { name, orderId }
 
     if (existing?._id) {
-      const chatId = String(existing._id).trim()
-      chatStore.primeFromChat(existing)
-      void chatStore.connect(chatId, { silent: true })
-      return goOpenChat({
+      return openExistingChat(existing, {
         open: 'user',
         userId: String(user.userId),
-        chatId,
         ...linkQ,
       })
     }
@@ -228,18 +238,14 @@ export function useOrdersChatActions(options: {
       username: String(order.bookedByUser?.username || '').replace(/^@/, ''),
     })
 
-    beforeNavigate?.()
     if (existing?._id) {
-      const chatId = String(existing._id).trim()
-      chatStore.primeFromChat(existing)
-      void chatStore.connect(chatId, { silent: true })
-      return goOpenChat({
+      return openExistingChat(existing, {
         open: 'booked',
-        chatId,
         ...linkQ,
       })
     }
 
+    beforeNavigate?.()
     return goOpenChat({
       open: 'booked',
       ...linkQ,
@@ -260,18 +266,14 @@ export function useOrdersChatActions(options: {
       ...(order.owner?.phone ? { phone: order.owner.phone } : {}),
     })
 
-    beforeNavigate?.()
     if (existing?._id) {
-      const chatId = String(existing._id).trim()
-      chatStore.primeFromChat(existing)
-      void chatStore.connect(chatId, { silent: true })
-      return goOpenChat({
+      return openExistingChat(existing, {
         open: 'agent',
-        chatId,
         ...linkQ,
       })
     }
 
+    beforeNavigate?.()
     return goOpenChat({
       open: 'agent',
       ...linkQ,

@@ -367,12 +367,12 @@
 import { useAuthStore } from '~/stores/auth.store'
 import { useChatStore } from '~/stores/chat.store'
 import { normalizeTelHref, normalizeTo998, resolveChatPhone, extractPhoneFromText, revealOrderTextPhones } from '~/utils/phone'
-import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, hasOrderSenderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient, mergeOrderChatContext, pickQuickLinkQuery } from '~/utils/orderChatQuery'
+import { resolveOrderTextHint, resolveQuickLinks, buildChatStubFromOrderQuery, buildChatStubFromOrder, buildMinimalOrderChatStub, hasOrderQueryContext, hasOrderSenderQueryContext, resolveChatFromOpenQuery, isFromGroupTakeClient, mergeOrderChatContext } from '~/utils/orderChatQuery'
 import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
-import { compactQuery } from '~/utils/navigationQuery'
 import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
+import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
@@ -1045,8 +1045,8 @@ const preconnectChatOpen = (id: string, chat?: import('~/types').IChat | null) =
   void chatStore.connect(id, { silent: true })
 }
 
-/** Chat topildi — ro'yxatga qo'shish va real chatId ga o'tish */
-const finalizeOpenChat = async (chat: import('~/types').IChat) => {
+/** Chat topildi — store + ulanish; qayta navigatsiya yo'q (2x loadChat oldini oladi) */
+const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
   const newId = String(chat._id || '')
   if (!newId) return false
 
@@ -1081,23 +1081,18 @@ const finalizeOpenChat = async (chat: import('~/types').IChat) => {
     chatStore.chats.unshift(merged)
   }
 
+  chatStore.hydrateMessagesFromCache(newId)
   preconnectChatOpen(newId, merged)
   void chatStore.fetchMessages(newId)
-
-  const nextQuery = pickQuickLinkQuery(q)
-  if (isFromGroupTakeClient(q)) {
-    nextQuery.fromGroup = '1'
-  }
-
   clearTelegramStartParamStorage()
-
-  await navigateTo({
-    path: `/driver/chat/${newId}`,
-    query: compactQuery(nextQuery),
-    replace: true,
-  })
   return true
 }
+
+const canSkipOrderTakeAccessCheck = (): boolean =>
+  !resolveOrderTakeAccessRedirect({
+    user: authStore.user,
+    fullPath: route.fullPath,
+  })
 
 /** Order tugmasidan kelgan ochilish — API shu yerda, keyin real chatId ga replace */
 const bootstrapOpenChat = async (seq: number) => {
@@ -1132,7 +1127,7 @@ const bootstrapOpenChat = async (seq: number) => {
 
     if (res?.success && res.data?._id) {
       const chat = res.data as import('~/types').IChat
-      if (!(await finalizeOpenChat(chat))) {
+      if (!adoptOpenChatInPlace(chat)) {
         await fail('Chat identifikatori topilmadi')
       }
       return true
@@ -1155,28 +1150,29 @@ const bootstrapOpenChat = async (seq: number) => {
   primeInstantOrderUi()
 
   const needsAccess = !!(mode === 'order' && orderId) || !!(mode === 'user' && userId)
+  const skipAccessCheck = needsAccess && canSkipOrderTakeAccessCheck()
+
+  const localChat = resolveChatFromOpenQuery(q, chatStore.chats)
+  if (localChat?._id) {
+    const stub = buildChatStubFromOrderQuery(q)
+    chatStore.currentChat = {
+      ...localChat,
+      ...(stub || {}),
+      peer: { ...localChat.peer, ...(stub?.peer || {}) },
+    } as import('~/types').IChat
+    if (seq !== loadSeq) return
+    adoptOpenChatInPlace(chatStore.currentChat)
+    return
+  }
+
   const chatApi = startChatApi()
+  if (!chatApi) {
+    await fail()
+    return
+  }
 
   try {
-    const localChat = resolveChatFromOpenQuery(q, chatStore.chats)
-    if (localChat?._id) {
-      const stub = buildChatStubFromOrderQuery(q)
-      chatStore.currentChat = {
-        ...localChat,
-        ...(stub || {}),
-        peer: { ...localChat.peer, ...(stub?.peer || {}) },
-      } as import('~/types').IChat
-      if (seq !== loadSeq) return
-      await finalizeOpenChat(chatStore.currentChat)
-      return
-    }
-
-    if (!chatApi) {
-      await fail()
-      return
-    }
-
-    if (needsAccess) {
+    if (needsAccess && !skipAccessCheck) {
       const [allowed, res] = await Promise.all([
         ensureOrderTakeAccessFromApi(route.fullPath),
         chatApi,
@@ -1220,8 +1216,11 @@ const loadChat = async (id: string) => {
     applyInstantOrderUiFromQuery()
     const early = resolveChatFromOpenQuery(route.query as Record<string, unknown>, chatStore.chats)
     if (early?._id) {
+      const earlyId = String(early._id)
       chatStore.primeFromChat(early)
-      preconnectChatOpen(String(early._id), early)
+      chatStore.hydrateMessagesFromCache(earlyId)
+      preconnectChatOpen(earlyId, early)
+      void chatStore.fetchMessages(earlyId)
     }
     await bootstrapOpenChat(seq)
     return
