@@ -91,22 +91,32 @@
 
       <div class="grid grid-cols-2 gap-2">
         <div
-          class="rounded-xl p-2.5 border bg-slate-50 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800"
+          class="rounded-xl p-2.5 border bg-emerald-50 dark:bg-emerald-950/35 border-emerald-100 dark:border-emerald-900/50"
         >
-          <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <div
+            class="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center text-white text-[11px] mb-2 shadow-sm"
+          >
+            <font-awesome-icon icon="fa-solid fa-calendar-day" />
+          </div>
+          <p class="text-[9px] font-black uppercase tracking-wide text-emerald-600/90 dark:text-emerald-400/90">
             Ulangan sana
           </p>
-          <p class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">
+          <p class="mt-1 text-sm font-black tabular-nums text-emerald-800 dark:text-emerald-200 leading-tight">
             {{ startDate }}
           </p>
         </div>
         <div
-          class="rounded-xl p-2.5 border bg-slate-50 dark:bg-slate-950/40 border-slate-100 dark:border-slate-800"
+          class="rounded-xl p-2.5 border bg-sky-50 dark:bg-sky-950/35 border-sky-100 dark:border-sky-900/50"
         >
-          <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
+          <div
+            class="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center text-white text-[11px] mb-2 shadow-sm"
+          >
+            <font-awesome-icon icon="fa-solid fa-clock" />
+          </div>
+          <p class="text-[9px] font-black uppercase tracking-wide text-sky-600/90 dark:text-sky-400/90">
             Tugash sanasi
           </p>
-          <p class="mt-1 text-sm font-black text-slate-800 dark:text-slate-100">
+          <p class="mt-1 text-sm font-black tabular-nums text-sky-800 dark:text-sky-200 leading-tight">
             {{ endDate }}
           </p>
         </div>
