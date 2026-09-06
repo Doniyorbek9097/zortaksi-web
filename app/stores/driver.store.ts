@@ -41,6 +41,10 @@ export const useDriverStore = defineStore('driver', () => {
   const page = ref(1)
   const totalPages = ref(1)
   const total = ref(0)
+  const listFilter = ref<DriverFilter>('all')
+  const listSearch = ref('')
+  const listScrollY = ref(0)
+  const listHydrated = ref(false)
 
   const hasMore = computed(() => page.value < totalPages.value)
 
@@ -277,6 +281,10 @@ export const useDriverStore = defineStore('driver', () => {
     totalPages,
     total,
     hasMore,
+    listFilter,
+    listSearch,
+    listScrollY,
+    listHydrated,
     fetchDrivers,
     loadMore,
     setActive,

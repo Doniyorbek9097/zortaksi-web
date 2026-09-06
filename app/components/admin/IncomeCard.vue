@@ -106,6 +106,36 @@
       </div>
     </div>
 
+    <!-- Online to'lovlar (shu oy) -->
+    <div class="grid grid-cols-2 gap-2 px-3 pb-3">
+      <div
+        class="rounded-xl p-2.5 border bg-sky-50 dark:bg-sky-950/35 border-sky-100 dark:border-sky-900/50"
+      >
+        <p class="text-[9px] font-black uppercase tracking-wide text-sky-600/90 dark:text-sky-400/90">
+          Click to'lov
+        </p>
+        <p class="mt-1 text-[14px] font-black tabular-nums leading-tight text-sky-700 dark:text-sky-300 break-all">
+          {{ formattedClick }}
+        </p>
+        <p class="mt-1 text-[9px] font-bold text-sky-600/70 dark:text-sky-400/70">
+          {{ clickPayments }} to'lov
+        </p>
+      </div>
+      <div
+        class="rounded-xl p-2.5 border bg-indigo-50 dark:bg-indigo-950/35 border-indigo-100 dark:border-indigo-900/50"
+      >
+        <p class="text-[9px] font-black uppercase tracking-wide text-indigo-600/90 dark:text-indigo-400/90">
+          Card to'lov
+        </p>
+        <p class="mt-1 text-[14px] font-black tabular-nums leading-tight text-indigo-700 dark:text-indigo-300 break-all">
+          {{ formattedCard }}
+        </p>
+        <p class="mt-1 text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/70">
+          {{ cardPayments }} to'lov
+        </p>
+      </div>
+    </div>
+
     <!-- Jami -->
     <div
       class="mx-3 mb-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60"
@@ -140,6 +170,10 @@ interface Props {
   todayPayments?: number
   weekAmount?: number
   weekPayments?: number
+  clickAmount?: number
+  clickPayments?: number
+  cardAmount?: number
+  cardPayments?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -150,6 +184,10 @@ const props = withDefaults(defineProps<Props>(), {
   todayPayments: 0,
   weekAmount: 0,
   weekPayments: 0,
+  clickAmount: 0,
+  clickPayments: 0,
+  cardAmount: 0,
+  cardPayments: 0,
 })
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
@@ -157,4 +195,6 @@ const formattedAmount = computed(() => fmt(props.amount))
 const formattedTotal = computed(() => fmt(props.total ?? props.amount))
 const formattedToday = computed(() => fmt(props.todayAmount))
 const formattedWeek = computed(() => fmt(props.weekAmount))
+const formattedClick = computed(() => fmt(props.clickAmount))
+const formattedCard = computed(() => fmt(props.cardAmount))
 </script>

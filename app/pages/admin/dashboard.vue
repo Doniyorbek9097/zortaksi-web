@@ -22,6 +22,10 @@
       :today-payments="todayIncome.payments"
       :week-amount="weekIncome.amount"
       :week-payments="weekIncome.payments"
+      :click-amount="monthIncome.clickAmount"
+      :click-payments="monthIncome.clickPayments"
+      :card-amount="monthIncome.cardAmount"
+      :card-payments="monthIncome.cardPayments"
     />
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">

@@ -52,7 +52,7 @@
         @balance="openBalance(d)"
         @tariff="openTariff(d)"
         @block="onBlock(d)"
-        @open="navigateTo(`/admin/driver/${encodeURIComponent(d.id)}`)"
+        @open="openDriver(d.id)"
       />
 
       <!-- Infinite scroll sentinel -->
@@ -123,13 +123,23 @@ import type { DriverRow, DriverFilter } from '~/stores/driver.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
 
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: 'admin', keepalive: true })
 
 const store = useDriverStore()
 const tariffStore = useTariffStore()
 
-const filter = ref<DriverFilter>('all')
-const search = ref('')
+const filter = computed({
+  get: () => store.listFilter,
+  set: (v: DriverFilter) => {
+    store.listFilter = v
+  },
+})
+const search = computed({
+  get: () => store.listSearch,
+  set: (v: string) => {
+    store.listSearch = v
+  },
+})
 const selected = ref<Set<string>>(new Set())
 const error = ref('')
 const success = ref('')
@@ -217,9 +227,27 @@ const load = async () => {
   error.value = ''
   try {
     await store.fetchDrivers({ page: 1, ...queryParams() })
+    store.listHydrated = true
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Haydovchilar yuklanmadi'
   }
+}
+
+const persistScroll = () => {
+  if (!import.meta.client) return
+  store.listScrollY = window.scrollY || document.documentElement.scrollTop || 0
+}
+
+const restoreScroll = () => {
+  if (!import.meta.client) return
+  const y = store.listScrollY
+  if (y <= 0) return
+  const apply = () => window.scrollTo({ top: y, left: 0, behavior: 'instant' })
+  apply()
+  requestAnimationFrame(() => {
+    apply()
+    requestAnimationFrame(apply)
+  })
 }
 
 usePullToRefresh(load)
@@ -245,6 +273,11 @@ watch(search, () => {
 
 const onCall = (d: DriverRow) => {
   if (import.meta.client && d.phone) window.location.href = `tel:+${d.phone.replace(/\D/g, '')}`
+}
+
+const openDriver = (id: string) => {
+  persistScroll()
+  void navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
 }
 
 const openBalance = (d: DriverRow) => {
@@ -372,7 +405,11 @@ const confirmBlock = async () => {
 }
 
 onMounted(() => {
-  load()
+  if (!store.drivers.length) {
+    void load()
+  } else {
+    nextTick(() => restoreScroll())
+  }
   tariffStore.fetchTariffs().catch(() => {})
 
   observer = new IntersectionObserver(
@@ -384,11 +421,21 @@ onMounted(() => {
   if (sentinel.value) observer.observe(sentinel.value)
 })
 
+onActivated(() => {
+  restoreScroll()
+  setTimeout(restoreScroll, 50)
+})
+
+onDeactivated(() => {
+  persistScroll()
+})
+
 watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
 })
 
 onBeforeUnmount(() => {
+  persistScroll()
   if (observer) observer.disconnect()
   if (searchTimer) clearTimeout(searchTimer)
 })

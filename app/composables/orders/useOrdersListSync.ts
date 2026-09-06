@@ -48,26 +48,23 @@ export function useOrdersListSync(options: {
   const restoreScroll = () => {
     if (!import.meta.client) return
     const y = orderStore.ordersListScrollY
-    const anchorId = orderStore.ordersListAnchorOrderId
 
-    const scrollToAnchor = () => {
-      if (!anchorId) return false
+    const apply = () => {
+      if (y != null && y > 0) {
+        window.scrollTo({ top: y, left: 0, behavior: 'instant' })
+        return
+      }
+
+      const anchorId = orderStore.ordersListAnchorOrderId
+      if (!anchorId) return
       const el = document.querySelector(
         `.order-seen-anchor[data-order-id="${anchorId}"]`,
       ) as HTMLElement | null
-      if (!el) return false
+      if (!el) return
       const top =
         el.getBoundingClientRect().top +
-        (window.scrollY || document.documentElement.scrollTop || 0) -
-        72
-      window.scrollTo(0, Math.max(0, top))
-      return true
-    }
-
-    const apply = () => {
-      if (scrollToAnchor()) return
-      if (y == null || y <= 0) return
-      window.scrollTo(0, y)
+        (window.scrollY || document.documentElement.scrollTop || 0)
+      window.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'instant' })
     }
 
     apply()

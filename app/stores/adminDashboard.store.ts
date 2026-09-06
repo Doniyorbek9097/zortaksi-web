@@ -4,6 +4,10 @@ export interface IncomeBlock {
   amount: number
   payments: number
   total: number
+  clickAmount?: number
+  clickPayments?: number
+  cardAmount?: number
+  cardPayments?: number
 }
 
 export interface DataRow {
