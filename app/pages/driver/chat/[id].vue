@@ -1,6 +1,7 @@
 <template>
   <div
-    class="chat-shell fixed inset-0 z-40 flex flex-col overflow-hidden w-full max-w-[100vw] bg-slate-50 dark:bg-slate-950"
+    class="fixed inset-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    style="height: 100dvh; width: 100%;"
   >
     <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
@@ -16,7 +17,7 @@
       <template #actions>
         <div
           v-if="showClearHistoryBtn && !selectionMode"
-          class="w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
+          class="mx-auto w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
         >
           <button
             type="button"
@@ -36,7 +37,7 @@
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
-      <div class="w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
+      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
         <div
           v-if="fallbackOrderText"
           class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
@@ -65,7 +66,7 @@
               {{ openError }}
             </p>
           </div>
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full max-w-xs">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mx-auto w-full max-w-xs">
             <button
               type="button"
               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[12px] font-black active:scale-95"
@@ -98,7 +99,7 @@
     </div>
 
     <div v-else ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
-      <div class="w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
+      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
           v-if="showOrderBanner"
@@ -218,7 +219,7 @@
     </div>
 
     <!-- Ulanish banneri — order chatda input placeholder yetarli -->
-    <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="w-full max-w-2xl px-3 pb-1">
+    <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="mx-auto w-full max-w-2xl px-3 pb-1">
       <div class="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold">
         <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
         {{ 'Foydalanuvchiga ulanmoqda... Iltimos kuting' }}
@@ -226,7 +227,7 @@
     </div>
 
     <!-- O'z hisob ishlamadi — proxy orqali ulanish uchun RUXSAT so'raladi -->
-    <div v-else-if="conn === 'proxy-required'" class="w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
@@ -253,7 +254,7 @@
       </div>
     </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
@@ -279,7 +280,7 @@
       </div>
     </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
@@ -1308,13 +1309,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.chat-shell {
-  left: 0 !important;
-  right: 0 !important;
-  width: 100% !important;
-  max-width: 100vw !important;
-  transform: none !important;
-}
 .typing-dots {
   display: inline-flex;
   align-items: center;

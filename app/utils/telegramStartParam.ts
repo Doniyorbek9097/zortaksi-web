@@ -223,6 +223,43 @@ export function resolveTelegramStartNavigation(
   return target
 }
 
+/** Vue yuklanishidan oldin URL ni chat/open ga almashtirish — oraliq / sahifa UI buzilmasin */
+function applyEarlyStartParamUrl(): void {
+  if (!import.meta.client) return
+  const path = window.location.pathname
+  if (path !== '/' && path !== '') return
+
+  const param =
+    readStartParamFromTelegramWebApp() ||
+    readStartParamFromHash() ||
+    readStartParamFromHref() ||
+    ''
+
+  if (!param) return
+
+  const target = routeFromTelegramStartParam(param)
+  if (!target || typeof target !== 'object' || !('path' in target)) return
+
+  const query = (target as { query?: Record<string, string> }).query || {}
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(query)) {
+    if (v != null && String(v).trim()) qs.set(k, String(v))
+  }
+  const nextPath = String((target as { path?: string }).path || '')
+  if (!nextPath) return
+  const next = qs.toString() ? `${nextPath}?${qs.toString()}` : nextPath
+  const current = `${window.location.pathname}${window.location.search}`
+  if (current !== next) {
+    window.history.replaceState(window.history.state, '', next)
+  }
+  try {
+    sessionStorage.setItem(TG_START_STORAGE, param)
+  } catch {
+    /* */
+  }
+}
+
 if (import.meta.client) {
+  applyEarlyStartParamUrl()
   captureTelegramStartParam()
 }
