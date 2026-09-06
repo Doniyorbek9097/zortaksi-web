@@ -152,21 +152,23 @@
 
     <!-- Jami -->
     <div
-      class="mx-3 mb-3 flex items-center gap-2 rounded-lg px-2 py-1.5 border border-emerald-200/70 dark:border-emerald-800/50 bg-emerald-500/[0.08] dark:bg-emerald-950/35"
+      class="mx-3 mb-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 border border-emerald-200/70 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/35"
     >
-      <div
-        class="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[9px] shrink-0 shadow-sm"
-      >
-        <font-awesome-icon icon="fa-solid fa-wallet" />
-      </div>
-      <div class="min-w-0 flex-1 leading-none">
-        <p class="text-[8px] font-black uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+      <div class="flex items-center gap-2 min-w-0">
+        <div
+          class="w-6 h-6 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-[10px] shrink-0 shadow-sm"
+        >
+          <font-awesome-icon icon="fa-solid fa-wallet" />
+        </div>
+        <span class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 truncate">
           Jami daromad
-        </p>
-        <p class="text-[12px] font-black tabular-nums text-emerald-800 dark:text-emerald-200 truncate">
-          {{ formattedTotal }} so'm
-        </p>
+        </span>
       </div>
+      <span
+        class="text-[13px] font-black tabular-nums text-emerald-800 dark:text-emerald-100 shrink-0"
+      >
+        {{ formattedTotal }} so'm
+      </span>
     </div>
   </section>
 </template>
