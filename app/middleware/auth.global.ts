@@ -20,6 +20,7 @@ import {
     classifyApiError,
     isConnectivityError,
 } from '~/utils/connectionError'
+import { resolveTelegramStartNavigation } from '~/utils/telegramStartParam'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -65,14 +66,19 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         if (!token.value && isProtectedPath(to.path)) {
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
-        // Kirilgan foydalanuvchi intro/auth sahifalarini SSR da ko'rmasin
-        if (token.value && isAuthEntryPath(to.path)) {
+        // "/" — Telegram start_param faqat client hash/initData da; SSR dashboard ga otmasin
+        if (token.value && isAuthEntryPath(to.path) && to.path !== '/') {
             return navigateTo('/driver/dashboard')
         }
         return
     }
 
     // ——— CLIENT ———
+    const telegramStartTarget = resolveTelegramStartNavigation(to)
+    if (telegramStartTarget) {
+        return navigateTo(telegramStartTarget, { replace: true })
+    }
+
     if (isConnectionErrorPath(to.path)) {
         authStore.sessionReady = true
         return
@@ -210,6 +216,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     // Redirectlar — sessionReady hali false (loading), keyin yangi sahifada true
     if (isAuthEntryPath(to.path)) {
+        const startTarget = resolveTelegramStartNavigation(to)
+        if (startTarget) {
+            return navigateTo(startTarget, { replace: true })
+        }
         const canSkipAuth =
             !!authStore.user?.verified || hasPanelShellAccess(authStore.user)
         if (to.path === '/auth') {
