@@ -4,7 +4,7 @@
       ref="rootEl"
       class="relative overflow-hidden touch-pan-y bg-slate-900"
       :class="embedded
-        ? 'border-t border-slate-200/80 dark:border-slate-800'
+        ? ''
         : 'rounded-2xl shadow-md shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-200/80 dark:ring-slate-700/80'"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
