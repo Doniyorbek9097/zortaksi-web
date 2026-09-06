@@ -71,7 +71,7 @@ export function useOrdersChatActions(options: {
     chatStore.primeFromChat(chatStore.currentChat)
     chatStore.isLoadingMessages = false
     if (chatStore.connectionStatus === 'idle') {
-      chatStore.primeOrderProxyOffer(chatStore.currentChat)
+      chatStore.primeOrderChatConnecting(chatStore.currentChat)
     }
   }
 

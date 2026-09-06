@@ -296,19 +296,9 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             return { success: true, data: { status: 'ready' as ConnStatus } }
         }
 
-        const orderProxyFirst =
-            shouldOfferOrderProxyFirst(chat) && !opts.viaProxy
-
         if (!isInAppChatLike(chat)) {
-            if (orderProxyFirst) {
-                connectionStatus.value = 'proxy-required'
-                if (!String(connectionReason.value || '').trim()) {
-                    connectionReason.value = ORDER_PROXY_PROMPT
-                }
-            } else {
-                connectionStatus.value = 'connecting'
-                connectionReason.value = ''
-            }
+            connectionStatus.value = 'connecting'
+            connectionReason.value = ''
         }
         activeConnectChatId = chatId
 
@@ -348,8 +338,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 } else if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
                     connectionReason.value = res.message ?? ''
-                } else if (orderProxyFirst) {
-                    connectionStatus.value = 'proxy-required'
                 }
                 return res
             }
@@ -364,22 +352,26 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = err?.message ?? ''
-            } else if (orderProxyFirst) {
-                connectionStatus.value = 'proxy-required'
             }
             throw error
         }
     }
 
-    /** Order chat — peer link yo'q bo'lsa darhol proksi taklifi */
-    const primeOrderProxyOffer = (chat?: import('~/types').IChat | null) => {
+    /** Order chat — ulanish boshlanishi (proxy faqat muvaffaqiyatsizlikdan keyin) */
+    const primeOrderChatConnecting = (chat?: import('~/types').IChat | null) => {
         const c = chat ?? findChatById(String(currentChat.value?._id || '')) ?? currentChat.value
         if (!shouldOfferOrderProxyFirst(c)) return
-        if (connectionStatus.value === 'ready') return
-        connectionStatus.value = 'proxy-required'
-        if (!String(connectionReason.value || '').trim()) {
-            connectionReason.value = ORDER_PROXY_PROMPT
+        if (hasTelegramPeerLink(c)) return
+        if (
+            connectionStatus.value === 'ready' ||
+            connectionStatus.value === 'connecting' ||
+            connectionStatus.value === 'proxy-required' ||
+            connectionStatus.value === 'unreachable'
+        ) {
+            return
         }
+        connectionStatus.value = 'connecting'
+        connectionReason.value = ''
     }
 
     /**
@@ -510,7 +502,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         connect,
         ensureTelegramReady,
         primeFromChat,
-        primeOrderProxyOffer,
+        primeOrderChatConnecting,
         isChatLikelyReady,
         hasTelegramPeerLink,
         fetchPresence,

@@ -10,27 +10,35 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :can-call="!!callPhone"
-      :call-href="callTelHref"
+      :show-clear-history="showClearHistoryBtn && !selectionMode"
+      :clearing="isClearingHistory"
       @back="goBack"
+      @clear="openClearHistoryDialog"
     >
       <template #actions>
         <div
-          v-if="showClearHistoryBtn && !selectionMode"
+          v-if="callPhone && callTelHref && !selectionMode"
           class="mx-auto w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
         >
-          <button
-            type="button"
-            :disabled="isClearingHistory"
-            class="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/15 border border-red-200/60 dark:border-red-900/40 active:scale-[0.98] transition-all disabled:opacity-50"
-            @click="openClearHistoryDialog"
+          <a
+            :href="callTelHref"
+            class="chat-call-hero group"
           >
+            <span class="chat-call-hero__ring" aria-hidden="true" />
+            <span class="chat-call-hero__icon">
+              <font-awesome-icon icon="fa-solid fa-phone" class="text-lg" />
+            </span>
+            <span class="flex flex-col items-start leading-tight">
+              <span class="text-[11px] font-bold uppercase tracking-[0.14em] opacity-90">
+                Buyurtmachi
+              </span>
+              <span class="text-[15px] font-black">Qo'ng'iroq qilish</span>
+            </span>
             <font-awesome-icon
-              :icon="isClearingHistory ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
-              :class="{ 'animate-spin': isClearingHistory }"
+              icon="fa-solid fa-chevron-right"
+              class="ml-auto text-sm opacity-80 group-active:translate-x-0.5 transition-transform"
             />
-            Chat tarixini tozalash
-          </button>
+          </a>
         </div>
       </template>
     </ChatHeader>
@@ -226,8 +234,8 @@
       </div>
     </div>
 
-    <!-- O'z hisob ishlamadi — proxy orqali ulanish uchun RUXSAT so'raladi -->
-    <div v-else-if="conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <!-- O'z hisob ishlamadi — faqat ulanish tugagach -->
+    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
         <p>
           <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
@@ -736,7 +744,9 @@ const showComposer = computed(
     composerLikelyReady.value ||
     conn.value === 'ready' ||
     conn.value === 'connecting' ||
-    conn.value === 'idle'),
+    conn.value === 'idle' ||
+    conn.value === 'proxy-required' ||
+    conn.value === 'unreachable'),
 )
 
 const composerDisabled = computed(
@@ -745,6 +755,13 @@ const composerDisabled = computed(
 
 const composerPlaceholder = computed(() => {
   if (!hasRealChatId.value || composerBusy.value) return 'Ulanmoqda...'
+  if (
+    needsTelegramConnect.value &&
+    (conn.value === 'connecting' || conn.value === 'idle') &&
+    !hasPeerLink.value
+  ) {
+    return 'Telegram ulanmoqda...'
+  }
   if (conn.value === 'proxy-required') {
     return "Proksi orqali ulanish tavsiya etiladi"
   }
@@ -752,14 +769,6 @@ const composerPlaceholder = computed(() => {
     return callPhone.value
       ? 'Ulanib bo\'lmadi — telefon qiling'
       : "Telegram orqali ulanib bo'lmadi"
-  }
-  if (
-    !isInAppChat.value &&
-    conn.value !== 'ready' &&
-    !hasPeerLink.value &&
-    !isOrderSenderChat.value
-  ) {
-    return 'Telegram ulanmoqda...'
   }
   return 'Xabar yozing...'
 })
@@ -1022,7 +1031,7 @@ const applyInstantOrderUiFromQuery = () => {
 
   chatStore.isLoadingMessages = false
   if (!isInAppChat.value && chatStore.connectionStatus === 'idle') {
-    chatStore.primeOrderProxyOffer(chatStore.currentChat)
+    chatStore.primeOrderChatConnecting(chatStore.currentChat)
   }
 
   const listedId = String(q.chatId || route.params.id || '')
@@ -1159,7 +1168,7 @@ const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
     merged.kind !== 'direct' &&
     !hasTelegramPeerLink(merged)
   ) {
-    chatStore.primeOrderProxyOffer(merged)
+    chatStore.primeOrderChatConnecting(merged)
   }
 
   const idx = chatStore.chats.findIndex((c) => c._id === newId)
@@ -1358,7 +1367,7 @@ const loadChat = async (id: string) => {
       const chatRef = listed || chatStore.currentChat
       const linked = hasTelegramPeerLink(chatRef)
       if (orderChat && !linked) {
-        chatStore.primeOrderProxyOffer(chatRef)
+        chatStore.primeOrderChatConnecting(chatRef)
       }
       const conn = chatStore.connectionStatus
       const skipRepeatOwnConnect =
@@ -1493,5 +1502,68 @@ onBeforeUnmount(() => {
 @keyframes typing-bounce {
   0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-2px); }
+}
+
+.chat-call-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 1rem;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981 0%, #059669 45%, #047857 100%);
+  box-shadow:
+    0 4px 18px rgba(16, 185, 129, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  overflow: hidden;
+  animation: call-hero-breathe 2.4s ease-in-out infinite;
+}
+
+.chat-call-hero:active {
+  transform: scale(0.98);
+}
+
+.chat-call-hero__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
+  animation: call-hero-ring 2s ease-out infinite;
+}
+
+.chat-call-hero__icon {
+  position: relative;
+  z-index: 1;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  animation: call-icon-wiggle 1.8s ease-in-out infinite;
+}
+
+@keyframes call-hero-breathe {
+  0%, 100% { box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; }
+  50% { box-shadow: 0 6px 26px rgba(16, 185, 129, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.18) inset; }
+}
+
+@keyframes call-hero-ring {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
+  70% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+}
+
+@keyframes call-icon-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  20% { transform: rotate(-12deg) scale(1.05); }
+  40% { transform: rotate(10deg) scale(1.08); }
+  60% { transform: rotate(-8deg) scale(1.05); }
+  80% { transform: rotate(0deg) scale(1); }
 }
 </style>

@@ -154,7 +154,7 @@ export const useChatStore = defineStore('chat', () => {
         connect: connection.connect,
         ensureTelegramReady: connection.ensureTelegramReady,
         primeFromChat: connection.primeFromChat,
-        primeOrderProxyOffer: connection.primeOrderProxyOffer,
+        primeOrderChatConnecting: connection.primeOrderChatConnecting,
         fetchPresence: connection.fetchPresence,
         resetConnection: connection.resetConnection,
         fetchChats: list.fetchChats,
