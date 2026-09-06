@@ -1,18 +1,26 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-5">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
     <!-- Header -->
     <DashboardHeader action-button="download" @download="onDownloadApp" @bonus="onBonus" />
 
-    <!-- Caption — header emas, sahifa ichida -->
-    <div class="flex items-center gap-2 -mt-1 px-0.5">
-      <font-awesome-icon
-        :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'"
-        class="text-sm shrink-0"
-        :class="isNight ? 'text-indigo-400' : 'text-amber-400'"
-      />
-      <p class="text-[14px] font-bold text-slate-700 dark:text-slate-200 min-w-0 truncate">
-        {{ greeting }}, {{ firstName }}!
-      </p>
+    <!-- Salomlashish -->
+    <div
+      class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900/80"
+    >
+      <div
+        class="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 shadow-sm"
+        :class="isNight ? 'bg-indigo-500 text-white' : 'bg-amber-400 text-white'"
+      >
+        <font-awesome-icon :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'" />
+      </div>
+      <div class="min-w-0">
+        <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">
+          {{ greeting }}, {{ firstName }}!
+        </p>
+        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+          Haydovchi paneli
+        </p>
+      </div>
     </div>
 
     <!-- Payment banner -->
@@ -36,26 +44,47 @@
     />
 
     <!-- Platform statistics -->
-    <section class="space-y-3">
-      <h3 class="text-[11px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500 px-0.5">
-        Platforma statistikasi
-      </h3>
-      <div v-if="statsLoading && !statsReady" class="grid grid-cols-2 gap-2.5 sm:gap-3">
-        <div
-          v-for="n in 6"
-          :key="n"
-          class="h-[76px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
-        />
+    <section
+      class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
+    >
+      <div
+        class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-sky-950/20"
+      >
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div
+            class="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-sm shadow-sm shrink-0"
+          >
+            <font-awesome-icon icon="fa-solid fa-chart-line" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 leading-tight">
+              Platforma statistikasi
+            </p>
+            <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+              Jonli ma'lumotlar
+            </p>
+          </div>
+        </div>
       </div>
-      <div v-else class="grid grid-cols-2 gap-2.5 sm:gap-3">
-        <DashboardStatCard
-          v-for="stat in stats"
-          :key="stat.label"
-          :value="stat.value"
-          :label="stat.label"
-          :icon="stat.icon"
-          :color="stat.color"
-        />
+
+      <div class="p-3">
+        <div v-if="statsLoading && !statsReady" class="grid grid-cols-2 gap-2">
+          <div
+            v-for="n in 6"
+            :key="n"
+            class="h-[88px] rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+          />
+        </div>
+        <div v-else class="grid grid-cols-2 gap-2">
+          <DashboardStatCard
+            v-for="stat in stats"
+            :key="stat.label"
+            :value="stat.value"
+            :label="stat.label"
+            :icon="stat.icon"
+            :color="stat.color"
+          />
+        </div>
       </div>
     </section>
   </div>
