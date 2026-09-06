@@ -157,8 +157,8 @@ export function useOrdersChatActions(options: {
 
     if (onOpenRoute || String(chatStore.currentChat?.orderId || '') === orderId) {
       chatStore.currentChat = mergeOrderChatContext(
-        chatStore.currentChat,
         stub,
+        chatStore.currentChat,
         chat,
       ) as IChat
       chatStore.primeFromChat(chatStore.currentChat)

@@ -820,7 +820,11 @@ const onSend = async (text: string) => {
   chatStore.messagesChatId = id
 
   if (needsTelegramConnect.value) {
-    void chatStore.ensureTelegramReady(id)
+    if (isOrderSenderChat.value) {
+      await chatStore.connect(id, { silent: true })
+    } else {
+      await chatStore.ensureTelegramReady(id)
+    }
   }
 
   const replyId = replyTarget.value?.id
@@ -1123,8 +1127,8 @@ const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
   const q = route.query as Record<string, unknown>
   const queryStub = buildChatStubFromOrderQuery(q)
   const merged = mergeOrderChatContext(
-    chatStore.currentChat,
     queryStub,
+    chatStore.currentChat,
     chat,
   ) as import('~/types').IChat
 

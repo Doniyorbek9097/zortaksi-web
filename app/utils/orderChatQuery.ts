@@ -52,6 +52,12 @@ export function hasOrderQueryContext(query: Record<string, unknown>): boolean {
   return !!String(query.orderId || '').trim()
 }
 
+/** Placeholder emas — haqiqiy Telegram userId */
+export function isValidPeerUserId(userId?: string | null): boolean {
+  const s = String(userId || '').trim()
+  return !!s && s !== '0'
+}
+
 /** Order API javobidan chat stub (sender/guruh URL query emas) */
 export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
   const orderId = String(order._id || '').trim()
@@ -63,13 +69,14 @@ export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
 
   const s = order.sender
   const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
+  const senderUserId = String(s?.userId || '').trim()
 
   return {
     orderId,
     orderText: orderText || undefined,
     kind: 'normal',
     peer: {
-      userId: String(s?.userId || '0'),
+      ...(isValidPeerUserId(senderUserId) ? { userId: senderUserId } : {}),
       firstName: full || s?.username || 'Buyurtmachi',
       lastName: s?.lastName,
       username: cleanUsername(s?.username) || undefined,
@@ -89,7 +96,6 @@ export function buildMinimalOrderChatStub(orderId: string): Partial<IChat> {
     orderId,
     kind: 'normal',
     peer: {
-      userId: '0',
       firstName: 'Buyurtmachi',
       isBot: false,
     },
@@ -165,7 +171,7 @@ export function buildChatStubFromOrderQuery(
     ...buildMinimalOrderChatStub(orderId),
     orderText: orderText || undefined,
     peer: {
-      userId: userId || '0',
+      ...(isValidPeerUserId(userId) ? { userId } : {}),
       firstName: name || username || 'Buyurtmachi',
       username: username || undefined,
       phone: phoneHint || undefined,
@@ -229,6 +235,13 @@ export function mergeOrderChatContext(
   }
 
   const pickPeer = (key: keyof IChat['peer']) => {
+    if (key === 'userId') {
+      for (let i = peerSources.length - 1; i >= 0; i--) {
+        const id = String(peerSources[i]?.userId || '').trim()
+        if (isValidPeerUserId(id)) return id
+      }
+      return undefined
+    }
     for (const p of peerSources) {
       const v = p?.[key]
       if (v == null) continue
