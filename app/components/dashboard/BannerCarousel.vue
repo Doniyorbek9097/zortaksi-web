@@ -1,8 +1,11 @@
 <template>
-  <section v-if="slides.length" class="relative">
+  <div v-if="slides.length" class="relative">
     <div
       ref="rootEl"
-      class="relative overflow-hidden rounded-2xl shadow-md shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-200/80 dark:ring-slate-700/80 bg-slate-900 touch-pan-y"
+      class="relative overflow-hidden touch-pan-y bg-slate-900"
+      :class="embedded
+        ? 'border-t border-slate-200/80 dark:border-slate-800'
+        : 'rounded-2xl shadow-md shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-200/80 dark:ring-slate-700/80'"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
@@ -18,8 +21,13 @@
           v-for="slide in slides"
           :key="slide.id"
           type="button"
-          class="w-full shrink-0 relative aspect-[2.4/1] sm:aspect-[2.6/1] min-h-[120px] sm:min-h-[140px] block overflow-hidden bg-slate-800"
-          :class="slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default'"
+          class="w-full shrink-0 relative block overflow-hidden bg-slate-800"
+          :class="[
+            embedded
+              ? 'aspect-[2.35/1] min-h-[108px] sm:min-h-[124px]'
+              : 'aspect-[2.4/1] sm:aspect-[2.6/1] min-h-[120px] sm:min-h-[140px]',
+            slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default',
+          ]"
           :aria-label="slide.targetUrl ? 'Banner' : 'Reklama'"
           @click="openSlide(slide)"
         >
@@ -57,15 +65,18 @@
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
 import type { IBanner } from '~/types/banner'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   banners: IBanner[]
-}>()
+  embedded?: boolean
+}>(), {
+  embedded: false,
+})
 
 const { resolve: resolveMedia } = useMediaUrl()
 

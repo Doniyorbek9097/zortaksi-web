@@ -23,14 +23,16 @@
       </div>
     </div>
 
-    <!-- Promo bannerlar -->
-    <DashboardBannerCarousel v-if="promoBanners.length" :banners="promoBanners" />
-
     <!-- Payment banner -->
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
-    <!-- Balance -->
-    <DashboardBalanceCard :balance="balance" :active="tariffActive" @buy="onBuyTariff" />
+    <!-- Balans + promo bannerlar -->
+    <DashboardBalanceCard
+      :balance="balance"
+      :active="tariffActive"
+      :banners="promoBanners"
+      @buy="onBuyTariff"
+    />
 
     <!-- Tarif -->
     <DashboardTariffCard

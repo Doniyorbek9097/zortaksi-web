@@ -32,6 +32,12 @@
       </div>
     </div>
 
+    <DashboardBannerCarousel
+      v-if="banners.length"
+      embedded
+      :banners="banners"
+    />
+
     <button
       v-if="!active"
       type="button"
@@ -54,14 +60,18 @@
 </template>
 
 <script setup lang="ts">
+import type { IBanner } from '~/types/banner'
+
 interface Props {
   balance?: number
   active?: boolean
+  banners?: IBanner[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
   balance: 0,
   active: false,
+  banners: () => [],
 })
 
 defineEmits<{ buy: [] }>()
