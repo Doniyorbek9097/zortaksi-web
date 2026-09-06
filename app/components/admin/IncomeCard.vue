@@ -106,39 +106,53 @@
       </div>
     </div>
 
-    <!-- Online to'lovlar (shu oy) -->
-    <div class="grid grid-cols-2 gap-2 px-3 pb-3">
+    <!-- To'lov turlari (shu oy) -->
+    <div class="mx-3 mb-2 grid grid-cols-2 gap-1.5">
       <div
-        class="rounded-xl p-2.5 border bg-sky-50 dark:bg-sky-950/35 border-sky-100 dark:border-sky-900/50"
+        class="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-sky-200/70 dark:border-sky-800/50 bg-sky-500/[0.06] dark:bg-sky-950/30"
       >
-        <p class="text-[9px] font-black uppercase tracking-wide text-sky-600/90 dark:text-sky-400/90">
-          Click to'lov
-        </p>
-        <p class="mt-1 text-[14px] font-black tabular-nums leading-tight text-sky-700 dark:text-sky-300 break-all">
-          {{ formattedClick }}
-        </p>
-        <p class="mt-1 text-[9px] font-bold text-sky-600/70 dark:text-sky-400/70">
-          {{ clickPayments }} to'lov
-        </p>
+        <div
+          class="w-6 h-6 rounded-md bg-sky-500 flex items-center justify-center text-white text-[9px] shrink-0"
+        >
+          <font-awesome-icon icon="fa-solid fa-bolt" />
+        </div>
+        <div class="min-w-0 flex-1 leading-none">
+          <p class="text-[8px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400">
+            Click
+          </p>
+          <p class="text-[12px] font-black tabular-nums text-sky-800 dark:text-sky-200 truncate">
+            {{ formattedClick }}
+          </p>
+        </div>
+        <span class="text-[8px] font-bold text-sky-500/80 shrink-0 tabular-nums">
+          {{ clickPayments }}
+        </span>
       </div>
       <div
-        class="rounded-xl p-2.5 border bg-indigo-50 dark:bg-indigo-950/35 border-indigo-100 dark:border-indigo-900/50"
+        class="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-violet-200/70 dark:border-violet-800/50 bg-violet-500/[0.06] dark:bg-violet-950/30"
       >
-        <p class="text-[9px] font-black uppercase tracking-wide text-indigo-600/90 dark:text-indigo-400/90">
-          Card to'lov
-        </p>
-        <p class="mt-1 text-[14px] font-black tabular-nums leading-tight text-indigo-700 dark:text-indigo-300 break-all">
-          {{ formattedCard }}
-        </p>
-        <p class="mt-1 text-[9px] font-bold text-indigo-600/70 dark:text-indigo-400/70">
-          {{ cardPayments }} to'lov
-        </p>
+        <div
+          class="w-6 h-6 rounded-md bg-violet-500 flex items-center justify-center text-white text-[9px] shrink-0"
+        >
+          <font-awesome-icon icon="fa-solid fa-credit-card" />
+        </div>
+        <div class="min-w-0 flex-1 leading-none">
+          <p class="text-[8px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
+            Card
+          </p>
+          <p class="text-[12px] font-black tabular-nums text-violet-800 dark:text-violet-200 truncate">
+            {{ formattedCard }}
+          </p>
+        </div>
+        <span class="text-[8px] font-bold text-violet-500/80 shrink-0 tabular-nums">
+          {{ cardPayments }}
+        </span>
       </div>
     </div>
 
     <!-- Jami -->
     <div
-      class="mx-3 mb-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60"
+      class="mx-3 mb-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60"
     >
       <div class="flex items-center gap-2 min-w-0">
         <div
