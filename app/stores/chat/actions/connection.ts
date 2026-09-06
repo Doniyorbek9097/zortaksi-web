@@ -131,6 +131,24 @@ const requestConnectViaSocket = async (
     })
 }
 
+/** Order chat — darhol proksi taklifi (o'z hisob fonida sinanadi) */
+export const ORDER_PROXY_PROMPT =
+    "Buyurtmachi bilan yozish uchun proksi orqali bog'lanib ko'ring."
+
+export function shouldOfferOrderProxyFirst(
+    chat: {
+        orderId?: string | null
+        kind?: string
+        inAppOnly?: boolean
+        peer?: { viaUserbotId?: string; accessHash?: string }
+    } | null
+    | undefined,
+): boolean {
+    if (!chat?.orderId) return false
+    if (isInAppChatLike(chat)) return false
+    return !hasTelegramPeerLink(chat)
+}
+
 /** In-app chat — Telegram peer link shart emas */
 export function isInAppChatLike(
     chat: { kind?: string; inAppOnly?: boolean } | null | undefined,
@@ -278,9 +296,19 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             return { success: true, data: { status: 'ready' as ConnStatus } }
         }
 
+        const orderProxyFirst =
+            shouldOfferOrderProxyFirst(chat) && !opts.viaProxy
+
         if (!isInAppChatLike(chat)) {
-            connectionStatus.value = 'connecting'
-            connectionReason.value = ''
+            if (orderProxyFirst) {
+                connectionStatus.value = 'proxy-required'
+                if (!String(connectionReason.value || '').trim()) {
+                    connectionReason.value = ORDER_PROXY_PROMPT
+                }
+            } else {
+                connectionStatus.value = 'connecting'
+                connectionReason.value = ''
+            }
         }
         activeConnectChatId = chatId
 
@@ -311,19 +339,46 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 return res
             }
 
-            if (!opts.silent) {
-                connectionStatus.value = 'unreachable'
-                connectionReason.value = res.message ?? ''
+            if (!res.success) {
+                if (opts.viaProxy) {
+                    connectionStatus.value = 'unreachable'
+                    connectionReason.value =
+                        String(res.message || '').trim() ||
+                        "Proksi orqali ham bog'lanib bo'lmadi."
+                } else if (!opts.silent) {
+                    connectionStatus.value = 'unreachable'
+                    connectionReason.value = res.message ?? ''
+                } else if (orderProxyFirst) {
+                    connectionStatus.value = 'proxy-required'
+                }
+                return res
             }
-            return res
         } catch (error: unknown) {
             const err = error as { message?: string }
             console.error('connect error:', err)
-            if (!opts.silent) {
+            if (opts.viaProxy) {
+                connectionStatus.value = 'unreachable'
+                connectionReason.value =
+                    String(err?.message || '').trim() ||
+                    "Proksi orqali ham bog'lanib bo'lmadi."
+            } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = err?.message ?? ''
+            } else if (orderProxyFirst) {
+                connectionStatus.value = 'proxy-required'
             }
             throw error
+        }
+    }
+
+    /** Order chat — peer link yo'q bo'lsa darhol proksi taklifi */
+    const primeOrderProxyOffer = (chat?: import('~/types').IChat | null) => {
+        const c = chat ?? findChatById(String(currentChat.value?._id || '')) ?? currentChat.value
+        if (!shouldOfferOrderProxyFirst(c)) return
+        if (connectionStatus.value === 'ready') return
+        connectionStatus.value = 'proxy-required'
+        if (!String(connectionReason.value || '').trim()) {
+            connectionReason.value = ORDER_PROXY_PROMPT
         }
     }
 
@@ -455,6 +510,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         connect,
         ensureTelegramReady,
         primeFromChat,
+        primeOrderProxyOffer,
         isChatLikelyReady,
         hasTelegramPeerLink,
         fetchPresence,

@@ -63,7 +63,7 @@ export const useOrderStore = defineStore('order', () => {
 
     /** Sender connect tezligi — order ro'yxatida oldindan warm */
     let warmPeersTimer: ReturnType<typeof setTimeout> | null = null
-    const WARM_PEER_MAX = 4
+    const WARM_PEER_MAX = 2
     const warmedOrderIds = new Set<string>()
 
     const orderNeedsWarm = (order: IOrder, driverId: string) => {
@@ -109,7 +109,7 @@ export const useOrderStore = defineStore('order', () => {
         warmPeersTimer = setTimeout(() => {
             warmPeersTimer = null
             void postWarmPeers(ids)
-        }, 600)
+        }, 3000)
     }
 
     /** Bitta order — "Xabar yozish" hover */

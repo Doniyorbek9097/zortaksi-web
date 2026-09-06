@@ -285,8 +285,8 @@
         <p>
           <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
           {{ connReason || (callPhone
-            ? 'Xabar yozib bo\'lmaydi. Telefon qilishingiz mumkin.'
-            : 'Bu foydalanuvchi bilan bog\'lanish imkoni yo\'q.') }}
+            ? 'Telegram orqali ulanib bo\'lmadi. Telefon qiling.'
+            : 'Telegram orqali ulanib bo\'lmadi.') }}
         </p>
         <div class="flex flex-col items-center gap-2">
           <a
@@ -749,12 +749,15 @@ const composerPlaceholder = computed(() => {
     return "Proksi orqali ulanish tavsiya etiladi"
   }
   if (conn.value === 'unreachable') {
-    return "Telegram orqali ulanib bo'lmadi"
+    return callPhone.value
+      ? 'Ulanib bo\'lmadi — telefon qiling'
+      : "Telegram orqali ulanib bo'lmadi"
   }
   if (
     !isInAppChat.value &&
     conn.value !== 'ready' &&
-    !hasPeerLink.value
+    !hasPeerLink.value &&
+    !isOrderSenderChat.value
   ) {
     return 'Telegram ulanmoqda...'
   }
@@ -1019,7 +1022,7 @@ const applyInstantOrderUiFromQuery = () => {
 
   chatStore.isLoadingMessages = false
   if (!isInAppChat.value && chatStore.connectionStatus === 'idle') {
-    chatStore.connectionStatus = 'connecting'
+    chatStore.primeOrderProxyOffer(chatStore.currentChat)
   }
 
   const listedId = String(q.chatId || route.params.id || '')
@@ -1156,7 +1159,7 @@ const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
     merged.kind !== 'direct' &&
     !hasTelegramPeerLink(merged)
   ) {
-    chatStore.connectionStatus = 'connecting'
+    chatStore.primeOrderProxyOffer(merged)
   }
 
   const idx = chatStore.chats.findIndex((c) => c._id === newId)
@@ -1352,14 +1355,19 @@ const loadChat = async (id: string) => {
 
   try {
     if (!inApp) {
-      if (
-        orderChat &&
-        !hasTelegramPeerLink(listed || chatStore.currentChat) &&
-        chatStore.connectionStatus === 'idle'
-      ) {
-        chatStore.connectionStatus = 'connecting'
+      const chatRef = listed || chatStore.currentChat
+      const linked = hasTelegramPeerLink(chatRef)
+      if (orderChat && !linked) {
+        chatStore.primeOrderProxyOffer(chatRef)
       }
-      void chatStore.connect(id, { silent: wasLinked || !!orderChat })
+      const conn = chatStore.connectionStatus
+      const skipRepeatOwnConnect =
+        !!orderChat && (conn === 'proxy-required' || conn === 'unreachable')
+      if (linked) {
+        chatStore.connectionStatus = 'ready'
+      } else if (!skipRepeatOwnConnect) {
+        void chatStore.connect(id, { silent: wasLinked || !!orderChat })
+      }
     }
     const hasCachedMessages =
       chatStore.messagesChatId === id && chatStore.messages.length > 0
