@@ -4,6 +4,7 @@ export type GroupInviteLeaderboardRow = {
   name: string
   username: string
   avatar?: string
+  groupTitle: string
   invites: number
   bonus: number
   isMe?: boolean
@@ -11,16 +12,16 @@ export type GroupInviteLeaderboardRow = {
 
 export type GroupInviteLeaderboardData = {
   available: boolean
-  regionSlug: string
-  regionTitle: string
-  groupTitle: string
-  groupOpenUrl?: string
   rewardPerInvite: number
+  totalInviters: number
+  totalInvites: number
+  groupOpenUrl?: string
   leaderboard: GroupInviteLeaderboardRow[]
   me: {
     rank: number | null
     invites: number
     bonus: number
     inTop: boolean
+    groupTitle: string
   }
 }

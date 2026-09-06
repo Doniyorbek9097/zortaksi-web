@@ -3,24 +3,21 @@
     v-if="visible"
     class="rounded-2xl border border-violet-200/70 dark:border-violet-900/40 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
   >
-    <!-- Header -->
     <div
       class="relative px-4 py-3.5 border-b border-violet-100 dark:border-violet-900/30 bg-gradient-to-r from-violet-50 via-fuchsia-50/80 to-amber-50 dark:from-violet-950/40 dark:via-fuchsia-950/20 dark:to-amber-950/20"
     >
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
           <p class="text-[10px] font-black uppercase tracking-[0.2em] text-violet-500 dark:text-violet-400">
-            Guruh taklifi TOP 10
+            Guruh taklifi
           </p>
-          <h3 class="mt-0.5 text-[15px] font-black text-slate-800 dark:text-slate-100 truncate">
-            {{ data?.groupTitle || data?.regionTitle }}
+          <h3 class="mt-0.5 text-[15px] font-black text-slate-800 dark:text-slate-100">
+            TOP 10 haydovchilar
           </h3>
-          <p class="mt-0.5 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            Har bir qo'shilgan odam uchun
-            <span class="text-amber-600 dark:text-amber-400 font-black">
-              +{{ formattedReward }}
-            </span>
-            so'm
+          <p class="mt-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span class="text-pink-500 font-black">{{ totalInvites }}</span> qo'shilgan
+            <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
+            <span class="text-violet-500 font-black">{{ totalInviters }}</span> haydovchi
           </p>
         </div>
         <div
@@ -31,19 +28,30 @@
       </div>
     </div>
 
-    <!-- Sizning natijangiz -->
-    <div class="p-3 border-b border-slate-100 dark:border-slate-800">
+    <div
+      v-if="showMe && data"
+      class="p-3 border-b border-slate-100 dark:border-slate-800"
+    >
       <div
         class="rounded-xl p-3.5 bg-gradient-to-br from-violet-500/10 via-fuchsia-500/5 to-amber-500/10 dark:from-violet-950/50 dark:via-fuchsia-950/30 dark:to-amber-950/20 border border-violet-200/60 dark:border-violet-800/40"
       >
         <div class="flex items-center justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-[10px] font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-400">
-              Sizning natijangiz
-            </p>
-            <p class="mt-1 text-[13px] font-bold text-slate-700 dark:text-slate-200">
-              {{ meName }}
-            </p>
+          <div class="min-w-0 flex items-center gap-2.5">
+            <ProfileAvatar :name="meName" :src="meAvatar" :user-id="meUserId" size="md" />
+            <div class="min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-[0.16em] text-violet-600 dark:text-violet-400">
+                Sizning natijangiz
+              </p>
+              <p class="mt-0.5 text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
+                {{ meName }}
+              </p>
+              <p
+                v-if="meGroupTitle"
+                class="text-[10px] font-bold text-violet-600/80 dark:text-violet-400/80 truncate"
+              >
+                {{ meGroupTitle }}
+              </p>
+            </div>
           </div>
           <div
             v-if="meRank"
@@ -65,7 +73,7 @@
             </p>
           </div>
           <div class="rounded-lg px-3 py-2 bg-white/85 dark:bg-slate-900/75 border border-white dark:border-slate-800">
-            <p class="text-[10px] font-bold text-slate-400">Topilgan</p>
+            <p class="text-[10px] font-bold text-slate-400">Daromad</p>
             <p class="text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
               +{{ formattedMeBonus }}
             </p>
@@ -74,7 +82,6 @@
       </div>
     </div>
 
-    <!-- Leaderboard -->
     <div class="px-4 pt-3 pb-1">
       <p class="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
         Reyting
@@ -85,7 +92,7 @@
       <div
         v-for="n in 5"
         :key="n"
-        class="h-14 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+        class="h-16 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
       />
     </div>
 
@@ -93,15 +100,16 @@
       <div
         v-for="item in leaderboard"
         :key="item.id"
-        class="rounded-xl -mx-1 px-1"
+        class="rounded-xl -mx-1 px-1 transition-colors"
         :class="item.isMe ? 'bg-violet-50 dark:bg-violet-950/30 ring-1 ring-violet-200/80 dark:ring-violet-800/50' : ''"
       >
-        <AdminReferralItem
+        <DashboardGroupInviteLeaderRow
           :rank="item.rank"
           :name="item.name"
           :username="item.username"
           :avatar="item.avatar"
           :user-id="item.id"
+          :group-title="item.groupTitle"
           :invites="item.invites"
           :bonus="item.bonus"
         />
@@ -111,12 +119,13 @@
         v-if="showMeOutsideTop"
         class="mt-1 rounded-xl bg-violet-50 dark:bg-violet-950/30 ring-1 ring-violet-200/80 dark:ring-violet-800/50 px-1"
       >
-        <AdminReferralItem
+        <DashboardGroupInviteLeaderRow
           :rank="meRank || 0"
           :name="meName"
           :username="meUsername"
           :avatar="meAvatar"
           :user-id="meUserId"
+          :group-title="meGroupTitle"
           :invites="meInvites"
           :bonus="meBonus"
         />
@@ -128,14 +137,13 @@
       >
         <font-awesome-icon icon="fa-solid fa-user-group" class="text-2xl mb-2 opacity-50" />
         <p class="text-[12px] font-medium">Hali guruhga qo'shganlar yo'q</p>
-        <p class="text-[11px] font-semibold mt-1 text-slate-400/80">
-          Do'stlaringizni guruhga qo'shing va bonus oling
-        </p>
       </div>
     </div>
 
-    <!-- Guruhga o'tish -->
-    <div class="p-3 pt-1 border-t border-slate-100 dark:border-slate-800">
+    <div
+      v-if="showJoinButton"
+      class="p-3 pt-1 border-t border-slate-100 dark:border-slate-800"
+    >
       <button
         type="button"
         class="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white text-[13px] font-black py-3 shadow-md shadow-violet-500/25 transition-all active:scale-[0.99] disabled:opacity-50"
@@ -145,9 +153,6 @@
         <font-awesome-icon icon="fa-brands fa-telegram" />
         Guruhga o'tish
       </button>
-      <p v-if="!canOpenGroup" class="mt-2 text-center text-[10px] font-semibold text-slate-400">
-        Guruh havolasi hozircha mavjud emas
-      </p>
     </div>
   </section>
 </template>
@@ -158,28 +163,52 @@ import { isTariffActive } from '~/utils/tariffActive'
 import { openTelegramExternalUrl } from '~/utils/telegramLinks'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
-const props = defineProps<{
-  data: GroupInviteLeaderboardData | null
-  loading?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    data: GroupInviteLeaderboardData | null
+    loading?: boolean
+    showMe?: boolean
+    showJoinButton?: boolean
+    /** Admin panel — har doim ko'rsatish */
+    adminMode?: boolean
+  }>(),
+  {
+    loading: false,
+    showMe: true,
+    showJoinButton: true,
+    adminMode: false,
+  },
+)
 
 const authStore = useAuthStore()
 const { fetchGroups, openPublicGroup, groups } = useRegionGroupsWelcome()
 
 const visible = computed(() => {
+  if (props.adminMode) return true
   if (!import.meta.client || !authStore.sessionReady) return false
   if (authStore.user?.role === 'admin') return false
   if (!isTariffActive(authStore.user)) return false
-  if (!String(authStore.user?.regionSlug || '').trim()) return false
   return props.data?.available === true
 })
 
 const leaderboard = computed(() => props.data?.leaderboard ?? [])
+const totalInvites = computed(() =>
+  (props.data?.totalInvites ?? 0).toLocaleString('ru-RU'),
+)
+const totalInviters = computed(() =>
+  (props.data?.totalInviters ?? 0).toLocaleString('ru-RU'),
+)
+
 const meInvites = computed(() => props.data?.me.invites ?? 0)
 const meBonus = computed(() => props.data?.me.bonus ?? 0)
 const meRank = computed(() => props.data?.me.rank)
+const meGroupTitle = computed(() => props.data?.me.groupTitle ?? '')
 const showMeOutsideTop = computed(
-  () => meInvites.value > 0 && props.data?.me.inTop === false && meRank.value != null
+  () =>
+    props.showMe &&
+    meInvites.value > 0 &&
+    props.data?.me.inTop === false &&
+    meRank.value != null,
 )
 
 const meName = computed(() => {
@@ -191,9 +220,6 @@ const meUsername = computed(() => String(authStore.user?.username || '').replace
 const meAvatar = computed(() => authStore.user?.avatar)
 const meUserId = computed(() => String(authStore.user?.userId || ''))
 
-const formattedReward = computed(() =>
-  (props.data?.rewardPerInvite ?? 500).toLocaleString('ru-RU')
-)
 const formattedMeBonus = computed(() => meBonus.value.toLocaleString('ru-RU'))
 
 const groupUrl = computed(() => {

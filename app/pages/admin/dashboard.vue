@@ -165,57 +165,35 @@
       />
     </AdminSectionCard>
 
-    <!-- Referal -->
-    <AdminSectionCard
-      title="Top 10 referal"
-      icon="fa-solid fa-trophy"
-      icon-tone="amber"
-      no-padding
-    >
-      <div class="px-4 pt-2 pb-2 flex flex-wrap gap-2 text-[11px] font-bold">
-        <span class="text-pink-500">{{ totalInvites.toLocaleString('ru-RU') }} taklif</span>
-        <span class="text-slate-300 dark:text-slate-600">·</span>
-        <span class="text-violet-500">{{ totalReferrers.toLocaleString('ru-RU') }} taklifchi</span>
-      </div>
-      <div class="px-4 pb-2">
-        <AdminReferralItem
-          v-for="ref in referrals"
-          :key="ref.rank"
-          :rank="ref.rank"
-          :name="ref.name"
-          :username="ref.username"
-          :avatar="ref.avatar"
-          :user-id="ref.id"
-          :invites="ref.invites"
-          :bonus="ref.bonus"
-        />
-        <div
-          v-if="!referrals.length"
-          class="flex flex-col items-center justify-center py-8 text-center text-slate-400"
-        >
-          <font-awesome-icon icon="fa-solid fa-trophy" class="text-xl mb-2 opacity-50" />
-          <p class="text-[12px] font-medium">Hali referal reytingi yo'q</p>
-        </div>
-      </div>
-    </AdminSectionCard>
+    <!-- Guruh taklifi TOP 10 -->
+    <DashboardGroupInviteLeaderboardCard
+      admin-mode
+      :show-me="false"
+      :show-join-button="false"
+      :data="groupInviteLeaderboard"
+      :loading="groupInviteLoading"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useReferralStore } from '~/stores/referral.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
 import { isAdminUser } from '~/utils/userRole'
+import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
 definePageMeta({
   layout: 'admin',
 })
 
-const referralStore = useReferralStore()
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
 const isMainAdmin = computed(() => isAdminUser(authStore.user))
+
+const groupInviteLeaderboard = ref<GroupInviteLeaderboardData | null>(null)
+const groupInviteLoading = ref(false)
+const GROUP_INVITE_CACHE_KEY = 'zt:admin-group-invite-lb'
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
 
@@ -254,13 +232,6 @@ const num = (...vals: Array<number | undefined | null>) => {
   }
   return 0
 }
-
-const totalInvites = computed(() =>
-  num(store.data?.keyStats?.totalInvites, store.data?.platform?.totalInvites)
-)
-const totalReferrers = computed(() =>
-  num(store.data?.keyStats?.totalReferrers, store.data?.platform?.totalReferrers)
-)
 
 const heroStats = computed(() => {
   const s = store.data?.keyStats
@@ -369,7 +340,44 @@ const incomeDailyItems = computed(() => {
   })
 })
 
-const referrals = computed(() => referralStore.leaderboard)
+const loadCachedGroupInvite = () => {
+  if (!import.meta.client) return
+  try {
+    const raw = sessionStorage.getItem(GROUP_INVITE_CACHE_KEY)
+    if (!raw) return
+    groupInviteLeaderboard.value = JSON.parse(raw) as GroupInviteLeaderboardData
+  } catch {
+    /* */
+  }
+}
+
+const saveCachedGroupInvite = () => {
+  if (!import.meta.client || !groupInviteLeaderboard.value) return
+  try {
+    sessionStorage.setItem(GROUP_INVITE_CACHE_KEY, JSON.stringify(groupInviteLeaderboard.value))
+  } catch {
+    /* */
+  }
+}
+
+const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
+  if (!opts?.background && !groupInviteLeaderboard.value) {
+    groupInviteLoading.value = true
+  }
+  try {
+    const res = await useApi<{ success: boolean; data: GroupInviteLeaderboardData }>(
+      '/group-invite/leaderboard',
+    )
+    if (res?.success && res.data) {
+      groupInviteLeaderboard.value = res.data
+      saveCachedGroupInvite()
+    }
+  } catch {
+    /* */
+  } finally {
+    groupInviteLoading.value = false
+  }
+}
 
 const onDownloadApp = () => navigateTo('/admin/download-app')
 const onBonus = () => navigateTo('/admin/bonus')
@@ -377,15 +385,16 @@ const onBonus = () => navigateTo('/admin/bonus')
 usePullToRefresh(async () => {
   await Promise.all([
     store.fetchStats().catch(() => {}),
-    referralStore.fetchAll().catch(() => {}),
+    fetchGroupInviteLeaderboard({ background: true }),
     authStore.getMe().catch(() => {}),
   ])
 })
 
 onMounted(() => {
   store.loadCached()
+  loadCachedGroupInvite()
   void store.fetchStats({ background: store.isReady })
-  void referralStore.fetchAll().catch(() => {})
+  void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
   try {
     const accountStore = useAccountStore()
     accountStore.load()

@@ -1,4 +1,5 @@
 import type { RouteLocationNormalized, RouteLocationRaw } from 'vue-router'
+import { maybeMarkTelegramCloseOnBackFromStartParam } from '~/utils/telegramMiniAppBack'
 
 const TG_START_STORAGE = 'zt:tg-start-param'
 const TG_START_CONSUMED = 'zt:tg-start-param-consumed'
@@ -179,6 +180,7 @@ export function captureTelegramStartParam(): string {
     ''
 
   if (found) {
+    maybeMarkTelegramCloseOnBackFromStartParam(found)
     try {
       sessionStorage.setItem(TG_START_STORAGE, found)
     } catch {
@@ -265,6 +267,8 @@ function applyEarlyStartParamUrl(): void {
     ''
 
   if (!param) return
+
+  maybeMarkTelegramCloseOnBackFromStartParam(param)
 
   const target = routeFromTelegramStartParam(param)
   if (!target || typeof target !== 'object' || !('path' in target)) return

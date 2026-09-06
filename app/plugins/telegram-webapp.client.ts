@@ -1,8 +1,12 @@
 /**
- * Telegram Mini App: orqaga (Back) history ichida ishlasin,
- * root'da bo'lmasa WebApp yopilmasin.
+ * Telegram Mini App: orqaga (Back) — ichki navigatsiya yoki botdan kirilgan chatda yopish.
  */
 import { scheduleTelegramStartRedirect } from '~/utils/telegramStartRedirect'
+import {
+  clearTelegramCloseOnBack,
+  isTelegramChatEntryPath,
+  shouldTelegramCloseOnBack,
+} from '~/utils/telegramMiniAppBack'
 
 type TgBackButton = {
   show: () => void
@@ -136,7 +140,10 @@ export default defineNuxtPlugin(() => {
 
     const syncBackButton = () => {
       try {
-        if (canGoBackInApp()) tg.BackButton.show()
+        const path = router.currentRoute.value.path
+        const closeOnBack =
+          shouldTelegramCloseOnBack() && isTelegramChatEntryPath(path)
+        if (canGoBackInApp() || closeOnBack) tg.BackButton.show()
         else tg.BackButton.hide()
       } catch {
         /* */
@@ -147,6 +154,16 @@ export default defineNuxtPlugin(() => {
       // Dialog/overlay ochiq bo'lsa — faqat uni yopish (sahifa emas)
       if (hasOverlayHistoryLayer()) {
         history.back()
+        return
+      }
+      const path = router.currentRoute.value.path
+      if (shouldTelegramCloseOnBack() && isTelegramChatEntryPath(path)) {
+        try {
+          tg.close()
+          clearTelegramCloseOnBack()
+        } catch {
+          /* */
+        }
         return
       }
       if (canGoBackInApp()) {
@@ -170,6 +187,19 @@ export default defineNuxtPlugin(() => {
 
     // Brauzer/OS back (Telegram uni BackButton ga ulaydi)
     window.addEventListener('popstate', () => {
+      if (shouldTelegramCloseOnBack()) {
+        const path = router.currentRoute.value.path
+        if (!isTelegramChatEntryPath(path) && !hasOverlayHistoryLayer()) {
+          setTimeout(() => {
+            try {
+              tg.close()
+              clearTelegramCloseOnBack()
+            } catch {
+              /* */
+            }
+          }, 0)
+        }
+      }
       setTimeout(syncBackButton, 0)
     })
 

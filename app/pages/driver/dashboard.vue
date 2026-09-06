@@ -179,13 +179,13 @@ const saveCachedGroupInviteLeaderboard = () => {
 }
 
 const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
-  if (!tariffActive.value || !String(authStore.user?.regionSlug || '').trim()) return
+  if (!tariffActive.value) return
   if (!opts?.background && !groupInviteLeaderboard.value) {
     groupInviteLoading.value = true
   }
   try {
     const res = await useApi<{ success: boolean; data: GroupInviteLeaderboardData }>(
-      '/me/region/group-invite-leaderboard'
+      '/group-invite/leaderboard'
     )
     if (res?.success && res.data) {
       groupInviteLeaderboard.value = res.data

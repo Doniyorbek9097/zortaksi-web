@@ -372,6 +372,11 @@ import { useOrderTakeAccess } from '~/composables/useOrderTakeAccess'
 import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
+import {
+  clearTelegramCloseOnBack,
+  markTelegramCloseOnBack,
+  tryTelegramCloseOnChatBack,
+} from '~/utils/telegramMiniAppBack'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
@@ -831,10 +836,17 @@ const dismissProxyConfirm = () => {
     "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozish rad etildi."
 }
 
-const goChats = () => navigateTo('/driver/chats')
-const goOrders = () => navigateTo('/driver/orders')
+const goChats = () => {
+  clearTelegramCloseOnBack()
+  navigateTo('/driver/chats')
+}
+const goOrders = () => {
+  clearTelegramCloseOnBack()
+  navigateTo('/driver/orders')
+}
 
 const goBackFromOpen = () => {
+  if (tryTelegramCloseOnChatBack(route.path)) return
   if (import.meta.client && window.history.length > 1) {
     router.back()
     return
@@ -843,6 +855,7 @@ const goBackFromOpen = () => {
 }
 
 const goBack = () => {
+  if (tryTelegramCloseOnChatBack(route.path)) return
   if (isOpening.value || openFailed.value) goBackFromOpen()
   else goChats()
 }
@@ -1314,6 +1327,14 @@ watch(scrollEl, (el, _, onCleanup) => {
   el.addEventListener('scroll', onMessagesScroll, { passive: true })
   onCleanup(() => el.removeEventListener('scroll', onMessagesScroll))
 })
+
+watch(
+  () => String(route.query.fromGroup || ''),
+  (v) => {
+    if (String(v).trim() === '1') markTelegramCloseOnBack()
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   if (isAdmin.value) void loadAdminSlashCommands()
