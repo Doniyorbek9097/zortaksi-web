@@ -68,12 +68,33 @@ onMounted(() => {
 :root {
   --zt-safe-top: 0px;
   --zt-safe-bottom: 0px;
+  --zt-vv-left: 0px;
+  --zt-vv-top: 0px;
+  --zt-vv-width: 100%;
+  --zt-vv-height: 100dvh;
+  --zt-tg-vh: 100dvh;
 }
 
 /* Flutter / system WebView — hech qachon pastki pad ochilmasin */
 html[data-zt-embed='webview'] {
   --zt-safe-top: 0px !important;
   --zt-safe-bottom: 0px !important;
+}
+
+/* Telegram Mini App — gorizontal scroll va siljishni bloklash */
+html[data-zt-embed='telegram'] {
+  --zt-safe-top: 0px !important;
+  --zt-safe-bottom: 0px !important;
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+}
+
+html[data-zt-embed='telegram'] body {
+  overflow-x: hidden !important;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
 }
 
 /* Yaqinlashtirish va matnni ko'chirib olish */

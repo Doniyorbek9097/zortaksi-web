@@ -188,14 +188,16 @@ async function onTouchEnd() {
 <style scoped>
 .ptr-root {
   overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
   -webkit-overflow-scrolling: touch;
+  max-width: 100vw;
 }
 .ptr-content {
   will-change: transform;
   min-height: inherit;
 }
 .ptr-root.ptr-pulling {
-  touch-action: pan-x pinch-zoom;
+  touch-action: pan-y pinch-zoom;
 }
 .ptr-badge {
   will-change: transform, opacity;

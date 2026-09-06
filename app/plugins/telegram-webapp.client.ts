@@ -3,6 +3,7 @@
  * root'da bo'lmasa WebApp yopilmasin.
  */
 import { scheduleTelegramStartRedirect } from '~/utils/telegramStartRedirect'
+import { applyTelegramViewportInsets, wireTelegramViewportInsets } from '~/composables/useTelegramViewportInsets'
 
 type TgBackButton = {
   show: () => void
@@ -20,6 +21,9 @@ type TgWebApp = {
   close: () => void
   platform?: string
   initData?: string
+  viewportStableHeight?: number
+  viewportHeight?: number
+  isExpanded?: boolean
   BackButton: TgBackButton
   /** Qurilma notch / home indicator (Telegram chrome emas) */
   safeAreaInset?: TgSafeArea
@@ -121,6 +125,8 @@ export default defineNuxtPlugin(() => {
     // Pastki/yuqori bo'sh joy: faqat device inset (Telegram panel emas)
     try {
       applyTelegramSafeAreaCss(tg)
+      applyTelegramViewportInsets()
+      wireTelegramViewportInsets()
       tg.onEvent?.('safeAreaChanged', () => applyTelegramSafeAreaCss(tg))
       tg.onEvent?.('contentSafeAreaChanged', () => applyTelegramSafeAreaCss(tg))
     } catch {

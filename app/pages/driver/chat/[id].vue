@@ -3,11 +3,11 @@
   <BasePullToRefresh
     fill
     scroll-selector=".chat-msg-scroll"
-    class="fixed z-40 overflow-x-hidden"
+    class="fixed z-40 overflow-x-hidden touch-pan-y max-w-[100vw]"
     :style="shellStyle"
   >
   <div
-    class="flex flex-col overflow-hidden h-full bg-slate-50 dark:bg-slate-950"
+    class="flex flex-col overflow-hidden h-full w-full min-w-0 bg-slate-50 dark:bg-slate-950"
   >
     <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
@@ -43,7 +43,7 @@
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
-      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-4 flex-1">
+      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
         <div
           v-if="fallbackOrderText"
           class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
@@ -105,7 +105,7 @@
     </div>
 
     <div v-else ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
-      <div class="mx-auto w-full max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
+      <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
           v-if="showOrderBanner"
@@ -385,6 +385,8 @@ import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
+import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
+import { applyTelegramViewportInsets, telegramChatShellStyle } from '~/composables/useTelegramViewportInsets'
 
 definePageMeta({
   layout: false,
@@ -653,41 +655,45 @@ const executeClearHistory = async () => {
 }
 
 /**
- * Klaviatura ochilganda visualViewport;
- * yopiq holatda 100dvh — Telegram offsetTop + safe-area qo'shilib
- * yuqori/pastki ~100px bo'shliq qolmasin.
- * Gorizontal: offsetLeft/width — chapda bo'shliq qolmasin (Telegram Mini App).
+ * Klaviatura: brauzer visualViewport.
+ * Telegram: plugin CSS vars (--zt-vv-*) — gorizontal siljishni to'g'rilaydi.
  */
 const shellStyle = ref<Record<string, string>>({
   top: '0px',
   left: '0px',
   width: '100%',
   height: '100dvh',
+  maxWidth: '100vw',
 })
 
 const syncViewport = () => {
   if (!import.meta.client) return
-  const vv = window.visualViewport
-  if (!vv) {
-    shellStyle.value = { top: '0px', left: '0px', width: '100%', height: '100dvh' }
+  if (isTelegramMiniApp()) {
+    applyTelegramViewportInsets()
+    shellStyle.value = telegramChatShellStyle()
     return
   }
-  const left = `${Math.max(0, vv.offsetLeft)}px`
-  const width = `${Math.max(0, vv.width)}px`
+  const vv = window.visualViewport
+  if (!vv) {
+    shellStyle.value = { top: '0px', left: '0px', width: '100%', height: '100dvh', maxWidth: '100vw' }
+    return
+  }
   const keyboardGap = window.innerHeight - vv.height
   const keyboardOpen = keyboardGap > 80
   if (keyboardOpen) {
     shellStyle.value = {
-      left,
-      width,
+      left: `${Math.max(0, vv.offsetLeft)}px`,
+      width: `${Math.max(0, vv.width)}px`,
+      maxWidth: '100vw',
       top: `${Math.max(0, vv.offsetTop)}px`,
       height: `${Math.max(0, vv.height)}px`,
     }
     return
   }
   shellStyle.value = {
-    left,
-    width,
+    left: '0px',
+    width: '100%',
+    maxWidth: '100vw',
     top: '0px',
     height: '100dvh',
   }
@@ -930,6 +936,10 @@ let loadSeq = 0
 let scrollLoadLock = false
 let prevBodyOverflow = ''
 let prevHtmlOverflow = ''
+let prevBodyPosition = ''
+let prevBodyInset = ''
+let prevBodyWidth = ''
+let prevBodyMargin = ''
 
 const clearPresenceTimer = () => {
   if (presenceTimer) {
@@ -1342,6 +1352,18 @@ onMounted(() => {
   document.body.style.overflowX = 'hidden'
   document.documentElement.style.overflowX = 'hidden'
 
+  if (isTelegramMiniApp()) {
+    prevBodyPosition = document.body.style.position
+    prevBodyInset = document.body.style.inset
+    prevBodyWidth = document.body.style.width
+    prevBodyMargin = document.body.style.margin
+    document.body.style.position = 'fixed'
+    document.body.style.inset = '0'
+    document.body.style.width = '100%'
+    document.body.style.margin = '0'
+    shellStyle.value = telegramChatShellStyle()
+  }
+
   window.scrollTo(0, 0)
   syncViewport()
   window.visualViewport?.addEventListener('resize', syncViewport)
@@ -1358,6 +1380,12 @@ onBeforeUnmount(() => {
   document.documentElement.style.overflow = prevHtmlOverflow
   document.body.style.overflowX = ''
   document.documentElement.style.overflowX = ''
+  if (isTelegramMiniApp()) {
+    document.body.style.position = prevBodyPosition
+    document.body.style.inset = prevBodyInset
+    document.body.style.width = prevBodyWidth
+    document.body.style.margin = prevBodyMargin
+  }
 
   clearPresenceTimer()
   chatStore.currentChat = null

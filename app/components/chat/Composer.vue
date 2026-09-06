@@ -4,7 +4,7 @@
     :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }"
   >
     <form
-      class="mx-auto w-full max-w-2xl px-3 py-2.5"
+      class="mx-auto w-full min-w-0 max-w-2xl px-3 py-2.5"
       autocomplete="off"
       novalidate
       @submit.prevent="send"

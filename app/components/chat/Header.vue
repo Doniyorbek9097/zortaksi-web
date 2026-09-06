@@ -6,7 +6,7 @@
       ? 'bg-teal-600 dark:bg-teal-800 border-b border-teal-700/40'
       : 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50'"
   >
-    <div class="mx-auto w-full max-w-2xl px-3 py-1.5 flex items-center gap-2">
+    <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-1.5 flex items-center gap-2">
       <button
         type="button"
         class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center active:scale-95 transition-all"
