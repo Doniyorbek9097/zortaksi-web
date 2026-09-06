@@ -1,163 +1,85 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
-    <header class="sticky top-0 z-30 -mx-4 px-4 py-2 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-      <h1 class="text-base font-black text-slate-900 dark:text-white">Reklama bannerlari</h1>
-      <p class="text-[11px] text-slate-400 mt-0.5">
-        Haydovchi dashboardda slayd ko'rinishida chiqadi
-      </p>
-    </header>
+    <AdminBannersPageHeader :total="banners.length" />
 
-    <section class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
-      <h2 class="text-[13px] font-black text-slate-800 dark:text-slate-100">
-        {{ editingId ? 'Bannerni tahrirlash' : 'Yangi banner' }}
-      </h2>
-
-      <div>
-        <label class="text-[11px] font-bold text-slate-400 uppercase">Banner nomi</label>
-        <input
-          v-model="form.name"
-          type="text"
-          class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-semibold"
-          placeholder="Masalan: Bonus aksiyasi"
-        >
-      </div>
-
-      <div>
-        <label class="text-[11px] font-bold text-slate-400 uppercase">URL yoki sahifa</label>
-        <input
-          v-model="form.targetUrl"
-          type="text"
-          class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-semibold"
-          placeholder="https://example.com yoki /driver/bonus"
-        >
-        <p class="mt-1 text-[10px] font-semibold text-slate-400">
-          Tashqi sayt yoki ilova ichidagi yo'l. Bo'sh qoldirilsa — bosilganda hech narsa bo'lmaydi.
+    <div
+      v-if="!loading && banners.length"
+      class="grid grid-cols-2 gap-2"
+    >
+      <div
+        class="rounded-xl p-2.5 border bg-emerald-50 dark:bg-emerald-950/35 border-emerald-100 dark:border-emerald-900/50"
+      >
+        <p class="text-[9px] font-black uppercase tracking-wide text-emerald-600/90 dark:text-emerald-400/90">
+          Faol
+        </p>
+        <p class="mt-1 text-xl font-black tabular-nums text-emerald-700 dark:text-emerald-300">
+          {{ activeCount }}
         </p>
       </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <label class="text-[11px] font-bold text-slate-400 uppercase">Tartib</label>
-          <input
-            v-model.number="form.sortOrder"
-            type="number"
-            min="0"
-            class="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2.5 text-sm font-semibold"
-          >
-        </div>
-        <div class="flex items-end pb-1">
-          <label class="inline-flex items-center gap-2 text-[12px] font-bold text-slate-600 dark:text-slate-300">
-            <input v-model="form.active" type="checkbox" class="rounded border-slate-300">
-            Faol
-          </label>
-        </div>
-      </div>
-
-      <div>
-        <label class="text-[11px] font-bold text-slate-400 uppercase">Rasm</label>
-        <div
-          class="mt-1 relative rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/60 overflow-hidden"
-        >
-          <div v-if="previewSrc" class="aspect-[3/1] w-full">
-            <img :src="previewSrc" alt="Banner preview" class="w-full h-full object-cover">
-          </div>
-          <div v-else class="aspect-[3/1] flex items-center justify-center text-slate-400 text-[11px] font-bold">
-            Rasm tanlanmagan
-          </div>
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            class="absolute inset-0 opacity-0 cursor-pointer"
-            @change="onFileChange"
-          >
-        </div>
-        <p class="mt-1.5 text-[10px] font-semibold text-slate-400 leading-relaxed">
-          Tavsiya: <span class="text-sky-600 dark:text-sky-400 font-black">1200×400 px</span>
-          (3:1), JPG/PNG/WebP, maks. 2 MB — telefon va planshetda to'liq chiroyli ko'rinadi.
+      <div
+        class="rounded-xl p-2.5 border bg-violet-50 dark:bg-violet-950/35 border-violet-100 dark:border-violet-900/50"
+      >
+        <p class="text-[9px] font-black uppercase tracking-wide text-violet-600/90 dark:text-violet-400/90">
+          Yashirin
+        </p>
+        <p class="mt-1 text-xl font-black tabular-nums text-violet-700 dark:text-violet-300">
+          {{ banners.length - activeCount }}
         </p>
       </div>
-
-      <p v-if="error" class="text-[12px] font-bold text-red-500">{{ error }}</p>
-      <p v-if="saved" class="text-[12px] font-bold text-emerald-500">Saqlandi</p>
-
-      <div class="flex gap-2">
-        <button
-          v-if="editingId"
-          type="button"
-          class="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 py-3 text-[12px] font-black"
-          @click="resetForm"
-        >
-          Bekor
-        </button>
-        <button
-          type="button"
-          class="flex-1 rounded-xl bg-sky-500 text-white font-black py-3 active:scale-[0.98] disabled:opacity-50"
-          :disabled="saving"
-          @click="save"
-        >
-          {{ saving ? 'Saqlanmoqda...' : editingId ? 'Yangilash' : 'Qo\'shish' }}
-        </button>
-      </div>
-    </section>
-
-    <div v-if="loading" class="space-y-3">
-      <div v-for="n in 2" :key="n" class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse" />
     </div>
 
-    <BaseEmptyState
-      v-else-if="!banners.length"
-      icon="fa-solid fa-image"
-      title="Hali banner yo'q"
-      tone="slate"
+    <AdminBannersCreateForm
+      v-model="form"
+      :editing="editingId != null"
+      :preview-src="previewSrc"
+      :saving="saving"
+      :error="error"
+      :saved="saved"
+      @submit="save"
+      @cancel="resetForm"
+      @file-change="onFileChange"
     />
 
-    <div v-else class="space-y-3">
-      <article
+    <div v-if="loading" class="space-y-3">
+      <div
+        v-for="n in 2"
+        :key="n"
+        class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+      >
+        <div class="aspect-[3/1] bg-slate-100 dark:bg-slate-800 animate-pulse" />
+        <div class="h-14 bg-white dark:bg-slate-900 animate-pulse" />
+      </div>
+    </div>
+
+    <section v-else-if="banners.length" class="space-y-3">
+      <div class="flex items-center justify-between gap-2 px-0.5">
+        <h2 class="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">
+          Bannerlar ro'yxati
+        </h2>
+        <span class="text-[10px] font-bold text-slate-400">
+          Tartib bo'yicha
+        </span>
+      </div>
+      <AdminBannersBannerItem
         v-for="b in banners"
         :key="b.id"
-        class="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-      >
-        <div class="aspect-[3/1] bg-slate-100 dark:bg-slate-800">
-          <img
-            :src="bannerSrc(b)"
-            :alt="b.name"
-            class="w-full h-full object-cover"
-          >
-        </div>
-        <div class="p-3 flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">{{ b.name }}</p>
-            <p class="text-[10px] font-semibold text-slate-400 truncate mt-0.5">
-              {{ b.targetUrl || '— havola yo\'q —' }}
-            </p>
-            <p class="text-[10px] font-bold text-slate-500 mt-1">
-              Tartib: {{ b.sortOrder }}
-              <span class="mx-1">·</span>
-              <span :class="b.active ? 'text-emerald-500' : 'text-rose-500'">
-                {{ b.active ? 'Faol' : 'Yashirin' }}
-              </span>
-            </p>
-          </div>
-          <div class="flex flex-col gap-1.5 shrink-0">
-            <button
-              type="button"
-              class="px-3 py-1.5 rounded-lg text-[11px] font-black bg-sky-500/10 text-sky-600"
-              @click="startEdit(b)"
-            >
-              Tahrir
-            </button>
-            <button
-              type="button"
-              class="px-3 py-1.5 rounded-lg text-[11px] font-black bg-red-500/10 text-red-600"
-              @click="askDelete(b)"
-            >
-              O'chirish
-            </button>
-          </div>
-        </div>
-      </article>
-    </div>
+        :name="b.name"
+        :target-url="b.targetUrl"
+        :image-src="bannerSrc(b)"
+        :sort-order="b.sortOrder"
+        :active="b.active"
+        @edit="startEdit(b)"
+        @delete="askDelete(b)"
+      />
+    </section>
+
+    <BaseEmptyState
+      v-else
+      icon="fa-solid fa-image"
+      title="Hali banner yo'q"
+      subtitle="Yuqoridagi forma orqali birinchi bannerni qo'shing"
+      tone="slate"
+    />
 
     <BaseConfirmDialog
       v-model="deleteOpen"
@@ -173,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+import type { BannerFormModel } from '~/components/admin/banners/CreateForm.vue'
 import type { IBanner } from '~/types/banner'
 
 definePageMeta({ layout: 'admin' })
@@ -189,16 +112,17 @@ const saved = ref(false)
 const editingId = ref<string | null>(null)
 const deleteOpen = ref(false)
 const deleteTarget = ref<IBanner | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
 const pickedFile = ref<File | null>(null)
 const previewObjectUrl = ref('')
 
-const form = ref({
+const form = ref<BannerFormModel>({
   name: '',
   targetUrl: '',
   sortOrder: 0,
   active: true,
 })
+
+const activeCount = computed(() => banners.value.filter((b) => b.active).length)
 
 const previewSrc = computed(() => {
   if (previewObjectUrl.value) return previewObjectUrl.value
@@ -217,13 +141,11 @@ const resetForm = () => {
   if (previewObjectUrl.value) URL.revokeObjectURL(previewObjectUrl.value)
   previewObjectUrl.value = ''
   form.value = { name: '', targetUrl: '', sortOrder: 0, active: true }
-  if (fileInput.value) fileInput.value.value = ''
   error.value = ''
   saved.value = false
 }
 
-const onFileChange = (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0]
+const onFileChange = (file: File | null) => {
   if (!file) return
   if (file.size > 2 * 1024 * 1024) {
     error.value = 'Rasm 2 MB dan katta bo\'lmasligi kerak'
@@ -303,7 +225,6 @@ const startEdit = (b: IBanner) => {
   pickedFile.value = null
   if (previewObjectUrl.value) URL.revokeObjectURL(previewObjectUrl.value)
   previewObjectUrl.value = ''
-  if (fileInput.value) fileInput.value.value = ''
   error.value = ''
   saved.value = false
 }
