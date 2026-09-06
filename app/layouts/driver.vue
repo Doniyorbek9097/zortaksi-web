@@ -15,6 +15,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
 import { hasPanelShellAccess } from '~/utils/userRole'
+import { resolveTelegramStartNavigation } from '~/utils/telegramStartParam'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 
 const authStore = useAuthStore()
@@ -49,6 +50,11 @@ watch(
   () => [authStore.sessionReady, authStore.user?.role, route.path] as const,
   ([ready, , path]) => {
     if (!ready || !import.meta.client) return
+    const startTarget = resolveTelegramStartNavigation(route)
+    if (startTarget) {
+      void navigateTo(startTarget, { replace: true })
+      return
+    }
     if (hasPanelShellAccess(authStore.user) && path === '/driver/dashboard') {
       void navigateTo('/admin/dashboard', { replace: true })
     }
