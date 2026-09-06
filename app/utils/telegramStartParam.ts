@@ -205,6 +205,15 @@ export function matchesTelegramStartRoute(
 export function resolveTelegramStartNavigation(
   to: RouteLocationNormalized,
 ): RouteLocationRaw | null {
+  // To'g'ridan-to'g'ri chat/open URL — start_param kerak emas
+  if (to.path === '/driver/chat/open') {
+    const orderId = String(to.query.orderId || '').trim()
+    if (orderId && String(to.query.open || 'order') === 'order') {
+      clearTelegramStartParamStorage()
+      return null
+    }
+  }
+
   const target = routeFromTelegramStartParam(readTelegramStartParam())
   if (!target) return null
   if (matchesTelegramStartRoute(to, target)) {

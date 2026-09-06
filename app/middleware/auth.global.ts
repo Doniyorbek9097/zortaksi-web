@@ -20,7 +20,7 @@ import {
     classifyApiError,
     isConnectivityError,
 } from '~/utils/connectionError'
-import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam } from '~/utils/telegramStartParam'
+import { resolveTelegramStartNavigation, captureTelegramStartParam } from '~/utils/telegramStartParam'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -49,19 +49,6 @@ function applyPrivateCacheHeaders(path: string) {
     } catch { /* */ }
 }
 
-function looksLikeTelegramMiniApp(): boolean {
-    if (!import.meta.client) return false
-    if (document.documentElement.dataset.ztEmbed === 'telegram') return true
-    try {
-        const tg = (window as Window & { Telegram?: { WebApp?: { initData?: string; platform?: string } } }).Telegram?.WebApp
-        if (tg?.initData) return true
-        const p = String(tg?.platform || '')
-        return !!p && p !== 'unknown'
-    } catch {
-        return false
-    }
-}
-
 export default defineNuxtRouteMiddleware(async (to, from) => {
     applyPrivateCacheHeaders(to.path)
 
@@ -86,11 +73,13 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         return
     }
 
-    // ——— CLIENT ———
-    captureTelegramStartParam()
-    const telegramStartTarget = resolveTelegramStartNavigation(to)
-    if (telegramStartTarget) {
-        return navigateTo(telegramStartTarget, { replace: true })
+    // Telegram start_param (t.me?startapp=) — faqat zaxira
+    if (import.meta.client) {
+        captureTelegramStartParam()
+        const telegramStartTarget = resolveTelegramStartNavigation(to)
+        if (telegramStartTarget) {
+            return navigateTo(telegramStartTarget, { replace: true })
+        }
     }
 
     if (isConnectionErrorPath(to.path)) {
@@ -243,14 +232,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             return
         }
         if (canSkipAuth) {
-            if (
-                to.path === '/' &&
-                looksLikeTelegramMiniApp() &&
-                !readTelegramStartParam()
-            ) {
-                markReady()
-                return
-            }
             return navigateTo(resolveHomePath(authStore.user))
         }
         markReady()
@@ -289,11 +270,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     // Driver tanlangan, lekin URL admin — driver home
     if (!hasPanelShellAccess(authStore.user) && to.path.startsWith('/admin')) {
         return navigateTo('/driver/dashboard')
-    }
-
-    const lateTelegramStart = resolveTelegramStartNavigation(to)
-    if (lateTelegramStart) {
-        return navigateTo(lateTelegramStart, { replace: true })
     }
 
     // Shu sahifada qolamiz — endi UI ochilsin
