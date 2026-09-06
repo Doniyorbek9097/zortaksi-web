@@ -2,7 +2,7 @@
   <section v-if="slides.length" class="relative">
     <div
       ref="rootEl"
-      class="relative overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 shadow-sm touch-pan-y"
+      class="relative overflow-hidden rounded-2xl shadow-md shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-200/80 dark:ring-slate-700/80 bg-slate-900 touch-pan-y"
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
       @pointerup="onPointerUp"
@@ -10,44 +10,51 @@
       @pointerleave="onPointerUp"
     >
       <div
-        class="flex transition-transform duration-500 ease-out"
-        :class="dragging ? '' : 'duration-500'"
+        class="flex ease-out"
+        :class="dragging ? 'transition-none' : 'transition-transform duration-500'"
         :style="{ transform: `translate3d(${-index * 100 + dragPct}%, 0, 0)` }"
       >
         <button
-          v-for="(slide, i) in slides"
+          v-for="slide in slides"
           :key="slide.id"
           type="button"
-          class="w-full shrink-0 relative aspect-[3/1] min-h-[108px] sm:min-h-[132px] md:min-h-[160px] block overflow-hidden bg-slate-200 dark:bg-slate-800"
-          :aria-label="slide.name"
+          class="w-full shrink-0 relative aspect-[2.4/1] sm:aspect-[2.6/1] min-h-[120px] sm:min-h-[140px] block overflow-hidden bg-slate-800"
+          :class="slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default'"
+          :aria-label="slide.targetUrl ? 'Banner' : 'Reklama'"
           @click="openSlide(slide)"
         >
           <img
             :src="slide.src"
-            :alt="slide.name"
+            alt=""
             class="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
             draggable="false"
           >
           <div
-            v-if="slide.targetUrl"
-            class="absolute inset-x-0 bottom-0 px-3 py-2 bg-gradient-to-t from-black/55 to-transparent"
-          >
-            <p class="text-[11px] font-black text-white truncate text-left">{{ slide.name }}</p>
-          </div>
+            class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-black/5"
+          />
         </button>
       </div>
 
       <div
         v-if="slides.length > 1"
-        class="absolute bottom-2 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none"
+        class="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none"
       >
-        <span
-          v-for="(slide, i) in slides"
-          :key="`dot-${slide.id}`"
-          class="h-1.5 rounded-full transition-all"
-          :class="i === index ? 'w-4 bg-white shadow' : 'w-1.5 bg-white/50'"
-        />
+        <div
+          class="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/35 backdrop-blur-md"
+        >
+          <button
+            v-for="(slide, i) in slides"
+            :key="`dot-${slide.id}`"
+            type="button"
+            class="rounded-full transition-all duration-300 pointer-events-auto"
+            :class="i === index
+              ? 'w-5 h-1.5 bg-white shadow-sm'
+              : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/70'"
+            :aria-label="`${i + 1}-banner`"
+            @click.stop="goTo(i)"
+          />
+        </div>
       </div>
     </div>
   </section>
@@ -68,7 +75,6 @@ const slides = computed(() =>
     .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
     .map((b) => ({
       id: b.id,
-      name: b.name,
       targetUrl: String(b.targetUrl || '').trim(),
       src: resolveMedia(b.imageUrl) || b.imageUrl,
     })),
@@ -103,7 +109,7 @@ const tick = () => {
 const startTimer = () => {
   stopTimer()
   if (slides.value.length <= 1) return
-  timer = setInterval(tick, 4500)
+  timer = setInterval(tick, 5000)
 }
 
 const stopTimer = () => {
