@@ -82,12 +82,13 @@ export function useOrdersChatActions(options: {
 
     if (existing?._id) {
       const chatId = String(existing._id).trim()
-      if (!chatId) return goOpenChat({ open: 'order', ...linkQ })
       chatStore.primeFromChat(existing)
       void chatStore.connect(chatId, { silent: true })
-      return navigateTo({
-        path: `/driver/chat/${chatId}`,
-        query: compactQuery(linkQ),
+      // Guruh tugmasi bilan bir xil tez yo'l — /chat/open (to'liq loadChat emas)
+      return goOpenChat({
+        open: 'order',
+        chatId,
+        ...linkQ,
       })
     }
 
@@ -197,18 +198,13 @@ export function useOrdersChatActions(options: {
 
     if (existing?._id) {
       const chatId = String(existing._id).trim()
-      if (!chatId) {
-        return goOpenChat({
-          open: 'user',
-          userId: String(user.userId),
-          ...linkQ,
-        })
-      }
       chatStore.primeFromChat(existing)
       void chatStore.connect(chatId, { silent: true })
-      return navigateTo({
-        path: `/driver/chat/${chatId}`,
-        query: compactQuery(linkQ),
+      return goOpenChat({
+        open: 'user',
+        userId: String(user.userId),
+        chatId,
+        ...linkQ,
       })
     }
 
@@ -235,12 +231,12 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
     if (existing?._id) {
       const chatId = String(existing._id).trim()
-      if (!chatId) return goOpenChat({ open: 'booked', ...linkQ })
       chatStore.primeFromChat(existing)
       void chatStore.connect(chatId, { silent: true })
-      return navigateTo({
-        path: `/driver/chat/${chatId}`,
-        query: compactQuery(linkQ),
+      return goOpenChat({
+        open: 'booked',
+        chatId,
+        ...linkQ,
       })
     }
 
@@ -267,12 +263,12 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
     if (existing?._id) {
       const chatId = String(existing._id).trim()
-      if (!chatId) return goOpenChat({ open: 'agent', ...linkQ })
       chatStore.primeFromChat(existing)
       void chatStore.connect(chatId, { silent: true })
-      return navigateTo({
-        path: `/driver/chat/${chatId}`,
-        query: compactQuery(linkQ),
+      return goOpenChat({
+        open: 'agent',
+        chatId,
+        ...linkQ,
       })
     }
 

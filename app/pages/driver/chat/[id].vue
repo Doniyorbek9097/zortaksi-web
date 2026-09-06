@@ -1207,6 +1207,7 @@ const loadChat = async (id: string) => {
 
   resetChatUi(id, { preserveConnection, keepChat })
   if (id !== 'open') {
+    applyInstantOrderUiFromQuery()
     primeInstantOrderUi()
   }
 
@@ -1262,7 +1263,11 @@ const loadChat = async (id: string) => {
     const hasCachedMessages =
       chatStore.messagesChatId === id && chatStore.messages.length > 0
     if (!hasCachedMessages) {
-      await chatStore.fetchMessages(id)
+      if (orderChat) {
+        void chatStore.fetchMessages(id)
+      } else {
+        await chatStore.fetchMessages(id)
+      }
     } else {
       void chatStore.fetchMessages(id)
     }
