@@ -2,6 +2,8 @@
  * Telegram Mini App: orqaga (Back) history ichida ishlasin,
  * root'da bo'lmasa WebApp yopilmasin.
  */
+import { scheduleTelegramStartRedirect } from '~/utils/telegramStartRedirect'
+
 type TgBackButton = {
   show: () => void
   hide: () => void
@@ -126,6 +128,8 @@ export default defineNuxtPlugin(() => {
     }
 
     const router = useRouter()
+    // SDK yuklangach start_param ishonchli bo'ladi; kechikkan holatni ham tutib olamiz.
+    scheduleTelegramStartRedirect(router)
 
     const syncBackButton = () => {
       try {

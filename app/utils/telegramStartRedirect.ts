@@ -45,11 +45,14 @@ export function scheduleTelegramStartRedirect(router: Router): void {
 
   const tryRedirect = () => applyTelegramStartRedirect(router)
 
+  // start_param ayrim Telegram clientlarda kechikib keladi.
+  // Shu sabab bir necha marta va biroz uzoqroq tekshiramiz.
   tryRedirect()
-  for (const ms of [30, 100, 250, 500, 900]) {
+  for (const ms of [30, 100, 250, 500, 900, 1400, 2000, 2800, 3800, 5000]) {
     setTimeout(tryRedirect, ms)
   }
 
+  // Fallback: faqat ancha kutgandan keyin va hanuz root'da turganda.
   setTimeout(() => {
     if (tryRedirect()) return
     const path = router.currentRoute.value.path
@@ -63,5 +66,5 @@ export function scheduleTelegramStartRedirect(router: Router): void {
     } catch {
       void router.replace('/driver/dashboard')
     }
-  }, 1200)
+  }, 6500)
 }
