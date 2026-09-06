@@ -6,6 +6,7 @@ import {
   clearTelegramCloseOnBack,
   handleTelegramPopstateClose,
   installTelegramChatBackTrap,
+  isTelegramBackTrapState,
   isTelegramChatEntryPath,
   shouldTelegramCloseOnBack,
 } from '~/utils/telegramMiniAppBack'
@@ -91,6 +92,7 @@ function hasOverlayHistoryLayer(): boolean {
   try {
     const state = window.history.state as Record<string, unknown> | null
     if (!state || typeof state !== 'object') return false
+    if (isTelegramBackTrapState(state)) return false
     if (state.sheet) return true
     return Object.keys(state).some((k) => k.startsWith('zt'))
   } catch {
@@ -156,11 +158,6 @@ export default defineNuxtPlugin(() => {
     }
 
     const onTgBack = () => {
-      // Dialog/overlay ochiq bo'lsa — faqat uni yopish (sahifa emas)
-      if (hasOverlayHistoryLayer()) {
-        history.back()
-        return
-      }
       const path = router.currentRoute.value.path
       if (shouldTelegramCloseOnBack() && isTelegramChatEntryPath(path)) {
         try {
@@ -171,11 +168,14 @@ export default defineNuxtPlugin(() => {
         }
         return
       }
+      if (hasOverlayHistoryLayer()) {
+        history.back()
+        return
+      }
       if (canGoBackInApp()) {
         router.back()
         return
       }
-      // Root — WebApp yopilsin
       try {
         tg.close()
       } catch {

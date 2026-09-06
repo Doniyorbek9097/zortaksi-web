@@ -22,6 +22,9 @@ export interface DriverRow {
   groupInviteCount?: number
   appInviteCount?: number
   inviteGroups?: Array<{ id: string; title: string; count: number }>
+  regionSlug?: string | null
+  regionTitle?: string | null
+  assignedGroupTitle?: string | null
   tariff?: {
     name?: string
     info?: string

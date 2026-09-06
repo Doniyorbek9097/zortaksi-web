@@ -5,6 +5,9 @@
 const TG_CLOSE_ON_BACK = 'zt:tg-close-on-back'
 const TG_BACK_TRAP = 'zt:tg-back-trap-installed'
 
+/** history.pushState — overlay emas (zt prefiks ishlatilmaydi) */
+export const TG_BACK_TRAP_STATE = { tgBackTrap: true as const }
+
 export function markTelegramCloseOnBack(): void {
   if (!import.meta.client) return
   try {
@@ -37,6 +40,10 @@ export function isTelegramChatEntryPath(path: string): boolean {
   return String(path || '').startsWith('/driver/chat/')
 }
 
+export function isTelegramBackTrapState(state: unknown): boolean {
+  return !!(state && typeof state === 'object' && (state as { tgBackTrap?: boolean }).tgBackTrap)
+}
+
 /** start_param order_* — bot tugmasidan kirish */
 export function maybeMarkTelegramCloseOnBackFromStartParam(
   param: string | null | undefined,
@@ -48,12 +55,12 @@ export function maybeMarkTelegramCloseOnBackFromStartParam(
   }
 }
 
-/** Telefon back — birinchi bosishda popstate ushlanadi, sahifa o'zgarmaydi */
+/** Telefon back — birinchi bosishda popstate ushlanadi */
 export function installTelegramChatBackTrap(): void {
   if (!import.meta.client || !shouldTelegramCloseOnBack()) return
   try {
     if (sessionStorage.getItem(TG_BACK_TRAP) === '1') return
-    history.pushState({ ztTgBackTrap: true }, '', window.location.href)
+    history.pushState(TG_BACK_TRAP_STATE, '', window.location.href)
     sessionStorage.setItem(TG_BACK_TRAP, '1')
   } catch {
     /* */
@@ -84,17 +91,21 @@ export function closeTelegramMiniApp(): boolean {
   return false
 }
 
-/** Chat sahifasida orqaga — Mini App yopish (botdan kirilgan bo'lsa) */
+/** Chat sahifasida orqaga — Mini App yopish */
 export function tryTelegramCloseOnChatBack(path: string): boolean {
   if (!shouldTelegramCloseOnBack() || !isTelegramChatEntryPath(path)) return false
   return closeTelegramMiniApp()
 }
 
-/** OS back (popstate) — chat yoki undan keyin ham yopish */
+/** OS / telefon back (popstate) */
 export function handleTelegramPopstateClose(path: string): boolean {
   if (!shouldTelegramCloseOnBack()) return false
-  if (!isTelegramChatEntryPath(path)) {
-    return closeTelegramMiniApp()
+  if (isTelegramChatEntryPath(path)) {
+    try {
+      history.pushState(TG_BACK_TRAP_STATE, '', window.location.href)
+    } catch {
+      /* */
+    }
   }
   return closeTelegramMiniApp()
 }

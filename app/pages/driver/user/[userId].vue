@@ -104,6 +104,18 @@
           >
             <h2 class="text-sm font-black text-slate-900 dark:text-white">Ma'lumot</h2>
             <div class="grid grid-cols-2 gap-3 text-[12px]">
+              <div class="col-span-2">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Biriktirilgan guruh</p>
+                <p class="font-black text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {{ driver.assignedGroupTitle || driver.regionTitle || '—' }}
+                </p>
+                <p
+                  v-if="driver.regionSlug"
+                  class="text-[10px] font-mono text-slate-400 dark:text-slate-500 mt-0.5 truncate"
+                >
+                  {{ driver.regionTitle || driver.regionSlug }}
+                </p>
+              </div>
               <div>
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Ro'yxatdan o'tgan</p>
                 <p class="font-black text-slate-800 dark:text-slate-200 mt-0.5">
