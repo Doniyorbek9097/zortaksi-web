@@ -745,6 +745,12 @@ const composerDisabled = computed(
 
 const composerPlaceholder = computed(() => {
   if (!hasRealChatId.value || composerBusy.value) return 'Ulanmoqda...'
+  if (conn.value === 'proxy-required') {
+    return "Proksi orqali ulanish tavsiya etiladi"
+  }
+  if (conn.value === 'unreachable') {
+    return "Telegram orqali ulanib bo'lmadi"
+  }
   if (
     !isInAppChat.value &&
     conn.value !== 'ready' &&
@@ -867,6 +873,11 @@ const confirmProxyConnect = async () => {
     if (status === 'ready') {
       chatStore.connectionStatus = 'ready'
       chatStore.connectionReason = ''
+    } else {
+      chatStore.connectionStatus = status === 'restricted' ? 'restricted' : 'unreachable'
+      chatStore.connectionReason =
+        String(res?.data?.reason || res?.message || '').trim() ||
+        "Proksi orqali ham bog'lanib bo'lmadi."
     }
   } finally {
     proxyConnecting.value = false

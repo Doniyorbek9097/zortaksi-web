@@ -3,6 +3,8 @@ import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 
 const CONNECT_TIMEOUT_MS = 45000
+/** Order chat — o'z hisob tez ulanish (proksi taklifidan oldin) */
+const ORDER_CONNECT_TIMEOUT_MS = 15000
 const SOCKET_WAIT_MS = 600
 
 type ConnectAck = {
@@ -49,12 +51,13 @@ const waitForSocketConnected = (maxMs = SOCKET_WAIT_MS): Promise<Socket | null> 
 const requestConnectViaHttp = async (
     chatId: string,
     opts: { viaProxy?: boolean } = {},
+    timeoutMs = CONNECT_TIMEOUT_MS,
 ): Promise<ConnectAck> => {
     try {
         const res = await useApi(`/chats/${chatId}/connect`, {
             method: 'POST',
             body: { viaProxy: !!opts.viaProxy },
-            timeout: CONNECT_TIMEOUT_MS,
+            timeout: timeoutMs,
         })
         if (res?.success) {
             return { success: true, data: res.data }
@@ -75,9 +78,10 @@ const requestConnectViaHttp = async (
 /** HTTP birinchi — socket 3s kutish yo'q; warm push socket orqali keladi */
 const requestConnect = async (
     chatId: string,
-    opts: { viaProxy?: boolean } = {},
+    opts: { viaProxy?: boolean; timeoutMs?: number } = {},
 ): Promise<ConnectAck> => {
-    const http = await requestConnectViaHttp(chatId, opts)
+    const timeoutMs = opts.timeoutMs ?? CONNECT_TIMEOUT_MS
+    const http = await requestConnectViaHttp(chatId, opts, timeoutMs)
     if (http.success) return http
 
     const socket = getSocket()
@@ -280,9 +284,16 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
         activeConnectChatId = chatId
 
+        const isOrderChat = !!(chat?.orderId)
+        const connectTimeout =
+            isOrderChat && !opts.viaProxy
+                ? ORDER_CONNECT_TIMEOUT_MS
+                : CONNECT_TIMEOUT_MS
+
         try {
             const res = await requestConnect(chatId, {
                 viaProxy: opts.viaProxy,
+                timeoutMs: connectTimeout,
             })
             if (res.success) {
                 const next = (res.data?.status ?? 'unreachable') as ConnStatus
