@@ -23,6 +23,9 @@
       </div>
     </div>
 
+    <!-- Promo bannerlar -->
+    <DashboardBannerCarousel v-if="promoBanners.length" :banners="promoBanners" />
+
     <!-- Payment banner -->
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
@@ -92,6 +95,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
+import type { IBanner } from '~/types/banner'
 
 definePageMeta({
   layout: 'driver',
@@ -103,6 +107,42 @@ const authStore = useAuthStore()
 const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
+
+const promoBanners = ref<IBanner[]>([])
+const BANNERS_CACHE_KEY = 'zt:dashboard-banners'
+
+const loadCachedBanners = () => {
+  if (!import.meta.client) return
+  try {
+    const raw = sessionStorage.getItem(BANNERS_CACHE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw) as IBanner[]
+    if (Array.isArray(data)) promoBanners.value = data
+  } catch {
+    /* */
+  }
+}
+
+const saveCachedBanners = () => {
+  if (!import.meta.client) return
+  try {
+    sessionStorage.setItem(BANNERS_CACHE_KEY, JSON.stringify(promoBanners.value))
+  } catch {
+    /* */
+  }
+}
+
+const fetchPromoBanners = async () => {
+  try {
+    const res = await useApi<{ success: boolean; data: { banners: IBanner[] } }>('/banners')
+    if (res?.success && res.data?.banners) {
+      promoBanners.value = res.data.banners
+      saveCachedBanners()
+    }
+  } catch {
+    /* */
+  }
+}
 
 // --- Greeting based on hour ---
 const greeting = computed(() => {
@@ -286,12 +326,15 @@ const onBuyTariff = () => {
 usePullToRefresh(async () => {
   await Promise.all([
     fetchPlatformStats(),
+    fetchPromoBanners(),
     authStore.getMe().catch(() => {}),
   ])
 })
 
 onMounted(() => {
   loadCachedStats()
+  loadCachedBanners()
   void fetchPlatformStats({ background: statsReady.value })
+  void fetchPromoBanners()
 })
 </script>
