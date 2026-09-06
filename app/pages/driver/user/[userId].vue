@@ -334,7 +334,7 @@ const tariffCard = computed(() => {
     price: t?.price ?? 0,
     expireDays: t?.expireDays ?? Math.max(1, d?.daysLeft ?? 1),
     startDate: formatDate(startedAt),
-    endDate: d?.expireAt || formatDate(expireAt),
+    endDate: formatDate(expireAt),
     startedAt,
     expireAt,
     active,

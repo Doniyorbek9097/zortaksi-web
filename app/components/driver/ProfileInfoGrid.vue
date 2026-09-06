@@ -18,13 +18,7 @@
             Biriktirilgan guruh
           </p>
           <p class="mt-0.5 text-[12px] font-black text-teal-800 dark:text-teal-200 truncate leading-tight">
-            {{ assignedGroupTitle || regionTitle || '—' }}
-          </p>
-          <p
-            v-if="regionSlug"
-            class="text-[9px] font-mono text-teal-600/65 dark:text-teal-400/55 truncate leading-tight"
-          >
-            {{ regionTitle || regionSlug }}
+            {{ groupLabel }}
           </p>
         </div>
       </div>
@@ -35,7 +29,7 @@
         <div
           class="w-6 h-6 rounded-md flex items-center justify-center text-[10px] shrink-0 bg-amber-500 text-white"
         >
-          <font-awesome-icon icon="fa-solid fa-calendar-check" />
+          <font-awesome-icon icon="fa-solid fa-calendar-day" />
         </div>
         <div class="min-w-0 flex-1">
           <p class="text-[9px] font-bold uppercase tracking-wide text-amber-600/80 dark:text-amber-400/80 leading-none">
@@ -131,10 +125,12 @@ const formatDate = (value?: string | Date | null) => {
   return d.toLocaleDateString('uz-UZ')
 }
 
-const registeredLabel = computed(() => {
-  const direct = String(props.registeredAt || '').trim()
-  if (direct) return direct
-  const fromCreated = formatDate(props.createdAt)
-  return fromCreated === '—' ? '—' : fromCreated
+const groupLabel = computed(() => {
+  const title = String(props.assignedGroupTitle || props.regionTitle || '').trim()
+  if (title) return title
+  const slug = String(props.regionSlug || '').trim()
+  return slug || '—'
 })
+
+const registeredLabel = computed(() => formatDate(props.createdAt || props.registeredAt))
 </script>
