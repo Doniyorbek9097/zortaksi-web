@@ -3,7 +3,7 @@
   <BasePullToRefresh
     fill
     scroll-selector=".chat-msg-scroll"
-    class="fixed left-0 right-0 z-40"
+    class="fixed z-40 overflow-x-hidden"
     :style="shellStyle"
   >
   <div
@@ -656,9 +656,12 @@ const executeClearHistory = async () => {
  * Klaviatura ochilganda visualViewport;
  * yopiq holatda 100dvh — Telegram offsetTop + safe-area qo'shilib
  * yuqori/pastki ~100px bo'shliq qolmasin.
+ * Gorizontal: offsetLeft/width — chapda bo'shliq qolmasin (Telegram Mini App).
  */
 const shellStyle = ref<Record<string, string>>({
   top: '0px',
+  left: '0px',
+  width: '100%',
   height: '100dvh',
 })
 
@@ -666,19 +669,28 @@ const syncViewport = () => {
   if (!import.meta.client) return
   const vv = window.visualViewport
   if (!vv) {
-    shellStyle.value = { top: '0px', height: '100dvh' }
+    shellStyle.value = { top: '0px', left: '0px', width: '100%', height: '100dvh' }
     return
   }
+  const left = `${Math.max(0, vv.offsetLeft)}px`
+  const width = `${Math.max(0, vv.width)}px`
   const keyboardGap = window.innerHeight - vv.height
   const keyboardOpen = keyboardGap > 80
   if (keyboardOpen) {
     shellStyle.value = {
+      left,
+      width,
       top: `${Math.max(0, vv.offsetTop)}px`,
       height: `${Math.max(0, vv.height)}px`,
     }
     return
   }
-  shellStyle.value = { top: '0px', height: '100dvh' }
+  shellStyle.value = {
+    left,
+    width,
+    top: '0px',
+    height: '100dvh',
+  }
 }
 
 // Ulanish holati (senderga yozish mumkinmi)
@@ -1327,7 +1339,10 @@ onMounted(() => {
   prevHtmlOverflow = document.documentElement.style.overflow
   document.body.style.overflow = 'hidden'
   document.documentElement.style.overflow = 'hidden'
+  document.body.style.overflowX = 'hidden'
+  document.documentElement.style.overflowX = 'hidden'
 
+  window.scrollTo(0, 0)
   syncViewport()
   window.visualViewport?.addEventListener('resize', syncViewport)
   window.visualViewport?.addEventListener('scroll', syncViewport)
@@ -1341,6 +1356,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', syncViewport)
   document.body.style.overflow = prevBodyOverflow
   document.documentElement.style.overflow = prevHtmlOverflow
+  document.body.style.overflowX = ''
+  document.documentElement.style.overflowX = ''
 
   clearPresenceTimer()
   chatStore.currentChat = null
