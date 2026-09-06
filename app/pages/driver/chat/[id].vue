@@ -404,13 +404,45 @@ const { ensureAccess: ensureOrderTakeAccessFromApi, redirectIfBlocked: redirectO
 const { frameStyle } = useVisualViewportFrame()
 
 const chatId = computed(() => route.params.id as string)
-/** Route hali `open` bo'lsa ham API dan kelgan haqiqiy chat id */
-const effectiveChatId = computed(() => {
+
+/** Haqiqiy chat id — route, currentChat, chats ro'yxati (orderId) */
+const resolveActiveChatId = (): string => {
   const routeId = String(chatId.value || '').trim()
   if (routeId && routeId !== 'open') return routeId
-  const fromChat = String(chatStore.currentChat?._id || '').trim()
-  return fromChat || routeId
-})
+
+  const fromCurrent = String(chatStore.currentChat?._id || '').trim()
+  if (fromCurrent) return fromCurrent
+
+  const orderId = String(
+    route.query.orderId || chatStore.currentChat?.orderId || '',
+  ).trim()
+  if (orderId) {
+    const fromList = chatStore.chats.find(
+      (c) => String(c.orderId || '') === orderId,
+    )
+    const listId = String(fromList?._id || '').trim()
+    if (listId) return listId
+  }
+
+  return routeId
+}
+
+const ensureCurrentChatForId = (id: string) => {
+  if (!id || id === 'open') return
+  if (String(chatStore.currentChat?._id || '') === id) return
+  const fromList = chatStore.chats.find((c) => String(c._id) === id)
+  if (!fromList) return
+  const stub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+  chatStore.currentChat = mergeOrderChatContext(
+    fromList,
+    stub,
+    chatStore.currentChat,
+  ) as import('~/types').IChat
+  chatStore.primeFromChat(chatStore.currentChat)
+}
+
+/** Route hali `open` bo'lsa ham API dan kelgan haqiqiy chat id */
+const effectiveChatId = computed(() => resolveActiveChatId())
 
 const hasRealChatId = computed(() => {
   const id = effectiveChatId.value
@@ -485,7 +517,10 @@ const isOrderSenderChat = computed(
 const messagesMatchChat = computed(() => {
   const id = effectiveChatId.value
   if (!id || id === 'open') return false
-  return chatStore.messagesChatId === id
+  if (chatStore.messagesChatId === id) return true
+  return chatStore.messages.some(
+    (m) => String((m as { chatId?: string }).chatId || '') === id,
+  )
 })
 
 const showMessageSkeleton = computed(() => {
@@ -705,25 +740,17 @@ const showComposer = computed(
 )
 
 const composerDisabled = computed(
-  () =>
-    !hasRealChatId.value ||
-    composerBusy.value ||
-    (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value),
+  () => !hasRealChatId.value || composerBusy.value,
 )
 
 const composerPlaceholder = computed(() => {
-  if (!hasRealChatId.value) return 'Ulanmoqda...'
+  if (!hasRealChatId.value || composerBusy.value) return 'Ulanmoqda...'
   if (
-    isOrderSenderChat.value &&
     !isInAppChat.value &&
     conn.value !== 'ready' &&
     !hasPeerLink.value
   ) {
-    return 'Ulanmoqda...'
-  }
-  if (composerBusy.value) return 'Ulanmoqda...'
-  if (!isInAppChat.value && conn.value !== 'ready' && !hasPeerLink.value) {
-    return 'Ulanmoqda...'
+    return 'Telegram ulanmoqda...'
   }
   return 'Xabar yozing...'
 })
@@ -787,12 +814,15 @@ const scrollToFocus = () => {
 }
 
 const onSend = async (text: string) => {
-  const id = effectiveChatId.value
-  if (!id || id === 'open' || !canSendTelegram.value) return
+  const id = resolveActiveChatId()
+  if (!id || id === 'open') return
+  ensureCurrentChatForId(id)
+
   if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(id)
-    if (!ok) return
+    // Backend ham yuboradi — ulanishni kutib to'xtatmaymiz
+    void chatStore.ensureTelegramReady(id)
   }
+
   const replyId = replyTarget.value?.id
   await chatStore.sendMessage(id, text, replyId)
   replyTarget.value = null
@@ -800,23 +830,19 @@ const onSend = async (text: string) => {
 }
 
 const onVoice = async (blob: Blob, seconds: number) => {
-  const id = effectiveChatId.value
-  if (!id || id === 'open' || !canSendTelegram.value) return
-  if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(id)
-    if (!ok) return
-  }
+  const id = resolveActiveChatId()
+  if (!id || id === 'open') return
+  ensureCurrentChatForId(id)
+  if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
   await chatStore.sendVoice(id, blob, seconds)
   scrollToBottom()
 }
 
 const onPhoto = async (file: File) => {
-  const id = effectiveChatId.value
-  if (!id || id === 'open' || !canSendTelegram.value) return
-  if (needsTelegramConnect.value) {
-    const ok = await chatStore.ensureTelegramReady(id)
-    if (!ok) return
-  }
+  const id = resolveActiveChatId()
+  if (!id || id === 'open') return
+  ensureCurrentChatForId(id)
+  if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
   await chatStore.sendPhoto(id, file)
   scrollToBottom()
 }
@@ -937,9 +963,22 @@ const resetChatUi = (nextChatId?: string, opts?: { preserveConnection?: boolean;
   chatStore.invalidateMessagesFetch()
   clearPresenceTimer()
   exitSelectionMode()
-  chatStore.messages = []
-  chatStore.messagesChatId = null
-  chatStore.resetMessagesPagination()
+
+  const keepId = String(opts?.keepChat?._id || chatStore.currentChat?._id || '').trim()
+  const skipMessageReset =
+    !!nextChatId &&
+    nextChatId !== 'open' &&
+    !!keepId &&
+    keepId === String(nextChatId) &&
+    chatStore.messagesChatId === keepId &&
+    chatStore.messages.length > 0
+
+  if (!skipMessageReset) {
+    chatStore.messages = []
+    chatStore.messagesChatId = null
+    chatStore.resetMessagesPagination()
+  }
+
   chatStore.currentChat = opts?.keepChat ?? null
   if (!opts?.preserveConnection) {
     chatStore.resetConnection()
@@ -1112,6 +1151,13 @@ const adoptOpenChatInPlace = (chat: import('~/types').IChat): boolean => {
   preconnectChatOpen(newId, merged)
   void chatStore.fetchMessages(newId)
   clearTelegramStartParamStorage()
+
+  if (chatId.value === 'open') {
+    void router.replace({
+      path: `/driver/chat/${encodeURIComponent(newId)}`,
+      query: route.query,
+    })
+  }
   return true
 }
 
@@ -1175,7 +1221,12 @@ const bootstrapOpenChat = async (seq: number) => {
     return null
   }
 
-  primeInstantOrderUi()
+  const alreadyHasChat =
+    !!String(chatStore.currentChat?._id || '').trim() &&
+    (!orderId || String(chatStore.currentChat?.orderId || '') === orderId)
+  if (!alreadyHasChat) {
+    primeInstantOrderUi()
+  }
 
   const needsAccess = !!(mode === 'user' && userId)
   const skipAccessCheck = needsAccess && canSkipOrderTakeAccessCheck()
@@ -1328,6 +1379,15 @@ watch(chatId, (id) => {
   if (!id) return
   void loadChat(id)
 }, { immediate: true })
+
+watch(
+  () => chatStore.chats.map((c) => `${c._id}:${c.orderId}`).join('|'),
+  () => {
+    if (chatId.value !== 'open') return
+    const id = resolveActiveChatId()
+    if (id && id !== 'open') ensureCurrentChatForId(id)
+  },
+)
 
 usePullToRefresh(async () => {
   const id = effectiveChatId.value

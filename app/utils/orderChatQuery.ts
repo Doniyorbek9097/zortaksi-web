@@ -277,6 +277,12 @@ export function mergeOrderChatContext(
     }
   }
 
+  // Stub keyinroq kelib haqiqiy _id ni yo'qotmasin
+  for (const src of sources) {
+    const id = String(src?._id || '').trim()
+    if (id) merged._id = id
+  }
+
   return merged
 }
 

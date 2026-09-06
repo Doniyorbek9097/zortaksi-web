@@ -151,14 +151,18 @@ export function useOrdersChatActions(options: {
       orderId &&
       String(route.query.orderId || '') === orderId
 
-    if (onOpenRoute) {
-      const stub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+    const stub = onOpenRoute
+      ? buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
+      : null
+
+    if (onOpenRoute || String(chatStore.currentChat?.orderId || '') === orderId) {
       chatStore.currentChat = mergeOrderChatContext(
         chatStore.currentChat,
         stub,
         chat,
       ) as IChat
       chatStore.primeFromChat(chatStore.currentChat)
+      chatStore.isLoadingMessages = false
     }
 
     chatStore.hydrateMessagesFromCache(id)

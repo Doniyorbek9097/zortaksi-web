@@ -349,12 +349,11 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const chat = findChatById(chatId)
         if (!chat || isInAppChatLike(chat)) return true
         if (hasTelegramPeerLink(chat)) return true
-        if (connectionStatus.value === 'ready') return true
 
         await connect(chatId, { silent: true })
 
         const updated = findChatById(chatId)
-        if (hasTelegramPeerLink(updated) || connectionStatus.value === 'ready') return true
+        if (hasTelegramPeerLink(updated)) return true
 
         // Order chat — o'z hisob ishlamasa proxy AVTOMATIK emas:
         // 'proxy-required' holati UI banner orqali ruxsat so'raydi, shundan
