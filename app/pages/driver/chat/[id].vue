@@ -386,7 +386,7 @@ import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
-import { applyTelegramViewportInsets, telegramChatShellStyle } from '~/composables/useTelegramViewportInsets'
+import { applyTelegramViewportInsets, telegramChatShellStyle, stabilizeTelegramChatViewport, resetTelegramViewportInsets } from '~/composables/useTelegramViewportInsets'
 
 definePageMeta({
   layout: false,
@@ -936,10 +936,6 @@ let loadSeq = 0
 let scrollLoadLock = false
 let prevBodyOverflow = ''
 let prevHtmlOverflow = ''
-let prevBodyPosition = ''
-let prevBodyInset = ''
-let prevBodyWidth = ''
-let prevBodyMargin = ''
 
 const clearPresenceTimer = () => {
   if (presenceTimer) {
@@ -1326,6 +1322,7 @@ const loadChat = async (id: string) => {
 // Chat → chat: component qayta mount bo'lmasa ham yangilanadi
 watch(chatId, (id) => {
   if (!id) return
+  if (isTelegramMiniApp()) stabilizeTelegramChatViewport()
   void loadChat(id)
 }, { immediate: true })
 
@@ -1353,15 +1350,9 @@ onMounted(() => {
   document.documentElement.style.overflowX = 'hidden'
 
   if (isTelegramMiniApp()) {
-    prevBodyPosition = document.body.style.position
-    prevBodyInset = document.body.style.inset
-    prevBodyWidth = document.body.style.width
-    prevBodyMargin = document.body.style.margin
-    document.body.style.position = 'fixed'
-    document.body.style.inset = '0'
-    document.body.style.width = '100%'
-    document.body.style.margin = '0'
+    resetTelegramViewportInsets()
     shellStyle.value = telegramChatShellStyle()
+    stabilizeTelegramChatViewport()
   }
 
   window.scrollTo(0, 0)
@@ -1380,12 +1371,6 @@ onBeforeUnmount(() => {
   document.documentElement.style.overflow = prevHtmlOverflow
   document.body.style.overflowX = ''
   document.documentElement.style.overflowX = ''
-  if (isTelegramMiniApp()) {
-    document.body.style.position = prevBodyPosition
-    document.body.style.inset = prevBodyInset
-    document.body.style.width = prevBodyWidth
-    document.body.style.margin = prevBodyMargin
-  }
 
   clearPresenceTimer()
   chatStore.currentChat = null

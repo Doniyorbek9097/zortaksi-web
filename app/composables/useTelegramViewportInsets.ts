@@ -1,8 +1,16 @@
-/** Telegram Mini App visualViewport → CSS o'zgaruvchilari (gorizontal siljishni oldini oladi) */
+/** Telegram Mini App visualViewport — faqat barqaror holatda yangilanadi */
 
+import { mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
+
+function isChatOpenPath(): boolean {
+  if (!import.meta.client) return false
+  return /^\/driver\/chat\/(open|[^/]+)/.test(window.location.pathname)
+}
+
+/** Gorizontal siljish — faqat klaviatura ochiq bo'lsa offset qo'llanadi */
 export function applyTelegramViewportInsets(): void {
   if (!import.meta.client) return
-  if (document.documentElement.dataset.ztEmbed !== 'telegram') return
+  if (!mightBeTelegramMiniApp() && document.documentElement.dataset.ztEmbed !== 'telegram') return
 
   const vv = window.visualViewport
   const root = document.documentElement
@@ -14,27 +22,40 @@ export function applyTelegramViewportInsets(): void {
     vv?.height ||
     window.innerHeight
 
-  if (vv) {
-    root.style.setProperty('--zt-vv-left', `${Math.max(0, vv.offsetLeft)}px`)
-    root.style.setProperty('--zt-vv-top', `${Math.max(0, vv.offsetTop)}px`)
-    root.style.setProperty('--zt-vv-width', `${Math.max(0, vv.width)}px`)
-    root.style.setProperty('--zt-vv-height', `${Math.max(0, vv.height)}px`)
-    if (window.scrollX !== 0) window.scrollTo(0, window.scrollY)
-  } else {
-    root.style.setProperty('--zt-vv-left', '0px')
-    root.style.setProperty('--zt-vv-top', '0px')
-    root.style.setProperty('--zt-vv-width', '100%')
-    root.style.setProperty('--zt-vv-height', `${height}px`)
-  }
+  const keyboardGap = vv ? window.innerHeight - vv.height : 0
+  const keyboardOpen = keyboardGap > 80
 
+  // Chat ochilish animatsiyasida offsetLeft noto'g'ri bo'ladi — gorizontal 0
+  const useHorizontalOffset = keyboardOpen && !isChatOpenPath()
+  const left = useHorizontalOffset ? Math.max(0, vv?.offsetLeft || 0) : 0
+  const width = useHorizontalOffset && vv ? Math.max(0, vv.width) : null
+
+  root.style.setProperty('--zt-vv-left', `${left}px`)
+  root.style.setProperty('--zt-vv-top', keyboardOpen && vv ? `${Math.max(0, vv.offsetTop)}px` : '0px')
+  root.style.setProperty('--zt-vv-width', width != null ? `${width}px` : '100%')
+  root.style.setProperty(
+    '--zt-vv-height',
+    keyboardOpen && vv ? `${Math.max(0, vv.height)}px` : `${height}px`,
+  )
   root.style.setProperty('--zt-tg-vh', `${height}px`)
+
+  if (window.scrollX !== 0) window.scrollTo(0, window.scrollY)
+}
+
+/** Chat sahifasiga o'tganda noto'g'ri offsetlarni tozalash */
+export function resetTelegramViewportInsets(): void {
+  if (!import.meta.client) return
+  const root = document.documentElement
+  root.style.setProperty('--zt-vv-left', '0px')
+  root.style.setProperty('--zt-vv-top', '0px')
+  root.style.setProperty('--zt-vv-width', '100%')
+  if (window.scrollX !== 0) window.scrollTo(0, 0)
 }
 
 let wired = false
 
 export function wireTelegramViewportInsets(): void {
   if (!import.meta.client || wired) return
-  if (document.documentElement.dataset.ztEmbed !== 'telegram') return
   wired = true
 
   const sync = () => applyTelegramViewportInsets()
@@ -47,13 +68,28 @@ export function wireTelegramViewportInsets(): void {
   tg?.onEvent?.('viewportChanged', sync)
 }
 
-/** Chat fullscreen shell — Telegram da visualViewport bilan to'liq mos */
+/** Chat fullscreen — gorizontal doim to'liq ekran (offsetLeft ishonchsiz) */
 export function telegramChatShellStyle(): Record<string, string> {
   return {
-    left: 'var(--zt-vv-left, 0px)',
     top: 'var(--zt-vv-top, 0px)',
-    width: 'var(--zt-vv-width, 100%)',
+    left: '0px',
+    right: '0px',
+    width: '100%',
     height: 'var(--zt-vv-height, var(--zt-tg-vh, 100dvh))',
     maxWidth: '100vw',
+  }
+}
+
+/** Chat mount — animatsiya tugagach viewport qayta o'lchash */
+export function stabilizeTelegramChatViewport(): void {
+  if (!import.meta.client) return
+  resetTelegramViewportInsets()
+  const delays = [0, 50, 150, 320, 600]
+  for (const ms of delays) {
+    setTimeout(() => {
+      resetTelegramViewportInsets()
+      applyTelegramViewportInsets()
+      window.scrollTo(0, 0)
+    }, ms)
   }
 }

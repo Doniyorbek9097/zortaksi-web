@@ -21,7 +21,7 @@ import {
     isConnectivityError,
 } from '~/utils/connectionError'
 import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam, routeFromTelegramStartParam } from '~/utils/telegramStartParam'
-import { isTelegramMiniApp } from '~/utils/telegramStartRedirect'
+import { isTelegramMiniApp, mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
@@ -74,7 +74,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         return
     }
 
-    // Telegram start_param (t.me?startapp=) — faqat zaxira
+    // Telegram start_param (t.me?startapp=) — SDK dan oldin ham hash orqali
     if (import.meta.client) {
         captureTelegramStartParam()
         const telegramStartTarget = resolveTelegramStartNavigation(to)
@@ -93,8 +93,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         authStore.sessionReady &&
         isMainTabHop(from?.path || '', to.path)
 
+    const isOrderChatOpen =
+        to.path === '/driver/chat/open' && !!String(to.query.orderId || '').trim()
+
     // Tab orasida o'tishda to'liq ekran loading ko'rsatilmaydi
-    if (!tabHop) {
+    // Buyurtma chat — darhol UI (start_param redirect paytida siljish bo'lmasin)
+    if (!tabHop && !isOrderChatOpen) {
         authStore.sessionReady = false
     }
 
@@ -240,7 +244,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             if (startTarget) {
                 return navigateTo(startTarget, { replace: true })
             }
-            if (to.path === '/' && isTelegramMiniApp()) {
+            if (to.path === '/' && (isTelegramMiniApp() || mightBeTelegramMiniApp())) {
                 markReady()
                 return
             }

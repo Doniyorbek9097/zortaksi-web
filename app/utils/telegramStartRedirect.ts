@@ -25,6 +25,21 @@ export function isTelegramMiniApp(): boolean {
   }
 }
 
+/** SDK yuklanishidan oldin ham hash orqali aniqlash (start_param erta redirect) */
+export function mightBeTelegramMiniApp(): boolean {
+  if (!import.meta.client) return false
+  if (isTelegramMiniApp()) return true
+  try {
+    const h = String(window.location.hash || '')
+    const s = String(window.location.search || '')
+    if (/tgWebApp/i.test(h) || /tgWebApp/i.test(s)) return true
+    if (/start_param|tgWebAppStartParam/i.test(h) || /start_param/i.test(s)) return true
+  } catch {
+    /* */
+  }
+  return false
+}
+
 export function peekTelegramStartRoute(): RouteLocationRaw | null {
   return routeFromTelegramStartParam(readTelegramStartParam())
 }
@@ -41,14 +56,13 @@ export function applyTelegramStartRedirect(router: Router): boolean {
 }
 
 export function scheduleTelegramStartRedirect(router: Router): void {
-  if (!import.meta.client || !isTelegramMiniApp()) return
+  if (!import.meta.client || !mightBeTelegramMiniApp()) return
 
   const tryRedirect = () => applyTelegramStartRedirect(router)
 
-  // start_param ayrim Telegram clientlarda kechikib keladi.
-  // Shu sabab bir necha marta va biroz uzoqroq tekshiramiz.
+  // Hash dan start_param ko'pincha SDK dan oldin mavjud — darhol redirect
   tryRedirect()
-  for (const ms of [30, 100, 250, 500, 900, 1400, 2000, 2800, 3800, 5000]) {
+  for (const ms of [16, 50, 120, 250, 500, 900, 1500, 2500, 4000]) {
     setTimeout(tryRedirect, ms)
   }
 
