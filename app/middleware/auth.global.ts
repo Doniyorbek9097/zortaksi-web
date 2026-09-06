@@ -96,9 +96,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const isOrderChatOpen =
         to.path === '/driver/chat/open' && !!String(to.query.orderId || '').trim()
 
+    const isDriverChatNav = to.path.startsWith('/driver/chat/')
+
     // Tab orasida o'tishda to'liq ekran loading ko'rsatilmaydi
-    // Buyurtma chat — darhol UI (start_param redirect paytida siljish bo'lmasin)
-    if (!tabHop && !isOrderChatOpen) {
+    // Buyurtma/chat — darhol UI (SessionGate bloklamasligi uchun)
+    if (!tabHop && !isOrderChatOpen && !isDriverChatNav) {
         authStore.sessionReady = false
     }
 

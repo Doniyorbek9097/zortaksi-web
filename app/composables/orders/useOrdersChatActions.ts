@@ -2,7 +2,7 @@ import type { IInterestedUser, IOrder, IChat } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { orderQuickLinkQuery } from '~/utils/orderChatQuery'
+import { orderQuickLinkQuery, buildChatStubFromOrder, mergeOrderChatContext, primeOrderContext } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
 
 /**
@@ -60,6 +60,20 @@ export function useOrdersChatActions(options: {
     if (order._id) orderStore.setOrdersListAnchor(String(order._id))
   }
 
+  /** Order chat — darhol UI (navigatsiyadan oldin) */
+  const primeOrderOpenUi = (order: IOrder) => {
+    primeOrderContext(order)
+    const stub = buildChatStubFromOrder(order)
+    if (!stub) return
+    const existing = findChatForOrder(order)
+    chatStore.currentChat = mergeOrderChatContext(existing, stub) as IChat
+    chatStore.primeFromChat(chatStore.currentChat)
+    chatStore.isLoadingMessages = false
+    if (chatStore.connectionStatus === 'idle') {
+      chatStore.connectionStatus = 'connecting'
+    }
+  }
+
   /** Yangi chat — /chat/open (darhol UI, API sahifada) */
   const goOpenChat = (query: Record<string, string>, order?: IOrder) => {
     if (order) rememberOrderAnchor(order)
@@ -79,6 +93,7 @@ export function useOrdersChatActions(options: {
     beforeNavigate?.()
     chatStore.primeFromChat(chat)
     chatStore.hydrateMessagesFromCache(chatId)
+    chatStore.isLoadingMessages = false
     void chatStore.connect(chatId, { silent: true })
     void chatStore.fetchMessages(chatId)
 
@@ -132,7 +147,7 @@ export function useOrdersChatActions(options: {
     void chatStore.fetchMessages(id)
   }
 
-  const onMessage = async (order: IOrder) => {
+  const onMessage = (order: IOrder) => {
     if (!order._id) return
     markOrderInterest(order)
 
@@ -140,32 +155,14 @@ export function useOrdersChatActions(options: {
     const linkQ = orderQuickLinkQuery(order)
     const query = { open: 'order', ...linkQ }
 
-    // pointerdown prefetch jarayonda bo'lsa — API tugashini kutamiz (qo'shimcha so'rov yo'q)
-    const prefetchWasInflight = prefetchInflight.has(orderId)
     prefetchOrderChat(order)
 
-    let existing = findChatForOrder(order)
-    if (!existing?._id) {
-      await nextTick()
-      existing = findChatForOrder(order)
-    }
-
-    if (!existing?._id && prefetchWasInflight) {
-      const res = (await chatStore.startChatFromOrder(orderId)) as {
-        success?: boolean
-        data?: IChat
-      }
-      if (res?.success && res.data?._id) {
-        adoptStartedChat(res.data)
-        existing = res.data
-      }
-    }
-
+    const existing = findChatForOrder(order)
     if (existing?._id) {
       return openExistingChat(existing, query, order)
     }
 
-    beforeNavigate?.()
+    primeOrderOpenUi(order)
 
     void chatStore.startChatFromOrder(orderId).then((res: { success?: boolean; data?: IChat }) => {
       if (res?.success && res.data?._id) {

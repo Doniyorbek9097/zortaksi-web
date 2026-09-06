@@ -248,6 +248,9 @@ const orderStore = useOrderStore()
 const prefetchMessage = () => {
   const id = props.order?._id
   if (id) orderStore.warmOrderPeer(String(id))
+  if (import.meta.client) {
+    void preloadRouteComponents('/driver/chat/open')
+  }
   emit('message-prefetch')
 }
 

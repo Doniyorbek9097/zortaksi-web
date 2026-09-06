@@ -1187,6 +1187,13 @@ const bootstrapOpenChat = async (seq: number) => {
       return
     }
 
+    if (mode === 'order' && orderId) {
+      void chatApi.then((res) => {
+        void handleStartChatResponse(res)
+      })
+      return
+    }
+
     const res = await chatApi
     await handleStartChatResponse(res)
   } catch (err) {
@@ -1202,7 +1209,7 @@ const loadChat = async (id: string) => {
   const queryStub = buildChatStubFromOrderQuery(route.query as Record<string, unknown>)
   const prevChat = chatStore.currentChat
   const keepChat =
-    id !== 'open' && (prevChat?.orderId || queryStub?.orderId)
+    (prevChat?.orderId || queryStub?.orderId)
       ? (mergeOrderChatContext(listedEarly, queryStub, prevChat) as import('~/types').IChat)
       : null
 
