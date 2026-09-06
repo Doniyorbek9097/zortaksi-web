@@ -73,6 +73,34 @@ export function useOrdersChatActions(options: {
     })
   }
 
+  const prefetchInflight = new Set<string>()
+
+  /** Tugma bosilishidan oldin — warm + chat/connect (mobil uchun) */
+  const prefetchOrderChat = (order: IOrder) => {
+    if (!order._id || !import.meta.client) return
+    const orderId = String(order._id)
+    if (prefetchInflight.has(orderId)) return
+
+    orderStore.warmOrderPeer(orderId)
+
+    const peerId = order.sender?.userId
+    const existing = findChatByOrderPeer(orderId, peerId)
+    if (existing?._id) {
+      const chatId = String(existing._id)
+      chatStore.primeFromChat(existing)
+      void chatStore.connect(chatId, { silent: true })
+      return
+    }
+
+    prefetchInflight.add(orderId)
+    void chatStore.startChatFromOrder(orderId).then((res: { success?: boolean; data?: IChat }) => {
+      prefetchInflight.delete(orderId)
+      if (res?.success && res.data?._id) {
+        adoptStartedChat(res.data)
+      }
+    })
+  }
+
   /** Serverdan kelgan chatni store ga yozish + connect */
   const adoptStartedChat = (chat: IChat) => {
     if (!chat?._id) return
@@ -293,5 +321,6 @@ export function useOrdersChatActions(options: {
     onInterestChat,
     onBookedChat,
     onAgent,
+    prefetchOrderChat,
   }
 }

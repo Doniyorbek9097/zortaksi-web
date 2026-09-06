@@ -107,7 +107,7 @@ export const useOrderStore = defineStore('order', () => {
         warmPeersTimer = setTimeout(() => {
             warmPeersTimer = null
             void postWarmPeers(ids)
-        }, 1500)
+        }, 600)
     }
 
     /** Bitta order — "Xabar yozish" hover */

@@ -14,6 +14,7 @@
             @book="$emit('book', order)"
             @unbook="$emit('unbook', order)"
             @message="$emit('message', order)"
+            @message-prefetch="$emit('message-prefetch', order)"
             @call="$emit('call', order)"
             @interest="$emit('interest', order)"
             @booked-chat="$emit('booked-chat', order)"
@@ -46,6 +47,7 @@
             @book="$emit('book', order)"
             @unbook="$emit('unbook', order)"
             @message="$emit('message', order)"
+            @message-prefetch="$emit('message-prefetch', order)"
             @call="$emit('call', order)"
             @interest="$emit('interest', order)"
             @booked-chat="$emit('booked-chat', order)"
@@ -76,6 +78,7 @@
           @book="$emit('book', order)"
           @unbook="$emit('unbook', order)"
           @message="$emit('message', order)"
+          @message-prefetch="$emit('message-prefetch', order)"
           @call="$emit('call', order)"
           @interest="$emit('interest', order)"
           @booked-chat="$emit('booked-chat', order)"
@@ -122,6 +125,7 @@ defineEmits<{
   book: [order: IOrder]
   unbook: [order: IOrder]
   message: [order: IOrder]
+  'message-prefetch': [order: IOrder]
   call: [order: IOrder]
   interest: [order: IOrder]
   'booked-chat': [order: IOrder]

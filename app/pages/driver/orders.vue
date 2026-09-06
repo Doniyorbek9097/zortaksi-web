@@ -77,6 +77,7 @@
       @book="onBook"
       @unbook="onUnbook"
       @message="onMessage"
+      @message-prefetch="prefetchOrderChat"
       @call="onCall"
       @interest="onInterest"
       @booked-chat="onBookedChat"
@@ -203,6 +204,7 @@ const {
   interestCount,
   interestDialog,
   onMessage,
+  prefetchOrderChat,
   onCall,
   onInterest,
   onInterestChat,
