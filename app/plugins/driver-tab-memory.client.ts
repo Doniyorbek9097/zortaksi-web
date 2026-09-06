@@ -73,10 +73,8 @@ export default defineNuxtPlugin(() => {
     const fromPath = normalizePath(from.path)
     const tabSwitch = consumeDriverScrollLeave() === 'tab-switch'
 
-    // Order → chat: to'liq release emas, lekin RAM uchun qisqartirish
+    // Order → chat: ro'yxat va scroll saqlanadi (trim scroll pozitsiyasini buzardi)
     if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
-      const orderStore = useOrderStore()
-      orderStore.trimListForNavigation(TAB_LIST_KEEP)
       releaseSessionMediaCache()
       return
     }

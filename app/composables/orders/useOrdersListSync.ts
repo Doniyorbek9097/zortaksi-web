@@ -48,8 +48,28 @@ export function useOrdersListSync(options: {
   const restoreScroll = () => {
     if (!import.meta.client) return
     const y = orderStore.ordersListScrollY
-    if (y == null || y <= 0) return
-    const apply = () => window.scrollTo(0, y)
+    const anchorId = orderStore.ordersListAnchorOrderId
+
+    const scrollToAnchor = () => {
+      if (!anchorId) return false
+      const el = document.querySelector(
+        `.order-seen-anchor[data-order-id="${anchorId}"]`,
+      ) as HTMLElement | null
+      if (!el) return false
+      const top =
+        el.getBoundingClientRect().top +
+        (window.scrollY || document.documentElement.scrollTop || 0) -
+        72
+      window.scrollTo(0, Math.max(0, top))
+      return true
+    }
+
+    const apply = () => {
+      if (scrollToAnchor()) return
+      if (y == null || y <= 0) return
+      window.scrollTo(0, y)
+    }
+
     apply()
     requestAnimationFrame(() => {
       apply()
@@ -146,6 +166,9 @@ export function useOrdersListSync(options: {
       String(orderStore.listBotGroupId || '') === wantBotGroup &&
       String(orderStore.listText || '') === wantText &&
       orderStore.listScope === 'all'
+    const restoringScroll =
+      hasCachedList &&
+      (orderStore.ordersListScrollY > 0 || !!orderStore.ordersListAnchorOrderId)
 
     if (hasCachedList && sameServerFilter) {
       await nextTick()
@@ -164,7 +187,9 @@ export function useOrdersListSync(options: {
     }
 
     await nextTick()
-    await fillViewport()
+    if (!restoringScroll) {
+      await fillViewport()
+    }
 
     pollTimer = setInterval(syncIfVisible, POLL_MS)
     document.addEventListener('visibilitychange', onVisibility)
@@ -174,6 +199,17 @@ export function useOrdersListSync(options: {
     bindSeenObserver()
   })
 
+  onActivated(() => {
+    restoreScroll()
+    setTimeout(restoreScroll, 50)
+    syncIfVisible()
+    bindSeenObserver()
+  })
+
+  onDeactivated(() => {
+    saveScroll()
+  })
+
   watch(sentinel, (el) => {
     if (observer && el) observer.observe(el)
   })
@@ -181,9 +217,11 @@ export function useOrdersListSync(options: {
   // Faqat uzunlik o'zgarsa — to'liq id join emas
   watch(
     () => displayOrders.value.length,
-    () => {
+    (len, prev) => {
       bindSeenObserver()
-      void nextTick().then(() => fillViewport())
+      if (prev != null && len > prev) {
+        void nextTick().then(() => fillViewport())
+      }
     },
   )
 

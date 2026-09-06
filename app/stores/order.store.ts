@@ -28,6 +28,8 @@ export const useOrderStore = defineStore('order', () => {
     const newOrdersCount = ref(0)
     /** Orders scroll — chatdan qaytganda tiklash */
     const ordersListScrollY = ref(0)
+    /** Chatdan qaytganda — qaysi buyurtmaga scroll qilish */
+    const ordersListAnchorOrderId = ref<string | null>(null)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
     /** Yo'nalish — bot guruh ID (kalit so'zlar serverda) */
@@ -153,6 +155,7 @@ export const useOrderStore = defineStore('order', () => {
         page.value = 1
         totalPages.value = 1
         ordersListScrollY.value = 0
+        ordersListAnchorOrderId.value = null
         isLoadingMore.value = false
         if (import.meta.client) {
             window.scrollTo(0, 0)
@@ -192,10 +195,16 @@ export const useOrderStore = defineStore('order', () => {
         isLoading.value = false
         isLoadingMore.value = false
         ordersListScrollY.value = 0
+        ordersListAnchorOrderId.value = null
     }
 
     const clearOrdersListScroll = () => {
         ordersListScrollY.value = 0
+        ordersListAnchorOrderId.value = null
+    }
+
+    const setOrdersListAnchor = (orderId: string | null) => {
+        ordersListAnchorOrderId.value = orderId ? String(orderId) : null
     }
 
     const pruneSeenIds = () => {
@@ -753,6 +762,7 @@ export const useOrderStore = defineStore('order', () => {
         page.value = 1
         totalPages.value = 1
         ordersListScrollY.value = 0
+        ordersListAnchorOrderId.value = null
         isLoading.value = false
         isLoadingMore.value = false
         pruneSeenIds()
@@ -768,6 +778,8 @@ export const useOrderStore = defineStore('order', () => {
         totalPages,
         newOrdersCount,
         ordersListScrollY,
+        ordersListAnchorOrderId,
+        setOrdersListAnchor,
         listSearch,
         listBotGroupId,
         listText,

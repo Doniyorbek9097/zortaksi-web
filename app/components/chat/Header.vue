@@ -1,6 +1,6 @@
 <template>
   <header
-    class="shrink-0 z-30"
+    class="sticky top-0 shrink-0 z-40"
     :style="{ paddingTop: 'var(--zt-safe-top, 0px)' }"
     :class="support
       ? 'bg-teal-600 dark:bg-teal-800 border-b border-teal-700/40'

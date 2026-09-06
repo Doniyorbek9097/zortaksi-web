@@ -163,6 +163,7 @@ import { useDriverOrdersPage } from '~/composables/orders/useDriverOrdersPage'
 
 definePageMeta({
   layout: 'driver',
+  keepalive: true,
 })
 
 const {

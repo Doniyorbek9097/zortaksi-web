@@ -47,8 +47,13 @@ export function useOrdersChatActions(options: {
     return full || u.username || 'Haydovchi'
   }
 
+  const rememberOrderAnchor = (order: IOrder) => {
+    if (order._id) orderStore.setOrdersListAnchor(String(order._id))
+  }
+
   /** Yangi chat — /chat/open (darhol UI, API sahifada) */
-  const goOpenChat = (query: Record<string, string>) => {
+  const goOpenChat = (query: Record<string, string>, order?: IOrder) => {
+    if (order) rememberOrderAnchor(order)
     beforeNavigate?.()
     return navigateTo({
       path: '/driver/chat/open',
@@ -57,10 +62,11 @@ export function useOrdersChatActions(options: {
   }
 
   /** Mavjud chat — bir marta navigatsiya, cache + ulanish oldindan */
-  const openExistingChat = (chat: IChat, query: Record<string, string>) => {
+  const openExistingChat = (chat: IChat, query: Record<string, string>, order?: IOrder) => {
     const chatId = String(chat._id || '').trim()
-    if (!chatId) return goOpenChat(query)
+    if (!chatId) return goOpenChat(query, order)
 
+    if (order) rememberOrderAnchor(order)
     beforeNavigate?.()
     chatStore.primeFromChat(chat)
     chatStore.hydrateMessagesFromCache(chatId)
@@ -129,7 +135,7 @@ export function useOrdersChatActions(options: {
       return openExistingChat(existing, {
         open: 'order',
         ...linkQ,
-      })
+      }, order)
     }
 
     beforeNavigate?.()
@@ -144,7 +150,7 @@ export function useOrdersChatActions(options: {
     return goOpenChat({
       open: 'order',
       ...linkQ,
-    })
+    }, order)
   }
 
   const onCall = (order: IOrder) => {
@@ -243,14 +249,14 @@ export function useOrdersChatActions(options: {
         open: 'user',
         userId: String(user.userId),
         ...linkQ,
-      })
+      }, order || undefined)
     }
 
     return goOpenChat({
       open: 'user',
       userId: String(user.userId),
       ...linkQ,
-    })
+    }, order || undefined)
   }
 
   const onBookedChat = async (order: IOrder) => {
@@ -270,14 +276,13 @@ export function useOrdersChatActions(options: {
       return openExistingChat(existing, {
         open: 'booked',
         ...linkQ,
-      })
+      }, order)
     }
 
-    beforeNavigate?.()
     return goOpenChat({
       open: 'booked',
       ...linkQ,
-    })
+    }, order)
   }
 
   const onAgent = async (order: IOrder) => {
@@ -298,14 +303,13 @@ export function useOrdersChatActions(options: {
       return openExistingChat(existing, {
         open: 'agent',
         ...linkQ,
-      })
+      }, order)
     }
 
-    beforeNavigate?.()
     return goOpenChat({
       open: 'agent',
       ...linkQ,
-    })
+    }, order)
   }
 
   return {

@@ -1,7 +1,7 @@
 <template>
   <div
-    class="fixed inset-0 z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
-    style="height: 100dvh; width: 100%;"
+    class="fixed z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    :style="frameStyle"
   >
     <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
@@ -395,6 +395,7 @@ const adminSlashCommands = computed(() =>
 )
 const { ensureAccess: ensureOrderTakeAccessFromApi, redirectIfBlocked: redirectOrderTakeBlocked } =
   useOrderTakeAccess()
+const { frameStyle } = useVisualViewportFrame()
 
 const chatId = computed(() => route.params.id as string)
 /** Route hali `open` bo'lsa ham API dan kelgan haqiqiy chat id */
