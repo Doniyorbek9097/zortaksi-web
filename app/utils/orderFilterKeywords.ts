@@ -132,6 +132,72 @@ export function formatBotGroupIds(ids: string[]): string {
   return [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))].join(',')
 }
 
+export function isListenerFilterPresetId(id: string): boolean {
+  return String(id || '').trim().startsWith(LISTENER_FILTER_PRESET_PREFIX)
+}
+
+export function parseListenerUserIdFromPreset(id: string): string {
+  const raw = String(id || '').trim()
+  if (!isListenerFilterPresetId(raw)) return ''
+  return raw.slice(LISTENER_FILTER_PRESET_PREFIX.length).trim()
+}
+
+/** localStorage dagi preset ID larni tinglovchi / bot guruh ga ajratish */
+export function splitStoredFilterPresetIds(raw: string) {
+  const listenerUserIds: string[] = []
+  const botGroupIds: string[] = []
+  for (const id of parseBotGroupIds(raw)) {
+    if (isListenerFilterPresetId(id)) {
+      const uid = parseListenerUserIdFromPreset(id)
+      if (uid) listenerUserIds.push(uid)
+    } else {
+      botGroupIds.push(id)
+    }
+  }
+  return {
+    listenerUserIds: [...new Set(listenerUserIds)],
+    botGroupIds: [...new Set(botGroupIds)],
+  }
+}
+
+/** API so'rovi — tinglovchi ID lari alohida, bot guruh legacy */
+export function buildOrderFilterApiParams(
+  storedPresetIds: string,
+  search?: string,
+): { listenerUserIds?: string; botGroupId?: string; search?: string } {
+  const trimmedSearch = String(search || '').trim()
+  const { listenerUserIds, botGroupIds } = splitStoredFilterPresetIds(storedPresetIds)
+  if (listenerUserIds.length) {
+    return { listenerUserIds: listenerUserIds.join(',') }
+  }
+  const botGroupId = formatBotGroupIds(botGroupIds)
+  if (botGroupId) return { botGroupId }
+  if (trimmedSearch) return { search: trimmedSearch }
+  return {}
+}
+
+export function orderMatchesListenerFilter(
+  order: { owner?: { userId?: string } | null },
+  listenerUserIds: string[],
+): boolean {
+  if (!listenerUserIds.length) return true
+  const ownerId = String(order?.owner?.userId || '').trim()
+  if (!ownerId) return false
+  const ownerDigits = ownerId.replace(/\D/g, '')
+  return listenerUserIds.some((id) => {
+    const raw = String(id || '').trim()
+    if (!raw) return false
+    if (raw === ownerId) return true
+    const digits = raw.replace(/\D/g, '')
+    return digits && ownerDigits && digits === ownerDigits
+  })
+}
+
+export function loadActiveListenerUserIds(): string[] {
+  const { listenerUserIds } = splitStoredFilterPresetIds(loadOrderFilterBotGroupId())
+  return listenerUserIds
+}
+
 export function loadOrderFilterBotGroupId(): string {
   if (!import.meta.client) return ''
   try {

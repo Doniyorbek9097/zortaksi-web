@@ -17,6 +17,7 @@ import {
   loadOrderFilterBotGroupId,
   parseBotGroupIds,
   formatBotGroupIds,
+  buildOrderFilterApiParams,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterKeywords,
@@ -55,19 +56,21 @@ const onSave = async () => {
 
   markOrderFilterConfigured()
 
+  const filterApi = buildOrderFilterApiParams(gid, kw)
+
   orderStore.applyListFilter({
     page: 1,
     limit: ORDERS_PAGE_LIMIT,
-    ...(gid ? { botGroupId: gid } : { search: kw || undefined }),
+    ...filterApi,
   })
 
   orderStore.orders = []
   void orderStore.fetchOrders({
     page: 1,
     limit: ORDERS_PAGE_LIMIT,
-    ...(gid ? { botGroupId: gid } : { search: kw || undefined }),
+    ...filterApi,
   })
-  void postStore.setSearch(gid ? '' : kw, gid)
+  void postStore.setSearch(kw, gid)
 }
 
 watch(

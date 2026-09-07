@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
-import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, filterOrdersByKeywords, parseBotGroupIds, formatBotGroupIds, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
+import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, orderMatchesListenerFilter, filterOrdersByKeywords, parseBotGroupIds, formatBotGroupIds, buildOrderFilterApiParams, splitStoredFilterPresetIds, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
 import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, ORDERS_SCROLL_MAX, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
 
 export interface FetchOrdersParams {
@@ -11,6 +11,7 @@ export interface FetchOrdersParams {
     ownerId?: string
     search?: string
     botGroupId?: string
+    listenerUserIds?: string
     text?: string
     scope?: 'mine'
     sinceHours?: number
@@ -32,8 +33,10 @@ export const useOrderStore = defineStore('order', () => {
     const ordersListAnchorOrderId = ref<string | null>(null)
     /** Oxirgi fetchOrders search (server filtri) — cache mosligini tekshirish */
     const listSearch = ref('')
-    /** Yo'nalish — bot guruh ID (kalit so'zlar serverda) */
+    /** Yo'nalish — bot guruh ID (legacy) */
     const listBotGroupId = ref('')
+    /** Yo'nalish — tinglovchi userbot ID lari */
+    const listListenerUserIds = ref('')
     /** Buyurtma matni qidiruvi */
     const listText = ref('')
     /** Barchasi / Menki tab */
@@ -42,14 +45,29 @@ export const useOrderStore = defineStore('order', () => {
     let listFetchSeq = 0
 
     const rememberListFilter = (params: FetchOrdersParams) => {
-        listBotGroupId.value = formatBotGroupIds(parseBotGroupIds(String(params.botGroupId || '')))
-        listSearch.value = listBotGroupId.value ? '' : String(params.search || '').trim()
+        const explicitListeners = formatBotGroupIds(parseBotGroupIds(String(params.listenerUserIds || '')))
+        if (explicitListeners) {
+            listListenerUserIds.value = explicitListeners
+            listBotGroupId.value = ''
+            listSearch.value = ''
+        } else {
+            const raw = formatBotGroupIds(parseBotGroupIds(String(params.botGroupId || '')))
+            const split = splitStoredFilterPresetIds(raw)
+            listListenerUserIds.value = split.listenerUserIds.join(',')
+            listBotGroupId.value = formatBotGroupIds(split.botGroupIds)
+            listSearch.value =
+                listListenerUserIds.value || listBotGroupId.value
+                    ? ''
+                    : String(params.search || '').trim()
+        }
         listText.value = String(params.text || '').trim()
         listScope.value = 'all'
     }
 
     const hasActiveListFilter = () =>
-        !!listBotGroupId.value.trim() || !!listSearch.value.trim()
+        !!listListenerUserIds.value.trim() ||
+        !!listBotGroupId.value.trim() ||
+        !!listSearch.value.trim()
 
     let syncLatestTimer: ReturnType<typeof setTimeout> | null = null
     let lastFullListFetchAt = 0
@@ -138,8 +156,10 @@ export const useOrderStore = defineStore('order', () => {
     const paramsMatchListFilter = (params: FetchOrdersParams) => {
         const wantScope = params.scope === 'mine' ? 'mine' : 'all'
         if (wantScope !== listScope.value) return false
+        const wantListeners = formatBotGroupIds(parseBotGroupIds(String(params.listenerUserIds || '')))
         const wantBot = formatBotGroupIds(parseBotGroupIds(String(params.botGroupId || '')))
-        const wantSearch = wantBot ? '' : String(params.search || '').trim()
+        const wantSearch = wantListeners || wantBot ? '' : String(params.search || '').trim()
+        if (wantListeners !== listListenerUserIds.value.trim()) return false
         if (wantBot !== listBotGroupId.value.trim()) return false
         if (wantSearch !== listSearch.value.trim()) return false
         if (String(params.text || '').trim() !== listText.value.trim()) return false
@@ -418,9 +438,11 @@ export const useOrderStore = defineStore('order', () => {
                         status: 'new',
                         page: 1,
                         limit: 1,
-                        ...(listBotGroupId.value
-                            ? { botGroupId: listBotGroupId.value }
-                            : { search: listSearch.value || undefined }),
+                        ...(listListenerUserIds.value
+                            ? { listenerUserIds: listListenerUserIds.value }
+                            : listBotGroupId.value
+                              ? { botGroupId: listBotGroupId.value }
+                              : { search: listSearch.value || undefined }),
                         ...(listScope.value === 'mine' ? { scope: 'mine' } : {}),
                     },
                 })
@@ -467,8 +489,11 @@ export const useOrderStore = defineStore('order', () => {
     const prependOrder = (order: IOrder) => {
         if (!order) return false
         if (listScope.value === 'mine') return false
-        if (listBotGroupId.value.trim()) {
-            // Bot guruh — server kalit so'zlari to'liq; client qo'shimcha kesmaydi
+        const listenerIds = parseBotGroupIds(listListenerUserIds.value)
+        if (listenerIds.length) {
+            if (!orderMatchesListenerFilter(order, listenerIds)) return false
+        } else if (listBotGroupId.value.trim()) {
+            // Bot guruh / tinglovchi — server filtri to'liq
         } else {
             const kw = loadOrderFilterKeywords().trim()
             if (hasActiveListFilter() && kw && !orderMatchesRegionFilter(order, kw)) return false
@@ -513,10 +538,15 @@ export const useOrderStore = defineStore('order', () => {
             if (!paramsMatchListFilter(params)) return response
             const rawList = response.data.orders ?? []
             let list: IOrder[] = uniqueOrdersByContent(rawList)
-            const hasServerFilter = Boolean(params.search || params.botGroupId)
-            const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
+            const hasServerFilter = Boolean(
+                params.search || params.botGroupId || params.listenerUserIds,
+            )
+            const useServerRegionFilter = Boolean(
+                String(params.listenerUserIds || listListenerUserIds.value || '').trim() ||
+                String(params.botGroupId || listBotGroupId.value || '').trim(),
+            )
             const clientKw =
-                hasServerFilter && !useBotGroup && !params.search
+                hasServerFilter && !useServerRegionFilter && !params.search
                     ? loadOrderFilterKeywords().trim()
                     : ''
             if (clientKw) {
@@ -573,10 +603,15 @@ export const useOrderStore = defineStore('order', () => {
                 if (isFreshLoad && !paramsMatchListFilter(params)) return response
                 const rawList = response.data.orders ?? []
                 let list: IOrder[] = uniqueOrdersByContent(rawList)
-                const hasServerFilter = Boolean(params.search || params.botGroupId)
-                const useBotGroup = Boolean(String(params.botGroupId || listBotGroupId.value || '').trim())
+                const hasServerFilter = Boolean(
+                    params.search || params.botGroupId || params.listenerUserIds,
+                )
+                const useServerRegionFilter = Boolean(
+                    String(params.listenerUserIds || listListenerUserIds.value || '').trim() ||
+                    String(params.botGroupId || listBotGroupId.value || '').trim(),
+                )
                 const clientKw =
-                    hasServerFilter && !useBotGroup && !params.search
+                    hasServerFilter && !useServerRegionFilter && !params.search
                         ? loadOrderFilterKeywords().trim()
                         : ''
                 if (clientKw) {
@@ -799,6 +834,7 @@ export const useOrderStore = defineStore('order', () => {
         setOrdersListAnchor,
         listSearch,
         listBotGroupId,
+        listListenerUserIds,
         listText,
         listScope,
         applyListFilter,

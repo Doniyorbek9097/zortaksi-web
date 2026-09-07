@@ -11,7 +11,10 @@ import {
   loadOrderFilterBotGroupId,
   parseBotGroupIds,
   formatBotGroupIds,
+  buildOrderFilterApiParams,
   orderMatchesRegionFilter,
+  orderMatchesListenerFilter,
+  splitStoredFilterPresetIds,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
 
@@ -34,12 +37,12 @@ export default defineNuxtPlugin(() => {
 
   const orderSearchParams = () => {
     const text = orderStore.listText.trim() || undefined
-    const botGroupId = loadOrderFilterBotGroupId().trim() || undefined
-    const search = botGroupId ? undefined : loadOrderFilterKeywords().trim() || undefined
+    const stored = loadOrderFilterBotGroupId().trim()
+    const api = buildOrderFilterApiParams(stored, loadOrderFilterKeywords())
     return {
       limit: ORDERS_PAGE_LIMIT,
       ...(text ? { text } : {}),
-      ...(botGroupId ? { botGroupId } : search ? { search } : {}),
+      ...api,
     }
   }
 
@@ -112,11 +115,12 @@ export default defineNuxtPlugin(() => {
       void authStore.getMe().catch(() => {})
     })
     socket.on('order:new', (order) => {
-      const botGroupId = loadOrderFilterBotGroupId().trim()
+      const stored = loadOrderFilterBotGroupId().trim()
+      const { listenerUserIds, botGroupIds } = splitStoredFilterPresetIds(stored)
       const kw = loadOrderFilterKeywords().trim()
       const textQuery = orderStore.listText.trim()
 
-      if (botGroupId || textQuery) {
+      if (listenerUserIds.length || botGroupIds.length || textQuery) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }
@@ -127,10 +131,11 @@ export default defineNuxtPlugin(() => {
       if (added) playOrderSound()
     })
     socket.on('order:update', (order) => {
-      const botGroupId = loadOrderFilterBotGroupId().trim()
+      const stored = loadOrderFilterBotGroupId().trim()
+      const { listenerUserIds, botGroupIds } = splitStoredFilterPresetIds(stored)
       const kw = loadOrderFilterKeywords().trim()
       const textQuery = orderStore.listText.trim()
-      if (botGroupId || textQuery) {
+      if (listenerUserIds.length || botGroupIds.length || textQuery) {
         orderStore.scheduleSyncLatest(orderSearchParams())
         return
       }

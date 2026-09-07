@@ -7,6 +7,8 @@ import {
   parseKeywords,
   parseBotGroupIds,
   formatBotGroupIds,
+  buildOrderFilterApiParams,
+  splitStoredFilterPresetIds,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
   clearOrderFilterBotGroupId,
@@ -35,18 +37,17 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   const orderQuery = ref('')
   const appliedOrderQuery = ref('')
   const scope = ref<OrdersScopeTab>('all')
-  const filterActive = computed(
-    () => parseBotGroupIds(appliedBotGroupId.value).length > 0 || !!appliedKeywords.value.trim(),
-  )
+  const filterActive = computed(() => {
+    const stored = formatBotGroupIds(parseBotGroupIds(appliedBotGroupId.value))
+    const { listenerUserIds, botGroupIds } = splitStoredFilterPresetIds(stored)
+    return listenerUserIds.length > 0 || botGroupIds.length > 0 || !!appliedKeywords.value.trim()
+  })
   const orderSearchActive = computed(() => !!appliedOrderQuery.value.trim())
 
   const buildFilterParams = () => {
-    const botGroupId = formatBotGroupIds(parseBotGroupIds(appliedBotGroupId.value))
-    if (botGroupId) {
-      return { botGroupId }
-    }
-    const search = appliedKeywords.value.trim()
-    return search ? { search } : {}
+    const stored = formatBotGroupIds(parseBotGroupIds(appliedBotGroupId.value))
+    const api = buildOrderFilterApiParams(stored, appliedKeywords.value)
+    return api
   }
 
   /** API so'rovlari uchun query (limit + filter + matn qidiruvi) */
@@ -156,7 +157,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
       page: 1,
       limit: LIMIT,
       text: '',
-      ...(savedGroup ? { botGroupId: savedGroup } : { search: saved.trim() || undefined }),
+      ...buildOrderFilterApiParams(savedGroup, saved),
     })
   }
 

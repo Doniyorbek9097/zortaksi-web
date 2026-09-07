@@ -6,6 +6,7 @@ type QueryParams = () => {
   limit: number
   search?: string
   botGroupId?: string
+  listenerUserIds?: string
   text?: string
   scope?: 'mine'
 }
@@ -194,11 +195,13 @@ export function useOrdersListSync(options: {
     const q = queryParams()
     const wantSearch = String(q.search || '').trim()
     const wantBotGroup = formatBotGroupIds(parseBotGroupIds(String(q.botGroupId || '')))
+    const wantListeners = formatBotGroupIds(parseBotGroupIds(String(q.listenerUserIds || '')))
     const wantText = String(q.text || '').trim()
     const hasCachedList = orderStore.orders.length > 0
     const sameServerFilter =
       String(orderStore.listSearch || '') === wantSearch &&
       String(orderStore.listBotGroupId || '') === wantBotGroup &&
+      String(orderStore.listListenerUserIds || '') === wantListeners &&
       String(orderStore.listText || '') === wantText &&
       orderStore.listScope === 'all'
     if (hasCachedList && sameServerFilter) {
