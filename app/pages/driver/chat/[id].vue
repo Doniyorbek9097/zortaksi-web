@@ -14,24 +14,7 @@
       :clearing="isClearingHistory"
       @back="goBack"
       @clear="openClearHistoryDialog"
-    >
-      <template #actions>
-        <div
-          v-if="callPhone && callTelHref && !selectionMode"
-          class="mx-auto w-full max-w-2xl px-3 pb-2 pt-0.5 flex justify-center"
-        >
-          <a
-            :href="callTelHref"
-            class="chat-call-chip"
-          >
-            <span class="chat-call-chip__icon" aria-hidden="true">
-              <font-awesome-icon icon="fa-solid fa-phone" class="text-[12px]" />
-            </span>
-            <span class="text-[13px] font-black tracking-tight">Qo'ng'iroq qiling</span>
-          </a>
-        </div>
-      </template>
-    </ChatHeader>
+    />
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -96,7 +79,20 @@
       </div>
     </div>
 
-    <div v-else ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
+    <div v-else class="relative flex-1 min-h-0 flex flex-col">
+      <div
+        v-if="floatingDateLabel && messagesMatchChat && !showMessageSkeleton"
+        class="pointer-events-none absolute top-2 left-0 right-0 z-20 flex justify-center"
+      >
+        <span
+          class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold text-white shadow-sm backdrop-blur-sm"
+          style="background: rgba(34, 158, 87, 0.92);"
+        >
+          {{ floatingDateLabel }}
+        </span>
+      </div>
+
+      <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
@@ -215,6 +211,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Ulanish banneri — order chatda input placeholder yetarli -->
     <div v-if="needsTelegramConnect && conn === 'connecting' && !isOrderSenderChat" class="mx-auto w-full max-w-2xl px-3 pb-1">
@@ -328,6 +325,7 @@
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
       :slash-commands="adminSlashCommands"
+      :call-href="callPhone && callTelHref ? callTelHref : ''"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -382,6 +380,7 @@ import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
+import { formatChatDateLabel } from '~/utils/chatDate'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
 definePageMeta({
@@ -585,6 +584,8 @@ const visibleMessages = computed(() =>
   chatStore.messages.filter((m) => !isLegacyPaymentChatMessage(m)),
 )
 const scrollEl = ref<HTMLElement | null>(null)
+const floatingDateLabel = ref('')
+let floatingDateRaf = 0
 const focusId = ref(String(route.query.focus || ''))
 const selectionMode = ref(false)
 /** Tanlangan xabarlar — Set tez qidiruv uchun (includes O(n) emas) */
@@ -799,9 +800,39 @@ const formatTime = (value: string | Date) => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+const updateFloatingDate = () => {
+  if (floatingDateRaf) cancelAnimationFrame(floatingDateRaf)
+  floatingDateRaf = requestAnimationFrame(() => {
+    floatingDateRaf = 0
+    const el = scrollEl.value
+    const msgs = visibleMessages.value
+    if (!el || !msgs.length) {
+      floatingDateLabel.value = ''
+      return
+    }
+
+    const anchor = el.getBoundingClientRect().top + 44
+    let picked = msgs[msgs.length - 1]?.date
+    for (const msg of msgs) {
+      const node = document.getElementById(`msg-${msg._id}`)
+      if (!node) continue
+      const rect = node.getBoundingClientRect()
+      if (rect.bottom <= anchor) {
+        picked = msg.date
+        continue
+      }
+      picked = msg.date
+      break
+    }
+
+    floatingDateLabel.value = formatChatDateLabel(picked)
+  })
+}
+
 const scrollToBottom = () => {
   nextTick(() => {
     if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight
+    updateFloatingDate()
   })
 }
 
@@ -1096,8 +1127,10 @@ const primeInstantOrderUi = () => {
   }
 }
 
-/** Tepaga scroll — keyingi 10 ta eski xabar */
+/** Tepaga scroll — keyingi 10 ta eski xabar + sticky sana */
 const onMessagesScroll = async () => {
+  updateFloatingDate()
+
   const el = scrollEl.value
   const id = chatId.value
   if (!el || !id || id === 'open') return
@@ -1422,6 +1455,13 @@ watch(scrollEl, (el, _, onCleanup) => {
 })
 
 watch(
+  () => visibleMessages.value.map((m) => `${m._id}:${m.date}`).join('|'),
+  () => {
+    nextTick(() => updateFloatingDate())
+  },
+)
+
+watch(
   () => [route.path, String(route.query.open || ''), String(route.query.orderId || '')],
   ([path, open, orderId]) => {
     const isBotEntry =
@@ -1464,6 +1504,7 @@ onBeforeUnmount(() => {
   document.documentElement.style.overflow = prevHtmlOverflow
 
   clearPresenceTimer()
+  if (floatingDateRaf) cancelAnimationFrame(floatingDateRaf)
   chatStore.currentChat = null
   chatStore.messages = []
   chatStore.resetMessagesPagination()
@@ -1492,47 +1533,5 @@ onBeforeUnmount(() => {
 @keyframes typing-bounce {
   0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
   40% { opacity: 1; transform: translateY(-2px); }
-}
-
-.chat-call-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 9999px;
-  text-decoration: none;
-  color: #047857;
-  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
-  border: 1.5px solid rgba(16, 185, 129, 0.45);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-
-.dark .chat-call-chip {
-  color: #6ee7b7;
-  background: linear-gradient(180deg, rgba(6, 78, 59, 0.55) 0%, rgba(4, 120, 87, 0.35) 100%);
-  border-color: rgba(52, 211, 153, 0.4);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
-}
-
-.chat-call-chip:active {
-  transform: scale(0.97);
-}
-
-.chat-call-chip__icon {
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 9999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background: linear-gradient(145deg, #34d399, #059669);
-  animation: call-chip-pulse 2s ease-in-out infinite;
-}
-
-@keyframes call-chip-pulse {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
-  50% { transform: scale(1.06); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
 }
 </style>

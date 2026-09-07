@@ -399,10 +399,10 @@ export const useOrderStore = defineStore('order', () => {
     }
 
     const hasMore = computed(() => {
-        const t = Number(total.value) || 0
         const loaded = orders.value.length
         if (loaded >= ORDERS_SCROLL_MAX) return false
-        if (t > 0 && loaded >= t) return false
+        const t = Number(total.value) || 0
+        if (t > 0) return loaded < t
         return page.value < totalPages.value
     })
 
@@ -526,7 +526,9 @@ export const useOrderStore = defineStore('order', () => {
             if (page.value <= 1) {
                 orders.value = list
                 page.value = 1
-                totalPages.value = response.data.pagination?.totalPages ?? 1
+                if (response.data.pagination?.totalPages != null) {
+                    totalPages.value = response.data.pagination.totalPages
+                }
                 rememberListFilter(params)
             } else {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
@@ -594,8 +596,6 @@ export const useOrderStore = defineStore('order', () => {
                 page.value = response.data.pagination?.page ?? params.page ?? 1
                 if (response.data.pagination?.totalPages != null) {
                     totalPages.value = response.data.pagination.totalPages
-                } else if (response.data.pagination?.hasMore === false) {
-                    totalPages.value = page.value
                 }
             }
             return response

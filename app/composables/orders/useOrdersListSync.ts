@@ -123,7 +123,7 @@ export function useOrdersListSync(options: {
   /** Ekran bo'sh bo'lsa — ketma-ket sahifalar yuklash */
   const fillViewport = async () => {
     let guard = 0
-    while (guard < 3 && sentinelInView() && orderStore.hasMore) {
+    while (guard < 5 && sentinelInView() && orderStore.hasMore) {
       if (orderStore.isLoading || orderStore.isLoadingMore) {
         await new Promise((r) => setTimeout(r, 80))
         continue

@@ -3,8 +3,18 @@
     class="shrink-0 z-30 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800"
     :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }"
   >
+    <a
+      v-if="callHref && !inputFocused"
+      :href="callHref"
+      class="flex w-full h-[30px] items-center justify-center gap-1.5 rounded-none border-0 bg-emerald-100 dark:bg-emerald-950/45 text-emerald-700 dark:text-emerald-300 text-[12px] font-black no-underline active:bg-emerald-200 dark:active:bg-emerald-900/60 transition-colors"
+    >
+      <font-awesome-icon icon="fa-solid fa-phone" class="text-[10px]" />
+      {{ callLabel }}
+    </a>
+
     <form
-      class="mx-auto w-full min-w-0 max-w-2xl px-3 py-2.5"
+      class="mx-auto w-full min-w-0 max-w-2xl px-3"
+      :class="callHref && !inputFocused ? 'pb-2.5 pt-0' : 'py-2.5'"
       autocomplete="off"
       novalidate
       @submit.prevent="send"
@@ -146,7 +156,8 @@
             @keydown.up.prevent="onSlashUp"
             @keydown.esc.prevent="closeSlashMenu"
             @input="onTextInput"
-            @focus="unlockDraft"
+            @focus="onInputFocus"
+            @blur="onInputBlur"
           >
         </div>
 
@@ -197,8 +208,16 @@ const props = withDefaults(
     disabled?: boolean
     placeholder?: string
     slashCommands?: AdminSlashCommandItem[]
+    callHref?: string
+    callLabel?: string
   }>(),
-  { disabled: false, placeholder: '', slashCommands: () => [] },
+  {
+    disabled: false,
+    placeholder: '',
+    slashCommands: () => [],
+    callHref: '',
+    callLabel: "Qo'ng'iroq qiling",
+  },
 )
 
 const emit = defineEmits<{
@@ -218,6 +237,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const textInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
+const inputFocused = ref(false)
 const slashMenuOpen = ref(false)
 const slashHighlight = ref(0)
 
@@ -321,6 +341,15 @@ const onEnter = () => {
 
 const unlockDraft = () => {
   draftLocked.value = false
+}
+
+const onInputFocus = () => {
+  unlockDraft()
+  inputFocused.value = true
+}
+
+const onInputBlur = () => {
+  inputFocused.value = false
 }
 
 const pickImage = () => {

@@ -7,7 +7,7 @@
 export const TAB_LIST_KEEP = 10
 
 /** Infinite scroll — bir API so'rovda yuklanadigan elementlar */
-export const LIST_PAGE_SIZE = 25
+export const LIST_PAGE_SIZE = 10
 
 /** To'lovlar tarixi — sahifa hajmi */
 export const PAYMENT_PAGE_SIZE = 10
