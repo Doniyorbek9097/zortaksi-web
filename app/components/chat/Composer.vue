@@ -21,7 +21,9 @@
 
     <form
       class="mx-auto w-full min-w-0 max-w-2xl px-3"
-      :class="callHref && showCallBar ? 'pb-2.5 pt-0' : 'py-2.5'"
+      :class="callHref
+        ? (showCallBar ? 'pb-2.5 pt-0' : 'pb-2.5 pt-[5px]')
+        : 'py-2.5'"
       autocomplete="off"
       novalidate
       @submit.prevent="send"
@@ -517,7 +519,7 @@ onBeforeUnmount(() => {
   display: flex;
   width: 100%;
   height: 60px;
-  margin-bottom: 2px;
+  margin-bottom: 5px;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
