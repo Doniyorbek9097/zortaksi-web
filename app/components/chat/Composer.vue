@@ -517,7 +517,7 @@ onBeforeUnmount(() => {
   display: flex;
   width: 100%;
   height: 60px;
-  margin-top: -2px;
+  margin-bottom: 2px;
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
