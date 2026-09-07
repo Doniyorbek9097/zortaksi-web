@@ -3,18 +3,25 @@
     class="shrink-0 z-30 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800"
     :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }"
   >
-    <a
-      v-if="callHref && !inputFocused"
-      :href="callHref"
-      class="flex w-full h-[30px] items-center justify-center gap-1.5 rounded-none border-0 bg-emerald-100 dark:bg-emerald-950/45 text-emerald-700 dark:text-emerald-300 text-[12px] font-black no-underline active:bg-emerald-200 dark:active:bg-emerald-900/60 transition-colors"
-    >
-      <font-awesome-icon icon="fa-solid fa-phone" class="text-[10px]" />
-      {{ callLabel }}
-    </a>
+    <Transition name="chat-call-bar">
+      <a
+        v-if="callHref && showCallBar"
+        :href="callHref"
+        class="chat-call-bar"
+      >
+        <span class="chat-call-bar__icon" aria-hidden="true">
+          <font-awesome-icon icon="fa-solid fa-phone-volume" class="text-[15px]" />
+        </span>
+        <span class="chat-call-bar__label">{{ callLabel }}</span>
+        <span class="chat-call-bar__action" aria-hidden="true">
+          <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-[12px]" />
+        </span>
+      </a>
+    </Transition>
 
     <form
       class="mx-auto w-full min-w-0 max-w-2xl px-3"
-      :class="callHref && !inputFocused ? 'pb-2.5 pt-0' : 'py-2.5'"
+      :class="callHref && showCallBar ? 'pb-2.5 pt-0' : 'py-2.5'"
       autocomplete="off"
       novalidate
       @submit.prevent="send"
@@ -200,6 +207,7 @@ import {
   pickVoiceMimeType,
 } from '~/utils/voiceRecording'
 import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
+import { useMobileKeyboardOpen } from '~/composables/useMobileKeyboardOpen'
 
 const text = defineModel<string>({ default: '' })
 
@@ -237,7 +245,8 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const textInput = ref<HTMLInputElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
-const inputFocused = ref(false)
+const { keyboardOpen, scheduleMeasure } = useMobileKeyboardOpen()
+const showCallBar = computed(() => Boolean(props.callHref) && !keyboardOpen.value)
 const slashMenuOpen = ref(false)
 const slashHighlight = ref(0)
 
@@ -345,11 +354,11 @@ const unlockDraft = () => {
 
 const onInputFocus = () => {
   unlockDraft()
-  inputFocused.value = true
+  scheduleMeasure()
 }
 
 const onInputBlur = () => {
-  inputFocused.value = false
+  scheduleMeasure()
 }
 
 const pickImage = () => {
@@ -502,3 +511,110 @@ onBeforeUnmount(() => {
   cancelRecording()
 })
 </script>
+
+<style scoped>
+.chat-call-bar {
+  display: flex;
+  width: 100%;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 0;
+  text-decoration: none;
+  color: #047857;
+  background: linear-gradient(90deg, #ecfdf5 0%, #d1fae5 45%, #ecfdf5 100%);
+  background-size: 200% 100%;
+  animation: chat-call-bar-shimmer 3.5s ease-in-out infinite;
+  box-shadow: inset 0 -1px 0 rgba(16, 185, 129, 0.12);
+}
+
+.dark .chat-call-bar {
+  color: #6ee7b7;
+  background: linear-gradient(90deg, rgba(6, 78, 59, 0.55) 0%, rgba(4, 120, 87, 0.4) 45%, rgba(6, 78, 59, 0.55) 100%);
+  background-size: 200% 100%;
+  box-shadow: inset 0 -1px 0 rgba(52, 211, 153, 0.15);
+}
+
+.chat-call-bar:active {
+  filter: brightness(0.96);
+}
+
+.chat-call-bar__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(145deg, #34d399, #059669);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+  animation: chat-call-bar-pulse 2.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.chat-call-bar__label {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.chat-call-bar__action {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #059669;
+  background: rgba(255, 255, 255, 0.75);
+  flex-shrink: 0;
+  animation: chat-call-bar-nudge 2.2s ease-in-out infinite;
+}
+
+.dark .chat-call-bar__action {
+  color: #6ee7b7;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.chat-call-bar-enter-active,
+.chat-call-bar-leave-active {
+  transition: max-height 0.28s ease, opacity 0.24s ease, transform 0.28s ease;
+  overflow: hidden;
+}
+
+.chat-call-bar-enter-from,
+.chat-call-bar-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.chat-call-bar-enter-to,
+.chat-call-bar-leave-from {
+  max-height: 60px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes chat-call-bar-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes chat-call-bar-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); }
+  50% { transform: scale(1.06); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45); }
+}
+
+@keyframes chat-call-bar-nudge {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(3px); }
+}
+</style>
