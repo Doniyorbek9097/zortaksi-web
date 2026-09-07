@@ -34,8 +34,8 @@
       </p>
 
       <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-        Har bir hudud uchun slug, bot token va public @username.
-        <span v-if="showPrivateSection">Birinchi hudud uchun private invite link ham kerak.</span>
+        Har bir hudud uchun slug va bot token.
+        <span v-if="showPrivateSection">Public @username ixtiyoriy — faqat private ham bo'lishi mumkin.</span>
         <span v-else>Bu token uchun private allaqachon mavjud — faqat public qo'shiladi.</span>
       </p>
 
@@ -147,11 +147,11 @@
         <div class="rounded-xl border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/60 dark:bg-sky-950/25 p-3 space-y-2">
           <p class="text-[11px] font-black text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
             <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
-            Public guruh
+            Public guruh (ixtiyoriy)
           </p>
           <BaseInput
             :model-value="modelValue.public.username"
-            placeholder="@namangan_public"
+            placeholder="@namangan_public (bo'sh qoldirish mumkin)"
             @update:model-value="patchPublic('username', $event)"
           />
         </div>
@@ -174,7 +174,10 @@
           </p>
         </div>
 
-        <label class="flex items-center gap-2.5 px-1 py-1 cursor-pointer select-none">
+        <label
+          v-if="modelValue.public.username.trim()"
+          class="flex items-center gap-2.5 px-1 py-1 cursor-pointer select-none"
+        >
           <input
             :checked="modelValue.postOrdersToPublic"
             type="checkbox"
@@ -185,7 +188,10 @@
             Public guruhga buyurtma tashlash
           </span>
         </label>
-        <p class="px-1 text-[10px] text-slate-400 leading-snug -mt-1">
+        <p
+          v-if="modelValue.public.username.trim()"
+          class="px-1 text-[10px] text-slate-400 leading-snug -mt-1"
+        >
           O'chirilsa — buyurtmalar faqat private guruhga yuboriladi.
         </p>
 

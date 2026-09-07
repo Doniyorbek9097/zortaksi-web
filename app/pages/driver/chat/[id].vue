@@ -217,7 +217,7 @@
     </div>
 
     <!-- O'z hisob ishlamadi — faqat ulanish tugagach -->
-    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
+    <div v-else-if="CHAT_PROXY_CONNECT_ENABLED && needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
       <div class="px-3 pb-2">
         <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
           <p>
@@ -378,6 +378,7 @@ import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
+import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 import { formatChatDateLabel } from '~/utils/chatDate'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 

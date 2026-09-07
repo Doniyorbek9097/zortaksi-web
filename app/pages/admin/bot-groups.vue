@@ -190,13 +190,13 @@ const onSubmit = async () => {
         error.value = 'Bot token kiriting'
         return
       }
-      if (!showPrivateSection.value && !payload.private.inviteLink) {
-        // shared private — invite shart emas
-      } else if (showPrivateSection.value && !payload.private.inviteLink) {
-        error.value = 'Private guruh invite link kiriting'
+      const hasPublic = !!payload.public.username
+      const hasPrivate = !!payload.private.inviteLink
+      if (!hasPublic && !hasPrivate) {
+        error.value = 'Public @username yoki private invite link kiriting'
         return
       }
-      if (tokenUsage.value && !tokenUsage.value.canAddPublic) {
+      if (hasPublic && tokenUsage.value && !tokenUsage.value.canAddPublic) {
         error.value = `Bu bot uchun maksimum ${tokenUsage.value.maxPublic} ta public guruh`
         return
       }

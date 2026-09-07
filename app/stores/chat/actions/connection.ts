@@ -1,6 +1,7 @@
 import type { Socket } from 'socket.io-client'
 import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
+import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 
 const CONNECT_TIMEOUT_MS = 45000
 /** Order chat — o'z hisob tez ulanish (proksi taklifidan oldin) */
@@ -258,7 +259,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
 
         const chat = findChatById(chatId)
-        const next = (data.status || 'unreachable') as ConnStatus
+        let next = (data.status || 'unreachable') as ConnStatus
+        if (!CHAT_PROXY_CONNECT_ENABLED && next === 'proxy-required') {
+            next = 'unreachable'
+        }
 
         // Socket/HTTP: tayyor holatni keyinroq unreachable bilan buzmaymiz
         if (
@@ -287,6 +291,15 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         chatId: string,
         opts: { silent?: boolean; viaProxy?: boolean } = {},
     ) => {
+        if (opts.viaProxy && !CHAT_PROXY_CONNECT_ENABLED) {
+            connectionStatus.value = 'unreachable'
+            connectionReason.value = "Proksi orqali ulanish vaqtincha o'chirilgan."
+            return {
+                success: false,
+                message: connectionReason.value,
+            } as ConnectAck
+        }
+
         const chat = findChatById(chatId) ?? currentChat.value
 
         // Peer link allaqachon bor — backend ga qayta connect shart emas
@@ -492,6 +505,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
         if (!isRelevant) return
+        if (!CHAT_PROXY_CONNECT_ENABLED) {
+            connectionStatus.value = 'unreachable'
+            connectionReason.value =
+                reason?.trim() || "Proksi orqali ulanish vaqtincha o'chirilgan."
+            return
+        }
         connectionStatus.value = 'proxy-required'
         connectionReason.value =
             reason?.trim() ||

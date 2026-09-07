@@ -11,6 +11,8 @@ type QueryParams = () => {
 }
 
 const POLL_MS = 45_000
+const VIEWPORT_BOTTOM_SLACK = 96
+const FILL_VIEWPORT_MAX = 10
 
 /**
  * Ro'yxat sync: poll (visibility-aware), infinite scroll va "ko'rilgan" badge.
@@ -115,15 +117,50 @@ export function useOrdersListSync(options: {
     return rect.top <= window.innerHeight + 520
   }
 
+  /** Scroll yo'q — kontent ekrandan pastga tushmaydi */
+  const viewportNotScrollable = () => {
+    if (!import.meta.client) return false
+    const doc = document.documentElement
+    return doc.scrollHeight <= window.innerHeight + VIEWPORT_BOTTOM_SLACK
+  }
+
+  const shouldPrefetchMore = () => {
+    if (!import.meta.client || !orderStore.hasMore) return false
+    if (!orderStore.orders.length) return true
+    return sentinelInView() || viewportNotScrollable()
+  }
+
+  const waitForListReady = async () => {
+    for (let i = 0; i < 12; i++) {
+      if (!displayOrders.value.length) return
+      if (sentinel.value || listRoot.value) return
+      await nextTick()
+      await new Promise((r) => setTimeout(r, 40))
+    }
+  }
+
   const tryLoadMore = async () => {
     if (orderStore.isLoading || orderStore.isLoadingMore || !orderStore.hasMore) return
     await loadMore()
   }
 
-  /** Ekran bo'sh bo'lsa — ketma-ket sahifalar yuklash */
+  let fillViewportTimer: ReturnType<typeof setTimeout> | null = null
+
+  const scheduleFillViewport = () => {
+    if (!import.meta.client) return
+    if (fillViewportTimer) clearTimeout(fillViewportTimer)
+    fillViewportTimer = setTimeout(() => {
+      fillViewportTimer = null
+      void fillViewport()
+    }, 0)
+  }
+
+  /** Ekran bo'sh yoki scroll yo'q bo'lsa — ketma-ket sahifalar yuklash */
   const fillViewport = async () => {
+    if (!orderStore.hasMore) return
+    await waitForListReady()
     let guard = 0
-    while (guard < 5 && sentinelInView() && orderStore.hasMore) {
+    while (guard < FILL_VIEWPORT_MAX && shouldPrefetchMore() && orderStore.hasMore) {
       if (orderStore.isLoading || orderStore.isLoadingMore) {
         await new Promise((r) => setTimeout(r, 80))
         continue
@@ -131,6 +168,7 @@ export function useOrdersListSync(options: {
       const before = orderStore.orders.length
       await tryLoadMore()
       await nextTick()
+      await new Promise<void>((r) => requestAnimationFrame(() => r()))
       guard += 1
       if (orderStore.orders.length === before) break
     }
@@ -163,17 +201,7 @@ export function useOrdersListSync(options: {
       String(orderStore.listBotGroupId || '') === wantBotGroup &&
       String(orderStore.listText || '') === wantText &&
       orderStore.listScope === 'all'
-    const restoringScroll =
-      hasCachedList &&
-      (orderStore.ordersListScrollY > 0 || !!orderStore.ordersListAnchorOrderId)
-
     if (hasCachedList && sameServerFilter) {
-      await nextTick()
-      restoreScroll()
-      setTimeout(restoreScroll, 50)
-      setTimeout(restoreScroll, 200)
-      setTimeout(syncIfVisible, 2500)
-    } else if (hasCachedList && orderStore.orders.length > 0) {
       await nextTick()
       restoreScroll()
       setTimeout(restoreScroll, 50)
@@ -184,9 +212,7 @@ export function useOrdersListSync(options: {
     }
 
     await nextTick()
-    if (!restoringScroll) {
-      await fillViewport()
-    }
+    await fillViewport()
 
     pollTimer = setInterval(syncIfVisible, POLL_MS)
     document.addEventListener('visibilitychange', onVisibility)
@@ -201,6 +227,7 @@ export function useOrdersListSync(options: {
     setTimeout(restoreScroll, 50)
     syncIfVisible()
     bindSeenObserver()
+    scheduleFillViewport()
   })
 
   onDeactivated(() => {
@@ -209,7 +236,15 @@ export function useOrdersListSync(options: {
 
   watch(sentinel, (el) => {
     if (observer && el) observer.observe(el)
+    if (el) scheduleFillViewport()
   })
+
+  watch(
+    () => orderStore.isLoading || orderStore.isLoadingMore,
+    (busy, prevBusy) => {
+      if (prevBusy && !busy) scheduleFillViewport()
+    },
+  )
 
   // Faqat uzunlik o'zgarsa — to'liq id join emas
   watch(
@@ -217,7 +252,7 @@ export function useOrdersListSync(options: {
     (len, prev) => {
       bindSeenObserver()
       if (prev != null && len > prev) {
-        void nextTick().then(() => fillViewport())
+        scheduleFillViewport()
       }
     },
   )
@@ -226,6 +261,8 @@ export function useOrdersListSync(options: {
     saveScroll()
     if (pollTimer) clearInterval(pollTimer)
     pollTimer = null
+    if (fillViewportTimer) clearTimeout(fillViewportTimer)
+    fillViewportTimer = null
     document.removeEventListener('visibilitychange', onVisibility)
     if (observer) observer.disconnect()
     if (seenObserver) seenObserver.disconnect()
