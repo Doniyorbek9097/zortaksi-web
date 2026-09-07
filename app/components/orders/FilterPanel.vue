@@ -176,7 +176,10 @@ const isPresetSelected = (id: string) => selectedPresetIds.value.has(id)
 const loadPresets = async () => {
   presetsLoading.value = true
   try {
-    const res = await useApi('/bot-groups/filter-presets')
+    let res = await useApi('/listeners/filter-presets')
+    if (!res?.success) {
+      res = await useApi('/bot-groups/filter-presets')
+    }
     if (res.success) {
       presets.value = (res.data?.presets ?? []) as BotGroupFilterPreset[]
       syncSelectedPresetFromKeywords()
