@@ -21,9 +21,9 @@
       <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-4 flex-1">
         <div
           v-if="fallbackOrderText"
-          class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50"
+          class="rounded-2xl px-3.5 py-3 border bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/45"
         >
-          <p class="text-[10px] font-black uppercase tracking-[0.16em] mb-1.5 text-amber-600 dark:text-amber-400">
+          <p class="text-[10px] font-black uppercase tracking-[0.16em] mb-1.5 text-emerald-700 dark:text-emerald-400">
             Buyurtma e'loni
           </p>
           <p
@@ -66,14 +66,9 @@
               <font-awesome-icon icon="fa-brands fa-telegram" />
               Telegram orqali
             </a>
-            <a
-              v-if="callTelHref"
-              :href="callTelHref"
-              class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[12px] font-black active:scale-95"
-            >
-              <font-awesome-icon icon="fa-solid fa-phone" />
-              Qo'ng'iroq
-            </a>
+          </div>
+          <div v-if="callTelHref" class="w-full max-w-xs mx-auto mt-2">
+            <ChatCallBar :href="callTelHref" compact class="!mb-0" />
           </div>
         </div>
       </div>
@@ -100,13 +95,13 @@
           class="rounded-2xl px-3.5 py-3 border"
           :class="isDirect
             ? 'bg-sky-50 dark:bg-sky-950/30 border-sky-200/70 dark:border-sky-800/50'
-            : 'bg-amber-50 dark:bg-amber-950/30 border-amber-200/70 dark:border-amber-800/50'"
+            : 'bg-gradient-to-br from-emerald-50 via-white to-emerald-50/40 dark:from-emerald-950/30 dark:via-slate-900 dark:to-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/45 shadow-[inset_0_-1px_0_rgba(16,185,129,0.08)]'"
         >
           <p
             class="text-[10px] font-black uppercase tracking-[0.16em] mb-1.5"
             :class="isDirect
               ? 'text-sky-600 dark:text-sky-400'
-              : 'text-amber-600 dark:text-amber-400'"
+              : 'text-emerald-700 dark:text-emerald-400'"
           >
             {{ orderBannerLabel }}
           </p>
@@ -222,84 +217,87 @@
     </div>
 
     <!-- O'z hisob ishlamadi — faqat ulanish tugagach -->
-    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
-      <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
-        <p>
-          <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-          {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?" }}
-        </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
-          <button
-            type="button"
-            :disabled="proxyConnecting"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-sky-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
-            @click="confirmProxyConnect"
-          >
-            <font-awesome-icon icon="fa-solid fa-route" />
-            {{ proxyConnecting ? 'Ulanmoqda...' : "Proksi orqali bog'lanib ko'rish" }}
-          </button>
-          <button
-            type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-            @click="dismissProxyConfirm"
-          >
-            Bekor qilish
-          </button>
+    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
+      <div class="px-3 pb-2">
+        <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
+          <p>
+            <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
+            {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?" }}
+          </p>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
+            <button
+              type="button"
+              :disabled="proxyConnecting"
+              class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-sky-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
+              @click="confirmProxyConnect"
+            >
+              <font-awesome-icon icon="fa-solid fa-route" />
+              {{ proxyConnecting ? 'Ulanmoqda...' : "Proksi orqali bog'lanib ko'rish" }}
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
+              @click="dismissProxyConfirm"
+            >
+              Bekor qilish
+            </button>
+          </div>
         </div>
+      </div>
+      <ChatCallBar
+        v-if="callPhone && callTelHref"
+        :href="callTelHref"
+        label="Telefon orqali bog'laning"
+      />
+    </div>
+
+    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl">
+      <div class="px-3 pb-2">
+        <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[12px] font-bold text-center">
+          <p>
+            <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
+            {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
+          </p>
+        </div>
+      </div>
+      <ChatCallBar
+        v-if="callPhone && callTelHref"
+        :href="callTelHref"
+      />
+      <div v-else class="px-3 pb-2">
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-amber-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
+          @click="goOrders"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+        </button>
       </div>
     </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl px-3 pb-2">
-      <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[12px] font-bold text-center space-y-2">
-        <p>
-          <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
-          {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
-        </p>
-        <div class="flex flex-col items-center gap-2">
-          <a
-            v-if="callPhone"
-            :href="normalizeTelHref(callPhone)"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          >
-            <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilishingiz mumkin
-          </a>
-          <button
-            v-else
-            type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-amber-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-            @click="goOrders"
-          >
-            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-          </button>
+    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl">
+      <div class="px-3 pb-2">
+        <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center">
+          <p>
+            <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
+            {{ connReason || (callPhone
+              ? 'Telegram orqali ulanib bo\'lmadi. Telefon qiling.'
+              : 'Telegram orqali ulanib bo\'lmadi.') }}
+          </p>
         </div>
       </div>
-    </div>
-
-    <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl px-3 pb-2">
-      <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center space-y-2">
-        <p>
-          <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
-          {{ connReason || (callPhone
-            ? 'Telegram orqali ulanib bo\'lmadi. Telefon qiling.'
-            : 'Telegram orqali ulanib bo\'lmadi.') }}
-        </p>
-        <div class="flex flex-col items-center gap-2">
-          <a
-            v-if="callPhone"
-            :href="normalizeTelHref(callPhone)"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          >
-            <font-awesome-icon icon="fa-solid fa-phone" /> Telefon qilish
-          </a>
-          <button
-            v-else
-            type="button"
-            class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-red-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-            @click="goOrders"
-          >
-            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-          </button>
-        </div>
+      <ChatCallBar
+        v-if="callPhone && callTelHref"
+        :href="callTelHref"
+      />
+      <div v-else class="px-3 pb-2">
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
+          @click="goOrders"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+        </button>
       </div>
     </div>
 
