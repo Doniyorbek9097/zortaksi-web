@@ -18,26 +18,16 @@
       <template #actions>
         <div
           v-if="callPhone && callTelHref && !selectionMode"
-          class="mx-auto w-full max-w-2xl px-3 py-2 border-b border-slate-200/50 dark:border-slate-800/50"
+          class="mx-auto w-full max-w-2xl px-3 pb-2 pt-0.5 flex justify-center"
         >
           <a
             :href="callTelHref"
-            class="chat-call-hero group"
+            class="chat-call-chip"
           >
-            <span class="chat-call-hero__ring" aria-hidden="true" />
-            <span class="chat-call-hero__icon">
-              <font-awesome-icon icon="fa-solid fa-phone" class="text-lg" />
+            <span class="chat-call-chip__icon" aria-hidden="true">
+              <font-awesome-icon icon="fa-solid fa-phone" class="text-[12px]" />
             </span>
-            <span class="flex flex-col items-start leading-tight">
-              <span class="text-[11px] font-bold uppercase tracking-[0.14em] opacity-90">
-                Buyurtmachi
-              </span>
-              <span class="text-[15px] font-black">Qo'ng'iroq qilish</span>
-            </span>
-            <font-awesome-icon
-              icon="fa-solid fa-chevron-right"
-              class="ml-auto text-sm opacity-80 group-active:translate-x-0.5 transition-transform"
-            />
+            <span class="text-[13px] font-black tracking-tight">Qo'ng'iroq qiling</span>
           </a>
         </div>
       </template>
@@ -1504,66 +1494,45 @@ onBeforeUnmount(() => {
   40% { opacity: 1; transform: translateY(-2px); }
 }
 
-.chat-call-hero {
-  position: relative;
-  display: flex;
+.chat-call-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border-radius: 1rem;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 9999px;
   text-decoration: none;
-  color: #fff;
-  background: linear-gradient(135deg, #10b981 0%, #059669 45%, #047857 100%);
-  box-shadow:
-    0 4px 18px rgba(16, 185, 129, 0.45),
-    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
-  overflow: hidden;
-  animation: call-hero-breathe 2.4s ease-in-out infinite;
+  color: #047857;
+  background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.chat-call-hero:active {
-  transform: scale(0.98);
+.dark .chat-call-chip {
+  color: #6ee7b7;
+  background: linear-gradient(180deg, rgba(6, 78, 59, 0.55) 0%, rgba(4, 120, 87, 0.35) 100%);
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
 
-.chat-call-hero__ring {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.55);
-  animation: call-hero-ring 2s ease-out infinite;
+.chat-call-chip:active {
+  transform: scale(0.97);
 }
 
-.chat-call-hero__icon {
-  position: relative;
-  z-index: 1;
-  width: 2.5rem;
-  height: 2.5rem;
+.chat-call-chip__icon {
+  width: 1.65rem;
+  height: 1.65rem;
   border-radius: 9999px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.2);
-  animation: call-icon-wiggle 1.8s ease-in-out infinite;
+  color: #fff;
+  background: linear-gradient(145deg, #34d399, #059669);
+  animation: call-chip-pulse 2s ease-in-out infinite;
 }
 
-@keyframes call-hero-breathe {
-  0%, 100% { box-shadow: 0 4px 18px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12) inset; }
-  50% { box-shadow: 0 6px 26px rgba(16, 185, 129, 0.62), 0 0 0 1px rgba(255, 255, 255, 0.18) inset; }
-}
-
-@keyframes call-hero-ring {
-  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.45); }
-  70% { box-shadow: 0 0 0 14px rgba(255, 255, 255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
-}
-
-@keyframes call-icon-wiggle {
-  0%, 100% { transform: rotate(0deg) scale(1); }
-  20% { transform: rotate(-12deg) scale(1.05); }
-  40% { transform: rotate(10deg) scale(1.08); }
-  60% { transform: rotate(-8deg) scale(1.05); }
-  80% { transform: rotate(0deg) scale(1); }
+@keyframes call-chip-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35); }
+  50% { transform: scale(1.06); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
 }
 </style>

@@ -51,6 +51,11 @@
           v-for="item in items"
           :key="item.id"
           class="flex items-center gap-3 px-4 py-3"
+          :class="driverLinkable(item) ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 transition-colors' : ''"
+          :role="driverLinkable(item) ? 'button' : undefined"
+          :tabindex="driverLinkable(item) ? 0 : undefined"
+          @click="openDriver(item)"
+          @keydown.enter.prevent="openDriver(item)"
         >
           <span
             class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
@@ -89,7 +94,7 @@
             class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 transition-all disabled:opacity-50"
             aria-label="To'lovni o'chirish"
             :disabled="deletingId === item.id"
-            @click="askDelete(item)"
+            @click.stop="askDelete(item)"
           >
             <font-awesome-icon
               :icon="deletingId === item.id ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
@@ -194,6 +199,15 @@ const deletingId = ref('')
 let loadMoreObserver: IntersectionObserver | null = null
 
 const emit = defineEmits<{ deleted: [] }>()
+
+const driverLinkable = (item: PaymentHistoryItem) =>
+  Boolean(props.showDriver && item.userId)
+
+const openDriver = (item: PaymentHistoryItem) => {
+  const id = String(item.userId || '').trim()
+  if (!driverLinkable(item) || !id) return
+  void navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
+}
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')
 
