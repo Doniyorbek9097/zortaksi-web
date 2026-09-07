@@ -3,6 +3,8 @@ import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
+/** Tinglovchi preset ID prefiksi — botGroupId saqlash kalitida ishlatiladi */
+export const LISTENER_FILTER_PRESET_PREFIX = 'u:'
 /** Birinchi marta yo'nalish tanlangan — majburiy onboarding */
 export const ORDER_FILTER_CONFIGURED_KEY = 'zt_order_filter_configured'
 /** Buyurtmalar ro'yxati — bir sahifada (infinite scroll) */

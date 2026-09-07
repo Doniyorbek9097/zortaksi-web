@@ -24,8 +24,8 @@
                   </p>
                   <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
                     {{ mandatory
-                      ? 'Davom etish uchun bot guruh (yo‘nalish) tanlang yoki barcha joylar'
-                      : 'Bir yoki bir nechta bot guruh tanlang — shu tinglovchilardan kelgan buyurtmalar' }}
+                      ? 'Davom etish uchun yo\'nalish (tinglovchi) tanlang yoki barcha joylar'
+                      : 'Bir yoki bir nechta tinglovchi tanlang — shu userbotlardan kelgan buyurtmalar' }}
                   </p>
                 </div>
                 <button
@@ -73,7 +73,7 @@
                       />
                       <span v-else class="w-3 shrink-0" aria-hidden="true" />
                       <font-awesome-icon
-                        icon="fa-solid fa-bullhorn"
+                        icon="fa-solid fa-headset"
                         class="text-[10px] shrink-0 opacity-70"
                       />
                       <span class="truncate">{{ preset.title }}</span>
@@ -106,7 +106,7 @@
               </p>
 
               <p class="px-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 leading-snug">
-                «Barcha joylar» — filtrsiz. Yoki bir nechta bot guruh tanlang — tanlangan tinglovchilarning buyurtmalari.
+                «Barcha joylar» — filtrsiz. Yoki bir nechta tinglovchi tanlang — tanlangan userbotlarning buyurtmalari.
               </p>
             </div>
 

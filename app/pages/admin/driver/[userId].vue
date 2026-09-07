@@ -108,6 +108,35 @@
         :invite-groups="driver.inviteGroups"
       />
 
+      <!-- Guruh tinglovchi nomi -->
+      <section
+        v-if="driver.listenGroups"
+        class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+      >
+        <div>
+          <h2 class="text-sm font-black text-slate-900 dark:text-white">Tinglovchi nomi</h2>
+          <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+            Haydovchilar yo'nalish filtrida shu nom ko'rinadi (masalan: Namangan Toshkent)
+          </p>
+        </div>
+        <input
+          v-model="listenerDisplayName"
+          type="text"
+          maxlength="120"
+          placeholder="Masalan: Namangan Toshkent"
+          class="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-amber-400 dark:focus:border-amber-500/60"
+        >
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all disabled:opacity-50"
+          :disabled="store.isSaving"
+          @click="saveListenerDisplayName"
+        >
+          <font-awesome-icon icon="fa-solid fa-floppy-disk" />
+          Nomni saqlash
+        </button>
+      </section>
+
       <!-- Asosiy amallar -->
       <section class="grid grid-cols-1 gap-2">
         <button
@@ -306,6 +335,7 @@ const tariffOpen = ref(false)
 const limitOpen = ref(false)
 const blockOpen = ref(false)
 const deleteOpen = ref(false)
+const listenerDisplayName = ref('')
 
 const { avatarUrl } = useMediaUrl()
 const avatarBroken = ref(false)
@@ -372,8 +402,10 @@ const load = async () => {
   try {
     // Bitta haydovchi — to'liq maydonlar (tariffExpireAt, startedAt)
     const res = await useApi(`/drivers/${encodeURIComponent(userId.value)}`)
-    if (res?.success) driver.value = res.data
-    else error.value = res?.message || 'Haydovchi topilmadi'
+    if (res?.success) {
+      driver.value = res.data
+      listenerDisplayName.value = String(res.data?.listenerDisplayName || '')
+    } else error.value = res?.message || 'Haydovchi topilmadi'
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Ma\'lumot yuklanmadi'
   } finally {
@@ -498,6 +530,19 @@ const toggleListenGroups = async () => {
     await load()
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Tinglash sozlamasi saqlanmadi'
+  }
+}
+
+const saveListenerDisplayName = async () => {
+  if (!driver.value) return
+  error.value = ''
+  success.value = ''
+  try {
+    await store.setListenerDisplayName(driver.value.id, listenerDisplayName.value.trim())
+    success.value = 'Tinglovchi nomi saqlandi'
+    await load()
+  } catch (e: any) {
+    error.value = e?.response?.data?.message || 'Nom saqlanmadi'
   }
 }
 
