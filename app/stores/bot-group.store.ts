@@ -46,6 +46,7 @@ export type ListenerCandidate = {
   username: string
   phoneNumber: string
   listenGroups: boolean
+  listenerDisplayName: string
   label: string
 }
 

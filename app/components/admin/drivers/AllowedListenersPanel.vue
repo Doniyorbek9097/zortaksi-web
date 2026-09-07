@@ -29,7 +29,7 @@
             @change="toggle(c.userId, ($event.target as HTMLInputElement).checked)"
           >
           <span class="min-w-0 flex-1 text-[12px] font-bold text-slate-800 dark:text-slate-100 truncate">
-            {{ c.label }}{{ c.username ? ` (@${c.username})` : '' }}
+            {{ c.listenerDisplayName || c.label }}
           </span>
         </label>
       </li>

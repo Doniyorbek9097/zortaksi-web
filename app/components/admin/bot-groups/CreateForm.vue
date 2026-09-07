@@ -78,7 +78,7 @@
               {{ modelValue.listenerUserId }} (listenGroups o'chiq?)
             </option>
             <option v-for="c in listenerCandidates" :key="c.userId" :value="c.userId">
-              {{ c.label }}{{ c.username ? ` (@${c.username})` : '' }}
+              {{ c.listenerDisplayName || c.label }}
             </option>
           </select>
           <p v-if="!listenerCandidates.length" class="px-1 text-[10px] font-semibold text-amber-600">

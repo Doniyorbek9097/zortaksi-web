@@ -144,7 +144,7 @@ const refreshingId = ref<string | null>(null)
 const listenerLabel = (userId: string) => {
   if (!userId) return 'Tanlanmagan'
   const c = store.listenerCandidates.find((x) => x.userId === userId)
-  if (c) return c.username ? `${c.label} (@${c.username})` : c.label
+  if (c) return c.listenerDisplayName || c.label
   return userId
 }
 
