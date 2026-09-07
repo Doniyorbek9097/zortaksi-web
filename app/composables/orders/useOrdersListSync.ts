@@ -123,7 +123,7 @@ export function useOrdersListSync(options: {
   /** Ekran bo'sh bo'lsa — ketma-ket sahifalar yuklash */
   const fillViewport = async () => {
     let guard = 0
-    while (guard < 12 && sentinelInView() && orderStore.hasMore) {
+    while (guard < 3 && sentinelInView() && orderStore.hasMore) {
       if (orderStore.isLoading || orderStore.isLoadingMore) {
         await new Promise((r) => setTimeout(r, 80))
         continue
@@ -172,13 +172,13 @@ export function useOrdersListSync(options: {
       restoreScroll()
       setTimeout(restoreScroll, 50)
       setTimeout(restoreScroll, 200)
-      syncIfVisible()
+      setTimeout(syncIfVisible, 2500)
     } else if (hasCachedList && orderStore.orders.length > 0) {
       await nextTick()
       restoreScroll()
       setTimeout(restoreScroll, 50)
       setTimeout(restoreScroll, 200)
-      syncIfVisible()
+      setTimeout(syncIfVisible, 2500)
     } else {
       await load()
     }

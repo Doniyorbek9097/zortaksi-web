@@ -7,6 +7,8 @@
       v-if="showImg"
       :src="resolvedSrc"
       :alt="name"
+      loading="lazy"
+      decoding="async"
       class="w-full h-full object-cover"
       @error="onError"
     >

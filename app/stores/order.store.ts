@@ -52,6 +52,9 @@ export const useOrderStore = defineStore('order', () => {
         !!listBotGroupId.value.trim() || !!listSearch.value.trim()
 
     let syncLatestTimer: ReturnType<typeof setTimeout> | null = null
+    let lastFullListFetchAt = 0
+    const SYNC_SKIP_AFTER_FETCH_MS = 6000
+    let badgeRefreshTimer: ReturnType<typeof setTimeout> | null = null
     const scheduleSyncLatest = (params: FetchOrdersParams = {}) => {
         if (!import.meta.client) return
         if (syncLatestTimer) clearTimeout(syncLatestTimer)
@@ -404,25 +407,30 @@ export const useOrderStore = defineStore('order', () => {
     })
 
     const refreshNewCount = async () => {
-        try {
-            const response = await useApi('/orders', {
-                method: 'GET',
-                params: {
-                    status: 'new',
-                    page: 1,
-                    limit: 1,
-                    ...(listBotGroupId.value
-                        ? { botGroupId: listBotGroupId.value }
-                        : { search: listSearch.value || undefined }),
-                    ...(listScope.value === 'mine' ? { scope: 'mine' } : {}),
-                },
-            })
-            if (response.success) {
-                newOrdersCount.value = Number(response.data.pagination?.total ?? 0)
+        if (!import.meta.client) return
+        if (badgeRefreshTimer) clearTimeout(badgeRefreshTimer)
+        badgeRefreshTimer = setTimeout(async () => {
+            badgeRefreshTimer = null
+            try {
+                const response = await useApi('/orders', {
+                    method: 'GET',
+                    params: {
+                        status: 'new',
+                        page: 1,
+                        limit: 1,
+                        ...(listBotGroupId.value
+                            ? { botGroupId: listBotGroupId.value }
+                            : { search: listSearch.value || undefined }),
+                        ...(listScope.value === 'mine' ? { scope: 'mine' } : {}),
+                    },
+                })
+                if (response.success) {
+                    newOrdersCount.value = Number(response.data.pagination?.total ?? 0)
+                }
+            } catch {
+                /* badge uchun jim */
             }
-        } catch {
-            /* badge uchun jim */
-        }
+        }, 600)
     }
 
     const bumpNewCount = (delta = 1) => {
@@ -489,6 +497,13 @@ export const useOrderStore = defineStore('order', () => {
      */
     const syncLatest = async (params: FetchOrdersParams = {}) => {
         if (!paramsMatchListFilter(params)) return null
+        if (
+            page.value <= 1 &&
+            orders.value.length > 0 &&
+            Date.now() - lastFullListFetchAt < SYNC_SKIP_AFTER_FETCH_MS
+        ) {
+            return null
+        }
         try {
             const response = await useApi('/orders', {
                 method: 'GET',
@@ -522,7 +537,6 @@ export const useOrderStore = defineStore('order', () => {
             }
             // Catch-up: faqat oxirgi 1 daqiqada yaratilgan yangilar
             noteRecentOrdersFromList(list.filter((o) => o._id && !prevIds.has(String(o._id))))
-            scheduleWarmOrderPeers(orders.value)
             total.value = response.data.pagination?.total ?? total.value
             void refreshNewCount()
             return response
@@ -573,13 +587,16 @@ export const useOrderStore = defineStore('order', () => {
                 } else {
                     orders.value = list
                     rememberListFilter(params)
-                    // Birinchi yuklash: oxirgi 1 daqiqadagi buyurtmalar badge
                     noteRecentOrdersFromList(list)
+                    lastFullListFetchAt = Date.now()
                 }
-                scheduleWarmOrderPeers(orders.value)
                 total.value = response.data.pagination?.total ?? orders.value.length
                 page.value = response.data.pagination?.page ?? params.page ?? 1
-                totalPages.value = response.data.pagination?.totalPages ?? 1
+                if (response.data.pagination?.totalPages != null) {
+                    totalPages.value = response.data.pagination.totalPages
+                } else if (response.data.pagination?.hasMore === false) {
+                    totalPages.value = page.value
+                }
             }
             return response
         } catch (error) {
