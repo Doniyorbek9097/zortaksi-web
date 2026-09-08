@@ -97,10 +97,8 @@ export const usePostStore = defineStore('post', () => {
 
   const totalCost = computed(() => pricePerGroup.value * selected.value.size)
 
-  const maxSelectable = computed(() => {
-    if (pricePerGroup.value <= 0) return Infinity
-    return Math.floor(balance.value / pricePerGroup.value)
-  })
+  /** Boshqalar: istalgan miqdorda belgilash; to'lov yuborishda muvaffaqiyatli har biri uchun */
+  const maxSelectable = computed(() => Infinity)
 
   const searchParams = () => {
     const q = query.value.trim()
@@ -189,6 +187,27 @@ export const usePostStore = defineStore('post', () => {
     return raw || 'Guruhlar yuklanmadi'
   }
 
+  const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
+
+  const isPostTariffError = (e: any) => {
+    const code = e?.response?.data?.code
+    const msg = String(e?.response?.data?.message || '')
+    return code === 'TARIFF_REQUIRED' || /faol tarif/i.test(msg)
+  }
+
+  const redirectToPostTariffPayment = () => {
+    if (import.meta.client) navigateTo(POST_TARIFF_PAYMENT_PATH)
+  }
+
+  const handlePostActionError = (e: any, fallback: string) => {
+    if (isPostTariffError(e)) {
+      error.value = ''
+      redirectToPostTariffPayment()
+      return
+    }
+    error.value = e?.response?.data?.message || fallback
+  }
+
   /** Birinchi sahifa — Meniki darhol; Reklama fonda */
   const load = async (force = false) => {
     selected.value = new Set()
@@ -271,29 +290,14 @@ export const usePostStore = defineStore('post', () => {
       selected.value = next
       return
     }
-    if (pricePerGroup.value > 0 && next.size >= maxSelectable.value) {
-      error.value = `Balans yetarli emas. Har bir guruh ${pricePerGroup.value.toLocaleString('ru-RU')} so'm`
-      return
-    }
     error.value = ''
     next.add(id)
     selected.value = next
   }
 
   const selectAllVisible = (list: PostGroup[]) => {
-    const next = new Set<string>()
-    let count = 0
-    for (const g of list) {
-      if (pricePerGroup.value > 0 && count >= maxSelectable.value) break
-      next.add(g.id)
-      count++
-    }
-    selected.value = next
-    if (pricePerGroup.value > 0 && list.length > maxSelectable.value) {
-      error.value = `Balans faqat ${maxSelectable.value} ta guruhga yetadi`
-    } else {
-      error.value = ''
-    }
+    selected.value = new Set(list.map((g) => g.id))
+    error.value = ''
   }
 
   const clearSelection = () => {
@@ -417,7 +421,7 @@ export const usePostStore = defineStore('post', () => {
       }
       return res
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Yuborish amalga oshmadi'
+      handlePostActionError(e, 'Yuborish amalga oshmadi')
       throw e
     } finally {
       isSending.value = false
@@ -471,7 +475,7 @@ export const usePostStore = defineStore('post', () => {
       }
       return res
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Saqlanmadi'
+      handlePostActionError(e, 'Saqlanmadi')
       throw e
     } finally {
       isSending.value = false
@@ -539,7 +543,7 @@ export const usePostStore = defineStore('post', () => {
       if (res.success) await fetchCampaigns()
       return res
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Boshlanmadi'
+      handlePostActionError(e, 'Boshlanmadi')
       throw e
     } finally {
       campaignBusyId.value = null

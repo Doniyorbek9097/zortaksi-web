@@ -237,7 +237,7 @@
             <button
               type="button"
               class="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
-              @click="composeOpen = true"
+              @click="openCompose"
             >
               <font-awesome-icon icon="fa-solid fa-paper-plane" />
               Xabar yuborish
@@ -263,7 +263,7 @@
             v-else
             type="button"
             class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
-            @click="composeOpen = true"
+            @click="openCompose"
           >
             <font-awesome-icon icon="fa-solid fa-paper-plane" />
             {{ selectedCount }} guruhga xabar yuborish
@@ -353,6 +353,26 @@ definePageMeta({ layout: 'driver' })
 const store = usePostStore()
 const authStore = useAuthStore()
 
+const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
+
+const canPostWithTariff = computed(() => store.isAdmin || authStore.tariffActive)
+
+/** Meniki va saqlangan xabarlar (mine) — faol tarif kerak. Boshqalar — balans bilan. */
+const requiresTariffForPost = (mode: 'mine' | 'ads' = store.tab) =>
+  mode === 'mine' && !store.isAdmin
+
+const requireTariffForPost = (mode: 'mine' | 'ads' = store.tab): boolean => {
+  if (!requiresTariffForPost(mode)) return true
+  if (canPostWithTariff.value) return true
+  navigateTo(POST_TARIFF_PAYMENT_PATH)
+  return false
+}
+
+const openCompose = () => {
+  if (!requireTariffForPost()) return
+  composeOpen.value = true
+}
+
 const composeOpen = ref(false)
 const editCampaign = ref<PostCampaign | null>(null)
 const deleteCampaignOpen = ref(false)
@@ -436,6 +456,7 @@ const toggleSelectAll = () => {
 }
 
 const onSendOnce = async (text: string) => {
+  if (!requireTariffForPost()) return
   success.value = ''
   try {
     const res = await store.broadcast(text)
@@ -462,6 +483,9 @@ const onSaveCampaign = async (payload: {
   autoRepeat: boolean
   intervalMin: number
 }) => {
+  const willStart = payload.autoRepeat
+  const postMode = editCampaign.value?.mode ?? store.tab
+  if (willStart && !requireTariffForPost(postMode)) return
   success.value = ''
   try {
     if (editCampaign.value?.id) {
@@ -496,6 +520,7 @@ const onSaveCampaign = async (payload: {
 }
 
 const onStartCampaign = async (c: PostCampaign) => {
+  if (!requireTariffForPost(c.mode)) return
   success.value = ''
   try {
     await store.startCampaign(c.id)
