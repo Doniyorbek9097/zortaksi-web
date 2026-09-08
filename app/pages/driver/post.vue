@@ -309,7 +309,7 @@
     <PostMembershipDialog
       v-model="showLeaveDialog"
       title="Guruhni tark etish"
-      :message="leaveMessage"
+      message=""
       confirm-text="Tark etish"
       variant="warning"
       :loading="!!store.joiningId"
@@ -377,14 +377,6 @@ const joinMessage = computed(() => (
   `• Shu guruhdan keladigan buyurtmalarni 100% olasiz (Meniki bo'limida).\n` +
   `• E'lon yuborganingizda xabar o'zingizning Telegram nomingizdan ketadi.\n\n` +
   `Davom etasizmi?`
-))
-
-const leaveMessage = computed(() => (
-  `Guruhdan chiqasiz.\n\n` +
-  `• Shu guruhdan buyurtma olish foizi kamayishi mumkin (Boshqalar bo'limiga tushadi).\n` +
-  `• Xabarlaringiz boshqa haydovchilar / userbot nomidan ketishi mumkin.\n` +
-  `• To'liq qulaylik uchun guruhda a'zo bo'lib qolish tavsiya etiladi.\n\n` +
-  `Baribir tark etasizmi?`
 ))
 
 const onSaveFilter = async () => {

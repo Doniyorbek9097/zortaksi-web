@@ -51,17 +51,17 @@
 
       <button
         type="button"
-        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 active:scale-95"
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95"
         :disabled="busy"
         @click="$emit('edit')"
       >
-        <font-awesome-icon icon="fa-solid fa-pen" class="text-[9px]" />
+        <font-awesome-icon icon="fa-solid fa-pen-to-square" class="text-[9px]" />
         Tahrirlash
       </button>
 
       <button
         type="button"
-        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-slate-500 border border-slate-200 dark:border-slate-700 active:scale-95"
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-500 active:scale-95 disabled:opacity-50"
         :disabled="busy"
         @click="$emit('delete')"
       >

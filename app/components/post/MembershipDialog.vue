@@ -27,7 +27,7 @@ import type { PostGroup } from '~/stores/post.store'
 defineProps<{
   modelValue: boolean
   title: string
-  message: string
+  message?: string
   confirmText: string
   variant?: 'success' | 'warning' | 'danger' | 'primary'
   loading?: boolean
