@@ -369,7 +369,7 @@ const requireTariffForPost = (mode: 'mine' | 'ads' = store.tab): boolean => {
 }
 
 const openCompose = () => {
-  if (!requireTariffForPost()) return
+  if (store.tab === 'mine' && !requireTariffForPost('mine')) return
   composeOpen.value = true
 }
 
@@ -456,7 +456,7 @@ const toggleSelectAll = () => {
 }
 
 const onSendOnce = async (text: string) => {
-  if (!requireTariffForPost()) return
+  if (store.tab === 'mine' && !requireTariffForPost('mine')) return
   success.value = ''
   try {
     const res = await store.broadcast(text)
