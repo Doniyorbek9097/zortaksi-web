@@ -61,7 +61,7 @@
 
       <button
         type="button"
-        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-500 active:scale-95 disabled:opacity-50"
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 active:scale-95 disabled:opacity-50"
         :disabled="busy"
         @click="$emit('delete')"
       >
