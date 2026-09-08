@@ -27,8 +27,9 @@ export const ADS_BROADCAST_PRICE = 500
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
-export type PostSchedule = {
+export type PostCampaign = {
   id: string
+  name: string
   mode: PostTab
   groupIds: string[]
   text: string
@@ -43,6 +44,9 @@ export type PostSchedule = {
   lastError?: string
 }
 
+/** @deprecated use PostCampaign */
+export type PostSchedule = PostCampaign
+
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()
 
@@ -56,7 +60,10 @@ export const usePostStore = defineStore('post', () => {
   const isBlocking = ref(false)
   const joiningId = ref<string | null>(null)
   const error = ref('')
-  const schedule = ref<PostSchedule | null>(null)
+  const campaigns = ref<PostCampaign[]>([])
+  const isCampaignsLoading = ref(false)
+  const campaignBusyId = ref<string | null>(null)
+  const schedule = computed(() => campaigns.value.find((c) => c.active) || null)
   const isScheduleLoading = ref(false)
 
   const minePage = ref(1)
@@ -417,62 +424,152 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
-  const fetchSchedule = async () => {
+  const fetchCampaigns = async () => {
     try {
-      isScheduleLoading.value = true
-      const res = await useApi('/groups/broadcast/schedule')
+      isCampaignsLoading.value = true
+      const res = await useApi('/groups/broadcast/campaigns')
       if (res.success) {
-        schedule.value = (res.data as PostSchedule | null) || null
+        campaigns.value = (res.data?.campaigns ?? []) as PostCampaign[]
       }
       return res
     } catch {
-      schedule.value = null
+      campaigns.value = []
       return null
     } finally {
-      isScheduleLoading.value = false
+      isCampaignsLoading.value = false
     }
   }
 
-  const startSchedule = async (text: string, intervalMin: number) => {
+  const fetchSchedule = fetchCampaigns
+
+  const createCampaign = async (
+    payload: {
+      name: string
+      text: string
+      intervalMin: number
+      start: boolean
+    }
+  ) => {
     try {
       isSending.value = true
       error.value = ''
-      const res = await useApi('/groups/broadcast/schedule', {
+      const res = await useApi('/groups/broadcast/campaigns', {
         method: 'POST',
         body: {
+          name: payload.name,
           mode: tab.value,
           groupIds: [...selected.value],
-          text,
-          intervalMin,
+          text: payload.text,
+          intervalMin: payload.intervalMin,
+          start: payload.start,
         },
       })
       if (res.success) {
-        schedule.value = res.data as PostSchedule
         selected.value = new Set()
+        await fetchCampaigns()
         await authStore.getMe()
       }
       return res
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Avtomatik yuborish yoqilmadi'
+      error.value = e?.response?.data?.message || 'Saqlanmadi'
       throw e
     } finally {
       isSending.value = false
     }
   }
 
-  const stopSchedule = async () => {
+  const updateCampaign = async (
+    id: string,
+    payload: {
+      name: string
+      text: string
+      intervalMin: number
+      groupIds?: string[]
+    }
+  ) => {
     try {
-      isScheduleLoading.value = true
+      isSending.value = true
       error.value = ''
-      const res = await useApi('/groups/broadcast/schedule', { method: 'DELETE' })
-      if (res.success) schedule.value = null
+      const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: {
+          name: payload.name,
+          text: payload.text,
+          intervalMin: payload.intervalMin,
+          mode: tab.value,
+          ...(payload.groupIds ? { groupIds: payload.groupIds } : {}),
+        },
+      })
+      if (res.success) await fetchCampaigns()
       return res
     } catch (e: any) {
-      error.value = e?.response?.data?.message || 'Avtomatik yuborish to\'xtatilmadi'
+      error.value = e?.response?.data?.message || 'Yangilanmadi'
       throw e
     } finally {
-      isScheduleLoading.value = false
+      isSending.value = false
     }
+  }
+
+  const deleteCampaign = async (id: string) => {
+    try {
+      campaignBusyId.value = id
+      error.value = ''
+      const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      })
+      if (res.success) {
+        campaigns.value = campaigns.value.filter((c) => c.id !== id)
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || "O'chirilmadi"
+      throw e
+    } finally {
+      campaignBusyId.value = null
+    }
+  }
+
+  const startCampaign = async (id: string) => {
+    try {
+      campaignBusyId.value = id
+      error.value = ''
+      const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}/start`, {
+        method: 'POST',
+      })
+      if (res.success) await fetchCampaigns()
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Boshlanmadi'
+      throw e
+    } finally {
+      campaignBusyId.value = null
+    }
+  }
+
+  const stopCampaign = async (id: string) => {
+    try {
+      campaignBusyId.value = id
+      error.value = ''
+      const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}/stop`, {
+        method: 'POST',
+      })
+      if (res.success) await fetchCampaigns()
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || "To'xtatilmadi"
+      throw e
+    } finally {
+      campaignBusyId.value = null
+    }
+  }
+
+  const startSchedule = async (text: string, intervalMin: number) =>
+    createCampaign({ name: 'E\'lon', text, intervalMin, start: true })
+
+  const stopSchedule = async () => {
+    const active = campaigns.value.find((c) => c.active)
+    if (!active) return null
+    return stopCampaign(active.id)
   }
 
   /** Admin: tanlangan guruhlarni bloklash */
@@ -535,6 +632,9 @@ export const usePostStore = defineStore('post', () => {
     isBlocking,
     joiningId,
     error,
+    campaigns,
+    campaignBusyId,
+    isCampaignsLoading,
     schedule,
     isScheduleLoading,
     search,
@@ -561,7 +661,13 @@ export const usePostStore = defineStore('post', () => {
     joinGroup,
     leaveGroup,
     broadcast,
+    fetchCampaigns,
     fetchSchedule,
+    createCampaign,
+    updateCampaign,
+    deleteCampaign,
+    startCampaign,
+    stopCampaign,
     startSchedule,
     stopSchedule,
     blockGroups,

@@ -43,6 +43,57 @@
       @cancel="onCancelFilter"
     />
 
+    <!-- Saqlangan xabarlar -->
+    <section class="space-y-2">
+      <div class="flex items-center justify-between gap-2 px-0.5">
+        <h2 class="text-[12px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+          Saqlangan xabarlar
+        </h2>
+        <button
+          type="button"
+          class="text-[11px] font-black text-amber-600 dark:text-amber-400"
+          :disabled="store.isCampaignsLoading"
+          @click="store.fetchCampaigns()"
+        >
+          <font-awesome-icon
+            icon="fa-solid fa-rotate"
+            :class="store.isCampaignsLoading ? 'animate-spin' : ''"
+            class="text-[10px]"
+          />
+        </button>
+      </div>
+
+      <div v-if="store.isCampaignsLoading && !store.campaigns.length" class="space-y-2">
+        <div
+          v-for="n in 2"
+          :key="n"
+          class="h-24 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        />
+      </div>
+
+      <BaseEmptyState
+        v-else-if="!store.campaigns.length"
+        icon="fa-solid fa-message"
+        title="Saqlangan xabar yo'q"
+        tone="slate"
+      />
+
+      <div v-else class="space-y-2">
+        <PostCampaignCard
+          v-for="c in store.campaigns"
+          :key="c.id"
+          :campaign="c"
+          :busy="store.campaignBusyId === c.id"
+          @start="onStartCampaign(c)"
+          @stop="onStopCampaign(c)"
+          @edit="onEditCampaign(c)"
+          @delete="onAskDeleteCampaign(c)"
+        />
+      </div>
+    </section>
+
+    <div class="h-px bg-slate-200/80 dark:bg-slate-800/80" />
+
     <!-- Tabs: Meniki / Boshqalar -->
     <div class="flex gap-2">
       <button
@@ -178,33 +229,11 @@
 
     <div
       v-if="store.schedule?.active"
-      class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/25 p-3 space-y-2"
+      class="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/70 dark:bg-emerald-950/25 px-3 py-2"
     >
-      <div class="flex items-start justify-between gap-2">
-        <div class="min-w-0">
-          <p class="text-[12px] font-black text-amber-700 dark:text-amber-300">
-            Avtomatik yuborish faol
-          </p>
-          <p class="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/80 mt-0.5">
-            Har {{ store.schedule.intervalMin }} daqiqada ·
-            {{ store.schedule.groupIds.length }} guruh
-          </p>
-          <p
-            v-if="store.schedule.lastSent"
-            class="text-[10px] font-semibold text-slate-500 mt-1"
-          >
-            Oxirgi: {{ store.schedule.lastSent }} ta guruhga tushdi
-          </p>
-        </div>
-        <button
-          type="button"
-          class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-rose-600 border border-rose-200 dark:border-rose-900/50"
-          :disabled="store.isScheduleLoading"
-          @click="onStopSchedule"
-        >
-          To'xtatish
-        </button>
-      </div>
+      <p class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
+        «{{ store.schedule.name }}» ishlayapti — har {{ store.schedule.intervalMin }} daqiqada
+      </p>
     </div>
 
     <!-- Fixed send / block -->
@@ -261,7 +290,21 @@
       :count="selectedCount"
       :cost="store.totalCost"
       :loading="store.isSending"
-      @confirm="onSend"
+      :edit-campaign="editCampaign"
+      @once="onSendOnce"
+      @save="onSaveCampaign"
+    />
+
+    <BaseConfirmDialog
+      v-model="deleteCampaignOpen"
+      title="Xabarni o'chirish"
+      :message="deleteCampaignTarget ? `«${deleteCampaignTarget.name}» o'chirilsinmi?` : ''"
+      confirm-text="O'chirish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="!!store.campaignBusyId"
+      @confirm="onConfirmDeleteCampaign"
+      @cancel="deleteCampaignOpen = false"
     />
 
     <PostMembershipDialog
@@ -304,7 +347,7 @@
 </template>
 
 <script setup lang="ts">
-import { usePostStore, type PostGroup, ADS_BROADCAST_PRICE } from '~/stores/post.store'
+import { usePostStore, type PostGroup, type PostCampaign, ADS_BROADCAST_PRICE } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
@@ -324,6 +367,9 @@ const store = usePostStore()
 const authStore = useAuthStore()
 
 const composeOpen = ref(false)
+const editCampaign = ref<PostCampaign | null>(null)
+const deleteCampaignOpen = ref(false)
+const deleteCampaignTarget = ref<PostCampaign | null>(null)
 const blockOpen = ref(false)
 const success = ref('')
 const groupQuery = ref('')
@@ -410,19 +456,12 @@ const toggleSelectAll = () => {
   else store.selectAllVisible(filtered.value)
 }
 
-const onSend = async (payload: { text: string; autoRepeat: boolean; intervalMin: number }) => {
+const onSendOnce = async (text: string) => {
   success.value = ''
   try {
-    if (payload.autoRepeat) {
-      const res = await store.startSchedule(payload.text, payload.intervalMin)
-      composeOpen.value = false
-      success.value =
-        `Avtomatik yuborish yoqildi — har ${payload.intervalMin} daqiqada ${res.data?.groupIds?.length ?? selectedCount.value} guruhga`
-      return
-    }
-
-    const res = await store.broadcast(payload.text)
+    const res = await store.broadcast(text)
     composeOpen.value = false
+    editCampaign.value = null
     const sent = res.data?.sent ?? 0
     const failed = res.data?.failed ?? 0
     const charged = res.data?.charged ?? 0
@@ -434,15 +473,89 @@ const onSend = async (payload: { text: string; autoRepeat: boolean; intervalMin:
       if (charged) success.value += ` · ${charged.toLocaleString('ru-RU')} so'm yechildi`
     }
   } catch {
-    /* error in store */
+    /* store error */
   }
 }
 
-const onStopSchedule = async () => {
+const onSaveCampaign = async (payload: {
+  name: string
+  text: string
+  autoRepeat: boolean
+  intervalMin: number
+}) => {
   success.value = ''
   try {
-    await store.stopSchedule()
-    success.value = 'Avtomatik yuborish to\'xtatildi'
+    if (editCampaign.value?.id) {
+      await store.updateCampaign(editCampaign.value.id, {
+        name: payload.name,
+        text: payload.text,
+        intervalMin: payload.intervalMin,
+        groupIds: [...store.selected],
+      })
+      if (payload.autoRepeat) {
+        await store.startCampaign(editCampaign.value.id)
+      }
+      success.value = payload.autoRepeat
+        ? `«${payload.name}» yangilandi va boshlandi`
+        : `«${payload.name}» yangilandi`
+    } else {
+      await store.createCampaign({
+        name: payload.name,
+        text: payload.text,
+        intervalMin: payload.intervalMin,
+        start: payload.autoRepeat,
+      })
+      success.value = payload.autoRepeat
+        ? `«${payload.name}» saqlandi va boshlandi`
+        : `«${payload.name}» saqlandi`
+    }
+    composeOpen.value = false
+    editCampaign.value = null
+  } catch {
+    /* store error */
+  }
+}
+
+const onStartCampaign = async (c: PostCampaign) => {
+  success.value = ''
+  try {
+    await store.startCampaign(c.id)
+    success.value = `«${c.name}» boshlandi`
+  } catch {
+    /* store error */
+  }
+}
+
+const onStopCampaign = async (c: PostCampaign) => {
+  success.value = ''
+  try {
+    await store.stopCampaign(c.id)
+    success.value = `«${c.name}» to'xtatildi`
+  } catch {
+    /* store error */
+  }
+}
+
+const onEditCampaign = (c: PostCampaign) => {
+  editCampaign.value = c
+  store.selected = new Set(c.groupIds)
+  composeOpen.value = true
+}
+
+const onAskDeleteCampaign = (c: PostCampaign) => {
+  deleteCampaignTarget.value = c
+  deleteCampaignOpen.value = true
+}
+
+const onConfirmDeleteCampaign = async () => {
+  const c = deleteCampaignTarget.value
+  if (!c) return
+  success.value = ''
+  try {
+    await store.deleteCampaign(c.id)
+    deleteCampaignOpen.value = false
+    deleteCampaignTarget.value = null
+    success.value = `«${c.name}» o'chirildi`
   } catch {
     /* store error */
   }
@@ -507,6 +620,10 @@ const onConfirmLeave = async () => {
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
+watch(composeOpen, (open) => {
+  if (!open) editCampaign.value = null
+})
+
 onMounted(async () => {
   if (store.isAdmin) {
     const saved = loadOrderFilterKeywords()
@@ -523,7 +640,7 @@ onMounted(async () => {
     try { await authStore.getMe() } catch { /* ignore */ }
   }
   await store.load()
-  void store.fetchSchedule()
+  void store.fetchCampaigns()
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -548,7 +665,10 @@ onBeforeUnmount(() => {
   if (observer) observer.disconnect()
 })
 
-usePullToRefresh(() => store.load(true))
+usePullToRefresh(async () => {
+  await store.load(true)
+  await store.fetchCampaigns()
+})
 
 watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
