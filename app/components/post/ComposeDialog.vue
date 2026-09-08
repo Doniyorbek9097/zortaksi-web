@@ -37,9 +37,38 @@
               class="mt-4 w-full px-3.5 py-3 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
             />
 
+            <label
+              class="mt-4 flex items-center gap-2.5 cursor-pointer select-none"
+            >
+              <input
+                v-model="autoRepeat"
+                type="checkbox"
+                class="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
+              >
+              <span class="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+                Avtomatik yuborish
+              </span>
+            </label>
+
+            <div v-if="autoRepeat" class="mt-2 space-y-1">
+              <label class="px-1 text-[11px] font-semibold text-slate-500">
+                Har necha daqiqada bir marta
+              </label>
+              <input
+                v-model.number="intervalMin"
+                type="number"
+                min="1"
+                max="1440"
+                class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+              <p class="px-1 text-[10px] text-slate-400">
+                Masalan: 5 — har 5 daqiqada tanlangan guruhlarga yuboriladi
+              </p>
+            </div>
+
             <button
               type="button"
-              :disabled="loading || !text.trim()"
+              :disabled="loading || !text.trim() || (autoRepeat && intervalMin < 1)"
               class="mt-4 w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
               @click="onSend"
             >
@@ -47,7 +76,7 @@
                 :icon="loading ? 'fa-solid fa-spinner' : 'fa-solid fa-paper-plane'"
                 :class="loading ? 'animate-spin' : ''"
               />
-              Yuborish
+              {{ autoRepeat ? 'Avtomatik boshlash' : 'Yuborish' }}
             </button>
           </div>
         </Transition>
@@ -66,22 +95,33 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [boolean]
-  confirm: [text: string]
+  confirm: [payload: { text: string; autoRepeat: boolean; intervalMin: number }]
 }>()
 
 const text = ref('')
+const autoRepeat = ref(false)
+const intervalMin = ref(5)
 
 watch(
   () => props.modelValue,
   open => {
-    if (open) text.value = ''
+    if (open) {
+      text.value = ''
+      autoRepeat.value = false
+      intervalMin.value = 5
+    }
   }
 )
 
 const close = () => emit('update:modelValue', false)
 const onSend = () => {
   if (!text.value.trim()) return
-  emit('confirm', text.value.trim())
+  if (autoRepeat.value && intervalMin.value < 1) return
+  emit('confirm', {
+    text: text.value.trim(),
+    autoRepeat: autoRepeat.value,
+    intervalMin: Math.max(1, Math.round(intervalMin.value || 5)),
+  })
 }
 
 useHistoryBackClose(() => props.modelValue, close, { key: 'ztCompose' })

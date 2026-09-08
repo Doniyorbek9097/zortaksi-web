@@ -27,6 +27,22 @@ export const ADS_BROADCAST_PRICE = 500
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
+export type PostSchedule = {
+  id: string
+  mode: PostTab
+  groupIds: string[]
+  text: string
+  intervalSec: number
+  intervalMin: number
+  active: boolean
+  nextRunAt?: string
+  lastRunAt?: string
+  lastSent?: number
+  lastFailed?: number
+  lastCharged?: number
+  lastError?: string
+}
+
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()
 
@@ -40,6 +56,8 @@ export const usePostStore = defineStore('post', () => {
   const isBlocking = ref(false)
   const joiningId = ref<string | null>(null)
   const error = ref('')
+  const schedule = ref<PostSchedule | null>(null)
+  const isScheduleLoading = ref(false)
 
   const minePage = ref(1)
   const adsPage = ref(1)
@@ -399,6 +417,64 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  const fetchSchedule = async () => {
+    try {
+      isScheduleLoading.value = true
+      const res = await useApi('/groups/broadcast/schedule')
+      if (res.success) {
+        schedule.value = (res.data as PostSchedule | null) || null
+      }
+      return res
+    } catch {
+      schedule.value = null
+      return null
+    } finally {
+      isScheduleLoading.value = false
+    }
+  }
+
+  const startSchedule = async (text: string, intervalMin: number) => {
+    try {
+      isSending.value = true
+      error.value = ''
+      const res = await useApi('/groups/broadcast/schedule', {
+        method: 'POST',
+        body: {
+          mode: tab.value,
+          groupIds: [...selected.value],
+          text,
+          intervalMin,
+        },
+      })
+      if (res.success) {
+        schedule.value = res.data as PostSchedule
+        selected.value = new Set()
+        await authStore.getMe()
+      }
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Avtomatik yuborish yoqilmadi'
+      throw e
+    } finally {
+      isSending.value = false
+    }
+  }
+
+  const stopSchedule = async () => {
+    try {
+      isScheduleLoading.value = true
+      error.value = ''
+      const res = await useApi('/groups/broadcast/schedule', { method: 'DELETE' })
+      if (res.success) schedule.value = null
+      return res
+    } catch (e: any) {
+      error.value = e?.response?.data?.message || 'Avtomatik yuborish to\'xtatilmadi'
+      throw e
+    } finally {
+      isScheduleLoading.value = false
+    }
+  }
+
   /** Admin: tanlangan guruhlarni bloklash */
   const blockGroups = async () => {
     const list = selectedList.value
@@ -459,6 +535,8 @@ export const usePostStore = defineStore('post', () => {
     isBlocking,
     joiningId,
     error,
+    schedule,
+    isScheduleLoading,
     search,
     query,
     isAdmin,
@@ -483,6 +561,9 @@ export const usePostStore = defineStore('post', () => {
     joinGroup,
     leaveGroup,
     broadcast,
+    fetchSchedule,
+    startSchedule,
+    stopSchedule,
     blockGroups,
     releaseTabMemory,
   }

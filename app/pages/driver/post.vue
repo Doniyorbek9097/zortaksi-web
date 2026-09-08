@@ -176,6 +176,37 @@
       {{ success }}
     </p>
 
+    <div
+      v-if="store.schedule?.active"
+      class="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/25 p-3 space-y-2"
+    >
+      <div class="flex items-start justify-between gap-2">
+        <div class="min-w-0">
+          <p class="text-[12px] font-black text-amber-700 dark:text-amber-300">
+            Avtomatik yuborish faol
+          </p>
+          <p class="text-[11px] font-medium text-amber-600/80 dark:text-amber-400/80 mt-0.5">
+            Har {{ store.schedule.intervalMin }} daqiqada ·
+            {{ store.schedule.groupIds.length }} guruh
+          </p>
+          <p
+            v-if="store.schedule.lastSent"
+            class="text-[10px] font-semibold text-slate-500 mt-1"
+          >
+            Oxirgi: {{ store.schedule.lastSent }} ta guruhga tushdi
+          </p>
+        </div>
+        <button
+          type="button"
+          class="shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-rose-600 border border-rose-200 dark:border-rose-900/50"
+          :disabled="store.isScheduleLoading"
+          @click="onStopSchedule"
+        >
+          To'xtatish
+        </button>
+      </div>
+    </div>
+
     <!-- Fixed send / block -->
     <Teleport to="body">
       <div
@@ -379,10 +410,18 @@ const toggleSelectAll = () => {
   else store.selectAllVisible(filtered.value)
 }
 
-const onSend = async (text: string) => {
+const onSend = async (payload: { text: string; autoRepeat: boolean; intervalMin: number }) => {
   success.value = ''
   try {
-    const res = await store.broadcast(text)
+    if (payload.autoRepeat) {
+      const res = await store.startSchedule(payload.text, payload.intervalMin)
+      composeOpen.value = false
+      success.value =
+        `Avtomatik yuborish yoqildi — har ${payload.intervalMin} daqiqada ${res.data?.groupIds?.length ?? selectedCount.value} guruhga`
+      return
+    }
+
+    const res = await store.broadcast(payload.text)
     composeOpen.value = false
     const sent = res.data?.sent ?? 0
     const failed = res.data?.failed ?? 0
@@ -396,6 +435,16 @@ const onSend = async (text: string) => {
     }
   } catch {
     /* error in store */
+  }
+}
+
+const onStopSchedule = async () => {
+  success.value = ''
+  try {
+    await store.stopSchedule()
+    success.value = 'Avtomatik yuborish to\'xtatildi'
+  } catch {
+    /* store error */
   }
 }
 
@@ -474,6 +523,7 @@ onMounted(async () => {
     try { await authStore.getMe() } catch { /* ignore */ }
   }
   await store.load()
+  void store.fetchSchedule()
 
   observer = new IntersectionObserver(
     (entries) => {
