@@ -43,56 +43,43 @@
       @cancel="onCancelFilter"
     />
 
-    <!-- Saqlangan xabarlar -->
-    <section class="space-y-2">
-      <div class="flex items-center justify-between gap-2 px-0.5">
-        <h2 class="text-[12px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
-          Saqlangan xabarlar
-        </h2>
-        <button
-          type="button"
-          class="text-[11px] font-black text-amber-600 dark:text-amber-400"
-          :disabled="store.isCampaignsLoading"
-          @click="store.fetchCampaigns()"
-        >
-          <font-awesome-icon
-            icon="fa-solid fa-rotate"
-            :class="store.isCampaignsLoading ? 'animate-spin' : ''"
-            class="text-[10px]"
+    <!-- Saqlangan xabarlar — faqat bor bo'lsa -->
+    <template v-if="store.campaigns.length">
+      <section class="space-y-2">
+        <div class="flex items-center justify-between gap-2 px-0.5">
+          <h2 class="text-[12px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+            Saqlangan xabarlar
+          </h2>
+          <button
+            type="button"
+            class="text-[11px] font-black text-amber-600 dark:text-amber-400"
+            :disabled="store.isCampaignsLoading"
+            @click="store.fetchCampaigns()"
+          >
+            <font-awesome-icon
+              icon="fa-solid fa-rotate"
+              :class="store.isCampaignsLoading ? 'animate-spin' : ''"
+              class="text-[10px]"
+            />
+          </button>
+        </div>
+
+        <div class="space-y-2">
+          <PostCampaignCard
+            v-for="c in store.campaigns"
+            :key="c.id"
+            :campaign="c"
+            :busy="store.campaignBusyId === c.id"
+            @start="onStartCampaign(c)"
+            @stop="onStopCampaign(c)"
+            @edit="onEditCampaign(c)"
+            @delete="onAskDeleteCampaign(c)"
           />
-        </button>
-      </div>
+        </div>
+      </section>
 
-      <div v-if="store.isCampaignsLoading && !store.campaigns.length" class="space-y-2">
-        <div
-          v-for="n in 2"
-          :key="n"
-          class="h-24 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
-        />
-      </div>
-
-      <BaseEmptyState
-        v-else-if="!store.campaigns.length"
-        icon="fa-solid fa-message"
-        title="Saqlangan xabar yo'q"
-        tone="slate"
-      />
-
-      <div v-else class="space-y-2">
-        <PostCampaignCard
-          v-for="c in store.campaigns"
-          :key="c.id"
-          :campaign="c"
-          :busy="store.campaignBusyId === c.id"
-          @start="onStartCampaign(c)"
-          @stop="onStopCampaign(c)"
-          @edit="onEditCampaign(c)"
-          @delete="onAskDeleteCampaign(c)"
-        />
-      </div>
-    </section>
-
-    <div class="h-px bg-slate-200/80 dark:bg-slate-800/80" />
+      <div class="h-px bg-slate-200/80 dark:bg-slate-800/80" />
+    </template>
 
     <!-- Tabs: Meniki / Boshqalar -->
     <div class="flex gap-2">
@@ -228,7 +215,7 @@
     </p>
 
     <div
-      v-if="store.schedule?.active"
+      v-if="store.schedule?.active && !store.campaigns.length"
       class="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/70 dark:bg-emerald-950/25 px-3 py-2"
     >
       <p class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
