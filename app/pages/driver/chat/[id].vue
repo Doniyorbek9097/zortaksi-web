@@ -217,12 +217,12 @@
     </div>
 
     <!-- O'z hisob ishlamadi — faqat ulanish tugagach -->
-    <div v-else-if="CHAT_PROXY_CONNECT_ENABLED && needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
+    <div v-else-if="CHAT_PROXY_CONNECT_ENABLED && isAdmin && needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
       <div class="px-3 pb-2">
         <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
           <p>
             <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-            {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Admin userbot orqali bog'lanishga ruxsat berasizmi?" }}
+            {{ connReason || "O'z hisobingiz orqali ulanib bo'lmadi. Tinglovchi userbot orqali bog'lanib ko'ring." }}
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
@@ -232,7 +232,7 @@
               @click="confirmProxyConnect"
             >
               <font-awesome-icon icon="fa-solid fa-route" />
-              {{ proxyConnecting ? 'Ulanmoqda...' : "Admin userbot orqali bog'lanish" }}
+              {{ proxyConnecting ? 'Ulanmoqda...' : "Tinglovchi userbot orqali bog'lanish" }}
             </button>
             <button
               type="button"
@@ -379,6 +379,7 @@ import { replyTargetFromMessage } from '~/utils/messageReplyPreview'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
+import { DRIVER_ORDER_CONNECT_FAIL } from '~/stores/chat/actions/connection'
 import { formatChatDateLabel } from '~/utils/chatDate'
 import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
@@ -744,7 +745,23 @@ const composerDisabled = computed(
 )
 
 const composerPlaceholder = computed(() => {
-  if (!hasRealChatId.value || composerBusy.value) return 'Ulanmoqda...'
+  if (!hasRealChatId.value || composerBusy.value) {
+    return isOrderSenderChat.value ? 'Tekshirilmoqda...' : 'Ulanmoqda...'
+  }
+  if (isOrderSenderChat.value && needsTelegramConnect.value && !hasPeerLink.value) {
+    if (!isAdmin.value && (conn.value === 'unreachable' || conn.value === 'proxy-required')) {
+      return DRIVER_ORDER_CONNECT_FAIL
+    }
+    if (isAdmin.value && conn.value === 'proxy-required') {
+      return "Tinglovchi userbot orqali bog'lanib ko'ring"
+    }
+    if (isAdmin.value && conn.value === 'unreachable') {
+      return connReason.value || "Ulanib bo'lmadi"
+    }
+    if (conn.value === 'connecting' || conn.value === 'idle') {
+      return 'Tekshirilmoqda...'
+    }
+  }
   if (
     needsTelegramConnect.value &&
     (conn.value === 'connecting' || conn.value === 'idle') &&
@@ -752,10 +769,13 @@ const composerPlaceholder = computed(() => {
   ) {
     return 'Telegram ulanmoqda...'
   }
-  if (conn.value === 'proxy-required') {
-    return "Proksi orqali ulanish tavsiya etiladi"
+  if (conn.value === 'proxy-required' && isAdmin.value) {
+    return "Tinglovchi userbot orqali bog'lanib ko'ring"
   }
   if (conn.value === 'unreachable') {
+    if (isOrderSenderChat.value && !isAdmin.value) {
+      return DRIVER_ORDER_CONNECT_FAIL
+    }
     return callPhone.value
       ? 'Ulanib bo\'lmadi — telefon qiling'
       : "Telegram orqali ulanib bo'lmadi"

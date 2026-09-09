@@ -2,10 +2,14 @@ import type { Socket } from 'socket.io-client'
 import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
+import { useAuthStore } from '~/stores/auth.store'
+import { isAdminUser } from '~/utils/userRole'
 
 const CONNECT_TIMEOUT_MS = 45000
-/** Order chat — o'z hisob tez ulanish (proksi taklifidan oldin) */
-const ORDER_CONNECT_TIMEOUT_MS = 15000
+/** Order chat — tez javob (haydovchi kutmasin) */
+const ORDER_CONNECT_TIMEOUT_MS = 6000
+export const DRIVER_ORDER_CONNECT_FAIL =
+    "Bu buyurtma bilan ulanib bo'lmadi. Admindan yordam so'rang."
 const SOCKET_WAIT_MS = 600
 
 type ConnectAck = {
@@ -260,8 +264,14 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const chat = findChatById(chatId)
         let next = (data.status || 'unreachable') as ConnStatus
+        let reason = data.reason ?? ''
         if (!CHAT_PROXY_CONNECT_ENABLED && next === 'proxy-required') {
             next = 'unreachable'
+        }
+        const authStore = useAuthStore()
+        if (!isAdminUser(authStore.user) && next === 'proxy-required') {
+            next = 'unreachable'
+            reason = DRIVER_ORDER_CONNECT_FAIL
         }
 
         // Socket/HTTP: tayyor holatni keyinroq unreachable bilan buzmaymiz
@@ -274,7 +284,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
 
         connectionStatus.value = next
-        connectionReason.value = data.reason ?? ''
+        connectionReason.value = reason
     }
 
     /** Suhbatdosh onlayn / oxirgi kirishni yuklash */
@@ -505,6 +515,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
         if (!isRelevant) return
+        const authStore = useAuthStore()
+        if (!isAdminUser(authStore.user)) {
+            connectionStatus.value = 'unreachable'
+            connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
+            return
+        }
         if (!CHAT_PROXY_CONNECT_ENABLED) {
             connectionStatus.value = 'unreachable'
             connectionReason.value =
@@ -514,7 +530,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         connectionStatus.value = 'proxy-required'
         connectionReason.value =
             reason?.trim() ||
-            "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?"
+            "O'z hisobingiz orqali ulanib bo'lmadi. Tinglovchi userbot orqali bog'lanib ko'ring."
     }
 
     return {
