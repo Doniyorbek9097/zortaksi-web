@@ -286,19 +286,21 @@
           </p>
         </div>
       </div>
-      <ChatCallBar
-        v-if="callPhone && callTelHref"
-        :href="callTelHref"
-      />
-      <div v-else class="px-3 pb-2">
-        <button
-          type="button"
-          class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          @click="goOrders"
-        >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-        </button>
-      </div>
+      <template v-if="!hideBottomOnConnectFail">
+        <ChatCallBar
+          v-if="callPhone && callTelHref"
+          :href="callTelHref"
+        />
+        <div v-else class="px-3 pb-2">
+          <button
+            type="button"
+            class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
+            @click="goOrders"
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+          </button>
+        </div>
+      </template>
     </div>
 
     <!-- Tanlangan xabarlarni o'chirish -->
@@ -318,7 +320,7 @@
     />
 
     <ChatComposer
-      v-if="showComposer && !selectionMode"
+      v-if="showComposer && !hideBottomOnConnectFail && !selectionMode"
       v-model="draft"
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
@@ -726,6 +728,15 @@ const composerBusy = computed(
   () => isOpening.value && !composerLikelyReady.value && !hasInstantContext.value,
 )
 
+/** Buyurtma chat — haydovchi ulanib bo'lmasa pastki qism (qo'ng'iroq + input) yashirin */
+const hideBottomOnConnectFail = computed(
+  () =>
+    isOrderSenderChat.value &&
+    !isAdmin.value &&
+    needsTelegramConnect.value &&
+    conn.value === 'unreachable',
+)
+
 const showComposer = computed(
   () =>
     !openFailed.value &&
@@ -746,7 +757,7 @@ const composerDisabled = computed(
 
 const composerPlaceholder = computed(() => {
   if (!hasRealChatId.value || composerBusy.value) {
-    return isOrderSenderChat.value ? 'Tekshirilmoqda...' : 'Ulanmoqda...'
+    return 'Ulanmoqda...'
   }
   if (isOrderSenderChat.value && needsTelegramConnect.value && !hasPeerLink.value) {
     if (!isAdmin.value && (conn.value === 'unreachable' || conn.value === 'proxy-required')) {
@@ -759,7 +770,7 @@ const composerPlaceholder = computed(() => {
       return connReason.value || "Ulanib bo'lmadi"
     }
     if (conn.value === 'connecting' || conn.value === 'idle') {
-      return 'Tekshirilmoqda...'
+      return 'Ulanmoqda...'
     }
   }
   if (
