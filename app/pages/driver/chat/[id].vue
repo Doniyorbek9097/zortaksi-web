@@ -222,7 +222,7 @@
         <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
           <p>
             <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-            {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozishga ruxsat berasizmi?" }}
+            {{ connReason || "O'z hisobingiz orqali yozib bo'lmadi. Admin userbot orqali bog'lanishga ruxsat berasizmi?" }}
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
@@ -232,7 +232,7 @@
               @click="confirmProxyConnect"
             >
               <font-awesome-icon icon="fa-solid fa-route" />
-              {{ proxyConnecting ? 'Ulanmoqda...' : "Proksi orqali bog'lanib ko'rish" }}
+              {{ proxyConnecting ? 'Ulanmoqda...' : "Admin userbot orqali bog'lanish" }}
             </button>
             <button
               type="button"
