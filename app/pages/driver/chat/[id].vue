@@ -752,7 +752,10 @@ const showComposer = computed(
 )
 
 const composerDisabled = computed(
-  () => !hasRealChatId.value || composerBusy.value,
+  () =>
+    !hasRealChatId.value ||
+    composerBusy.value ||
+    (!isInAppChat.value && !canSendTelegram.value),
 )
 
 const composerPlaceholder = computed(() => {
