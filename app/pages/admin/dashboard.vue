@@ -12,7 +12,9 @@
         <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
           {{ greeting }}, {{ firstName }}!
         </p>
-        <LiveDateTimeLabel :text="liveDateTimeLabel" />
+        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+          {{ liveDateTimeLabel }}
+        </p>
       </div>
     </div>
 
@@ -200,7 +202,7 @@ const GROUP_INVITE_CACHE_KEY = 'zt:admin-group-invite-lb'
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
 
-const { label: liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
+const { liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 
 const monthIncome = computed(() => store.monthIncome)
 const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payments: 0, total: 0 })
