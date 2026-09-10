@@ -23,12 +23,12 @@ const WEEKDAYS_UZ = [
   'shanba',
 ]
 
-/** 🗓️10 - sentyabr payshanba ⌚07:00 */
+/** 10 - sentyabr payshanba ⌚07:00 */
 export function formatLiveDateTimeLabel(date: Date): string {
   const day = date.getDate()
   const month = MONTHS_UZ[date.getMonth()] || ''
   const weekday = WEEKDAYS_UZ[date.getDay()] || ''
   const hh = String(date.getHours()).padStart(2, '0')
   const mm = String(date.getMinutes()).padStart(2, '0')
-  return `🗓️${day} - ${month} ${weekday} ⌚${hh}:${mm}`
+  return `${day} - ${month} ${weekday} ⌚${hh}:${mm}`
 }
