@@ -5,7 +5,7 @@
         <slot />
       </div>
     </BasePullToRefresh>
-    <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin -->
+    <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin! -->
     <AdminBottomNavigation />
   </AuthSessionGate>
 </template>
