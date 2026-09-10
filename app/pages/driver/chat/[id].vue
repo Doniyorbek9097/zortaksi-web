@@ -14,7 +14,11 @@
       :clearing="isClearingHistory"
       @back="goBack"
       @clear="openClearHistoryDialog"
-    />
+    >
+      <template v-if="callPhone && callTelHref" #actions>
+        <ChatCallBar :href="callTelHref" class="!mb-0" />
+      </template>
+    </ChatHeader>
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -66,9 +70,6 @@
               <font-awesome-icon icon="fa-brands fa-telegram" />
               Telegram orqali
             </a>
-          </div>
-          <div v-if="callTelHref" class="w-full max-w-xs mx-auto mt-2">
-            <ChatCallBar :href="callTelHref" compact class="!mb-0" />
           </div>
         </div>
       </div>
@@ -244,11 +245,6 @@
           </div>
         </div>
       </div>
-      <ChatCallBar
-        v-if="callPhone && callTelHref"
-        :href="callTelHref"
-        label="Telefon orqali bog'laning"
-      />
     </div>
 
     <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl">
@@ -260,11 +256,7 @@
           </p>
         </div>
       </div>
-      <ChatCallBar
-        v-if="callPhone && callTelHref"
-        :href="callTelHref"
-      />
-      <div v-else class="px-3 pb-2">
+      <div v-if="!callPhone" class="px-3 pb-2">
         <button
           type="button"
           class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-amber-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
@@ -286,21 +278,15 @@
           </p>
         </div>
       </div>
-      <template v-if="!hideBottomOnConnectFail">
-        <ChatCallBar
-          v-if="callPhone && callTelHref"
-          :href="callTelHref"
-        />
-        <div v-else class="px-3 pb-2">
-          <button
-            type="button"
-            class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
-            @click="goOrders"
-          >
-            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-          </button>
-        </div>
-      </template>
+      <div v-if="!hideBottomOnConnectFail && !callPhone" class="px-3 pb-2">
+        <button
+          type="button"
+          class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
+          @click="goOrders"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+        </button>
+      </div>
     </div>
 
     <!-- Tanlangan xabarlarni o'chirish -->
@@ -325,7 +311,6 @@
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
       :slash-commands="adminSlashCommands"
-      :call-href="callPhone && callTelHref ? callTelHref : ''"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
