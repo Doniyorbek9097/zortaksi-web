@@ -1,4 +1,5 @@
 import { formatLiveDateTimeLabel } from '~/utils/liveDateTime'
+import { isFlutterWebView } from '~/utils/appEmbed'
 
 function resolveGreeting(date: Date): string {
   const h = date.getHours()
@@ -9,7 +10,10 @@ function resolveGreeting(date: Date): string {
 }
 
 /** Dashboard salomlashish ostidagi jonli sana/vaqt */
-export function useLiveDateTime(updateMs = 1000) {
+export function useLiveDateTime(updateMs?: number) {
+  const intervalMs =
+    updateMs ??
+    (import.meta.client && isFlutterWebView() ? 30_000 : 1000)
   const now = useState('live-date-time', () => new Date())
 
   const liveDateTimeLabel = computed(() => formatLiveDateTimeLabel(now.value))
@@ -25,7 +29,7 @@ export function useLiveDateTime(updateMs = 1000) {
   if (import.meta.client) {
     onMounted(() => {
       tick()
-      timer = setInterval(tick, updateMs)
+      timer = setInterval(tick, intervalMs)
     })
     onUnmounted(() => {
       if (timer) clearInterval(timer)

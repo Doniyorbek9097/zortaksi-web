@@ -16,6 +16,7 @@ import {
   clearMediaCachesOnly,
 } from '~/utils/mediaCacheReady'
 import { MAX_MEDIA_BLOB_CACHE } from '~/utils/memoryBudget'
+import { isFlutterWebView } from '~/utils/appEmbed'
 import { agentDebugLog } from '~/utils/agentDebugLog'
 import { api } from '~/config/axios'
 import { getAuthCookieOptions } from '~/utils/authCookie'
@@ -49,7 +50,10 @@ export type MediaOpenLinkResult = {
   expiresInSec?: number
 }
 
-const MAX_MEMORY_ENTRIES = MAX_MEDIA_BLOB_CACHE
+function maxMediaCacheEntries(): number {
+  if (import.meta.client && isFlutterWebView()) return 24
+  return MAX_MEDIA_BLOB_CACHE
+}
 /** Sessiya blob URL — barcha bubble lar ulashadi, unmount da revoke qilinmaydi */
 const cache = new Map<string, string>()
 const cacheMediaPath = new Map<string, string>()
@@ -78,7 +82,7 @@ function touchCacheOrder(id: string) {
   const i = cacheOrder.indexOf(id)
   if (i >= 0) cacheOrder.splice(i, 1)
   cacheOrder.push(id)
-  while (cacheOrder.length > MAX_MEMORY_ENTRIES) {
+  while (cacheOrder.length > maxMediaCacheEntries()) {
     let evicted = false
     for (let j = 0; j < cacheOrder.length; j++) {
       const victim = cacheOrder[j]

@@ -73,6 +73,12 @@ export function applyBrowserChrome(value: ThemeName) {
   } catch {
     /* */
   }
+
+  // Flutter WebView — og'ir DOM observer o'rniga to'g'ridan-to'g'ri bridge
+  void import('~/utils/flutterChromeBridge').then(({ notifyFlutterChrome, readTabbarChromeColor }) => {
+    const nav = readTabbarChromeColor()
+    notifyFlutterChrome({ mode: value, status: color, nav: nav ?? color })
+  })
 }
 
 export const useTheme = () => {
