@@ -8,9 +8,12 @@
         class="text-xs shrink-0"
         :class="isNight ? 'text-indigo-400' : 'text-amber-500'"
       />
-      <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
-        {{ greeting }}, {{ firstName }}!
-      </p>
+      <div class="min-w-0">
+        <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
+          {{ greeting }}, {{ firstName }}!
+        </p>
+        <LiveDateTimeLabel :text="liveDateTimeLabel" />
+      </div>
     </div>
 
     <AdminIncomeCard
@@ -197,15 +200,7 @@ const GROUP_INVITE_CACHE_KEY = 'zt:admin-group-invite-lb'
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
 
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6) return 'Xayrli tun'
-  if (h < 12) return 'Xayrli tong'
-  if (h < 18) return 'Xayrli kun'
-  return 'Xayrli kech'
-})
-
-const isNight = computed(() => /tun|kech/i.test(greeting.value))
+const { label: liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 
 const monthIncome = computed(() => store.monthIncome)
 const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payments: 0, total: 0 })

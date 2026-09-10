@@ -17,9 +17,7 @@
         <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">
           {{ greeting }}, {{ firstName }}!
         </p>
-        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-          Haydovchi paneli
-        </p>
+        <LiveDateTimeLabel :text="liveDateTimeLabel" />
       </div>
     </div>
 
@@ -198,16 +196,7 @@ const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
   }
 }
 
-// --- Greeting based on hour ---
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6) return 'Xayrli tun'
-  if (h < 12) return 'Xayrli tong'
-  if (h < 18) return 'Xayrli kun'
-  return 'Xayrli kech'
-})
-
-const isNight = computed(() => /tun|kech/i.test(greeting.value))
+const { label: liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 
 // --- Tariff card data ---
 const formatDate = (value?: string | Date) => {
