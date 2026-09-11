@@ -28,6 +28,10 @@ export interface RegionDriverStat {
   title: string
   count: number
   active: number
+  income?: number
+  incomePayments?: number
+  monthIncome?: number
+  monthIncomePayments?: number
 }
 
 export interface RegionIncomeSeries {
