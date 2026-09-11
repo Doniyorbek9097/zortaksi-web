@@ -123,6 +123,28 @@ export function playChatSound() {
   tone(ctx, { frequency: 980, start: t + 0.11, duration: 0.12, volume: 0.14, type: 'sine' })
 }
 
+/** Chatlar ro'yxatida yangi xabar — yumshoq uch notali chime */
+export function playChatsInboxSound() {
+  if (!import.meta.client || !canPlay(450)) return
+  const ctx = getCtx()
+  if (!ctx) return
+  const t = ctx.currentTime
+  const notes = [
+    { frequency: 523.25, start: 0, duration: 0.22, volume: 0.11, type: 'sine' as OscillatorType },
+    { frequency: 659.25, start: 0.09, duration: 0.22, volume: 0.1, type: 'sine' as OscillatorType },
+    { frequency: 783.99, start: 0.18, duration: 0.3, volume: 0.09, type: 'triangle' as OscillatorType },
+  ]
+  for (const note of notes) {
+    tone(ctx, {
+      frequency: note.frequency,
+      start: t + note.start,
+      duration: note.duration,
+      volume: note.volume,
+      type: note.type,
+    })
+  }
+}
+
 /** Profil toggle + ovoz API */
 export function useNotifySound() {
   if (import.meta.client) {
@@ -144,6 +166,7 @@ export function useNotifySound() {
     setNotifySoundEnabled,
     playOrderSound,
     playChatSound,
+    playChatsInboxSound,
     unlockNotifySound,
   }
 }

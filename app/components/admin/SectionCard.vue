@@ -9,9 +9,17 @@
         >
           <font-awesome-icon :icon="icon" />
         </span>
-        <h3 class="text-[12px] font-black text-slate-700 dark:text-slate-200">
-          {{ title }}
-        </h3>
+        <div class="min-w-0">
+          <h3 class="text-[12px] font-black text-slate-700 dark:text-slate-200">
+            {{ title }}
+          </h3>
+          <p
+            v-if="headerSubtitle"
+            class="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate"
+          >
+            {{ headerSubtitle }}
+          </p>
+        </div>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <span
@@ -38,11 +46,13 @@ const props = withDefaults(defineProps<{
   icon?: string
   iconTone?: IconTone
   headerValue?: string
+  headerSubtitle?: string
 }>(), {
   noPadding: false,
   icon: '',
   iconTone: 'sky',
   headerValue: '',
+  headerSubtitle: '',
 })
 
 const toneMap: Record<IconTone, string> = {

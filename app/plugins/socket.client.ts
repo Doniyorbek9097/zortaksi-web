@@ -2,7 +2,12 @@ import { io, type Socket } from 'socket.io-client'
 import { useChatStore } from '~/stores/chat.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
-import { playChatSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
+import { playChatSound, playChatsInboxSound, playOrderSound, unlockNotifySound } from '~/composables/useNotifySound'
+
+function isOnChatsListPage() {
+  if (!import.meta.client) return false
+  return /\/driver\/chats\/?$/.test(window.location.pathname)
+}
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 import { debounce } from '~/utils/debounce'
@@ -100,7 +105,10 @@ export default defineNuxtPlugin(() => {
 
     socket.on('message:new', (msg) => {
       chatStore.onNewMessage(msg)
-      if (msg?.direction === 'in') playChatSound()
+      if (msg?.direction === 'in') {
+        if (isOnChatsListPage()) playChatsInboxSound()
+        else playChatSound()
+      }
     })
     socket.on('message:update', (msg) => chatStore.onMessageUpdate(msg))
     socket.on('chat:update', (chat) => chatStore.onChatUpdate(chat))

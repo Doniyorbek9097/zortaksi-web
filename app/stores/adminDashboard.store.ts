@@ -30,6 +30,8 @@ export interface RegionDriverStat {
   active: number
   income?: number
   incomePayments?: number
+  monthIncome?: number
+  monthIncomePayments?: number
 }
 
 export interface TariffStatItem {

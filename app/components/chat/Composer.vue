@@ -59,12 +59,15 @@
       <div v-else class="relative">
         <div
           v-if="showSlashMenu"
-          class="absolute bottom-full left-0 right-0 mb-1.5 z-40 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden max-h-[min(52vh,280px)]"
+          class="absolute bottom-full left-0 right-0 mb-1.5 z-40 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden max-h-[min(70vh,420px)]"
         >
           <p class="px-3 py-2 text-[10px] font-black uppercase tracking-wide text-slate-400 border-b border-slate-100 dark:border-slate-800">
             Admin komandalar
+            <span v-if="slashPickerMode" class="ml-1 normal-case font-bold text-slate-300">
+              ({{ filteredSlashCommands.length }})
+            </span>
           </p>
-          <ul v-if="filteredSlashCommands.length" class="overflow-y-auto max-h-[min(48vh,248px)]">
+          <ul v-if="filteredSlashCommands.length" class="overflow-y-auto overscroll-contain max-h-[min(66vh,380px)]">
             <li
               v-for="(item, idx) in filteredSlashCommands"
               :key="`${item.cmd}-${idx}`"
@@ -125,6 +128,7 @@
               : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200/80 dark:border-slate-600 hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
             aria-label="Admin komandalar"
             :aria-expanded="slashMenuOpen"
+            @mousedown.prevent
             @click="toggleSlashMenu"
           >
             /
@@ -243,8 +247,12 @@ const { keyboardOpen, scheduleMeasure } = useMobileKeyboardOpen()
 const showCallBar = computed(() => Boolean(props.callHref) && !keyboardOpen.value)
 const slashMenuOpen = ref(false)
 const slashHighlight = ref(0)
+/** / tugmasi orqali ochilganda klaviatura chiqmasin, barcha komandalar ko'rinsin */
+const slashPickerMode = ref(false)
 
 const hasSlashCommands = computed(() => (props.slashCommands?.length ?? 0) > 0)
+
+const slashCommandLimit = computed(() => (slashPickerMode.value ? Infinity : 20))
 
 const filteredSlashCommands = computed(() => {
   const list = props.slashCommands ?? []
@@ -252,11 +260,12 @@ const filteredSlashCommands = computed(() => {
 
   const raw = text.value
   const q = raw.trim().toLowerCase()
+  const limit = slashCommandLimit.value
 
-  if (!q || q === '/') return list.slice(0, 20)
+  if (!q || q === '/') return list.slice(0, limit)
 
   if (q.startsWith('/')) {
-    return list.filter((item) => item.cmd.toLowerCase().startsWith(q)).slice(0, 20)
+    return list.filter((item) => item.cmd.toLowerCase().startsWith(q)).slice(0, limit)
   }
 
   return list
@@ -265,7 +274,7 @@ const filteredSlashCommands = computed(() => {
         item.cmd.toLowerCase().includes(q) ||
         item.label.toLowerCase().includes(q),
     )
-    .slice(0, 20)
+    .slice(0, limit)
 })
 
 const showSlashMenu = computed(
@@ -284,11 +293,11 @@ watch(filteredSlashCommands, (list) => {
 const closeSlashMenu = () => {
   slashMenuOpen.value = false
   slashHighlight.value = 0
+  slashPickerMode.value = false
 }
 
 const toggleSlashMenu = () => {
   if (props.disabled || !hasSlashCommands.value) return
-  unlockDraft()
   if (slashMenuOpen.value && text.value === '/') {
     closeSlashMenu()
     text.value = ''
@@ -297,15 +306,22 @@ const toggleSlashMenu = () => {
   if (!text.value.startsWith('/')) {
     text.value = '/' + text.value.replace(/^\/+/, '')
   }
+  slashPickerMode.value = true
   slashMenuOpen.value = true
   slashHighlight.value = 0
-  nextTick(() => textInput.value?.focus())
+  nextTick(() => {
+    textInput.value?.blur()
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+  })
 }
 
 const onTextInput = () => {
   if (!hasSlashCommands.value) return
   if (text.value.startsWith('/')) {
     slashMenuOpen.value = true
+    if (text.value.length > 1) slashPickerMode.value = false
   } else {
     closeSlashMenu()
   }
@@ -348,6 +364,7 @@ const unlockDraft = () => {
 
 const onInputFocus = () => {
   unlockDraft()
+  slashPickerMode.value = false
   scheduleMeasure()
 }
 

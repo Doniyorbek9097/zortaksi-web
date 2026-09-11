@@ -17,7 +17,7 @@
         <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">
           {{ greeting }}, {{ firstName }}!
         </p>
-        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+        <p class="text-[13px] font-bold tabular-nums text-slate-600 dark:text-slate-300 truncate">
           {{ liveDateTimeLabel }}
         </p>
       </div>

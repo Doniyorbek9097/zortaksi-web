@@ -12,7 +12,7 @@
         <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
           {{ greeting }}, {{ firstName }}!
         </p>
-        <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 truncate">
+        <p class="text-[13px] font-bold tabular-nums text-slate-600 dark:text-slate-300 truncate">
           {{ liveDateTimeLabel }}
         </p>
       </div>
@@ -125,6 +125,7 @@
       icon="fa-solid fa-location-dot"
       icon-tone="amber"
       :header-value="regionHeaderValue"
+      header-subtitle="Guruhlar bo'yicha oylik daromad"
     >
       <AdminRegionBarList :items="regionDrivers.slice(0, 6)" />
     </AdminSectionCard>
@@ -254,11 +255,19 @@ const regionDrivers = computed(() => store.data?.regionDrivers ?? [])
 const regionTotalDrivers = computed(() =>
   regionDrivers.value.reduce((sum, r) => sum + r.count, 0)
 )
-const regionHeaderValue = computed(() =>
-  regionTotalDrivers.value > 0
-    ? `${regionTotalDrivers.value.toLocaleString('ru-RU')} jami`
-    : ''
+const regionMonthIncome = computed(() =>
+  regionDrivers.value.reduce((sum, r) => sum + (Number(r.monthIncome) || 0), 0)
 )
+const regionHeaderValue = computed(() => {
+  const parts: string[] = []
+  if (regionMonthIncome.value > 0) {
+    parts.push(`${regionMonthIncome.value.toLocaleString('ru-RU')} so'm / oy`)
+  }
+  if (regionTotalDrivers.value > 0) {
+    parts.push(`${regionTotalDrivers.value.toLocaleString('ru-RU')} haydovchi`)
+  }
+  return parts.join(' · ')
+})
 
 const tariffTab = ref('month')
 const tariffTabs = [
