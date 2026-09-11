@@ -121,11 +121,20 @@
               <p class="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">
                 {{ region.title }}
               </p>
-              <p class="text-[12px] font-black tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
+              <p class="text-[10px] font-bold tabular-nums text-slate-500 dark:text-slate-400 mt-0.5">
+                <span>{{ formatCount(region.count) }} a'zo</span>
+                <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
+                <span class="text-sky-600 dark:text-sky-400">{{ formatCount(region.active) }} faol</span>
+              </p>
+              <p class="text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
+                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mr-1">Shu oy</span>
                 {{ formatAmount(region.amount) }}
               </p>
+              <p class="text-[10px] font-semibold tabular-nums text-slate-400 dark:text-slate-500 mt-0.5">
+                Jami {{ formatAmount(region.totalIncome ?? 0) }}
+              </p>
             </div>
-            <span class="text-[10px] font-black tabular-nums text-slate-400 shrink-0">
+            <span class="text-[10px] font-black tabular-nums text-slate-400 shrink-0 self-start mt-0.5">
               {{ region.share }}%
             </span>
           </div>
@@ -150,6 +159,10 @@ export interface RegionIncomeSeries {
   title: string
   amounts: number[]
   payments?: number[]
+  count?: number
+  active?: number
+  totalIncome?: number
+  totalIncomePayments?: number
 }
 
 export interface RegionIncomeChartData {
@@ -187,10 +200,7 @@ const regionsWithColor = computed(() =>
   })),
 )
 
-const isEmpty = computed(() => {
-  if (!regions.value.length) return true
-  return regions.value.every((r) => r.amounts.every((v) => v === 0))
-})
+const isEmpty = computed(() => !regions.value.length)
 
 const globalMax = computed(() => {
   const vals = regions.value.flatMap((r) => r.amounts)
@@ -339,4 +349,6 @@ const dots = computed(() =>
 
 const formatAmount = (value: number) =>
   `${(Number(value) || 0).toLocaleString('ru-RU')} so'm`
+
+const formatCount = (value?: number) => (Number(value) || 0).toLocaleString('ru-RU')
 </script>

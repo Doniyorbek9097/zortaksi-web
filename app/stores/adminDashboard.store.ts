@@ -23,22 +23,15 @@ export interface ChartMonth {
   newDrivers: number
 }
 
-export interface RegionDriverStat {
-  slug: string
-  title: string
-  count: number
-  active: number
-  income?: number
-  incomePayments?: number
-  monthIncome?: number
-  monthIncomePayments?: number
-}
-
 export interface RegionIncomeSeries {
   slug: string
   title: string
   amounts: number[]
   payments?: number[]
+  count?: number
+  active?: number
+  totalIncome?: number
+  totalIncomePayments?: number
 }
 
 export interface RegionIncomeChart {
@@ -104,7 +97,6 @@ export interface AdminDashboardData {
   tariffStats?: TariffStatsBlock
   chart: ChartMonth[]
   incomeDailyChart?: ChartMonth[]
-  regionDrivers?: RegionDriverStat[]
   regionIncomeChart?: RegionIncomeChart
   growth?: DashboardGrowth
 }

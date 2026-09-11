@@ -119,16 +119,6 @@
       </template>
     </section>
 
-    <!-- Yo'nalishlar -->
-    <AdminSectionCard
-      title="Yo'nalishlar"
-      icon="fa-solid fa-location-dot"
-      icon-tone="amber"
-      :header-value="regionHeaderValue"
-    >
-      <AdminRegionBarList :items="regionDrivers.slice(0, 6)" />
-    </AdminSectionCard>
-
     <!-- Guruhlar daromadi -->
     <AdminSectionCard
       title="Guruhlar daromadi"
@@ -258,24 +248,6 @@ const chipStats = computed(() => {
     debtors: num(s?.debtorDrivers),
     visits: num(s?.visitsToday),
   }
-})
-
-const regionDrivers = computed(() => store.data?.regionDrivers ?? [])
-const regionTotalDrivers = computed(() =>
-  regionDrivers.value.reduce((sum, r) => sum + r.count, 0)
-)
-const regionMonthIncome = computed(() =>
-  regionDrivers.value.reduce((sum, r) => sum + (Number(r.monthIncome) || 0), 0)
-)
-const regionHeaderValue = computed(() => {
-  const parts: string[] = []
-  if (regionMonthIncome.value > 0) {
-    parts.push(`${regionMonthIncome.value.toLocaleString('ru-RU')} so'm / oy`)
-  }
-  if (regionTotalDrivers.value > 0) {
-    parts.push(`${regionTotalDrivers.value.toLocaleString('ru-RU')} haydovchi`)
-  }
-  return parts.join(' · ')
 })
 
 const regionIncomeChart = computed(() => store.data?.regionIncomeChart ?? null)
