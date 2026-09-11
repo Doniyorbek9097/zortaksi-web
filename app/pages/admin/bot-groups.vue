@@ -128,8 +128,8 @@ const emptyForm = (): BotGroupFormModel => ({
   active: true,
   postOrdersToPublic: true,
   groupInviteRewardAmount: 500,
-  public: { username: '' },
-  private: { inviteLink: '' },
+  public: { telegramChatId: '' },
+  private: { telegramChatId: '' },
 })
 
 const form = ref<BotGroupFormModel>(emptyForm())
@@ -175,10 +175,10 @@ const onSubmit = async () => {
     postOrdersToPublic: form.value.postOrdersToPublic,
     groupInviteRewardAmount: form.value.groupInviteRewardAmount,
     public: {
-      username: form.value.public.username.trim(),
+      telegramChatId: form.value.public.telegramChatId.trim(),
     },
     private: {
-      inviteLink: form.value.private.inviteLink.trim(),
+      telegramChatId: form.value.private.telegramChatId.trim(),
     },
   }
 
@@ -190,10 +190,10 @@ const onSubmit = async () => {
         error.value = 'Bot token kiriting'
         return
       }
-      const hasPublic = !!payload.public.username
-      const hasPrivate = !!payload.private.inviteLink
+      const hasPublic = !!payload.public.telegramChatId
+      const hasPrivate = !!payload.private.telegramChatId
       if (!hasPublic && !hasPrivate) {
-        error.value = 'Public @username yoki private invite link kiriting'
+        error.value = 'Public yoki private guruh ID kiriting'
         return
       }
       if (hasPublic && tokenUsage.value && !tokenUsage.value.canAddPublic) {
@@ -223,10 +223,10 @@ const startEdit = (card: BotRegionCard) => {
     postOrdersToPublic: card.postOrdersToPublic !== false,
     groupInviteRewardAmount: card.groupInviteRewardAmount ?? 500,
     public: {
-      username: card.public?.username || '',
+      telegramChatId: card.public?.telegramChatId || '',
     },
     private: {
-      inviteLink: card.private?.inviteLink || '',
+      telegramChatId: card.private?.telegramChatId || '',
     },
   }
   if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })

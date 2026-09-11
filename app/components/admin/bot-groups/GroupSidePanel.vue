@@ -23,11 +23,11 @@
       </span>
     </div>
 
-    <p class="text-[12px] font-bold text-slate-800 dark:text-slate-100 break-all leading-snug">
-      <template v-if="isPrivate">
-        {{ side.inviteLink || "Invite link yo'q" }}
-      </template>
-      <template v-else>@{{ side.username }}</template>
+    <p class="text-[12px] font-bold text-slate-800 dark:text-slate-100 break-all leading-snug font-mono">
+      {{ side.telegramChatId || "Guruh ID yo'q" }}
+    </p>
+    <p v-if="side.telegramTitle" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
+      {{ side.telegramTitle }}
     </p>
 
     <p v-if="side.botUsername" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
