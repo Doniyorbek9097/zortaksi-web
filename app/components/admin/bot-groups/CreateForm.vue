@@ -155,7 +155,7 @@
             @update:model-value="patchPublic('telegramChatId', $event)"
           />
           <p class="text-[10px] text-slate-400 px-1">
-            Admin userbot guruhdan <strong>/info-group</strong> yuborib ID oling.
+            Admin userbot guruhdan <strong>/guruh</strong> yuborib ID oling.
           </p>
         </div>
 
