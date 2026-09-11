@@ -232,6 +232,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         }
     }
 
+    const clearChatPeerLink = (chatId: string) => {
+        patchChatPeerLink(chatId, { viaUserbotId: '', accessHash: '' })
+    }
+
     /** Ro'yxat/API dan — faqat haqiqiy peer link bo'lsa ready */
     const primeFromChat = (chat: IChat | null | undefined) => {
         if (!chat) return
@@ -312,11 +316,20 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const chat = findChatById(chatId) ?? currentChat.value
 
-        // Peer link allaqachon bor — backend ga qayta connect shart emas
+        const authStore = useAuthStore()
+        const ownerUid = String(authStore.user?.userId || chat?.ownerId || '')
+
+        // Peer link bor — proxy emas yoki allaqachon tinglovchi orqali
         if (hasTelegramPeerLink(chat)) {
-            connectionStatus.value = 'ready'
-            connectionReason.value = ''
-            return { success: true, data: { status: 'ready' as ConnStatus } }
+            const via = String(chat.peer?.viaUserbotId || '')
+            const isOwnLink = !!via && via === ownerUid
+            if (!opts.viaProxy || (!isOwnLink && via && chat.peer?.accessHash)) {
+                connectionStatus.value = 'ready'
+                connectionReason.value = ''
+                return { success: true, data: { status: 'ready' as ConnStatus } }
+            }
+            // O'z hisob linki yetarli emas — proksi uchun tozalaymiz
+            clearChatPeerLink(chatId)
         }
 
         if (!isInAppChatLike(chat)) {
