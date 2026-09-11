@@ -124,7 +124,7 @@
       title="Guruhlar daromadi"
       icon="fa-solid fa-coins"
       icon-tone="emerald"
-      header-subtitle="Oylik trend — har bir guruh alohida chiziq"
+      header-subtitle="Oylik trend"
     >
       <AdminRegionIncomeTrendChart :chart="regionIncomeChart" />
     </AdminSectionCard>

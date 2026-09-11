@@ -1,18 +1,23 @@
 <template>
-  <div class="pt-1">
+  <div>
     <p
       v-if="isEmpty"
-      class="py-8 text-center text-[12px] font-medium text-slate-400"
+      class="py-5 text-center text-[11px] font-medium text-slate-400"
     >
       Bu davrda guruh daromadi yo'q
     </p>
     <template v-else>
-      <p class="mb-3 px-1 text-[12px] font-black text-slate-700 dark:text-slate-200">
-        {{ displayTitle }}
-      </p>
+      <div class="flex items-center justify-between gap-2 mb-2 px-0.5">
+        <span class="text-[10px] font-bold text-slate-600 dark:text-slate-300 min-w-0 truncate">
+          {{ displayTitle }}
+        </span>
+        <span class="text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+          {{ formatAmount(monthTotal) }}
+        </span>
+      </div>
 
       <div
-        class="relative h-36 w-full rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80
+        class="relative h-24 w-full rounded-xl overflow-hidden border border-slate-200/80 dark:border-slate-700/80
                bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950"
       >
         <svg
@@ -58,7 +63,7 @@
             :d="line.path"
             fill="none"
             :stroke="line.color"
-            stroke-width="2.25"
+            stroke-width="1.75"
             stroke-linecap="round"
             stroke-linejoin="round"
             vector-effect="non-scaling-stroke"
@@ -71,8 +76,8 @@
           type="button"
           class="absolute rounded-full border-2 border-white dark:border-slate-900 transition-all"
           :class="dot.idx === currentIdx
-            ? 'w-3.5 h-3.5 -ml-[7px] -mb-[7px] ring-2 ring-white/80 shadow-md'
-            : 'w-2.5 h-2.5 -ml-[5px] -mb-[5px]'"
+            ? 'w-2.5 h-2.5 -ml-[5px] -mb-[5px] ring-1 ring-white/80 shadow-sm'
+            : 'w-0 h-0 opacity-0 pointer-events-none'"
           :style="{
             left: `${dot.xPct}%`,
             bottom: `${dot.yPct}%`,
@@ -84,14 +89,14 @@
         />
       </div>
 
-      <div class="flex gap-1 mt-2.5">
+      <div class="flex gap-0.5 mt-1.5">
         <button
           v-for="(label, idx) in labels"
           :key="`${label}-${idx}`"
           type="button"
-          class="flex-1 text-center text-[9px] font-bold uppercase py-1.5 rounded-lg transition-all"
+          class="flex-1 text-center text-[8px] font-bold uppercase py-1 rounded-md transition-all truncate"
           :class="idx === currentIdx
-            ? 'text-white bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/25'
+            ? 'text-white bg-gradient-to-r from-emerald-500 to-teal-500'
             : 'text-slate-400 bg-slate-100 dark:bg-slate-800 hover:text-slate-600 dark:hover:text-slate-300'"
           @click="selectIdx(idx)"
         >
@@ -99,46 +104,38 @@
         </button>
       </div>
 
-      <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div class="mt-2 space-y-1">
         <button
           v-for="region in rankedRegions"
           :key="region.slug"
           type="button"
-          class="rounded-xl border p-2.5 text-left transition-all active:scale-[0.99]"
+          class="w-full rounded-lg border px-2 py-1.5 text-left transition-all active:scale-[0.995]"
           :class="focusSlug === region.slug
-            ? 'border-emerald-400/80 bg-emerald-50/80 dark:bg-emerald-950/25 shadow-sm'
-            : 'border-slate-200/80 dark:border-slate-700/80 bg-white/70 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-600'"
+            ? 'border-emerald-400/70 bg-emerald-50/70 dark:bg-emerald-950/20'
+            : 'border-slate-200/70 dark:border-slate-700/70 bg-white/60 dark:bg-slate-900/40 hover:border-slate-300 dark:hover:border-slate-600'"
           @click="toggleFocus(region.slug)"
           @mouseenter="hoverSlug = region.slug"
           @mouseleave="hoverSlug = ''"
         >
-          <div class="flex items-center gap-2.5 min-w-0">
+          <div class="flex items-center gap-1.5 min-w-0">
             <span
-              class="w-1 h-9 rounded-full shrink-0"
+              class="w-1.5 h-1.5 rounded-full shrink-0"
               :style="{ backgroundColor: region.color }"
             />
-            <div class="flex-1 min-w-0">
-              <p class="text-[11px] font-bold text-slate-700 dark:text-slate-300 truncate">
-                {{ region.title }}
-              </p>
-              <p class="text-[10px] font-bold tabular-nums text-slate-500 dark:text-slate-400 mt-0.5">
-                <span>{{ formatCount(region.count) }} a'zo</span>
-                <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
-                <span class="text-sky-600 dark:text-sky-400">{{ formatCount(region.active) }} faol</span>
-              </p>
-              <p class="text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
-                <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mr-1">Shu oy</span>
-                {{ formatAmount(region.amount) }}
-              </p>
-              <p class="text-[10px] font-semibold tabular-nums text-slate-400 dark:text-slate-500 mt-0.5">
-                Jami {{ formatAmount(region.totalIncome ?? 0) }}
-              </p>
-            </div>
-            <span class="text-[10px] font-black tabular-nums text-slate-400 shrink-0 self-start mt-0.5">
+            <span class="flex-1 min-w-0 text-[10px] font-bold text-slate-700 dark:text-slate-300 truncate">
+              {{ region.title }}
+            </span>
+            <span class="text-[9px] font-semibold tabular-nums text-slate-400 shrink-0 hidden sm:inline">
+              {{ formatCount(region.count) }}/{{ formatCount(region.active) }}
+            </span>
+            <span class="text-[10px] font-black tabular-nums text-emerald-600 dark:text-emerald-400 shrink-0">
+              {{ formatAmount(region.amount) }}
+            </span>
+            <span class="text-[9px] font-bold tabular-nums text-slate-400 shrink-0 w-6 text-right">
               {{ region.share }}%
             </span>
           </div>
-          <div class="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+          <div class="mt-1 h-0.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-300"
               :style="{
@@ -147,6 +144,16 @@
               }"
             />
           </div>
+          <p
+            v-if="focusSlug === region.slug"
+            class="mt-1 text-[9px] font-medium tabular-nums text-slate-400 dark:text-slate-500 pl-3"
+          >
+            Jami {{ formatAmount(region.totalIncome ?? 0) }}
+            <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>
+            {{ formatCount(region.count) }} a'zo
+            <span class="mx-1 text-slate-300 dark:text-slate-600">·</span>
+            {{ formatCount(region.active) }} faol
+          </p>
         </button>
       </div>
     </template>
@@ -325,26 +332,30 @@ const areaPaths = computed(() =>
     return {
       slug: line.slug,
       color: line.color,
-      opacity: lineOpacity(line.slug) * 0.12,
+      opacity: lineOpacity(line.slug) * 0.1,
       path: `${lineStr} L ${end.xPct} ${bottom} L ${start.xPct} ${bottom} Z`,
     }
   }),
 )
 
 const dots = computed(() =>
-  regionsWithColor.value.flatMap((region) =>
-    buildPoints(region.amounts).map((p) => ({
-      slug: region.slug,
-      title: region.title,
-      color: region.color,
-      label: labels.value[p.idx] ?? '',
-      value: p.value,
-      xPct: p.xPct,
-      yPct: p.yPct,
-      idx: p.idx,
-      opacity: lineOpacity(region.slug),
-    })),
-  ),
+  regionsWithColor.value
+    .map((region) => {
+      const p = buildPoints(region.amounts)[currentIdx.value]
+      if (!p) return null
+      return {
+        slug: region.slug,
+        title: region.title,
+        color: region.color,
+        label: labels.value[p.idx] ?? '',
+        value: p.value,
+        xPct: p.xPct,
+        yPct: p.yPct,
+        idx: p.idx,
+        opacity: lineOpacity(region.slug),
+      }
+    })
+    .filter((dot): dot is NonNullable<typeof dot> => dot !== null),
 )
 
 const formatAmount = (value: number) =>
