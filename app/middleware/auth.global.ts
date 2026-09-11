@@ -26,6 +26,11 @@ import { isTelegramMiniApp, mightBeTelegramMiniApp } from '~/utils/telegramStart
 const isProtectedPath = (path: string) =>
     path.startsWith('/driver') || path.startsWith('/admin')
 
+const isGuestDownloadPath = (path: string) => {
+    const p = normalizePath(path)
+    return p === '/driver/download-app' || p === '/admin/download-app'
+}
+
 const isAuthEntryPath = (path: string) =>
     path === '/' || path === '/auth' || path === '/login' || path === '/register'
 
@@ -65,6 +70,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         authStore.sessionReady = false
 
         if (!token.value && isProtectedPath(to.path)) {
+            if (isGuestDownloadPath(to.path)) {
+                return navigateTo('/download-app', { replace: true })
+            }
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         // "/" — Telegram start_param faqat client hash/initData da; SSR dashboard ga otmasin
@@ -139,6 +147,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         authStore.user = null
         markReady()
         if (isProtectedPath(to.path)) {
+            if (isGuestDownloadPath(to.path)) {
+                return navigateTo('/download-app', { replace: true })
+            }
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         return

@@ -17,24 +17,6 @@
             <span class="text-sky-600 dark:text-sky-400">{{ item.active.toLocaleString('ru-RU') }} faol</span>
           </p>
         </div>
-        <div class="text-right space-y-0.5">
-          <p class="text-[11px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">
-            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500 mr-1">Shu oy</span>
-            {{ formatMoney(item.monthIncome ?? item.income) }} so'm
-            <span
-              v-if="item.monthIncomePayments"
-              class="text-[10px] font-bold text-slate-400 dark:text-slate-500"
-            >
-              · {{ item.monthIncomePayments }} ta
-            </span>
-          </p>
-          <p
-            v-if="showTotalIncome(item)"
-            class="text-[10px] font-semibold tabular-nums text-slate-400 dark:text-slate-500"
-          >
-            Jami {{ formatMoney(item.income) }} so'm
-          </p>
-        </div>
       </div>
       <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
         <div
@@ -59,21 +41,9 @@ interface RegionItem {
   title: string
   count: number
   active: number
-  income?: number
-  incomePayments?: number
-  monthIncome?: number
-  monthIncomePayments?: number
 }
 
 const props = defineProps<{ items: RegionItem[] }>()
-
-const formatMoney = (n?: number) => (Number(n) || 0).toLocaleString('ru-RU')
-
-const showTotalIncome = (item: RegionItem) => {
-  const total = Number(item.income) || 0
-  const month = Number(item.monthIncome) || 0
-  return total > 0 && total !== month
-}
 
 const maxCount = computed(() =>
   Math.max(...props.items.map((i) => i.count), 1)

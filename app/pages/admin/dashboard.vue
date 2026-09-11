@@ -125,9 +125,19 @@
       icon="fa-solid fa-location-dot"
       icon-tone="amber"
       :header-value="regionHeaderValue"
-      header-subtitle="Guruhlar bo'yicha oylik daromad"
     >
       <AdminRegionBarList :items="regionDrivers.slice(0, 6)" />
+    </AdminSectionCard>
+
+    <!-- Guruhlar daromadi -->
+    <AdminSectionCard
+      title="Guruhlar daromadi"
+      icon="fa-solid fa-coins"
+      icon-tone="emerald"
+      :header-value="regionIncomeHeaderValue"
+      header-subtitle="Oylik trend — har bir guruh alohida chiziq"
+    >
+      <AdminRegionIncomeTrendChart :chart="regionIncomeChart" />
     </AdminSectionCard>
 
     <!-- 7 kunlik daromad -->
@@ -255,18 +265,26 @@ const regionDrivers = computed(() => store.data?.regionDrivers ?? [])
 const regionTotalDrivers = computed(() =>
   regionDrivers.value.reduce((sum, r) => sum + r.count, 0)
 )
-const regionMonthIncome = computed(() =>
-  regionDrivers.value.reduce((sum, r) => sum + (Number(r.monthIncome) || 0), 0)
+const regionHeaderValue = computed(() =>
+  regionTotalDrivers.value > 0
+    ? `${regionTotalDrivers.value.toLocaleString('ru-RU')} jami`
+    : ''
 )
-const regionHeaderValue = computed(() => {
-  const parts: string[] = []
-  if (regionMonthIncome.value > 0) {
-    parts.push(`${regionMonthIncome.value.toLocaleString('ru-RU')} so'm / oy`)
-  }
-  if (regionTotalDrivers.value > 0) {
-    parts.push(`${regionTotalDrivers.value.toLocaleString('ru-RU')} haydovchi`)
-  }
-  return parts.join(' · ')
+
+const regionIncomeChart = computed(() => store.data?.regionIncomeChart ?? null)
+
+const regionIncomeHeaderValue = computed(() => {
+  const chart = regionIncomeChart.value
+  if (!chart?.regions?.length) return ''
+  const now = new Date()
+  const idx = Math.max(0, (chart.labels?.length ?? 1) - 1)
+  const monthTotal = chart.regions.reduce(
+    (sum, r) => sum + (Number(r.amounts?.[idx]) || 0),
+    0,
+  )
+  if (monthTotal <= 0) return ''
+  const label = chart.labels?.[idx] ?? MONTH_FULL_UZ[now.getMonth()]
+  return `${monthTotal.toLocaleString('ru-RU')} so'm · ${label}`
 })
 
 const tariffTab = ref('month')

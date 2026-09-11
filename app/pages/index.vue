@@ -62,6 +62,13 @@
               <LandingButton to="/passenger-ad" variant="secondary">
                 Yo'lovchi e'lon berish
               </LandingButton>
+              <LandingButton
+                v-if="showApkDownload"
+                to="/download-app"
+                variant="secondary"
+              >
+                Ilovani yuklab olish
+              </LandingButton>
             </div>
           </div>
   
@@ -98,6 +105,37 @@
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- Mobil ilova -->
+      <section
+        v-if="showApkDownload"
+        class="px-5 pb-4 max-w-6xl mx-auto"
+      >
+        <div
+          class="rounded-3xl border border-emerald-200/80 dark:border-emerald-800/50 bg-gradient-to-br from-emerald-50 via-white to-cyan-50
+                 dark:from-emerald-950/40 dark:via-neutral-950 dark:to-cyan-950/30 p-6 md:p-8 flex flex-col md:flex-row items-center gap-6"
+        >
+          <div
+            class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-emerald-500/20
+                   bg-gradient-to-br from-emerald-500 to-cyan-500 text-white"
+          >
+            📲
+          </div>
+          <div class="flex-1 text-center md:text-left space-y-2">
+            <h2 class="text-xl md:text-2xl font-black text-neutral-900 dark:text-neutral-50">
+              Telefonga ilovani o'rnating
+            </h2>
+            <p class="text-sm md:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl">
+              Brauzerdan tezroq kirish, qulay interfeys va bildirishnomalar uchun
+              <strong class="font-semibold text-neutral-800 dark:text-neutral-200">Android ilovasini</strong>
+              o'rnating. Ro'yxatdan o'tmasdan ham yuklab olish sahifasiga kirishingiz mumkin.
+            </p>
+          </div>
+          <LandingButton to="/download-app" variant="primary">
+            Ilovani yuklab olish
+          </LandingButton>
         </div>
       </section>
   
@@ -170,12 +208,26 @@
             <LandingButton to="/passenger-ad" variant="secondary">
               Yo'lovchi e'lon berish
             </LandingButton>
+            <LandingButton
+              v-if="showApkDownload"
+              to="/download-app"
+              variant="secondary"
+            >
+              Ilovani yuklab olish
+            </LandingButton>
           </div>
         </div>
       </section>
   
       <footer class="py-8 text-center text-xs border-t text-neutral-400 border-neutral-200 dark:text-neutral-500 dark:border-neutral-800 space-y-2">
-        <div class="flex items-center justify-center gap-4">
+        <div class="flex flex-wrap items-center justify-center gap-4">
+          <NuxtLink
+            v-if="showApkDownload"
+            to="/download-app"
+            class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+          >
+            Ilovani yuklab olish
+          </NuxtLink>
           <NuxtLink to="/terms" class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
             Foydalanish shartlari
           </NuxtLink>
@@ -193,6 +245,7 @@
   
   <script setup lang="ts">
   import { getAuthCookieOptions } from '~/utils/authCookie'
+  import { shouldShowApkDownload } from '~/utils/appEmbed'
 
   definePageMeta({ layout: 'default' });
   
@@ -207,6 +260,7 @@
   })
 
   const { effectiveTheme, toggleTheme } = useTheme();
+  const showApkDownload = ref(false);
   
   const features = [
     {
@@ -250,6 +304,7 @@
   ];
   
   onMounted(() => {
+    showApkDownload.value = shouldShowApkDownload();
     const tg = (window as Window & { Telegram?: { WebApp?: { expand: () => void } } }).Telegram?.WebApp;
     tg?.expand();
   });
