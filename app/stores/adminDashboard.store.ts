@@ -61,6 +61,33 @@ export interface DashboardGrowth {
   newDriversMonthDelta: number
 }
 
+export interface DashboardDriverPostDriver {
+  userId: string
+  campaigns: number
+  activeCampaigns: number
+  totalGroups: number
+  sendsPerDay: number
+  totalLastSent: number
+  totalLastCharged: number
+  totalLastFailed: number
+  owner: {
+    userId: string
+    name: string
+    phone?: string
+    username?: string
+    balance?: number
+  }
+}
+
+export interface DashboardDriverPostsSummary {
+  totalCampaigns: number
+  activeCampaigns: number
+  pausedCampaigns: number
+  estimatedSendsPerDay: number
+  uniqueDrivers: number
+  topDrivers: DashboardDriverPostDriver[]
+}
+
 export interface AdminDashboardData {
   monthIncome: IncomeBlock
   todayIncome?: IncomeBlock
@@ -99,6 +126,7 @@ export interface AdminDashboardData {
   incomeDailyChart?: ChartMonth[]
   regionIncomeChart?: RegionIncomeChart
   growth?: DashboardGrowth
+  driverPosts?: DashboardDriverPostsSummary | null
 }
 
 const CACHE_KEY = 'zt:admin-dashboard-data'

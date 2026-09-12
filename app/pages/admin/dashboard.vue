@@ -56,6 +56,71 @@
       </div>
     </AdminSectionCard>
 
+    <!-- E'lonlar (saqlangan xabarlar) -->
+    <AdminSectionCard
+      v-if="driverPosts"
+      title="E'lon joylash"
+      icon="fa-solid fa-bullhorn"
+      icon-tone="amber"
+      no-padding
+    >
+      <template #action>
+        <button
+          type="button"
+          class="text-[11px] font-black text-sky-600 dark:text-sky-400 px-2 py-1 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/30"
+          @click="navigateTo('/admin/driver-posts')"
+        >
+          Batafsil
+        </button>
+      </template>
+      <div class="grid grid-cols-2 gap-2 p-2.5">
+        <AdminStatChip
+          :value="driverPosts.totalCampaigns"
+          label="Saqlangan"
+          icon="fa-solid fa-inbox"
+          tone="sky"
+        />
+        <AdminStatChip
+          :value="driverPosts.activeCampaigns"
+          label="Faol (play)"
+          icon="fa-solid fa-play"
+          tone="emerald"
+        />
+        <AdminStatChip
+          :value="driverPosts.estimatedSendsPerDay"
+          label="Kunlik yuborish"
+          icon="fa-solid fa-paper-plane"
+          tone="violet"
+        />
+        <AdminStatChip
+          :value="driverPosts.uniqueDrivers"
+          label="Haydovchilar"
+          icon="fa-solid fa-users"
+          tone="amber"
+        />
+      </div>
+      <div
+        v-if="driverPosts.topDrivers?.length"
+        class="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800"
+      >
+        <button
+          v-for="row in driverPosts.topDrivers"
+          :key="row.userId"
+          type="button"
+          class="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          @click="navigateTo(`/admin/driver-posts?userId=${row.userId}`)"
+        >
+          <span class="text-[12px] font-black text-rose-500 tabular-nums w-10 shrink-0">
+            {{ row.sendsPerDay }}/kun
+          </span>
+          <span class="text-[12px] font-bold text-slate-700 dark:text-slate-200 truncate flex-1">
+            {{ row.owner.name }}
+          </span>
+          <span class="text-[10px] text-slate-400 shrink-0">{{ row.activeCampaigns }} faol</span>
+        </button>
+      </div>
+    </AdminSectionCard>
+
     <!-- Jonli statistika -->
     <section class="space-y-2">
       <h3 class="text-[11px] font-black uppercase tracking-wide text-slate-400 px-0.5">
@@ -208,12 +273,14 @@ const monthIncome = computed(() => store.monthIncome)
 const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payments: 0, total: 0 })
 const weekIncome = computed(() => store.data?.weekIncome ?? { amount: 0, payments: 0, total: 0 })
 const growth = computed(() => store.data?.growth)
+const driverPosts = computed(() => store.data?.driverPosts ?? null)
 
 const navItems = computed(() => {
   const items = [
     { title: 'Haydovchilar', icon: 'fa-solid fa-users', tone: 'green' as const, to: '/admin/drivers' },
     { title: "To'lovlar", icon: 'fa-solid fa-receipt', tone: 'amber' as const, to: '/admin/payments' },
     { title: 'Tariflar', icon: 'fa-solid fa-tags', tone: 'violet' as const, to: '/admin/tariffs' },
+    { title: 'E\'lonlar', icon: 'fa-solid fa-bullhorn', tone: 'amber' as const, to: '/admin/driver-posts' },
     { title: 'Bot guruhlari', icon: 'fa-solid fa-bullhorn', tone: 'rose' as const, to: '/admin/bot-groups' },
     { title: 'Bloklanganlar', icon: 'fa-solid fa-ban', tone: 'rose' as const, to: '/admin/blocked' },
   ]
