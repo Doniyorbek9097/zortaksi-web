@@ -58,8 +58,25 @@ export function isValidPeerUserId(userId?: string | null): boolean {
   return !!s && s !== '0'
 }
 
+/** Haydovchi uchun orderdagi saqlangan peer link */
+export function resolveDriverPeerLinkFromOrder(
+  order: IOrder,
+  driverUserId?: string,
+): { accessHash?: string; viaUserbotId?: string } {
+  const driverId = String(driverUserId || '').trim()
+  if (!driverId) return {}
+  const hit = (order.sender?.accessHashes || []).find(
+    (h) => String(h.ownerId) === driverId && String(h.accessHash || '').trim(),
+  )
+  if (!hit?.accessHash) return {}
+  return { accessHash: String(hit.accessHash), viaUserbotId: driverId }
+}
+
 /** Order API javobidan chat stub (sender/guruh URL query emas) */
-export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
+export function buildChatStubFromOrder(
+  order: IOrder,
+  driverUserId?: string,
+): Partial<IChat> | null {
   const orderId = String(order._id || '').trim()
   if (!orderId) return null
 
@@ -70,6 +87,7 @@ export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
   const s = order.sender
   const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
   const senderUserId = String(s?.userId || '').trim()
+  const peerLink = resolveDriverPeerLinkFromOrder(order, driverUserId)
 
   return {
     orderId,
@@ -82,6 +100,12 @@ export function buildChatStubFromOrder(order: IOrder): Partial<IChat> | null {
       username: cleanUsername(s?.username) || undefined,
       phone: phone || undefined,
       isBot: !!s?.isBot,
+      ...(peerLink.accessHash
+        ? {
+            accessHash: peerLink.accessHash,
+            viaUserbotId: peerLink.viaUserbotId,
+          }
+        : {}),
       fromGroupTitle: String(order.group?.title || '').trim() || undefined,
       fromGroupUsername: cleanUsername(order.group?.username) || undefined,
       fromPeerId: String(order.group?.groupId || '').trim() || undefined,

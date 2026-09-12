@@ -18,6 +18,7 @@ export function useOrdersChatActions(options: {
 }) {
   const { orderStore, chatStore, beforeNavigate } = options
   const route = useRoute()
+  const authStore = useAuthStore()
 
   const markOrderInterest = (order: IOrder) => {
     if (!order._id) return
@@ -64,7 +65,8 @@ export function useOrdersChatActions(options: {
   /** Order chat — darhol UI (navigatsiyadan oldin) */
   const primeOrderOpenUi = (order: IOrder) => {
     primeOrderContext(order)
-    const stub = buildChatStubFromOrder(order)
+    const driverId = String(authStore.user?.userId || '')
+    const stub = buildChatStubFromOrder(order, driverId)
     if (!stub) return
     const existing = findChatForOrder(order)
     chatStore.currentChat = mergeOrderChatContext(existing, stub) as IChat

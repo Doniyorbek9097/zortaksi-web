@@ -1114,7 +1114,10 @@ const enrichOrderUiFromApi = (orderId: string) => {
       const res = await useApi(`/orders/${orderId}`, { timeout: 10_000 })
       if (!res?.success || !res.data) return
 
-      const fromOrder = buildChatStubFromOrder(res.data as import('~/types').IOrder)
+      const fromOrder = buildChatStubFromOrder(
+        res.data as import('~/types').IOrder,
+        String(authStore.user?.userId || ''),
+      )
       if (!fromOrder) return
 
       const q = route.query as Record<string, unknown>

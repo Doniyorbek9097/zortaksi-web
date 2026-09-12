@@ -128,15 +128,20 @@ export default defineNuxtPlugin(() => {
       const kw = loadOrderFilterKeywords().trim()
       const textQuery = orderStore.listText.trim()
 
-      if (listenerUserIds.length || botGroupIds.length || textQuery) {
-        orderStore.scheduleSyncLatest(orderSearchParams())
+      if (listenerUserIds.length && !orderMatchesListenerFilter(order, listenerUserIds)) {
         return
       }
 
-      if (kw && !orderMatchesRegionFilter(order, kw)) return
+      if (!listenerUserIds.length && kw && !orderMatchesRegionFilter(order, kw)) {
+        return
+      }
 
       const added = orderStore.prependOrder(order)
       if (added) playOrderSound()
+
+      if (botGroupIds.length || textQuery) {
+        orderStore.scheduleSyncLatest(orderSearchParams(), true)
+      }
     })
     socket.on('order:update', (order) => {
       const stored = loadOrderFilterBotGroupId().trim()

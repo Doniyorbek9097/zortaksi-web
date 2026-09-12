@@ -73,9 +73,14 @@ export const useOrderStore = defineStore('order', () => {
     let lastFullListFetchAt = 0
     const SYNC_SKIP_AFTER_FETCH_MS = 6000
     let badgeRefreshTimer: ReturnType<typeof setTimeout> | null = null
-    const scheduleSyncLatest = (params: FetchOrdersParams = {}) => {
+    const scheduleSyncLatest = (params: FetchOrdersParams = {}, immediate = false) => {
         if (!import.meta.client) return
         if (syncLatestTimer) clearTimeout(syncLatestTimer)
+        if (immediate) {
+            syncLatestTimer = null
+            void syncLatest(params)
+            return
+        }
         syncLatestTimer = setTimeout(() => {
             syncLatestTimer = null
             void syncLatest(params)
@@ -84,7 +89,7 @@ export const useOrderStore = defineStore('order', () => {
 
     /** Sender connect tezligi — order ro'yxatida oldindan warm */
     let warmPeersTimer: ReturnType<typeof setTimeout> | null = null
-    const WARM_PEER_MAX = 2
+    const WARM_PEER_MAX = 4
     const warmedOrderIds = new Set<string>()
 
     const orderNeedsWarm = (order: IOrder, driverId: string) => {
@@ -127,10 +132,8 @@ export const useOrderStore = defineStore('order', () => {
         if (!ids.length) return
 
         if (warmPeersTimer) clearTimeout(warmPeersTimer)
-        warmPeersTimer = setTimeout(() => {
-            warmPeersTimer = null
-            void postWarmPeers(ids)
-        }, 3000)
+        warmPeersTimer = null
+        void postWarmPeers(ids)
     }
 
     /** Bitta order — "Xabar yozish" hover */
@@ -469,6 +472,7 @@ export const useOrderStore = defineStore('order', () => {
         if (prev?.status === 'new' && order.status === 'booked') {
             bumpNewCount(-1)
         }
+        scheduleWarmOrderPeers([orders.value[idx] as IOrder])
     }
 
     /** Socket order:cancelled — bot bekor qildi */
