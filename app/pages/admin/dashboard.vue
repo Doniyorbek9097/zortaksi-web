@@ -56,70 +56,64 @@
       </div>
     </AdminSectionCard>
 
-    <!-- E'lonlar (saqlangan xabarlar) -->
-    <AdminSectionCard
+    <!-- E'lonlar — ixcham -->
+    <button
       v-if="driverPosts"
-      title="E'lon joylash"
-      icon="fa-solid fa-bullhorn"
-      icon-tone="amber"
-      no-padding
+      type="button"
+      class="w-full rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/20 dark:to-slate-900 p-3 text-left active:scale-[0.99] transition-transform"
+      @click="navigateTo('/admin/driver-posts')"
     >
-      <template #action>
-        <button
-          type="button"
-          class="text-[11px] font-black text-sky-600 dark:text-sky-400 px-2 py-1 rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/30"
-          @click="navigateTo('/admin/driver-posts')"
-        >
-          Batafsil
-        </button>
-      </template>
-      <div class="grid grid-cols-2 gap-2 p-2.5">
-        <AdminStatChip
-          :value="driverPosts.totalCampaigns"
-          label="Saqlangan"
-          icon="fa-solid fa-inbox"
-          tone="sky"
-        />
-        <AdminStatChip
-          :value="driverPosts.activeCampaigns"
-          label="Faol (play)"
-          icon="fa-solid fa-play"
-          tone="emerald"
-        />
-        <AdminStatChip
-          :value="driverPosts.estimatedSendsPerDay"
-          label="Kunlik yuborish"
-          icon="fa-solid fa-paper-plane"
-          tone="violet"
-        />
-        <AdminStatChip
-          :value="driverPosts.uniqueDrivers"
-          label="Haydovchilar"
-          icon="fa-solid fa-users"
-          tone="amber"
-        />
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+            <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-sm" />
+          </span>
+          <div>
+            <p class="text-[12px] font-black text-slate-900 dark:text-white">E'lon joylash</p>
+            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami</p>
+          </div>
+        </div>
+        <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[10px] text-slate-300" />
       </div>
-      <div
-        v-if="driverPosts.topDrivers?.length"
-        class="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800"
-      >
-        <button
-          v-for="row in driverPosts.topDrivers"
+      <div class="grid grid-cols-3 gap-1.5">
+        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
+          <p class="text-[13px] font-black text-violet-600 tabular-nums">{{ driverPosts.estimatedSendsPerDay }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase">Kunlik</p>
+        </div>
+        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
+          <p class="text-[13px] font-black text-emerald-600 tabular-nums">{{ driverPosts.activeCampaigns }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase">Play</p>
+        </div>
+        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
+          <p class="text-[13px] font-black text-amber-600 tabular-nums">{{ driverPosts.uniqueDrivers }}</p>
+          <p class="text-[8px] font-bold text-slate-400 uppercase">Driver</p>
+        </div>
+      </div>
+      <div v-if="driverPosts.topDrivers?.length" class="mt-2 space-y-1">
+        <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 px-0.5">Eng ko'p yuk</p>
+        <div
+          v-for="row in driverPosts.topDrivers.slice(0, 3)"
           :key="row.userId"
-          type="button"
-          class="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50"
-          @click="navigateTo(`/admin/driver-posts?userId=${row.userId}`)"
+          class="flex items-center gap-2 text-[11px]"
         >
-          <span class="text-[12px] font-black text-rose-500 tabular-nums w-10 shrink-0">
-            {{ row.sendsPerDay }}/kun
+          <img
+            v-if="driverAvatar(row.owner)"
+            :src="driverAvatar(row.owner)"
+            alt=""
+            class="w-5 h-5 rounded-full object-cover shrink-0 bg-slate-200"
+            @error="brokenDriverAvatars.add(row.userId)"
+          >
+          <span
+            v-else
+            class="w-5 h-5 rounded-full shrink-0 bg-sky-100 text-sky-600 flex items-center justify-center text-[8px] font-black"
+          >
+            {{ row.owner.name.charAt(0) || '?' }}
           </span>
-          <span class="text-[12px] font-bold text-slate-700 dark:text-slate-200 truncate flex-1">
-            {{ row.owner.name }}
-          </span>
-          <span class="text-[10px] text-slate-400 shrink-0">{{ row.activeCampaigns }} faol</span>
-        </button>
+          <span class="font-bold text-slate-700 dark:text-slate-200 truncate flex-1">{{ row.owner.name }}</span>
+          <span class="font-black text-rose-500 tabular-nums shrink-0">{{ row.sendsPerDay }}/kun</span>
+        </div>
       </div>
-    </AdminSectionCard>
+    </button>
 
     <!-- Jonli statistika -->
     <section class="space-y-2">
@@ -259,6 +253,13 @@ definePageMeta({
 
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
+const { avatarUrl } = useMediaUrl()
+const brokenDriverAvatars = ref<Set<string>>(new Set())
+
+const driverAvatar = (owner: { avatar?: string; userId: string }) => {
+  if (brokenDriverAvatars.value.has(owner.userId)) return undefined
+  return avatarUrl(owner.avatar, owner.userId)
+}
 const isMainAdmin = computed(() => isAdminUser(authStore.user))
 
 const groupInviteLeaderboard = ref<GroupInviteLeaderboardData | null>(null)

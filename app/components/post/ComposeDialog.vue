@@ -68,7 +68,7 @@
               <input
                 v-model.number="intervalMin"
                 type="number"
-                min="1"
+                min="10"
                 max="1440"
                 class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
@@ -91,7 +91,7 @@
 
               <button
                 type="button"
-                :disabled="loading || !text.trim() || !name.trim() || (autoRepeat && intervalMin < 1)"
+                :disabled="loading || !text.trim() || !name.trim() || (autoRepeat && intervalMin < 10)"
                 class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50"
                 :class="autoRepeat
                   ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
@@ -114,6 +114,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
+import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
 
 const props = defineProps<{
   modelValue: boolean
@@ -132,7 +133,7 @@ const emit = defineEmits<{
 const name = ref('')
 const text = ref('')
 const autoRepeat = ref(false)
-const intervalMin = ref(5)
+const intervalMin = ref(MIN_POST_INTERVAL_MIN)
 
 const isEdit = computed(() => !!props.editCampaign?.id)
 
@@ -144,12 +145,12 @@ watch(
       name.value = edit.name || ''
       text.value = edit.text || ''
       autoRepeat.value = !!edit.active
-      intervalMin.value = edit.intervalMin || 5
+      intervalMin.value = Math.max(MIN_POST_INTERVAL_MIN, edit.intervalMin || MIN_POST_INTERVAL_MIN)
     } else {
       name.value = ''
       text.value = ''
       autoRepeat.value = false
-      intervalMin.value = 5
+      intervalMin.value = MIN_POST_INTERVAL_MIN
     }
   }
 )
@@ -163,12 +164,12 @@ const onOnce = () => {
 
 const onSave = (start: boolean) => {
   if (!text.value.trim() || !name.value.trim()) return
-  if (start && intervalMin.value < 1) return
+  if (start && intervalMin.value < MIN_POST_INTERVAL_MIN) return
   emit('save', {
     name: name.value.trim(),
     text: text.value.trim(),
     autoRepeat: start,
-    intervalMin: Math.max(1, Math.round(intervalMin.value || 5)),
+    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(intervalMin.value || MIN_POST_INTERVAL_MIN)),
   })
 }
 

@@ -6,6 +6,7 @@ export type AdminDriverPostOwner = {
   phone?: string
   username?: string
   balance?: number
+  avatar?: string
 }
 
 export type AdminDriverPostCampaign = {
@@ -16,11 +17,13 @@ export type AdminDriverPostCampaign = {
   mode: 'mine' | 'ads'
   groupIds: string[]
   groupCount: number
+  text: string
   textPreview: string
   intervalSec: number
   intervalMin: number
   active: boolean
   sendsPerDay: number
+  activeSince?: string
   nextRunAt?: string
   lastRunAt?: string
   lastSent: number
@@ -122,6 +125,16 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     }
   }
 
+  const patchItem = (data: AdminDriverPostCampaign) => {
+    const idx = items.value.findIndex((c) => c.id === data.id)
+    if (idx >= 0) items.value[idx] = data
+  }
+
+  const removeItem = (id: string) => {
+    items.value = items.value.filter((c) => c.id !== id)
+    total.value = Math.max(0, total.value - 1)
+  }
+
   const stopCampaign = async (id: string) => {
     isSaving.value = true
     error.value = ''
@@ -130,14 +143,67 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
         `/admin/driver-post-campaigns/${id}/stop`,
         { method: 'POST' },
       )
-      if (res?.success && res.data) {
-        const idx = items.value.findIndex((c) => c.id === id)
-        if (idx >= 0) items.value[idx] = res.data
-      }
+      if (res?.success && res.data) patchItem(res.data)
       await fetchStats()
       return res?.data
     } catch (e: any) {
       error.value = e?.message || 'To\'xtatib bo\'lmadi'
+      throw e
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const startCampaign = async (id: string) => {
+    isSaving.value = true
+    error.value = ''
+    try {
+      const res = await useApi<{ success: boolean; data: AdminDriverPostCampaign }>(
+        `/admin/driver-post-campaigns/${id}/start`,
+        { method: 'POST' },
+      )
+      if (res?.success && res.data) patchItem(res.data)
+      await fetchStats()
+      return res?.data
+    } catch (e: any) {
+      error.value = e?.message || 'Boshlab bo\'lmadi'
+      throw e
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const updateCampaign = async (
+    id: string,
+    payload: { name?: string; text?: string; intervalMin?: number },
+  ) => {
+    isSaving.value = true
+    error.value = ''
+    try {
+      const res = await useApi<{ success: boolean; data: AdminDriverPostCampaign }>(
+        `/admin/driver-post-campaigns/${id}`,
+        { method: 'PATCH', body: payload },
+      )
+      if (res?.success && res.data) patchItem(res.data)
+      await fetchStats()
+      return res?.data
+    } catch (e: any) {
+      error.value = e?.message || 'Yangilab bo\'lmadi'
+      throw e
+    } finally {
+      isSaving.value = false
+    }
+  }
+
+  const deleteCampaign = async (id: string) => {
+    isSaving.value = true
+    error.value = ''
+    try {
+      await useApi(`/admin/driver-post-campaigns/${id}`, { method: 'DELETE' })
+      removeItem(id)
+      await fetchStats()
+    } catch (e: any) {
+      error.value = e?.message || 'O\'chirib bo\'lmadi'
       throw e
     } finally {
       isSaving.value = false
@@ -164,6 +230,9 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     fetchStats,
     fetchCampaigns,
     stopCampaign,
+    startCampaign,
+    updateCampaign,
+    deleteCampaign,
     resetList,
   }
 })

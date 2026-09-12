@@ -24,6 +24,8 @@ export interface PostGroup {
 
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
+export const MAX_POST_GROUPS = 20
+export const MIN_POST_INTERVAL_MIN = 10
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
@@ -290,13 +292,17 @@ export const usePostStore = defineStore('post', () => {
       selected.value = next
       return
     }
+    if (next.size >= MAX_POST_GROUPS) {
+      error.value = `Maksimal ${MAX_POST_GROUPS} ta guruh tanlash mumkin`
+      return
+    }
     error.value = ''
     next.add(id)
     selected.value = next
   }
 
   const selectAllVisible = (list: PostGroup[]) => {
-    selected.value = new Set(list.map((g) => g.id))
+    selected.value = new Set(list.slice(0, MAX_POST_GROUPS).map((g) => g.id))
     error.value = ''
   }
 

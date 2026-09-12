@@ -142,7 +142,7 @@
     <!-- Count + select -->
     <div class="flex items-center justify-between gap-2">
       <p class="text-[12px] font-bold text-slate-400">
-        {{ selectedCount }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
+        {{ selectedCount }}/{{ MAX_POST_GROUPS }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
       </p>
       <button
         type="button"
@@ -334,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-import { usePostStore, type PostGroup, type PostCampaign, ADS_BROADCAST_PRICE } from '~/stores/post.store'
+import { usePostStore, type PostGroup, type PostCampaign, ADS_BROADCAST_PRICE, MAX_POST_GROUPS } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
