@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { normalizePublicGroupUsernameInput } from '~/utils/telegramGroupInput'
 
 export interface BotGroupRow {
   id: string
@@ -208,7 +209,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
           groupInviteRewardAmount: payload.groupInviteRewardAmount ?? 500,
           botToken: payload.botToken?.trim(),
           public: {
-            username: payload.public.username?.trim(),
+            username: normalizePublicGroupUsernameInput(payload.public.username || ''),
           },
           private: {
             inviteLink: payload.private.inviteLink?.trim(),
@@ -248,7 +249,7 @@ export const useBotGroupStore = defineStore('botGroup', () => {
       if (payload.botToken?.trim()) body.botToken = payload.botToken.trim()
       if (payload.public) {
         body.public = {
-          username: payload.public.username?.trim(),
+          username: normalizePublicGroupUsernameInput(payload.public.username || ''),
         }
       }
       if (payload.private) {

@@ -147,15 +147,15 @@
         <div class="rounded-xl border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/60 dark:bg-sky-950/25 p-3 space-y-2">
           <p class="text-[11px] font-black text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
             <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
-            Public guruh @username (ixtiyoriy)
+            Public guruh (ixtiyoriy)
           </p>
           <BaseInput
             :model-value="modelValue.public.username"
-            placeholder="zor_taksi_namangan"
+            placeholder="https://t.me/zor_taksi_namangan"
             @update:model-value="patchPublic('username', $event)"
           />
           <p class="text-[10px] text-slate-400 px-1">
-            Bot faqat shu @username dagi guruhda ishlaydi — boshqa guruhlarda admin bo'lsa ham yo'q.
+            @username yoki <strong>https://t.me/...</strong> link. Bot faqat shu guruhda ishlaydi.
           </p>
         </div>
 
@@ -313,7 +313,7 @@ const patch = <K extends keyof BotGroupFormModel>(key: K, value: BotGroupFormMod
 const patchPublic = (key: 'username', value: string | number | null) => {
   emit('update:modelValue', {
     ...props.modelValue,
-    public: { ...props.modelValue.public, [key]: String(value ?? '').replace(/^@/, '') },
+    public: { ...props.modelValue.public, [key]: String(value ?? '') },
   })
 }
 

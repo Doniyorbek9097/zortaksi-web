@@ -70,6 +70,7 @@ import { useBotGroupStore } from '~/stores/bot-group.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
+import { normalizePublicGroupUsernameInput } from '~/utils/telegramGroupInput'
 
 definePageMeta({ layout: 'admin' })
 
@@ -175,7 +176,7 @@ const onSubmit = async () => {
     postOrdersToPublic: form.value.postOrdersToPublic,
     groupInviteRewardAmount: form.value.groupInviteRewardAmount,
     public: {
-      username: form.value.public.username.trim().replace(/^@/, ''),
+      username: normalizePublicGroupUsernameInput(form.value.public.username),
     },
     private: {
       inviteLink: form.value.private.inviteLink.trim(),
