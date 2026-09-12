@@ -34,8 +34,8 @@
       </p>
 
       <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-        Har bir hudud uchun slug, bot token va aniq Telegram guruh ID.
-        <span v-if="showPrivateSection">Public ID ixtiyoriy — faqat private ham bo'lishi mumkin.</span>
+        Har bir hudud uchun slug, bot token, public @username va private invite link.
+        <span v-if="showPrivateSection">Public ixtiyoriy — faqat private ham bo'lishi mumkin.</span>
         <span v-else>Bu token uchun private allaqachon mavjud — faqat public qo'shiladi.</span>
       </p>
 
@@ -147,15 +147,15 @@
         <div class="rounded-xl border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/60 dark:bg-sky-950/25 p-3 space-y-2">
           <p class="text-[11px] font-black text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
             <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
-            Public guruh ID (ixtiyoriy)
+            Public guruh @username (ixtiyoriy)
           </p>
           <BaseInput
-            :model-value="modelValue.public.telegramChatId"
-            placeholder="-1001234567890"
-            @update:model-value="patchPublic('telegramChatId', $event)"
+            :model-value="modelValue.public.username"
+            placeholder="zor_taksi_namangan"
+            @update:model-value="patchPublic('username', $event)"
           />
           <p class="text-[10px] text-slate-400 px-1">
-            Admin userbot guruhdan <strong>/guruh</strong> yuborib ID oling.
+            Bot faqat shu @username dagi guruhda ishlaydi — boshqa guruhlarda admin bo'lsa ham yo'q.
           </p>
         </div>
 
@@ -165,20 +165,20 @@
         >
           <p class="text-[11px] font-black text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
             <font-awesome-icon icon="fa-solid fa-lock" class="text-[10px]" />
-            Private guruh ID
+            Private invite link
           </p>
           <BaseInput
-            :model-value="modelValue.private.telegramChatId"
-            placeholder="-1001234567890"
-            @update:model-value="patchPrivate('telegramChatId', $event)"
+            :model-value="modelValue.private.inviteLink"
+            placeholder="https://t.me/+AbCdEf..."
+            @update:model-value="patchPrivate('inviteLink', $event)"
           />
           <p class="text-[10px] text-slate-400 px-1">
-            Bot faqat shu ID dagi guruhda ishlaydi — boshqa guruhlarda admin bo'lsa ham yo'q.
+            Bot faqat shu invite orqali qo'shilgan private guruhda ishlaydi.
           </p>
         </div>
 
         <label
-          v-if="modelValue.public.telegramChatId.trim()"
+          v-if="modelValue.public.username.trim()"
           class="flex items-center gap-2.5 px-1 py-1 cursor-pointer select-none"
         >
           <input
@@ -192,7 +192,7 @@
           </span>
         </label>
         <p
-          v-if="modelValue.public.telegramChatId.trim()"
+          v-if="modelValue.public.username.trim()"
           class="px-1 text-[10px] text-slate-400 leading-snug -mt-1"
         >
           O'chirilsa — buyurtmalar faqat private guruhga yuboriladi.
@@ -263,8 +263,8 @@ export interface BotGroupFormModel {
   active: boolean
   postOrdersToPublic: boolean
   groupInviteRewardAmount: number
-  public: { telegramChatId: string }
-  private: { telegramChatId: string }
+  public: { username: string }
+  private: { inviteLink: string }
 }
 
 const props = defineProps<{
@@ -310,14 +310,14 @@ const patch = <K extends keyof BotGroupFormModel>(key: K, value: BotGroupFormMod
   emit('update:modelValue', { ...props.modelValue, [key]: value })
 }
 
-const patchPublic = (key: 'telegramChatId', value: string | number | null) => {
+const patchPublic = (key: 'username', value: string | number | null) => {
   emit('update:modelValue', {
     ...props.modelValue,
-    public: { ...props.modelValue.public, [key]: String(value ?? '') },
+    public: { ...props.modelValue.public, [key]: String(value ?? '').replace(/^@/, '') },
   })
 }
 
-const patchPrivate = (key: 'telegramChatId', value: string | number | null) => {
+const patchPrivate = (key: 'inviteLink', value: string | number | null) => {
   emit('update:modelValue', {
     ...props.modelValue,
     private: { ...props.modelValue.private, [key]: String(value ?? '') },

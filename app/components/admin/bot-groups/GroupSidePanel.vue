@@ -23,8 +23,15 @@
       </span>
     </div>
 
-    <p class="text-[12px] font-bold text-slate-800 dark:text-slate-100 break-all leading-snug font-mono">
-      {{ side.telegramChatId || "Guruh ID yo'q" }}
+    <p v-if="!isPrivate" class="text-[12px] font-bold text-slate-800 dark:text-slate-100 break-all leading-snug">
+      @{{ displayUsername }}
+    </p>
+    <p v-else class="text-[11px] font-semibold text-slate-700 dark:text-slate-200 break-all leading-snug">
+      {{ side.inviteLink || "Invite link yo'q" }}
+    </p>
+
+    <p v-if="side.telegramChatId" class="text-[10px] font-mono text-slate-500 dark:text-slate-400 break-all">
+      ID: {{ side.telegramChatId }}
     </p>
     <p v-if="side.telegramTitle" class="text-[10px] font-semibold text-slate-500 dark:text-slate-400 truncate">
       {{ side.telegramTitle }}
@@ -61,4 +68,10 @@ const props = defineProps<{
 defineEmits<{ refresh: [] }>()
 
 const isPrivate = computed(() => props.side.kind === 'private')
+
+const displayUsername = computed(() => {
+  const u = String(props.side.username || '').trim().replace(/^@/, '')
+  if (!u || u.endsWith('-private') || u.endsWith('-public')) return '—'
+  return u
+})
 </script>

@@ -51,7 +51,8 @@ export type ListenerCandidate = {
 }
 
 export type BotRegionSidePayload = {
-  telegramChatId?: string
+  username?: string
+  inviteLink?: string
 }
 
 export type BotRegionPayload = {

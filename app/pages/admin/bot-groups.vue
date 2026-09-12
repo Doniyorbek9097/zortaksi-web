@@ -128,8 +128,8 @@ const emptyForm = (): BotGroupFormModel => ({
   active: true,
   postOrdersToPublic: true,
   groupInviteRewardAmount: 500,
-  public: { telegramChatId: '' },
-  private: { telegramChatId: '' },
+  public: { username: '' },
+  private: { inviteLink: '' },
 })
 
 const form = ref<BotGroupFormModel>(emptyForm())
@@ -175,10 +175,10 @@ const onSubmit = async () => {
     postOrdersToPublic: form.value.postOrdersToPublic,
     groupInviteRewardAmount: form.value.groupInviteRewardAmount,
     public: {
-      telegramChatId: form.value.public.telegramChatId.trim(),
+      username: form.value.public.username.trim().replace(/^@/, ''),
     },
     private: {
-      telegramChatId: form.value.private.telegramChatId.trim(),
+      inviteLink: form.value.private.inviteLink.trim(),
     },
   }
 
@@ -190,10 +190,10 @@ const onSubmit = async () => {
         error.value = 'Bot token kiriting'
         return
       }
-      const hasPublic = !!payload.public.telegramChatId
-      const hasPrivate = !!payload.private.telegramChatId
+      const hasPublic = !!payload.public.username
+      const hasPrivate = !!payload.private.inviteLink
       if (!hasPublic && !hasPrivate) {
-        error.value = 'Public yoki private guruh ID kiriting'
+        error.value = 'Public @username yoki private invite link kiriting'
         return
       }
       if (hasPublic && tokenUsage.value && !tokenUsage.value.canAddPublic) {
@@ -223,10 +223,14 @@ const startEdit = (card: BotRegionCard) => {
     postOrdersToPublic: card.postOrdersToPublic !== false,
     groupInviteRewardAmount: card.groupInviteRewardAmount ?? 500,
     public: {
-      telegramChatId: card.public?.telegramChatId || '',
+      username: (() => {
+        const u = String(card.public?.username || '').trim().replace(/^@/, '')
+        if (!u || u.endsWith('-public') || u.endsWith('-private')) return ''
+        return u
+      })(),
     },
     private: {
-      telegramChatId: card.private?.telegramChatId || '',
+      inviteLink: card.private?.inviteLink || '',
     },
   }
   if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
