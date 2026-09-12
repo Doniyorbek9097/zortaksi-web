@@ -69,7 +69,7 @@
             <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-sm" />
           </span>
           <div>
-            <p class="text-[12px] font-black text-slate-900 dark:text-white">E'lon joylash</p>
+            <p class="text-[12px] font-black text-slate-900 dark:text-white">Saqlangan e'lonlar</p>
             <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami</p>
           </div>
         </div>
@@ -281,7 +281,6 @@ const navItems = computed(() => {
     { title: 'Haydovchilar', icon: 'fa-solid fa-users', tone: 'green' as const, to: '/admin/drivers' },
     { title: "To'lovlar", icon: 'fa-solid fa-receipt', tone: 'amber' as const, to: '/admin/payments' },
     { title: 'Tariflar', icon: 'fa-solid fa-tags', tone: 'violet' as const, to: '/admin/tariffs' },
-    { title: 'E\'lonlar', icon: 'fa-solid fa-bullhorn', tone: 'amber' as const, to: '/admin/driver-posts' },
     { title: 'Bot guruhlari', icon: 'fa-solid fa-bullhorn', tone: 'rose' as const, to: '/admin/bot-groups' },
     { title: 'Bloklanganlar', icon: 'fa-solid fa-ban', tone: 'rose' as const, to: '/admin/blocked' },
   ]
