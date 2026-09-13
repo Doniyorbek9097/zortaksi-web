@@ -3,10 +3,7 @@
     <div :class="supportWelcomeCardClass">
       <div :class="supportWelcomeOverlayClass" aria-hidden="true" />
 
-      <div class="relative px-3.5 py-3 flex items-start gap-3">
-        <span :class="supportHeaderIconClass">
-          <font-awesome-icon icon="fa-solid fa-headset" class="text-[15px]" />
-        </span>
+      <div class="relative px-3.5 py-3">
         <p :class="supportWelcomeSubtitleClass">
           {{ SUPPORT_WELCOME_TEXT }}
         </p>
@@ -18,7 +15,6 @@
 <script setup lang="ts">
 import {
   SUPPORT_WELCOME_TEXT,
-  supportHeaderIconClass,
   supportWelcomeCardClass,
   supportWelcomeOverlayClass,
   supportWelcomeSubtitleClass,

@@ -1,6 +1,6 @@
 /** Yordam (support) chat — umumiy rang palitrasi va classlar */
 
-export const SUPPORT_OPERATOR_LABEL = 'Yordamchi operator'
+export const SUPPORT_OPERATOR_LABEL = 'Administrator'
 
 export const SUPPORT_WELCOME_TEXT =
   "Savolingizni yozing — sizga tez orada javob beramiz"
@@ -12,7 +12,7 @@ export const supportHeaderClass =
   'bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 dark:from-[#5b21b6] dark:via-[#4c1d95] dark:to-[#4338ca] border-b border-violet-300/40 dark:border-violet-400/25 shadow-md shadow-violet-500/10 dark:shadow-violet-950/25'
 
 export const supportHeaderIconClass =
-  'w-9 h-9 shrink-0 rounded-xl bg-white/25 dark:bg-gradient-to-br dark:from-amber-300/30 dark:to-violet-300/10 ring-1 ring-white/30 dark:ring-amber-200/25 flex items-center justify-center text-white dark:text-amber-100'
+  'w-9 h-9 shrink-0 rounded-xl bg-violet-500/15 dark:bg-gradient-to-br dark:from-amber-300/30 dark:to-violet-300/10 ring-1 ring-violet-300/55 dark:ring-amber-200/25 flex items-center justify-center text-violet-600 dark:text-amber-100'
 
 export const supportListItemClass =
   'bg-gradient-to-r from-violet-50 via-indigo-50/90 to-violet-50 dark:from-[#1a1030] dark:via-[#151028] dark:to-[#1a1030] border-violet-200/80 dark:border-violet-500/25 shadow-sm shadow-violet-500/5'
@@ -55,9 +55,6 @@ export const supportWelcomeTitleClass =
 
 export const supportWelcomeSubtitleClass =
   'text-[11px] font-medium text-violet-600/90 dark:text-violet-200/75 mt-0.5 leading-snug'
-
-export const supportEmptyIconWrapClass =
-  'w-14 h-14 rounded-2xl bg-violet-100 border border-violet-200 dark:bg-violet-500/15 dark:border-violet-400/20 flex items-center justify-center text-violet-600 dark:text-violet-200 mb-3'
 
 export const supportEmptyTitleClass =
   'text-[15px] font-black text-violet-900 dark:text-violet-100'

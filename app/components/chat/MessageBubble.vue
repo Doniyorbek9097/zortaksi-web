@@ -394,7 +394,9 @@ const bubbleSurfaceClass = computed(() => {
 
 const metaTextClass = computed(() => {
   if (!props.support) return 'text-slate-400 dark:text-slate-300'
-  return props.out ? 'text-violet-100/75' : 'text-violet-300/55'
+  return props.out
+    ? 'text-violet-100/75'
+    : 'text-violet-500/75 dark:text-violet-300/55'
 })
 
 /** Failed xabarda ko'rsatiladigan sabab — media xabarlarda ham ko'rsatiladi */

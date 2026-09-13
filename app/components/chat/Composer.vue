@@ -102,8 +102,8 @@
           :disabled="disabled"
           class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           :class="support
-            ? 'text-violet-300/70 hover:bg-violet-500/10'
-            : 'text-slate-400 dark:text-slate-500 hover:bg-black/5 dark:hover:bg-white/5'"
+            ? 'text-violet-600/80 dark:text-violet-300/70 hover:bg-violet-500/10'
+            : 'text-slate-500 dark:text-slate-500 hover:bg-black/5 dark:hover:bg-white/5'"
           aria-label="Rasm biriktirish"
           @click="pickImage"
         >
@@ -162,8 +162,8 @@
             class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
             :class="[
               support
-                ? 'text-violet-50 placeholder:text-violet-300/45'
-                : 'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500',
+                ? 'text-violet-900 dark:text-violet-50 placeholder:text-violet-600/80 dark:placeholder:text-violet-300/50'
+                : 'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-500',
               hasSlashCommands ? 'pl-0.5' : 'pl-4',
             ]"
             @touchstart.passive="unlockDraft"

@@ -151,9 +151,6 @@
           v-else-if="!chatStore.messages.length && showReadyEmpty && isSupportPremium"
           class="flex-1 flex flex-col items-center justify-center px-6 py-8 text-center"
         >
-          <div :class="supportEmptyIconWrapClass">
-            <font-awesome-icon icon="fa-solid fa-headset" class="text-xl" />
-          </div>
           <p :class="supportEmptySubtitleClass">
             {{ SUPPORT_WELCOME_TEXT }}
           </p>
@@ -202,7 +199,7 @@
           :selection-mode="selectionMode"
           :selected="isMessageSelected(String(msg._id))"
           :reply-to="msg.replyTo"
-          :support="isSupportPremium"
+          :support="isSupportBubble(msg.direction)"
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
@@ -217,7 +214,7 @@
         >
           <div
             class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
-            :class="isSupportPremium ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
+            :class="(isSupportPremium || (isSupport && isAdmin)) ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
           >
             <span class="inline-flex items-center gap-1">
               yozmoqda
@@ -375,7 +372,6 @@ import {
   SUPPORT_CHAT_SHELL,
   SUPPORT_WELCOME_TEXT,
   supportDatePillClass,
-  supportEmptyIconWrapClass,
   supportEmptySubtitleClass,
   supportSkeletonClass,
   supportTypingClass,
@@ -449,6 +445,7 @@ const {
   goOrders,
   isSupport,
   isSupportPremium,
+  isSupportBubble,
   name,
   statusText,
   isOnline,
