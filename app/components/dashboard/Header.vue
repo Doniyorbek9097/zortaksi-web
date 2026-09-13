@@ -47,7 +47,7 @@ const actionClass = computed(() => {
     return 'bg-sky-500/10 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400'
   }
   if (effectiveAction.value === 'help') {
-    return 'bg-gradient-to-r from-violet-500/12 via-indigo-500/10 to-violet-500/12 dark:from-violet-950/50 dark:via-indigo-950/40 dark:to-violet-950/50 border-violet-200/80 dark:border-violet-800/60 text-violet-600 dark:text-violet-300 shadow-violet-500/10'
+    return 'bg-gradient-to-r from-violet-600/12 via-indigo-600/10 to-violet-600/12 dark:from-[#1a1030] dark:via-[#151028] dark:to-[#1a1030] border-violet-300/70 dark:border-violet-500/30 text-violet-700 dark:text-violet-200 shadow-md shadow-violet-500/10'
   }
   return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-amber-500'
 })

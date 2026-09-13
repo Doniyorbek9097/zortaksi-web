@@ -1,6 +1,7 @@
 <template>
   <footer
-    class="shrink-0 z-30 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800"
+    class="shrink-0 z-30"
+    :class="support ? supportComposerFooterClass : 'bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800'"
     :style="{ paddingBottom: 'var(--zt-safe-bottom, 0px)' }"
   >
     <Transition name="chat-call-bar">
@@ -99,7 +100,10 @@
         <button
           type="button"
           :disabled="disabled"
-          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          :class="support
+            ? 'text-violet-300/70 hover:bg-violet-500/10'
+            : 'text-slate-400 dark:text-slate-500 hover:bg-black/5 dark:hover:bg-white/5'"
           aria-label="Rasm biriktirish"
           @click="pickImage"
         >
@@ -115,8 +119,11 @@
         >
 
         <div
-          class="flex-1 flex items-center min-w-0 rounded-full bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all"
-          :class="disabled ? 'opacity-60' : ''"
+          class="flex-1 flex items-center min-w-0 rounded-full transition-all"
+          :class="[
+            support ? supportComposerInputClass : 'bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30',
+            disabled ? 'opacity-60' : '',
+          ]"
         >
           <button
             v-if="hasSlashCommands"
@@ -152,7 +159,10 @@
             :readonly="draftLocked"
             :disabled="disabled"
             :placeholder="inputPlaceholder"
-            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
+            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
+            :class="support
+              ? 'text-violet-50 placeholder:text-violet-300/45'
+              : 'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'"
             :class="hasSlashCommands ? 'pl-0.5' : 'pl-4'"
             @touchstart.passive="unlockDraft"
             @mousedown="unlockDraft"
@@ -170,7 +180,8 @@
           v-if="text.trim()"
           type="submit"
           :disabled="disabled"
-          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500 text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          :class="support ? supportComposerSendClass : 'bg-sky-500 text-white'"
           aria-label="Yuborish"
         >
           <font-awesome-icon icon="fa-solid fa-paper-plane" />
@@ -179,7 +190,8 @@
           v-else
           type="button"
           :disabled="disabled"
-          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500 text-white active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          :class="support ? supportComposerSendClass : 'bg-sky-500 text-white'"
           aria-label="Ovozli xabar"
           @click="startRecording"
         >
@@ -206,6 +218,7 @@ import {
 } from '~/utils/voiceRecording'
 import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
 import { useMobileKeyboardOpen } from '~/composables/useMobileKeyboardOpen'
+import { supportComposerFooterClass, supportComposerInputClass, supportComposerSendClass } from '~/utils/supportChatTheme'
 
 const text = defineModel<string>({ default: '' })
 
@@ -216,6 +229,7 @@ const props = withDefaults(
     slashCommands?: AdminSlashCommandItem[]
     callHref?: string
     callLabel?: string
+    support?: boolean
   }>(),
   {
     disabled: false,
@@ -223,6 +237,7 @@ const props = withDefaults(
     slashCommands: () => [],
     callHref: '',
     callLabel: "Qo'ng'iroq qiling",
+    support: false,
   },
 )
 

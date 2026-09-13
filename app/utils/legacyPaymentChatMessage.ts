@@ -18,6 +18,8 @@ export function isLegacyPaymentChatMessage(msg: Pick<IChatMessage, 'text'>): boo
     return true
   }
   if (lower.includes('karta raqamini yuboring') && lower.includes('summa')) return true
+  if (lower.includes('admin yordam') && lower.includes("to'lov")) return true
+  if (t.includes('💳') && lower.includes('admin yordam')) return true
 
   return false
 }

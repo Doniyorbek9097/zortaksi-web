@@ -1,4 +1,5 @@
 import type { IChat } from '~/types'
+import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
 
 /** Support chat — admin bilan yozishma */
 export const isSupportChat = (chat: IChat) => chat.kind === 'support'
@@ -10,13 +11,16 @@ export const isDriverPeerChat = (chat: IChat) =>
 /**
  * Chat ro'yxatidagi ism — ism, username yoki userId.
  */
-export const chatPeerName = (chat: IChat) => {
+export const chatPeerName = (chat: IChat, opts?: { viewerIsAdmin?: boolean }) => {
+  if (isSupportChat(chat) && !opts?.viewerIsAdmin) {
+    return SUPPORT_OPERATOR_LABEL
+  }
   const p = chat.peer
   const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
   if (full) return full
   if (p.username) return p.username
   if (p.userId) return p.userId
-  return isSupportChat(chat) ? 'Admin' : 'Buyurtmachi'
+  return isSupportChat(chat) ? SUPPORT_OPERATOR_LABEL : 'Buyurtmachi'
 }
 
 /**

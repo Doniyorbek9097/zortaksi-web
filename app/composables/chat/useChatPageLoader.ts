@@ -18,6 +18,7 @@ import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { isAdminUser } from '~/utils/userRole'
+import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ChatStore = ReturnType<typeof useChatStore>
@@ -161,7 +162,7 @@ export function useChatPageLoader(opts: {
     if (String(q.open || '') !== 'support') return
 
     const userId = String(q.userId || '').trim()
-    const name = String(q.name || '').trim() || (userId ? 'Haydovchi' : 'Admin yordam')
+    const name = String(q.name || '').trim() || (userId ? 'Haydovchi' : SUPPORT_OPERATOR_LABEL)
 
     chatStore.isLoadingMessages = false
     chatStore.connectionStatus = 'ready'
@@ -172,7 +173,7 @@ export function useChatPageLoader(opts: {
       inAppOnly: true,
       peer: userId
         ? { userId, firstName: name }
-        : { firstName: 'Admin', lastName: 'yordam' },
+        : { firstName: SUPPORT_OPERATOR_LABEL },
     }) as import('~/types').IChat
     chatStore.primeFromChat(chatStore.currentChat)
   }

@@ -2,9 +2,7 @@
   <header
     class="sticky top-0 shrink-0 z-40"
     :style="{ paddingTop: 'var(--zt-safe-top, 0px)' }"
-    :class="support
-      ? 'bg-gradient-to-r from-violet-700 via-indigo-700 to-violet-800 border-b border-violet-500/30 shadow-lg shadow-violet-950/25'
-      : 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50'"
+    :class="support ? supportHeaderClass : 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50'"
   >
     <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-1.5 flex items-center gap-2">
       <button
@@ -41,11 +39,8 @@
       </button>
 
       <template v-else>
-        <div
-          v-if="support"
-          class="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-amber-300/25 to-amber-500/20 ring-1 ring-amber-200/30 flex items-center justify-center text-amber-100"
-        >
-          <font-awesome-icon icon="fa-solid fa-crown" class="text-[15px]" />
+        <div v-if="support" :class="supportHeaderIconClass">
+          <font-awesome-icon icon="fa-solid fa-user-shield" class="text-[15px]" />
         </div>
         <ProfileAvatar
           v-else
@@ -105,6 +100,8 @@
 </template>
 
 <script setup lang="ts">
+import { supportHeaderClass, supportHeaderIconClass } from '~/utils/supportChatTheme'
+
 interface Props {
   name: string
   status?: string

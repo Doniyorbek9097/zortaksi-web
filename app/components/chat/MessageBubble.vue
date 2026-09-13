@@ -48,7 +48,7 @@
     <div
       class="relative max-w-full rounded-2xl px-3.5 py-2 shadow-sm overflow-hidden select-text"
       :class="[
-        'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600',
+        bubbleSurfaceClass,
         out ? 'rounded-br-md' : 'rounded-bl-md',
         type === 'photo' ? '!p-1.5' : '',
         isFileBadge ? '!p-2' : '',
@@ -231,8 +231,11 @@
       </p>
 
       <div
-        class="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400 dark:text-slate-300"
-        :class="type === 'photo' || isFileBadge ? 'px-1.5 pb-0.5' : ''"
+        class="mt-1 flex items-center justify-end gap-1 text-[10px]"
+        :class="[
+          metaTextClass,
+          type === 'photo' || isFileBadge ? 'px-1.5 pb-0.5' : '',
+        ]"
       >
         <span>{{ time }}</span>
         <template v-if="out">
@@ -247,7 +250,9 @@
             v-else
             :icon="(read || status === 'read') ? 'fa-solid fa-check-double' : 'fa-solid fa-check'"
             class="text-[9px]"
-            :class="(read || status === 'read') ? 'text-sky-500' : ''"
+            :class="(read || status === 'read')
+              ? (support ? 'text-emerald-300' : 'text-sky-500')
+              : ''"
           />
         </template>
       </div>
@@ -320,6 +325,7 @@ import {
   getChatFileTypeLabel,
   isChatFileBadgeType,
 } from '~/utils/chatFileTypeLabel'
+import { supportBubbleInClass, supportBubbleOutClass } from '~/utils/supportChatTheme'
 
 interface Props {
   text?: string
@@ -352,6 +358,8 @@ interface Props {
     type?: string
     direction?: 'in' | 'out'
   } | null
+  /** Yordam chat — premium bubble ranglari */
+  support?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -374,6 +382,19 @@ const props = withDefaults(defineProps<Props>(), {
   selectionMode: false,
   selected: false,
   replyTo: null,
+  support: false,
+})
+
+const bubbleSurfaceClass = computed(() => {
+  if (props.support) {
+    return props.out ? supportBubbleOutClass : supportBubbleInClass
+  }
+  return 'bg-white text-slate-800 border border-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:border-slate-600'
+})
+
+const metaTextClass = computed(() => {
+  if (!props.support) return 'text-slate-400 dark:text-slate-300'
+  return props.out ? 'text-violet-100/75' : 'text-violet-300/55'
 })
 
 /** Failed xabarda ko'rsatiladigan sabab — media xabarlarda ham ko'rsatiladi */

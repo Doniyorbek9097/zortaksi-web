@@ -16,6 +16,7 @@ import {
   revealOrderTextPhones,
 } from '~/utils/phone'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
+import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
 
 type ChatStore = ReturnType<typeof useChatStore>
 
@@ -89,6 +90,7 @@ export function useChatPageMeta(opts: {
   })
 
   const name = computed(() => {
+    if (isSupport.value && !isAdmin.value) return SUPPORT_OPERATOR_LABEL
     const p = activeChatMeta.value?.peer
     if (p) {
       const full = [p.firstName, p.lastName].filter(Boolean).join(' ').trim()
@@ -98,7 +100,7 @@ export function useChatPageMeta(opts: {
     }
     const qName = (route.query.name as string) || ''
     if (qName) return qName
-    if (isSupport.value) return 'Admin'
+    if (isSupport.value) return SUPPORT_OPERATOR_LABEL
     if (isDirect.value) return 'Haydovchi'
     return 'Buyurtmachi'
   })
@@ -107,6 +109,7 @@ export function useChatPageMeta(opts: {
   const peerUserId = computed(() => activeChatMeta.value?.peer?.userId)
 
   const orderText = computed(() => {
+    if (isSupport.value) return ''
     const fromChat = String(activeChatMeta.value?.orderText || '').trim()
     if (fromChat) return fromChat
     return resolveOrderTextHint(route.query as Record<string, unknown>, activeChatMeta.value)
@@ -154,7 +157,7 @@ export function useChatPageMeta(opts: {
     if (chatStore.isPeerTyping) return 'yozmoqda...'
     if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
     if (isDirect.value) return 'Haydovchi'
-    if (isSupport.value && !isAdmin.value) return 'Rasmiy yordam'
+    if (isSupport.value && !isAdmin.value) return 'Onlayn yordam'
     if (hasInstantContext.value && chatStore.isLoadingMessages) return 'yangilanmoqda...'
     return '...'
   })
@@ -168,6 +171,7 @@ export function useChatPageMeta(opts: {
   )
 
   const showOrderBanner = computed(() => {
+    if (isSupport.value) return false
     if (showMessageSkeleton.value && !hasInstantContext.value) return false
     return isDirect.value || !!orderText.value
   })
@@ -198,6 +202,7 @@ export function useChatPageMeta(opts: {
   })
 
   const callPhone = computed(() => {
+    if (isSupport.value) return ''
     const qPhone = String(route.query.phone || '').trim()
     if (qPhone.replace(/\D/g, '').length >= 7) {
       return normalizeTo998(qPhone) || qPhone.replace(/\D/g, '')

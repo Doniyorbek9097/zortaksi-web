@@ -49,6 +49,7 @@
         :unread="chat.unreadCount"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
+        :support="isSupport(chat)"
         :show-driver-page="showDriverPageFor(chat)"
         @open="openChat(chat)"
         @toggle="toggleOne(chat._id)"

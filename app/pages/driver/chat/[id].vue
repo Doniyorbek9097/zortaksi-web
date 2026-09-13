@@ -1,9 +1,7 @@
 <template>
   <div
     class="fixed z-40 flex flex-col overflow-hidden"
-    :class="isSupport
-      ? 'bg-gradient-to-b from-violet-950/95 via-slate-950 to-slate-950'
-      : 'bg-slate-50 dark:bg-slate-950'"
+    :class="isSupport ? SUPPORT_CHAT_SHELL : 'bg-slate-50 dark:bg-slate-950'"
     :style="frameStyle"
   >
     <ChatHeader
@@ -14,29 +12,17 @@
       :user-id="peerUserId"
       :support="isSupport"
       :profile-chat-id="effectiveChatId"
-      :show-clear-history="showClearHistoryBtn && !selectionMode"
+      :show-clear-history="showClearHistoryBtn && !selectionMode && !isSupport"
       :clearing="isClearingHistory"
       @back="goBack"
       @clear="openClearHistoryDialog"
     >
-      <template v-if="callPhone && callTelHref" #actions>
+      <template v-if="callPhone && callTelHref && !isSupport" #actions>
         <ChatCallBar :href="callTelHref" class="!mb-0" />
       </template>
     </ChatHeader>
 
-    <div
-      v-if="isSupport && !isAdmin"
-      class="shrink-0 mx-auto w-full max-w-2xl px-3 py-2"
-    >
-      <div class="flex items-center gap-2 rounded-2xl px-3 py-2 bg-violet-500/10 border border-violet-400/20 backdrop-blur-sm">
-        <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/30 to-violet-500/30 flex items-center justify-center text-amber-200 shrink-0">
-          <font-awesome-icon icon="fa-solid fa-shield-halved" class="text-xs" />
-        </span>
-        <p class="text-[11px] font-bold leading-snug text-violet-100/90">
-          Rasmiy admin yordami — to'lov, tarif va texnik savollar uchun
-        </p>
-      </div>
-    </div>
+    <ChatSupportWelcomeCard v-if="isSupport && !isAdmin" />
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -99,8 +85,9 @@
         class="pointer-events-none absolute top-2 left-0 right-0 z-20 flex justify-center"
       >
         <span
-          class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold text-white shadow-sm backdrop-blur-sm"
-          style="background: rgba(34, 158, 87, 0.92);"
+          class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold shadow-sm backdrop-blur-sm"
+          :class="isSupport ? supportDatePillClass : 'text-white'"
+          :style="isSupport ? undefined : { background: 'rgba(34, 158, 87, 0.92)' }"
         >
           {{ floatingDateLabel }}
         </span>
@@ -151,12 +138,26 @@
           <div
             v-for="n in CHAT_SKELETON_ROWS"
             :key="n"
-            class="h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+            class="h-11 rounded-2xl animate-pulse"
+            :class="isSupport ? supportSkeletonClass : 'bg-slate-100 dark:bg-slate-800'"
             :class="n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto'"
           />
         </div>
 
         <!-- Empty — darhol ko'rinsin (order konteksti bo'lsa) -->
+        <div
+          v-else-if="!chatStore.messages.length && showReadyEmpty && isSupport"
+          class="flex-1 flex flex-col items-center justify-center px-6 py-8 text-center"
+        >
+          <div class="w-14 h-14 rounded-2xl bg-violet-500/15 border border-violet-400/20 flex items-center justify-center text-violet-200 mb-3">
+            <font-awesome-icon icon="fa-solid fa-user-shield" class="text-xl" />
+          </div>
+          <p class="text-[15px] font-black text-violet-100">Savolingizni yozing</p>
+          <p class="text-[12px] font-medium text-violet-300/65 mt-1 max-w-[240px] leading-snug">
+            Operator tez orada javob beradi
+          </p>
+        </div>
+
         <BaseEmptyState
           v-else-if="!chatStore.messages.length && showReadyEmpty"
           icon="fa-solid fa-comments"
@@ -200,6 +201,7 @@
           :selection-mode="selectionMode"
           :selected="isMessageSelected(String(msg._id))"
           :reply-to="msg.replyTo"
+          :support="isSupport"
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
@@ -213,7 +215,8 @@
           class="flex justify-start"
         >
           <div
-            class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700"
+            class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
+            :class="isSupport ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
           >
             <span class="inline-flex items-center gap-1">
               yozmoqda
@@ -320,6 +323,7 @@
     <ChatReplyBar
       v-if="replyTarget"
       :reply="replyTarget"
+      :support="isSupport"
       @cancel="replyTarget = null"
     />
 
@@ -329,6 +333,7 @@
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
       :slash-commands="adminSlashCommands"
+      :support="isSupport"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -365,6 +370,12 @@
 <script setup lang="ts">
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import { useDriverChatPage } from '~/composables/chat/useDriverChatPage'
+import {
+  SUPPORT_CHAT_SHELL,
+  supportDatePillClass,
+  supportSkeletonClass,
+  supportTypingClass,
+} from '~/utils/supportChatTheme'
 
 definePageMeta({
   layout: false,
@@ -445,6 +456,13 @@ const {
 </script>
 
 <style scoped>
+.support-chat-shell {
+  background:
+    radial-gradient(ellipse 130% 70% at 50% -15%, rgba(124, 58, 237, 0.32), transparent 58%),
+    radial-gradient(ellipse 70% 45% at 100% 100%, rgba(99, 102, 241, 0.14), transparent 50%),
+    linear-gradient(180deg, #130a26 0%, #0c0718 48%, #080510 100%);
+}
+
 .typing-dots {
   display: inline-flex;
   align-items: center;

@@ -1,6 +1,7 @@
 import type { IChat } from '~/types'
 import { useChatStore } from '~/stores/chat.store'
 import { compactQuery } from '~/utils/navigationQuery'
+import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
 
 /** Admin ↔ haydovchi support chat — chats ro'yxatidan */
 export function findSupportChatByDriverId(
@@ -153,7 +154,7 @@ function adoptDriverSupportChat(chat: IChat) {
  */
 export function openDriverSupportChatInstant() {
   const chatStore = useChatStore()
-  const name = 'Admin yordam'
+  const name = SUPPORT_OPERATOR_LABEL
   const navQuery = compactQuery({
     open: 'support',
     name,
@@ -177,7 +178,7 @@ export function openDriverSupportChatInstant() {
   chatStore.currentChat = {
     kind: 'support',
     inAppOnly: true,
-    peer: { firstName: 'Admin', lastName: 'yordam' },
+    peer: { firstName: SUPPORT_OPERATOR_LABEL },
   } as IChat
   chatStore.primeFromChat(chatStore.currentChat)
   chatStore.isLoadingMessages = false
