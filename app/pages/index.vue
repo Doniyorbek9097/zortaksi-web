@@ -52,7 +52,17 @@
             </div>
   
             <p class="text-lg md:text-xl font-light max-w-xl leading-relaxed mx-auto md:mx-0 text-neutral-600 dark:text-neutral-400">
-              Yo'lovchi so'rovlarini bitta joyda ko'ring, hududingizga mosini tanlang va tez bog'laning — qidirishga vaqt sarflamang.
+              <strong class="font-semibold text-neutral-800 dark:text-neutral-200">Shofyor bo'lsangiz</strong>,
+              Telegram akkauntingizni Zo'r Taksi ga ulang — Telegramdagi buyurtmalar bitta joyda ko'rinadi,
+              yo'nalishingiz bo'yicha e'loningiz kerakli guruhlarga <strong class="font-semibold text-neutral-800 dark:text-neutral-200">avtomatik tarqaladi</strong>.
+              Ishingiz osonlashadi, yo'lovchi topish tezlashadi.
+            </p>
+
+            <p
+              v-if="showApkDownload"
+              class="text-sm md:text-base max-w-xl leading-relaxed mx-auto md:mx-0 text-emerald-700 dark:text-emerald-400 font-medium"
+            >
+              📲 Ilovani yuklab olsangiz — yanada tez, qulay va doim qo'l ostida ishlaydi.
             </p>
   
             <div class="flex flex-wrap gap-3 justify-center md:justify-start pt-2">
@@ -89,18 +99,18 @@
               <div class="space-y-3">
                 <div class="flex items-center gap-2 rounded-xl p-3 border
                             bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/15 dark:border-sky-400/20">
-                  <span class="text-lg">🚗</span>
-                  <span class="text-sm font-medium">Samarqand → Urgut · 2 kishi</span>
+                  <span class="text-lg">📋</span>
+                  <span class="text-sm font-medium">Telegram buyurtmalar — bir joyda</span>
                 </div>
                 <div class="flex items-center gap-2 rounded-xl p-3 border
                             bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-400/15 dark:border-emerald-400/20">
                   <span class="text-lg">✅</span>
-                  <span class="text-sm font-medium">Yangi buyurtma keldi!</span>
+                  <span class="text-sm font-medium">Namangan → Toshkent · yangi so'rov</span>
                 </div>
                 <div class="flex items-center gap-2 rounded-xl p-3 border
                             bg-violet-500/10 border-violet-500/20 dark:bg-violet-400/15 dark:border-violet-400/20">
                   <span class="text-lg">📢</span>
-                  <span class="text-sm font-medium">E'loningiz joylandi</span>
+                  <span class="text-sm font-medium">E'lon guruhlarga avtomatik yuborildi</span>
                 </div>
               </div>
             </div>
@@ -128,9 +138,9 @@
               Telefonga ilovani o'rnating
             </h2>
             <p class="text-sm md:text-base text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-2xl">
-              Brauzerdan tezroq kirish, qulay interfeys va bildirishnomalar uchun
-              <strong class="font-semibold text-neutral-800 dark:text-neutral-200">Android ilovasini</strong>
-              o'rnating. Ro'yxatdan o'tmasdan ham yuklab olish sahifasiga kirishingiz mumkin.
+              Buyurtmalar va e'lonlarni kuzatish brauzerdan ham mumkin, lekin
+              <strong class="font-semibold text-neutral-800 dark:text-neutral-200">Android ilovasi</strong>
+              yanada qulay: tez ochiladi, bildirishnomalar keladi, yo'lda ham qulay ishlaydi.
             </p>
           </div>
           <LandingButton to="/download-app" variant="primary">
@@ -143,8 +153,8 @@
       <section class="py-20 px-5 max-w-6xl mx-auto">
         <LandingSectionHeader 
           badge="🚗 Faqat haydovchilar uchun"
-          title="Nega haydovchilar ZorTaksi ni tanlaydi?"
-          description="Bu platforma yo'lovchilarga emas — <strong class='font-semibold text-neutral-900 dark:text-neutral-50'>taksi haydovchilariga</strong> mo'ljallangan. Qidirishga ketadigan vaqt o'rniga barcha mos so'rovlar bitta panelda jamlanadi."
+          title="Zo'r Taksi nima qiladi?"
+          description="Telegram hisobingizni ulang — buyurtmalar bitta joyda, e'loningiz yo'nalishingiz bo'yicha guruhlarga o'zi chiqadi. Siz faqat ishga e'tibor bering."
         />
   
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -164,8 +174,8 @@
       <section class="py-20 px-5 bg-neutral-100 dark:bg-neutral-900/60">
         <div class="max-w-6xl mx-auto">
           <LandingSectionHeader 
-            title="Haydovchi sifatida qanday ishlaydi?"
-            description="Ro'yxatdan o'tishdan buyurtma olishgacha — 4 oddiy qadam"
+            title="Qanday ishlaydi?"
+            description="Telegramni ulang — qolganini Zo'r Taksi o'zi qiladi"
           />
   
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -199,8 +209,11 @@
       <section class="relative py-16 px-5 overflow-hidden">
         <div class="absolute -top-24 left-1/3 w-72 h-72 rounded-full bg-emerald-400/20 dark:bg-emerald-400/15 blur-3xl pointer-events-none" />
         <div class="max-w-2xl mx-auto text-center space-y-6 relative z-10">
-          <h2 class="text-3xl font-black">Haydovchi yoki yo'lovchi?</h2>
-          <p class="text-lg text-neutral-600 dark:text-neutral-400">Haydovchi bo'ling yoki yo'lovchi sifatida e'lon joylang</p>
+          <h2 class="text-3xl font-black">Ishni bugun osonlashtiring</h2>
+          <p class="text-lg text-neutral-600 dark:text-neutral-400">
+            Telegramni ulang, buyurtmalarni bir joyda ko'ring, e'loningiz avtomatik tarqalsin.
+            Ilovani yuklab olsangiz — yanada qulay.
+          </p>
           <div class="flex flex-wrap gap-3 justify-center">
             <LandingButton to="/auth" variant="primary">
               Haydovchi bo'lish
@@ -265,42 +278,42 @@
   const features = [
     {
       icon: '📋',
-      title: 'So\'rovlar bir joyda',
-      desc: 'Turli manbalardagi yo\'lovchi so\'rovlari avtomatik yig\'iladi — bir nechta joyni qo\'lda kuzatib yurish shart emas.',
+      title: 'Buyurtmalar bir joyda',
+      desc: 'Telegramdagi yo\'lovchi so\'rovlari bitta panelda — guruhlarni alohida aylanib chiqish shart emas.',
       iconBg: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+    },
+    {
+      icon: '📢',
+      title: 'Avto-reklama',
+      desc: 'E\'loningiz yo\'nalishingiz bo\'yicha kerakli Telegram guruhlarga o\'zi tarqaladi — qo\'lda yuborish bilan vaqt yo\'qotmaysiz.',
+      iconBg: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
     },
     {
       icon: '📞',
       title: 'Tez bog\'lanish',
-      desc: 'Yo\'lovchining telefon raqami tayyor — bir bosishda qo\'ng\'iroq qiling va buyurtmani tezda oling.',
+      desc: 'Telefon raqam tayyor — bir bosishda qo\'ng\'iroq qiling, yo\'lovchini tezroq toping.',
       iconBg: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
     },
     {
-      icon: '📢',
-      title: 'O\'z e\'loningizni yuboring',
-      desc: 'Bo\'sh o\'rin bormi? Bir marta e\'lon joylang — ko\'proq yo\'lovchiga ko\'rinasiz.',
-      iconBg: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
-    },
-    {
-      icon: '📍',
-      title: 'Hududingiz bo\'yicha',
-      desc: 'Kalit so\'zlaringizni belgilang — faqat sizga mos so\'rovlar panelingizda chiqadi.',
+      icon: '📲',
+      title: 'Ilova — yanada qulay',
+      desc: 'Yuklab olsangiz tezroq ochiladi, bildirishnomalar keladi va yo\'lda ham qulay ishlaydi.',
       iconBg: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
     },
   ];
   
   const steps = [
-    { title: 'Ro\'yxatdan o\'ting', desc: 'Haydovchi sifatida telefon raqam va Telegram hisobingizni ulang.' },
-    { title: 'Kalit so\'zlarni kiriting', desc: 'Buyurtmalar sahifasida hududingiz nomlarini yozing: namangan, chortoq, uychi…' },
-    { title: 'Buyurtmalarni kuzating', desc: 'Dashboardda yangi yo\'lovchi so\'rovlari real vaqtda tushadi.' },
-    { title: 'Yo\'lovchi bilan bog\'laning', desc: 'Telefon orqali bog\'laning yoki o\'z e\'loningizni joylang.' },
+    { title: 'Telegramni ulang', desc: 'Shofyor sifatida ro\'yxatdan o\'ting va Telegram akkauntingizni Zo\'r Taksi ga bog\'lang.' },
+    { title: 'Yo\'nalishni belgilang', desc: 'Hududingiz va yo\'nalishingiz bo\'yicha sozlang — faqat sizga mos buyurtmalar chiqadi.' },
+    { title: 'Buyurtmalarni ko\'ring', desc: 'Telegramdagi so\'rovlar bitta joyda jamlanadi — yangilari darhol ko\'rinadi.' },
+    { title: 'E\'lon avtomatik tarqalsin', desc: 'Reklamangiz kerakli guruhlarga o\'zi yuboriladi — siz tezroq yo\'lovchi topasiz.' },
   ];
   
   const trust = [
-    { title: 'Haydovchilar uchun yaratilgan', desc: 'Platforma aynan taksichilar ehtiyojiga qarab ishlab chiqilgan.' },
-    { title: 'Telegram orqali kirish', desc: 'Alohida ilova emas — o\'z Telegram akkauntingiz bilan ishlang.' },
-    { title: 'Real vaqtda xabar', desc: 'Yangi buyurtma tushganda darhol ko\'rasiz.' },
-    { title: 'Qo\'llab-quvvatlash', desc: 'Muammo bo\'lsa admin bilan Telegram orqali bog\'lanasiz.' },
+    { title: 'Shofyorlar uchun', desc: 'Platforma aynan taksichilar uchun — buyurtma qidirish va reklama tarqatishni soddalashtiradi.' },
+    { title: 'Telegram bilan ishlaydi', desc: 'O\'z Telegram hisobingizni ulang — buyurtmalar va guruhlar shu tizimda birlashtiriladi.' },
+    { title: 'Vaqt tejaydi', desc: 'Bir nechta guruhni kuzatish o\'rniga hammasi bitta joyda — ko\'proq safar, kamroq qidiruv.' },
+    { title: 'Ilova ixtiyoriy', desc: 'Brauzerdan ham ishlaydi, lekin ilovani yuklab olish yanada tez va qulay.' },
   ];
   
   onMounted(() => {

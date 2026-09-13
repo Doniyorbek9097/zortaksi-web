@@ -19,17 +19,19 @@
       </div>
     </div>
 
-    <!-- Swipe konteyner — delete faqat tortilganda chiqadi -->
+    <!-- Swipe konteyner — qisqa chapga surish (chat xabari kabi) -->
     <div class="relative overflow-hidden rounded-2xl isolate">
-      <button
-        v-if="isAdmin && translateX < 0"
-        type="button"
-        class="absolute inset-y-0 right-0 z-0 w-[200px] flex flex-col items-center justify-center gap-1 bg-red-500 text-white"
-        @click="onDelete"
+      <div
+        v-if="isAdmin && showDeleteHint"
+        class="absolute inset-y-0 right-0 w-11 flex items-center justify-center pointer-events-none z-0"
       >
-        <font-awesome-icon icon="fa-solid fa-trash" class="text-base" />
-        <span class="text-[11px] font-black">O'chirish</span>
-      </button>
+        <div
+          class="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 text-white shadow-sm transition-opacity"
+          :style="{ opacity: deleteOpacity }"
+        >
+          <font-awesome-icon icon="fa-solid fa-trash" class="text-[12px]" />
+        </div>
+      </div>
 
       <!-- Karta -->
       <article
@@ -330,63 +332,34 @@ const time = computed(() => {
   return `${dd}.${mo}, ${hh}:${mm}`
 })
 
-// --- Swipe-to-delete (faqat admin) — o'ngdan 200px ---
-const REVEAL = 200
-const translateX = ref(0)
-const dragging = ref(false)
-const startX = ref(0)
-const originX = ref(0)
-const axisLocked = ref<'h' | 'v' | null>(null)
-
 const isInteractiveTarget = (target: EventTarget | null) => {
   const el = target as HTMLElement | null
   if (!el?.closest) return false
   return !!el.closest('button, a, input, textarea, select, label, [data-no-swipe]')
 }
 
+const {
+  translateX,
+  dragging,
+  deleteOpacity,
+  showDeleteHint,
+  onPointerDown: onSwipeDown,
+  onPointerMove: onSwipeMove,
+  onPointerUp: onSwipeUp,
+} = useSwipeToDelete(() => emit('delete'), {
+  enabled: () => isAdmin.value,
+})
+
 const onPointerDown = (e: PointerEvent) => {
-  // Swipe faqat admin + touch; sichqoncha/click tugmalarda ishlashi uchun
-  if (!isAdmin.value) return
-  if (e.pointerType === 'mouse') return
   if (isInteractiveTarget(e.target)) return
-  dragging.value = true
-  axisLocked.value = null
-  originX.value = e.clientX
-  startX.value = e.clientX - translateX.value
-    ; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  onSwipeDown(e)
 }
 
 const onPointerMove = (e: PointerEvent) => {
-  if (!dragging.value) return
-  const rawDx = e.clientX - originX.value
-  if (!axisLocked.value) {
-    if (Math.abs(rawDx) < 8) return
-    axisLocked.value = Math.abs(rawDx) > Math.abs(e.movementY) ? 'h' : 'v'
-    if (axisLocked.value === 'v') {
-      dragging.value = false
-      return
-    }
-  }
-  if (axisLocked.value !== 'h') return
-  let dx = e.clientX - startX.value
-  if (dx > 0) dx = 0
-  if (dx < -REVEAL) dx = -REVEAL
-  translateX.value = dx
+  onSwipeMove(e)
 }
 
 const onPointerUp = () => {
-  if (!dragging.value && axisLocked.value !== 'h') {
-    axisLocked.value = null
-    return
-  }
-  dragging.value = false
-  axisLocked.value = null
-  // 200px ga yaqin tortilsa ochiladi
-  translateX.value = translateX.value <= -REVEAL * 0.75 ? -REVEAL : 0
-}
-
-const onDelete = () => {
-  translateX.value = 0
-  emit('delete')
+  onSwipeUp()
 }
 </script>

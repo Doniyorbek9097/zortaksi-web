@@ -17,6 +17,9 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
   const showActionError = ref(false)
   const actionSuccess = ref('')
   const showActionSuccess = ref(false)
+  const showDeleteDialog = ref(false)
+  const deleteTarget = ref<IOrder | null>(null)
+  const deleting = ref(false)
 
   const showError = (msg: string) => {
     actionError.value = msg
@@ -102,12 +105,29 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     }
   }
 
-  const onDelete = async (order: IOrder) => {
+  const onDelete = (order: IOrder) => {
     if (!order._id) return
+    deleteTarget.value = order
+    showDeleteDialog.value = true
+  }
+
+  const cancelDelete = () => {
+    deleteTarget.value = null
+  }
+
+  const confirmDelete = async () => {
+    const order = deleteTarget.value
+    if (!order?._id || deleting.value) return
+    deleting.value = true
     try {
       await orderStore.deleteOrder(order._id)
+      showDeleteDialog.value = false
+      deleteTarget.value = null
     } catch (err: any) {
+      showDeleteDialog.value = false
       showError(err?.response?.data?.message || "Buyurtmani o'chirib bo'lmadi")
+    } finally {
+      deleting.value = false
     }
   }
 
@@ -133,5 +153,10 @@ export function useOrdersModeration(orderStore: ReturnType<typeof useOrderStore>
     confirmBlockUser,
     confirmRestrictUser,
     onDelete,
+    showDeleteDialog,
+    deleteTarget,
+    deleting,
+    confirmDelete,
+    cancelDelete,
   }
 }

@@ -110,6 +110,20 @@
       @confirm="showActionSuccess = false"
     />
 
+    <BaseConfirmDialog
+      v-model="showDeleteDialog"
+      title="Buyurtmani o'chirish"
+      description="Bu amalni qaytarib bo'lmaydi"
+      message="Ushbu buyurtmani o'chirasizmi?"
+      confirm-text="O'chirish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="deleting"
+      :close-on-confirm="false"
+      @confirm="confirmDelete"
+      @cancel="cancelDelete"
+    />
+
     <DriverOrdersDialogs
       v-model:show-book-dialog="showBookDialog"
       v-model:show-unbook-dialog="showUnbookDialog"
@@ -231,6 +245,10 @@ const {
   confirmBlockUser,
   confirmRestrictUser,
   onDelete,
+  showDeleteDialog,
+  deleting,
+  confirmDelete,
+  cancelDelete,
   onUnlock,
   unreadCount,
   isOrderSeen,

@@ -1,15 +1,16 @@
 <template>
   <div class="relative overflow-hidden rounded-2xl isolate">
-    <!-- Delete — faqat swipe ochilganda (yopiqda umuman yo'q) -->
-    <button
-      v-if="!selectionMode && translateX < 0"
-      type="button"
-      class="absolute inset-y-0 right-0 z-0 w-[200px] flex flex-col items-center justify-center gap-1 bg-red-500 text-white"
-      @click="onDelete"
+    <div
+      v-if="!selectionMode && showDeleteHint"
+      class="absolute inset-y-0 right-0 w-11 flex items-center justify-center pointer-events-none z-0"
     >
-      <font-awesome-icon icon="fa-solid fa-trash" />
-      <span class="text-[11px] font-black">O'chirish</span>
-    </button>
+      <div
+        class="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 text-white shadow-sm transition-opacity"
+        :style="{ opacity: deleteOpacity }"
+      >
+        <font-awesome-icon icon="fa-solid fa-trash" class="text-[12px]" />
+      </div>
+    </div>
 
     <button
       type="button"
@@ -61,6 +62,7 @@
               v-if="showDriverPage"
               type="button"
               class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black text-violet-600 dark:text-violet-400 bg-violet-500/10 active:scale-95"
+              @pointerdown.stop
               @click.stop="$emit('driver-page')"
             >
               <font-awesome-icon icon="fa-solid fa-car" />
@@ -126,77 +128,32 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{ open: []; toggle: []; delete: []; 'driver-page': [] }>()
 
-const REVEAL = 200
-const translateX = ref(0)
-const dragging = ref(false)
-const startX = ref(0)
-const originX = ref(0)
-const originY = ref(0)
-const axisLocked = ref<'h' | 'v' | null>(null)
-const moved = ref(false)
+const {
+  translateX,
+  dragging,
+  moved,
+  deleteOpacity,
+  showDeleteHint,
+  reset,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
+} = useSwipeToDelete(() => emit('delete'), {
+  enabled: () => !props.selectionMode,
+})
 
 watch(
   () => props.selectionMode,
   (v) => {
-    if (v) translateX.value = 0
-  }
+    if (v) reset()
+  },
 )
 
-const onPointerDown = (e: PointerEvent) => {
-  if (props.selectionMode) return
-  dragging.value = true
-  moved.value = false
-  axisLocked.value = null
-  originX.value = e.clientX
-  originY.value = e.clientY
-  startX.value = e.clientX - translateX.value
-  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-}
-
-const onPointerMove = (e: PointerEvent) => {
-  if (!dragging.value || props.selectionMode) return
-  const rawDx = e.clientX - originX.value
-  const rawDy = e.clientY - originY.value
-  if (!axisLocked.value) {
-    if (Math.abs(rawDx) < 8 && Math.abs(rawDy) < 8) return
-    axisLocked.value = Math.abs(rawDx) >= Math.abs(rawDy) ? 'h' : 'v'
-    if (axisLocked.value === 'v') {
-      dragging.value = false
-      return
-    }
-  }
-  if (axisLocked.value !== 'h') return
-  moved.value = true
-  let dx = e.clientX - startX.value
-  if (dx > 0) dx = 0
-  if (dx < -REVEAL) dx = -REVEAL
-  translateX.value = dx
-}
-
-const onPointerUp = () => {
-  if (!dragging.value && axisLocked.value !== 'h') {
-    axisLocked.value = null
-    return
-  }
-  dragging.value = false
-  if (axisLocked.value === 'h') {
-    translateX.value = translateX.value <= -REVEAL * 0.75 ? -REVEAL : 0
-  }
-  axisLocked.value = null
-}
-
 const onClick = () => {
-  // Swipe yoki ochiq delete panel — chat ochilmasin
-  if (moved.value) return
-  if (translateX.value !== 0) {
-    translateX.value = 0
+  if (moved.value) {
+    moved.value = false
     return
   }
   emit(props.selectionMode ? 'toggle' : 'open')
-}
-
-const onDelete = () => {
-  translateX.value = 0
-  emit('delete')
 }
 </script>
