@@ -1,49 +1,41 @@
 <template>
   <div
-    class="flex items-center gap-3 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0"
+    class="flex items-center gap-2 py-2 border-b border-slate-100/80 dark:border-slate-800/80 last:border-0"
   >
     <div class="relative shrink-0">
-      <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="md" />
+      <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="sm" />
       <span
-        class="absolute -top-1.5 -right-1.5 min-w-[22px] h-[22px] px-1 rounded-full flex items-center justify-center text-[10px] font-black shadow-md ring-2 ring-white dark:ring-slate-900"
+        class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-0.5 rounded-full flex items-center justify-center text-[8px] font-black shadow ring-[1.5px] ring-white dark:ring-slate-900"
         :class="rankBadgeClass"
       >
         <font-awesome-icon
           v-if="rank <= 3"
           icon="fa-solid fa-medal"
-          class="text-[11px]"
+          class="text-[9px]"
         />
         <span v-else>{{ rank }}</span>
       </span>
     </div>
 
     <div class="flex-1 min-w-0">
-      <p class="text-[13px] font-black text-slate-900 dark:text-white truncate leading-tight">
+      <p class="text-[12px] font-black text-slate-900 dark:text-white truncate leading-tight">
         {{ name }}
       </p>
       <p
-        v-if="groupTitle"
-        class="mt-0.5 text-[10px] font-bold text-violet-600/90 dark:text-violet-400/90 truncate flex items-center gap-1"
+        v-if="groupTitle || username"
+        class="mt-0.5 text-[9px] font-semibold text-slate-400 dark:text-slate-500 truncate"
       >
-        <font-awesome-icon icon="fa-solid fa-user-group" class="text-[9px] shrink-0 opacity-70" />
-        {{ groupTitle }}
-      </p>
-      <p
-        v-if="username"
-        class="mt-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate"
-      >
-        @{{ username }}
+        <template v-if="groupTitle">{{ groupTitle }}</template>
+        <template v-else-if="username">@{{ username }}</template>
       </p>
     </div>
 
-    <div class="text-right shrink-0 min-w-[72px]">
-      <p class="text-[14px] font-black text-sky-600 dark:text-sky-400 tabular-nums leading-none">
-        {{ invites }}
-        <span class="text-[10px] font-bold text-slate-400">ta</span>
-      </p>
-      <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">qo'shgan</p>
-      <p class="text-[12px] font-black text-emerald-500 dark:text-emerald-400 tabular-nums mt-1">
-        +{{ formattedBonus }}
+    <div class="text-right shrink-0">
+      <p class="text-[11px] font-black tabular-nums leading-none">
+        <span class="text-sky-600 dark:text-sky-400">{{ invites }}</span>
+        <span class="text-[9px] font-bold text-slate-400 mx-0.5">ta</span>
+        <span class="text-slate-300 dark:text-slate-600">·</span>
+        <span class="text-emerald-600 dark:text-emerald-400 ml-0.5">+{{ formattedBonus }}</span>
       </p>
     </div>
   </div>
@@ -64,15 +56,9 @@ interface Props {
 const props = defineProps<Props>()
 
 const rankBadgeClass = computed(() => {
-  if (props.rank === 1) {
-    return 'bg-amber-400 text-amber-950'
-  }
-  if (props.rank === 2) {
-    return 'bg-slate-300 text-slate-800'
-  }
-  if (props.rank === 3) {
-    return 'bg-orange-400 text-orange-950'
-  }
+  if (props.rank === 1) return 'bg-amber-400 text-amber-950'
+  if (props.rank === 2) return 'bg-slate-300 text-slate-800'
+  if (props.rank === 3) return 'bg-orange-400 text-orange-950'
   return 'bg-violet-500 text-white'
 })
 
