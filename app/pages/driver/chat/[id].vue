@@ -12,12 +12,12 @@
       :user-id="peerUserId"
       :support="isSupportPremium"
       :profile-chat-id="effectiveChatId"
-      :show-clear-history="showClearHistoryBtn && !selectionMode && !isSupport"
+      :show-clear-history="showClearHistoryBtn && !selectionMode && (!isSupport || isAdmin)"
       :clearing="isClearingHistory"
       @back="goBack"
       @clear="openClearHistoryDialog"
     >
-      <template v-if="callPhone && callTelHref && !isSupport" #actions>
+      <template v-if="callPhone && callTelHref && (!isSupport || isAdmin)" #actions>
         <ChatCallBar :href="callTelHref" class="!mb-0" />
       </template>
     </ChatHeader>
@@ -199,7 +199,7 @@
           :selection-mode="selectionMode"
           :selected="isMessageSelected(String(msg._id))"
           :reply-to="msg.replyTo"
-          :support="isSupportBubble(msg.direction)"
+          :support="isSupportPremium"
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
@@ -214,7 +214,7 @@
         >
           <div
             class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
-            :class="(isSupportPremium || (isSupport && isAdmin)) ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
+            :class="isSupportPremium ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
           >
             <span class="inline-flex items-center gap-1">
               yozmoqda
@@ -445,7 +445,6 @@ const {
   goOrders,
   isSupport,
   isSupportPremium,
-  isSupportBubble,
   name,
   statusText,
   isOnline,

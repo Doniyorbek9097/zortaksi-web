@@ -80,10 +80,6 @@ export function useChatPageMeta(opts: {
   /** Haydovchi uchun premium yordam UI — admin oddiy chat ko'radi */
   const isSupportPremium = computed(() => isSupport.value && !isAdmin.value)
 
-  /** Admin support chatda haydovchidan kelgan xabarlar premium bubble */
-  const isSupportBubble = (direction: string) =>
-    isSupportPremium.value || (isSupport.value && isAdmin.value && direction !== 'out')
-
   const isDirect = computed(() => chatStore.currentChat?.kind === 'direct')
   const isInAppOnly = computed(() => !!chatStore.currentChat?.inAppOnly)
   const isInAppChat = computed(() => isSupport.value || isDirect.value || isInAppOnly.value)
@@ -209,7 +205,7 @@ export function useChatPageMeta(opts: {
   })
 
   const callPhone = computed(() => {
-    if (isSupport.value) return ''
+    if (isSupport.value && !isAdmin.value) return ''
     const qPhone = String(route.query.phone || '').trim()
     if (qPhone.replace(/\D/g, '').length >= 7) {
       return normalizeTo998(qPhone) || qPhone.replace(/\D/g, '')
@@ -266,7 +262,6 @@ export function useChatPageMeta(opts: {
     hasRealChatId,
     isSupport,
     isSupportPremium,
-    isSupportBubble,
     isDirect,
     isInAppOnly,
     isInAppChat,
