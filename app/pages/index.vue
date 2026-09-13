@@ -62,7 +62,7 @@
             </p>
             <p class="text-base md:text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
               Har guruhga alohida e'lon yozishni <strong class="font-bold text-neutral-800 dark:text-neutral-100">to'xtating</strong> —
-              bir marta joylang, vaqtni belgilang, akkauntingiz orqali guruhlarga avtomatik chiqadi.
+              bir marta joylang, vaqtni belgilang — Telegram akkauntingiz reklamangizni o'zi avtomatik tashlaydi.
             </p>
             <p class="text-sm md:text-base font-semibold text-emerald-700 dark:text-emerald-400">
               📲 Ilovada kirish oson — yangi buyurtmada bildirishnoma darhol keladi.
@@ -71,75 +71,17 @@
 
           <div class="flex flex-wrap gap-3 justify-center pt-8">
             <LandingButton to="/auth" variant="primary">
-              Ro'yxatdan o'tish
+              <font-awesome-icon icon="fa-solid fa-bolt" class="mr-2 text-sm" />
+              Hoziroq boshlash
             </LandingButton>
             <LandingButton to="/download-app" variant="secondary">
-              📲 Ilovani yuklab olish
+              <font-awesome-icon icon="fa-solid fa-download" class="mr-2 text-sm" />
+              Ilovani yuklab olish
             </LandingButton>
           </div>
-
-          <!-- Telefon maketi -->
-          <div class="mt-12 w-full max-w-sm flex justify-center items-center relative h-72">
-            <div class="absolute inset-0 rounded-3xl bg-emerald-500/20 dark:bg-emerald-400/10 opacity-60 scale-95 rotate-3" />
-            <div class="relative rounded-3xl p-8 w-full max-w-sm shadow-2xl
-                        bg-white border border-neutral-200
-                        dark:bg-neutral-900 dark:border-neutral-800">
-              <div class="flex items-center gap-3 mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-2xl">📱</div>
-                <div>
-                  <p class="font-black text-sm">ZorTaksi</p>
-                  <p class="text-xs text-neutral-400 dark:text-neutral-500">Onlayn · 24/7</p>
-                </div>
-              </div>
-  
-              <div class="space-y-3">
-                <div class="flex items-center gap-2 rounded-xl p-3 border
-                            bg-sky-500/10 border-sky-500/20 dark:bg-sky-400/15 dark:border-sky-400/20">
-                  <span class="text-lg">📋</span>
-                  <span class="text-sm font-medium">Barcha guruh buyurtmalari — bir joyda</span>
-                </div>
-                <div class="flex items-center gap-2 rounded-xl p-3 border
-                            bg-emerald-500/10 border-emerald-500/20 dark:bg-emerald-400/15 dark:border-emerald-400/20">
-                  <span class="text-lg">🔔</span>
-                  <span class="text-sm font-medium">Yangi buyurtma — bildirishnoma</span>
-                </div>
-                <div class="flex items-center gap-2 rounded-xl p-3 border
-                            bg-violet-500/10 border-violet-500/20 dark:bg-violet-400/15 dark:border-violet-400/20">
-                  <span class="text-lg">📢</span>
-                  <span class="text-sm font-medium">E'lon vaqtida guruhlarga yuborildi</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
-      <!-- Mobil ilova -->
-      <section class="px-5 pb-4 max-w-6xl mx-auto">
-        <div
-          class="rounded-3xl border border-emerald-200/80 dark:border-emerald-800/50 bg-gradient-to-br from-emerald-50 via-white to-cyan-50
-                 dark:from-emerald-950/40 dark:via-neutral-950 dark:to-cyan-950/30 p-6 md:p-8 flex flex-col md:flex-row items-center gap-6"
-        >
-          <div
-            class="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shrink-0 shadow-lg shadow-emerald-500/20
-                   bg-gradient-to-br from-emerald-500 to-cyan-500 text-white"
-          >
-            📲
-          </div>
-          <div class="flex-1 text-center md:text-left space-y-2">
-            <h2 class="text-xl md:text-2xl font-black text-neutral-900 dark:text-neutral-50">
-              Android ilovasi
-            </h2>
-            <p class="text-sm text-neutral-600 dark:text-neutral-400 max-w-2xl">
-              Kirish oson, yangi buyurtmalar uchun bildirishnomalar — yo'lda ham qulay ishlang.
-            </p>
-          </div>
-          <LandingButton to="/download-app" variant="primary">
-            Ilovani yuklab olish
-          </LandingButton>
-        </div>
-      </section>
-  
       <!-- Features -->
       <section class="py-20 px-5 max-w-6xl mx-auto">
         <LandingSectionHeader 
@@ -202,14 +144,16 @@
         <div class="max-w-2xl mx-auto text-center space-y-6 relative z-10">
           <h2 class="text-3xl font-black">Boshlashga tayyormisiz?</h2>
           <p class="text-lg text-neutral-600 dark:text-neutral-400">
-            Buyurtmalar bir joyda, e'lon avtomatik — vaqtingizni safarga sarflang.
+            Buyurtmalar bir joyda — Telegram akkauntingiz reklamangizni o'zi avtomatik tashlaydi.
           </p>
           <div class="flex flex-wrap gap-3 justify-center">
             <LandingButton to="/auth" variant="primary">
-              Ro'yxatdan o'tish
+              <font-awesome-icon icon="fa-solid fa-bolt" class="mr-2 text-sm" />
+              Hoziroq boshlash
             </LandingButton>
             <LandingButton to="/download-app" variant="secondary">
-              📲 Ilovani yuklab olish
+              <font-awesome-icon icon="fa-solid fa-download" class="mr-2 text-sm" />
+              Ilovani yuklab olish
             </LandingButton>
           </div>
         </div>
@@ -265,13 +209,13 @@
     {
       icon: '📢',
       title: 'Avto e\'lon',
-      desc: 'Bir marta yozing, vaqtni belgilang — guruhlarga akkauntingiz orqali o\'zi chiqadi.',
+      desc: 'Bir marta yozing, vaqtni belgilang — Telegram akkauntingiz reklamangizni o\'zi avtomatik tashlaydi.',
       iconBg: 'bg-purple-500/15 text-purple-600 dark:text-purple-400',
     },
     {
       icon: '⏱️',
       title: 'Vaqt rejasi',
-      desc: 'Qachon yuborishni o\'zingiz tanlaysiz — Zo\'r Taksi o\'sha vaqtda tarqatadi.',
+      desc: 'Qachon yuborishni tanlaysiz — Telegram akkauntingiz belgilangan vaqtda avtomatik tashlaydi.',
       iconBg: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
     },
     {
@@ -284,15 +228,15 @@
   
   const steps = [
     { title: 'Telegramni ulang', desc: 'Hisobingizni Zo\'r Taksi ga bog\'lang.' },
-    { title: 'E\'lon + vaqt', desc: 'Bir marta yozing, qaysi guruhlarga va qachon yuborishni belgilang.' },
+    { title: 'E\'lon + vaqt', desc: 'Reklamangizni yozing va vaqtni belgilang — akkauntingiz o\'zi avtomatik tashlaydi.' },
     { title: 'Buyurtmalar', desc: 'Telegramdagi buyurtmalar bir joyda — kutish shart emas.' },
     { title: 'Ilovani o\'rnating', desc: 'Tez kirish va yangi buyurtma bildirishnomalari.' },
   ];
   
   const trust = [
     { title: 'Guruhlarni aylanmang', desc: 'Buyurtmalar allaqachon jamlangan — bitta joydan ko\'rasiz.' },
-    { title: 'Qo\'lda reklama yo\'q', desc: 'Har guruhga alohida yozish o\'rniga avtomatik tarqatish.' },
-    { title: 'O\'z akkauntingiz', desc: 'E\'lon sizning Telegram hisobingiz orqali guruhlarga chiqadi.' },
+    { title: 'Qo\'lda reklama yo\'q', desc: 'Har guruhga qo\'lda yozmasdan — akkauntingiz reklamangizni o\'zi tashlaydi.' },
+    { title: 'O\'z akkauntingiz', desc: 'Telegram akkauntingiz reklamangizni o\'zi avtomatik tashlaydi.' },
     { title: 'Bildirishnomalar', desc: 'Ilovada yangi buyurtma tushganda darhol bilasiz.' },
   ];
   
