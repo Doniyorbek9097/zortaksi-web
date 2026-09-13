@@ -8,27 +8,28 @@
     </div>
 
     <template v-else-if="profile">
-      <!-- Rasm bloki — kontent ostida, ustiga chiqmaydi -->
-      <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0">
+      <!-- Rasm bloki -->
+      <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0 overflow-hidden">
         <div
           v-if="visiblePhotos.length"
           ref="galleryEl"
-          class="gallery-track flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
-          @scroll="onGalleryScroll"
+          class="gallery-track h-full w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
+          @scroll.passive="onGalleryScroll"
         >
           <div
             v-for="(src, i) in visiblePhotos"
-            :key="`${src}-${i}`"
-            class="gallery-slide flex-[0_0_100%] w-full h-full snap-center flex items-center justify-center bg-slate-950"
+            :key="`photo-${i}-${src}`"
+            class="gallery-slide snap-center shrink-0 h-full flex items-center justify-center bg-slate-950"
+            :style="slideStyle"
           >
             <img
               :src="src"
-              :alt="profile.name"
+              :alt="`${profile.name} ${i + 1}`"
               class="max-w-full max-h-full w-auto h-auto object-contain select-none pointer-events-none"
               draggable="false"
-              :fetchpriority="i === 0 ? 'high' : 'low'"
-              :loading="i === 0 ? 'eager' : 'lazy'"
+              loading="eager"
               decoding="async"
+              @error="onImgError(src)"
             >
           </div>
         </div>
@@ -39,22 +40,22 @@
           {{ profile.name?.trim()?.[0]?.toUpperCase() || '?' }}
         </div>
 
-        <!-- Orqaga + rasm soni -->
-        <div
-          class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center gap-2"
+        <!-- Orqaga -->
+        <button
+          type="button"
+          class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm"
+          aria-label="Orqaga"
+          @click="$emit('back')"
         >
-          <button
-            type="button"
-            class="w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm"
-            aria-label="Orqaga"
-            @click="$emit('back')"
-          >
-            <font-awesome-icon icon="fa-solid fa-chevron-left" />
-          </button>
-          <span
-            v-if="visiblePhotos.length > 1"
-            class="px-2.5 py-1 rounded-full bg-black/40 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm"
-          >
+          <font-awesome-icon icon="fa-solid fa-chevron-left" />
+        </button>
+
+        <!-- Rasm soni — o'ng tomonda -->
+        <div
+          v-if="visiblePhotos.length > 1"
+          class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
+        >
+          <span class="px-2.5 py-1 rounded-full bg-black/45 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm">
             {{ activePhoto + 1 }}/{{ visiblePhotos.length }}
           </span>
         </div>
@@ -62,9 +63,9 @@
         <!-- Yuklanish -->
         <div
           v-if="refreshing"
-          class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
+          class="absolute right-3 top-[max(2.75rem,env(safe-area-inset-top))] z-30"
         >
-          <span class="px-2.5 py-1 rounded-full bg-black/40 text-white text-[11px] font-bold backdrop-blur-sm">
+          <span class="w-8 h-8 rounded-full bg-black/40 text-white text-[11px] font-bold backdrop-blur-sm flex items-center justify-center">
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
           </span>
         </div>
@@ -83,9 +84,8 @@
         </div>
       </section>
 
-      <!-- Kontent — rasm ostida, ustiga chiqmaydi -->
+      <!-- Kontent -->
       <div class="relative z-10 bg-slate-100 dark:bg-slate-950 pb-10">
-        <!-- Tezkor tugmalar -->
         <div class="px-3 pt-3">
           <slot name="actions">
             <div class="grid grid-cols-2 gap-2">
@@ -114,7 +114,6 @@
           </slot>
         </div>
 
-        <!-- Asosiy ma'lumotlar -->
         <section class="mx-3 mt-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 overflow-hidden">
           <div v-if="displayPhone" class="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
             <p class="text-[16px] font-semibold text-sky-500 dark:text-sky-400 tabular-nums">
@@ -157,7 +156,6 @@
           </div>
         </section>
 
-        <!-- Haydovchi / admin qo'shimcha bloklari -->
         <div v-if="$slots.extra" class="mx-3 mt-3 space-y-3">
           <slot name="extra" />
         </div>
@@ -197,16 +195,19 @@ defineEmits<{
 }>()
 
 const galleryEl = ref<HTMLElement | null>(null)
+const slideWidth = ref(0)
 const activePhoto = ref(0)
+const failedUrls = ref<Set<string>>(new Set())
 
-const visiblePhotos = computed(() => props.photoUrls.filter(Boolean))
+const visiblePhotos = computed(() =>
+  props.photoUrls.filter((url) => Boolean(url) && !failedUrls.value.has(url)),
+)
 
-watch(visiblePhotos, () => {
-  activePhoto.value = 0
-  nextTick(() => {
-    if (galleryEl.value) galleryEl.value.scrollLeft = 0
-  })
-})
+const slideStyle = computed(() =>
+  slideWidth.value > 0
+    ? { width: `${slideWidth.value}px`, minWidth: `${slideWidth.value}px` }
+    : { width: '100vw', minWidth: '100vw' },
+)
 
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
@@ -225,19 +226,74 @@ const telegramHref = computed(() => {
   return id ? `https://t.me/+${id}` : ''
 })
 
+const measureGallery = () => {
+  const el = galleryEl.value
+  if (!el) return
+  const w = el.clientWidth
+  if (w > 0) slideWidth.value = w
+}
+
+const preloadPhotos = (urls: string[]) => {
+  if (!import.meta.client) return
+  urls.slice(0, 12).forEach((src) => {
+    const img = new Image()
+    img.src = src
+  })
+}
+
 const onGalleryScroll = () => {
   const el = galleryEl.value
-  if (!el || !visiblePhotos.value.length) return
-  const w = el.clientWidth || 1
-  activePhoto.value = Math.max(
-    0,
-    Math.min(visiblePhotos.value.length - 1, Math.round(el.scrollLeft / w)),
-  )
+  if (!el || !visiblePhotos.value.length || !slideWidth.value) return
+  const idx = Math.round(el.scrollLeft / slideWidth.value)
+  activePhoto.value = Math.max(0, Math.min(visiblePhotos.value.length - 1, idx))
 }
+
+const onImgError = (src: string) => {
+  failedUrls.value = new Set([...failedUrls.value, src])
+}
+
+watch(
+  () => props.photoUrls,
+  (urls) => {
+    failedUrls.value = new Set()
+    preloadPhotos(urls)
+    nextTick(measureGallery)
+  },
+  { immediate: true },
+)
+
+watch(
+  () => props.profile?.userId,
+  () => {
+    activePhoto.value = 0
+    failedUrls.value = new Set()
+    nextTick(() => {
+      measureGallery()
+      if (galleryEl.value) galleryEl.value.scrollLeft = 0
+    })
+  },
+)
+
+onMounted(() => {
+  measureGallery()
+  preloadPhotos(props.photoUrls)
+
+  const el = galleryEl.value
+  if (!el || typeof ResizeObserver === 'undefined') return
+
+  const ro = new ResizeObserver(() => {
+    measureGallery()
+  })
+  ro.observe(el)
+  onUnmounted(() => ro.disconnect())
+})
 </script>
 
 <style scoped>
 .gallery-track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
@@ -245,6 +301,7 @@ const onGalleryScroll = () => {
 
 .gallery-slide {
   touch-action: pan-x;
+  scroll-snap-stop: always;
 }
 
 .no-scrollbar {

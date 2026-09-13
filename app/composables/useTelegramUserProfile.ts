@@ -54,15 +54,26 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
   const displayProfile = computed(() => profile.value || previewProfile.value)
 
   const photoUrls = computed(() => {
-    const src = profile.value || previewProfile.value
-    const raw = src?.photos || []
-    const urls = raw
-      .map((p) => (p ? resolve(p) || avatarUrl(p, src?.userId) : null))
-      .filter(Boolean) as string[]
+    const id = String(unref(userId) || '').trim()
+    const fromApi = profile.value?.photos || []
+    const fromPreview = previewProfile.value?.photos || []
+
+    const raw = fromApi.length ? fromApi : fromPreview
+    const seen = new Set<string>()
+    const urls: string[] = []
+
+    for (const p of raw) {
+      const url = p
+        ? resolve(p) || avatarUrl(p, id)
+        : avatarUrl(undefined, id)
+      if (!url || seen.has(url)) continue
+      seen.add(url)
+      urls.push(url)
+    }
 
     if (urls.length) return urls
 
-    const fallback = avatarUrl(undefined, src?.userId)
+    const fallback = avatarUrl(undefined, id)
     return fallback ? [fallback] : []
   })
 
