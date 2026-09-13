@@ -48,57 +48,23 @@
       @buy="onBuyTariff"
     />
 
+    <!-- Faol e'lon — tarif kartasi uslubida -->
+    <DashboardPostStatsCard
+      v-if="activePostCampaign || postStatsLoading"
+      :campaign="activePostCampaign"
+      :busy-id="postStore.campaignBusyId"
+      :loading="postStatsLoading && !activePostCampaign"
+      @start="onPostCampaignStart"
+      @stop="onPostCampaignStop"
+      @edit="onPostCampaignEdit"
+      @delete="onPostCampaignDelete"
+    />
+
     <!-- Guruh taklifi TOP 10 -->
     <DashboardGroupInviteLeaderboardCard
       :data="groupInviteLeaderboard"
       :loading="groupInviteLoading"
     />
-
-    <!-- Faol e'lon — to'liq statistika -->
-    <section
-      v-if="activePostCampaign || postStatsLoading"
-      class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
-    >
-      <div
-        class="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 dark:from-amber-950/30 dark:via-orange-950/20 dark:to-rose-950/20"
-      >
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex items-center gap-2 min-w-0">
-            <div
-              class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs shrink-0"
-            >
-              <font-awesome-icon icon="fa-solid fa-bullhorn" />
-            </div>
-            <p class="text-[12px] font-black text-slate-800 dark:text-slate-100 leading-tight">
-              Faol e'lon
-            </p>
-          </div>
-          <NuxtLink
-            to="/driver/post"
-            class="text-[9px] font-black text-amber-600 dark:text-amber-400 shrink-0"
-          >
-            E'lon joylash
-          </NuxtLink>
-        </div>
-      </div>
-
-      <div class="p-2">
-        <div
-          v-if="postStatsLoading && !activePostCampaign"
-          class="h-20 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse"
-        />
-        <PostCampaignCard
-          v-else-if="activePostCampaign"
-          :campaign="activePostCampaign"
-          :busy="postStore.campaignBusyId === activePostCampaign.id"
-          compact
-          @start="onPostCampaignStart(activePostCampaign)"
-          @stop="onPostCampaignStop(activePostCampaign)"
-          @edit="onPostCampaignEdit"
-          @delete="onPostCampaignDelete(activePostCampaign)"
-        />
-      </div>
-    </section>
 
     <!-- Platform statistics -->
     <section
@@ -150,7 +116,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { usePostStore, type PostCampaign } from '~/stores/post.store'
-import PostCampaignCard from '~/components/post/CampaignCard.vue'
 import type { IBanner } from '~/types/banner'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
