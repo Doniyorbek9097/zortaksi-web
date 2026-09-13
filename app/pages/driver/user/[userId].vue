@@ -25,12 +25,10 @@
             {{ driver.active ? 'Faol' : 'Faol emas' }}
           </span>
           <span
-            class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-black border"
-            :class="driver.listenGroups
-              ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50'
-              : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'"
+            v-if="driver.listenGroups"
+            class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-black border bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800/50"
           >
-            {{ driver.listenGroups ? 'Guruh tinglovchi' : 'Guruh tinglamaydi' }}
+            Tinglovchi
           </span>
           <p v-if="isAdmin" class="ml-auto text-lg font-black text-sky-500">
             {{ formatMoney(driver.balance) }} so'm
@@ -63,6 +61,34 @@
           :invite-groups="driver.inviteGroups"
         />
 
+        <section
+          v-if="isAdmin && driver.listenGroups"
+          class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3"
+        >
+          <div>
+            <h2 class="text-sm font-black text-slate-900 dark:text-white">Tinglovchi nomi</h2>
+            <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
+              Yo'nalish filtrida shu nom ko'rinadi
+            </p>
+          </div>
+          <input
+            v-model="listenerDisplayName"
+            type="text"
+            maxlength="120"
+            placeholder="Masalan: Namangan Toshkent"
+            class="w-full px-3.5 py-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-amber-400 dark:focus:border-amber-500/60"
+          >
+          <button
+            type="button"
+            class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-amber-600 hover:bg-amber-700 active:scale-[0.98] transition-all disabled:opacity-50"
+            :disabled="store.isSaving"
+            @click="saveListenerDisplayName"
+          >
+            <font-awesome-icon icon="fa-solid fa-floppy-disk" />
+            Nomni saqlash
+          </button>
+        </section>
+
         <template v-if="isAdmin">
           <section class="grid grid-cols-1 gap-2">
             <button
@@ -72,6 +98,14 @@
             >
               <font-awesome-icon icon="fa-solid fa-wallet" />
               Hisobni to'ldirish
+            </button>
+            <button
+              type="button"
+              class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all"
+              @click="limitOpen = true"
+            >
+              <font-awesome-icon icon="fa-solid fa-clock" />
+              Limit berish (kun/soat)
             </button>
             <button
               type="button"
@@ -92,23 +126,6 @@
           </section>
 
           <section class="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 active:scale-95 transition-all"
-              @click="openChat"
-            >
-              <font-awesome-icon icon="fa-solid fa-comments" />
-              Xabar
-            </button>
-            <button
-              type="button"
-              class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 active:scale-95 transition-all disabled:opacity-40"
-              :disabled="!telHref"
-              @click="onCall"
-            >
-              <font-awesome-icon icon="fa-solid fa-phone" />
-              Qo'ng'iroq
-            </button>
             <button
               type="button"
               class="inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 active:scale-95 transition-all"
@@ -173,6 +190,14 @@
       @confirm="saveTariff"
     />
 
+    <AdminDriversLimitDialog
+      v-if="isAdmin && driver"
+      v-model="limitOpen"
+      :name="driver.name || ''"
+      :loading="store.isSaving"
+      @confirm="saveLimit"
+    />
+
     <BaseConfirmDialog
       v-if="isAdmin && driver"
       v-model="blockOpen"
@@ -213,7 +238,6 @@ const store = useDriverStore()
 
 const {
   isAdmin,
-  profile,
   displayProfile,
   photoUrls,
   loading,
@@ -226,6 +250,8 @@ const {
   tariffCard,
   balanceOpen,
   tariffOpen,
+  limitOpen,
+  listenerDisplayName,
   blockOpen,
   deleteOpen,
   deleting,
@@ -238,6 +264,8 @@ const {
   onPaymentPage,
   openTariff,
   saveTariff,
+  saveLimit,
+  saveListenerDisplayName,
   confirmBlock,
   toggleListenGroups,
   confirmDelete,

@@ -10,7 +10,7 @@
     <template v-else-if="profile">
       <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0 overflow-hidden">
         <div
-          v-if="slides.length"
+          v-if="photoCount > 0"
           ref="viewportRef"
           class="gallery-viewport h-full w-full touch-none select-none"
           @pointerdown="onPointerDown"
@@ -20,19 +20,27 @@
         >
           <div class="gallery-strip h-full" :style="stripStyle">
             <div
-              v-for="(src, i) in slides"
+              v-for="(_, i) in photoCount"
               :key="`slide-${i}`"
               class="gallery-slide"
             >
               <img
-                :src="src"
+                v-if="isSlideLoaded(i) && slideUrl(i)"
+                :src="slideUrl(i)"
                 :alt="`${profile.name} ${i + 1}`"
                 class="gallery-img"
                 draggable="false"
-                loading="eager"
+                :loading="i === 0 ? 'eager' : 'lazy'"
                 decoding="async"
-                @error="onImgError(src)"
+                @error="onImgError(i)"
               >
+              <div v-else class="gallery-placeholder">
+                <font-awesome-icon
+                  v-if="isSlideLoaded(i)"
+                  icon="fa-solid fa-image"
+                  class="text-2xl text-white/25"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -53,11 +61,11 @@
         </button>
 
         <div
-          v-if="slides.length > 1"
+          v-if="photoCount > 1"
           class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
         >
           <span class="px-2.5 py-1 rounded-full bg-black/45 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm">
-            {{ activePhoto + 1 }}/{{ slides.length }}
+            {{ activePhoto + 1 }}/{{ photoCount }}
           </span>
         </div>
 
@@ -84,29 +92,30 @@
       </section>
 
       <div class="relative z-10 bg-slate-100 dark:bg-slate-950 pb-10">
-        <div class="px-3 pt-3">
+        <!-- Yuqori: Xabar / Qo'ng'iroq -->
+        <div v-if="showActions" class="px-3 pt-3">
           <slot name="actions">
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-2 gap-2.5">
               <button
                 type="button"
-                class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20 active:scale-[0.98] transition-all"
+                class="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all"
                 @click="$emit('message')"
               >
-                <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                  <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[13px]" />
+                <span class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-sm" />
                 </span>
-                <span class="text-[12px] font-bold">Xabar</span>
+                <span class="text-[13px] font-bold">Xabar yozish</span>
               </button>
               <button
                 type="button"
-                class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
+                class="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
                 :disabled="!telHref"
                 @click="$emit('call')"
               >
-                <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
-                  <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
+                <span class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+                  <font-awesome-icon icon="fa-solid fa-phone" class="text-sm" />
                 </span>
-                <span class="text-[12px] font-bold">Chaqiruv</span>
+                <span class="text-[13px] font-bold">Qo'ng'iroq qilish</span>
               </button>
             </div>
           </slot>
@@ -177,14 +186,17 @@
 import type { TelegramUserProfile } from '~/composables/useTelegramUserProfile'
 import { normalizeTo998 } from '~/utils/phone'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   profile: TelegramUserProfile | null
   photoUrls: string[]
   loading?: boolean
   refreshing?: boolean
   error?: string
   telHref?: string
-}>()
+  showActions?: boolean
+}>(), {
+  showActions: true,
+})
 
 defineEmits<{
   back: []
@@ -194,15 +206,30 @@ defineEmits<{
 
 const viewportRef = ref<HTMLElement | null>(null)
 const activePhoto = ref(0)
-const failedUrls = ref<Set<string>>(new Set())
+const failedIndexes = ref<Set<number>>(new Set())
+const loadedIndexes = ref<Set<number>>(new Set([0]))
 const dragging = ref(false)
 const dragPx = ref(0)
 let pointerStartX = 0
 let pointerId: number | null = null
 
-const slides = computed(() =>
-  props.photoUrls.filter((url) => Boolean(url) && !failedUrls.value.has(url)),
+const allPhotos = computed(() =>
+  props.photoUrls.filter((url) => Boolean(url)),
 )
+
+const photoCount = computed(() => {
+  const n = allPhotos.value.length
+  return n > 0 ? n : 0
+})
+
+const slideUrl = (index: number) => allPhotos.value[index] || ''
+
+const isSlideLoaded = (index: number) => loadedIndexes.value.has(index)
+
+const markSlideLoaded = (index: number) => {
+  if (index < 0 || index >= photoCount.value) return
+  loadedIndexes.value = new Set([...loadedIndexes.value, index])
+}
 
 const stripStyle = computed(() => {
   const vw = viewportRef.value?.clientWidth || 1
@@ -232,17 +259,17 @@ const telegramHref = computed(() => {
 })
 
 const clampActive = () => {
-  const max = Math.max(0, slides.value.length - 1)
+  const max = Math.max(0, photoCount.value - 1)
   if (activePhoto.value > max) activePhoto.value = max
 }
 
-const onImgError = (src: string) => {
-  failedUrls.value = new Set([...failedUrls.value, src])
+const onImgError = (index: number) => {
+  failedIndexes.value = new Set([...failedIndexes.value, index])
   clampActive()
 }
 
 const onPointerDown = (e: PointerEvent) => {
-  if (slides.value.length <= 1) return
+  if (photoCount.value <= 1) return
   dragging.value = true
   pointerStartX = e.clientX
   dragPx.value = 0
@@ -263,7 +290,7 @@ const onPointerUp = (e: PointerEvent) => {
   const w = viewportRef.value?.clientWidth || 1
   const threshold = Math.max(48, w * 0.15)
 
-  if (dragPx.value <= -threshold && activePhoto.value < slides.value.length - 1) {
+  if (dragPx.value <= -threshold && activePhoto.value < photoCount.value - 1) {
     activePhoto.value += 1
   } else if (dragPx.value >= threshold && activePhoto.value > 0) {
     activePhoto.value -= 1
@@ -273,22 +300,30 @@ const onPointerUp = (e: PointerEvent) => {
   viewportRef.value?.releasePointerCapture(e.pointerId)
 }
 
+watch(activePhoto, (idx) => {
+  markSlideLoaded(idx)
+  markSlideLoaded(idx + 1)
+  markSlideLoaded(idx - 1)
+})
+
 watch(
   () => props.profile?.userId,
   () => {
     activePhoto.value = 0
-    failedUrls.value = new Set()
+    failedIndexes.value = new Set()
+    loadedIndexes.value = new Set([0])
     dragPx.value = 0
     dragging.value = false
   },
 )
 
-watch(slides, (next, prev) => {
+watch(allPhotos, (next, prev) => {
   if (!prev?.length || next[0] !== prev[0] || next.length !== prev.length) {
     activePhoto.value = 0
+    loadedIndexes.value = new Set([0])
   }
   clampActive()
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -300,7 +335,6 @@ watch(slides, (next, prev) => {
 .gallery-strip {
   display: flex;
   height: 100%;
-  width: 100%;
   will-change: transform;
 }
 
@@ -323,5 +357,14 @@ watch(slides, (next, prev) => {
   pointer-events: none;
   -webkit-user-drag: none;
   user-select: none;
+}
+
+.gallery-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #020617;
 }
 </style>

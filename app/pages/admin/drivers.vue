@@ -277,7 +277,7 @@ const onCall = (d: DriverRow) => {
 
 const openDriver = (id: string) => {
   persistScroll()
-  void navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
+  void navigateTo(`/driver/user/${encodeURIComponent(id)}`)
 }
 
 const openBalance = (d: DriverRow) => {

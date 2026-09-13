@@ -206,7 +206,7 @@ const driverLinkable = (item: PaymentHistoryItem) =>
 const openDriver = (item: PaymentHistoryItem) => {
   const id = String(item.userId || '').trim()
   if (!driverLinkable(item) || !id) return
-  void navigateTo(`/admin/driver/${encodeURIComponent(id)}`)
+  void navigateTo(`/driver/user/${encodeURIComponent(id)}`)
 }
 
 const formatMoney = (n: number) => (n ?? 0).toLocaleString('ru-RU')

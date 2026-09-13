@@ -267,7 +267,7 @@ const loadMore = async () => {
   })
 }
 
-const openDriver = (userId: string) => navigateTo(`/admin/driver/${userId}`)
+const openDriver = (userId: string) => navigateTo(`/driver/user/${encodeURIComponent(userId)}`)
 
 const onToggle = async (c: AdminDriverPostCampaign) => {
   if (c.active) await store.stopCampaign(c.id)

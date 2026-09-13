@@ -36,9 +36,11 @@ export function useDriverProfilePage() {
   const success = ref('')
   const balanceOpen = ref(false)
   const tariffOpen = ref(false)
+  const limitOpen = ref(false)
   const blockOpen = ref(false)
   const deleteOpen = ref(false)
   const deleting = ref(false)
+  const listenerDisplayName = ref('')
 
   /** Sahifa darhol ochiladi — faqat preview bo'lmasa to'liq spinner */
   const loading = computed(() => tgLoading.value && !displayProfile.value)
@@ -107,8 +109,10 @@ export function useDriverProfilePage() {
       : `/drivers/${encodeURIComponent(userId.value)}/profile`
     try {
       const res = await useApi(apiPath)
-      if (res?.success) driver.value = res.data
-      else driver.value = null
+      if (res?.success) {
+        driver.value = res.data
+        listenerDisplayName.value = String(res.data?.listenerDisplayName || '')
+      } else driver.value = null
     } catch {
       driver.value = null
     } finally {
@@ -257,6 +261,35 @@ export function useDriverProfilePage() {
     }
   }
 
+  const saveLimit = async (payload: { days: number; hours: number }) => {
+    if (!driver.value || !isAdmin.value) return
+    driverError.value = ''
+    success.value = ''
+    try {
+      await store.applyCustomLimit(driver.value.id, payload)
+      limitOpen.value = false
+      success.value = 'Limit berildi'
+      await loadDriver()
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      driverError.value = err?.response?.data?.message || 'Limit berilmadi'
+    }
+  }
+
+  const saveListenerDisplayName = async () => {
+    if (!driver.value || !isAdmin.value) return
+    driverError.value = ''
+    success.value = ''
+    try {
+      await store.setListenerDisplayName(driver.value.id, listenerDisplayName.value.trim())
+      success.value = 'Tinglovchi nomi saqlandi'
+      await loadDriver()
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      driverError.value = err?.response?.data?.message || 'Nom saqlanmadi'
+    }
+  }
+
   const confirmBlock = async () => {
     if (!driver.value || !isAdmin.value) return
     driverError.value = ''
@@ -327,6 +360,8 @@ export function useDriverProfilePage() {
     tariffCard,
     balanceOpen,
     tariffOpen,
+    limitOpen,
+    listenerDisplayName,
     blockOpen,
     deleteOpen,
     deleting,
@@ -339,6 +374,8 @@ export function useDriverProfilePage() {
     onPaymentPage,
     openTariff,
     saveTariff,
+    saveLimit,
+    saveListenerDisplayName,
     confirmBlock,
     toggleListenGroups,
     confirmDelete,
