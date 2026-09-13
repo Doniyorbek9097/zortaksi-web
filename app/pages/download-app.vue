@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { shouldShowApkDownload } from '~/utils/appEmbed'
+import { isFlutterWebView } from '~/utils/appEmbed'
 
 definePageMeta({ layout: 'default' })
 
@@ -15,7 +15,8 @@ useSeoMeta({
 })
 
 onMounted(() => {
-  if (!shouldShowApkDownload()) {
+  // Ilova ichida (WebView) — yuklash sahifasi kerak emas
+  if (isFlutterWebView()) {
     void navigateTo('/', { replace: true })
   }
 })

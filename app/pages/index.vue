@@ -58,7 +58,7 @@
           <div class="mt-5 max-w-2xl space-y-3">
             <p class="text-base md:text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
               O'nlab guruhda buyurtma <strong class="font-bold text-neutral-800 dark:text-neutral-100">kutmang</strong> —
-              Telegramdagi barcha so'rovlar bitta ekranda, real vaqtda.
+              Telegramdagi barcha buyurtmalar bitta ekranda, real vaqtda.
             </p>
             <p class="text-base md:text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
               Har guruhga alohida e'lon yozishni <strong class="font-bold text-neutral-800 dark:text-neutral-100">to'xtating</strong> —
@@ -71,13 +71,10 @@
 
           <div class="flex flex-wrap gap-3 justify-center pt-8">
             <LandingButton to="/auth" variant="primary">
-              Bepul boshlash
+              Ro'yxatdan o'tish
             </LandingButton>
             <LandingButton to="/download-app" variant="secondary">
               📲 Ilovani yuklab olish
-            </LandingButton>
-            <LandingButton to="/passenger-ad" variant="secondary">
-              Yo'lovchi e'lon berish
             </LandingButton>
           </div>
 
@@ -118,10 +115,7 @@
       </section>
 
       <!-- Mobil ilova -->
-      <section
-        v-if="showApkDownload"
-        class="px-5 pb-4 max-w-6xl mx-auto"
-      >
+      <section class="px-5 pb-4 max-w-6xl mx-auto">
         <div
           class="rounded-3xl border border-emerald-200/80 dark:border-emerald-800/50 bg-gradient-to-br from-emerald-50 via-white to-cyan-50
                  dark:from-emerald-950/40 dark:via-neutral-950 dark:to-cyan-950/30 p-6 md:p-8 flex flex-col md:flex-row items-center gap-6"
@@ -212,17 +206,10 @@
           </p>
           <div class="flex flex-wrap gap-3 justify-center">
             <LandingButton to="/auth" variant="primary">
-              Haydovchi bo'lish
+              Ro'yxatdan o'tish
             </LandingButton>
-            <LandingButton to="/passenger-ad" variant="secondary">
-              Yo'lovchi e'lon berish
-            </LandingButton>
-            <LandingButton
-              v-if="showApkDownload"
-              to="/download-app"
-              variant="secondary"
-            >
-              Ilovani yuklab olish
+            <LandingButton to="/download-app" variant="secondary">
+              📲 Ilovani yuklab olish
             </LandingButton>
           </div>
         </div>
@@ -231,7 +218,6 @@
       <footer class="py-8 text-center text-xs border-t text-neutral-400 border-neutral-200 dark:text-neutral-500 dark:border-neutral-800 space-y-2">
         <div class="flex flex-wrap items-center justify-center gap-4">
           <NuxtLink
-            v-if="showApkDownload"
             to="/download-app"
             class="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
           >
@@ -254,7 +240,6 @@
   
   <script setup lang="ts">
   import { getAuthCookieOptions } from '~/utils/authCookie'
-  import { shouldShowApkDownload } from '~/utils/appEmbed'
 
   definePageMeta({ layout: 'default' });
   
@@ -269,7 +254,6 @@
   })
 
   const { effectiveTheme, toggleTheme } = useTheme();
-  const showApkDownload = ref(false);
   
   const features = [
     {
@@ -301,7 +285,7 @@
   const steps = [
     { title: 'Telegramni ulang', desc: 'Hisobingizni Zo\'r Taksi ga bog\'lang.' },
     { title: 'E\'lon + vaqt', desc: 'Bir marta yozing, qaysi guruhlarga va qachon yuborishni belgilang.' },
-    { title: 'Buyurtmalar', desc: 'Telegramdagi so\'rovlar bir joyda — kutish shart emas.' },
+    { title: 'Buyurtmalar', desc: 'Telegramdagi buyurtmalar bir joyda — kutish shart emas.' },
     { title: 'Ilovani o\'rnating', desc: 'Tez kirish va yangi buyurtma bildirishnomalari.' },
   ];
   
@@ -313,7 +297,6 @@
   ];
   
   onMounted(() => {
-    showApkDownload.value = shouldShowApkDownload();
     const tg = (window as Window & { Telegram?: { WebApp?: { expand: () => void } } }).Telegram?.WebApp;
     tg?.expand();
   });
