@@ -4,6 +4,7 @@ import { isDriverMainTab, normalizePath } from '~/utils/driverTabRoutes'
 export type DriverScrollLeaveKind = 'tab-switch' | 'in-app'
 
 let leaveKind: DriverScrollLeaveKind | null = null
+let ordersTabSwitchEntry = false
 
 export function isDriverMainTabSwitch(fromPath: string, toPath: string): boolean {
   const from = normalizePath(fromPath)
@@ -24,4 +25,15 @@ export function consumeDriverScrollLeave(): DriverScrollLeaveKind | null {
   const kind = leaveKind
   leaveKind = null
   return kind
+}
+
+/** Buyurtmalar tabiga tabbar orqali kirildi — scroll tiklanmasin */
+export function markOrdersTabSwitchEntry() {
+  ordersTabSwitchEntry = true
+}
+
+export function consumeOrdersTabSwitchEntry(): boolean {
+  const v = ordersTabSwitchEntry
+  ordersTabSwitchEntry = false
+  return v
 }

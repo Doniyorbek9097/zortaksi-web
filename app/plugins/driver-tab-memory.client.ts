@@ -18,6 +18,7 @@ import {
   isDriverMainTabSwitch,
   markDriverScrollLeave,
   consumeDriverScrollLeave,
+  markOrdersTabSwitchEntry,
 } from '~/utils/driverScrollNav'
 
 function releaseDriverTabMemory(tab: DriverMainTab) {
@@ -89,6 +90,7 @@ export default defineNuxtPlugin(() => {
     if (tabSwitch) {
       if (toPath === '/driver/orders') {
         orderStore.clearOrdersListScroll()
+        markOrdersTabSwitchEntry()
       }
       window.scrollTo(0, 0)
     }

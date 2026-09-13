@@ -1,6 +1,9 @@
 import type { Ref } from 'vue'
 import type { useOrderStore } from '~/stores/order.store'
-import { shouldSaveDriverListScroll } from '~/utils/driverScrollNav'
+import {
+  consumeOrdersTabSwitchEntry,
+  shouldSaveDriverListScroll,
+} from '~/utils/driverScrollNav'
 
 type QueryParams = () => {
   limit: number
@@ -223,9 +226,6 @@ export function useOrdersListSync(options: {
     }
 
     await nextTick()
-    if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
-      restoreScroll()
-    }
     await fillViewport()
 
     pollTimer = setInterval(syncIfVisible, POLL_MS)
@@ -237,7 +237,10 @@ export function useOrdersListSync(options: {
   })
 
   onActivated(() => {
-    if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
+    if (consumeOrdersTabSwitchEntry()) {
+      orderStore.clearOrdersListScroll()
+      scrollWindowTo(0)
+    } else if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
       restoreScroll()
     } else {
       scrollWindowTo(0)

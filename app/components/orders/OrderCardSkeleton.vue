@@ -8,7 +8,7 @@
     </div>
 
     <article
-      class="relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 border-l-4 border-l-slate-200 dark:border-l-slate-700 pt-5 px-4 pb-4"
+      class="relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 pt-5 px-4 pb-4"
     >
       <!-- Sender -->
       <div class="flex items-center gap-3">

@@ -93,12 +93,30 @@
       @cancel="onCancelFilter"
     />
 
-    <p
-      v-if="store.isAdmin && !pickGroupsMode"
-      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
+    <div
+      class="rounded-xl border border-amber-200/70 dark:border-amber-900/40 bg-amber-50/90 dark:bg-amber-950/30 px-3 py-2.5"
     >
-      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilarga ko'rinadi.
-    </p>
+      <p class="text-[11px] font-black text-amber-800 dark:text-amber-200 flex items-center gap-1.5 mb-1.5">
+        <font-awesome-icon icon="fa-solid fa-circle-info" class="text-[10px] shrink-0" />
+        Qo'llanma
+      </p>
+      <ul
+        v-if="pickGroupsMode"
+        class="text-[10px] font-semibold text-slate-600 dark:text-slate-400 space-y-1 list-disc pl-4 leading-relaxed"
+      >
+        <li>E'lon uchun kerakli guruhlarni belgilang</li>
+        <li>«Saqlash» tugmasi orqali tanlov saqlanadi</li>
+      </ul>
+      <ul
+        v-else
+        class="text-[10px] font-semibold text-slate-600 dark:text-slate-400 space-y-1 list-disc pl-4 leading-relaxed"
+      >
+        <li>Guruhlarni belgilang (maks. {{ MAX_POST_GROUPS }} ta)</li>
+        <li>«Xabar yuborish» — bir martalik yoki avto-e'lon yuborish</li>
+        <li>Kartani o'ngga surib — guruhni ko'ring, chapga surib — tark eting</li>
+        <li v-if="store.isAdmin">Admin guruhlarda ko'z belgisi — haydovchilarga ko'rsatish/yashirish</li>
+      </ul>
+    </div>
 
     <!-- Guruh qidiruvi -->
     <div class="relative">
