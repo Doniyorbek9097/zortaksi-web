@@ -11,8 +11,9 @@ export const SUPPORT_CHAT_SHELL =
 export const supportHeaderClass =
   'bg-gradient-to-r from-violet-600 via-violet-700 to-indigo-700 dark:from-[#5b21b6] dark:via-[#4c1d95] dark:to-[#4338ca] border-b border-violet-300/40 dark:border-violet-400/25 shadow-md shadow-violet-500/10 dark:shadow-violet-950/25'
 
+/** Premium header (violet gradient) — oq icon, light/dark rejimda ham ko'rinadi */
 export const supportHeaderIconClass =
-  'w-9 h-9 shrink-0 rounded-xl bg-violet-500/15 dark:bg-gradient-to-br dark:from-amber-300/30 dark:to-violet-300/10 ring-1 ring-violet-300/55 dark:ring-amber-200/25 flex items-center justify-center text-violet-600 dark:text-amber-100'
+  'w-9 h-9 shrink-0 rounded-xl bg-white/25 ring-1 ring-white/35 flex items-center justify-center text-white shadow-sm dark:bg-gradient-to-br dark:from-amber-300/30 dark:to-violet-300/10 dark:ring-amber-200/25 dark:text-amber-100'
 
 export const supportListItemClass =
   'bg-gradient-to-r from-violet-50 via-indigo-50/90 to-violet-50 dark:from-[#1a1030] dark:via-[#151028] dark:to-[#1a1030] border-violet-200/80 dark:border-violet-500/25 shadow-sm shadow-violet-500/5'
