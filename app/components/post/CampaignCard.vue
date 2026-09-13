@@ -31,6 +31,11 @@
       </div>
     </div>
 
+    <PostCampaignWindowStats
+      v-if="showWindowStats"
+      :campaign="campaign"
+    />
+
     <div class="flex items-center gap-1.5 flex-wrap">
       <button
         type="button"
@@ -74,11 +79,14 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
+import { campaignHasWindowStats } from '~/utils/postCampaign'
 
-defineProps<{
+const props = defineProps<{
   campaign: PostCampaign
   busy?: boolean
 }>()
+
+const showWindowStats = computed(() => campaignHasWindowStats(props.campaign))
 
 defineEmits<{
   start: []

@@ -54,7 +54,7 @@
             type="button"
             class="text-[11px] font-black text-amber-600 dark:text-amber-400"
             :disabled="store.isCampaignsLoading"
-            @click="store.fetchCampaigns()"
+            @click="store.refreshCampaignData()"
           >
             <font-awesome-icon
               icon="fa-solid fa-rotate"
@@ -644,7 +644,7 @@ onMounted(async () => {
     try { await authStore.getMe() } catch { /* ignore */ }
   }
   await store.load()
-  void store.fetchCampaigns()
+  void store.refreshCampaignData()
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -664,14 +664,30 @@ watch(groupQuery, (val) => {
   }, 350)
 })
 
+let campaignPollTimer: ReturnType<typeof setInterval> | null = null
+
+watch(
+  () => store.campaigns.some((c) => c.active),
+  (hasActive) => {
+    if (campaignPollTimer) clearInterval(campaignPollTimer)
+    campaignPollTimer = null
+    if (!hasActive) return
+    campaignPollTimer = setInterval(() => {
+      void store.refreshCampaignData()
+    }, 30_000)
+  },
+  { immediate: true },
+)
+
 onBeforeUnmount(() => {
   if (queryTimer) clearTimeout(queryTimer)
   if (observer) observer.disconnect()
+  if (campaignPollTimer) clearInterval(campaignPollTimer)
 })
 
 usePullToRefresh(async () => {
   await store.load(true)
-  await store.fetchCampaigns()
+  await store.refreshCampaignData()
 })
 
 watch(sentinel, (el) => {

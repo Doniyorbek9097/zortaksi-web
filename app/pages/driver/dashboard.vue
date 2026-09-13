@@ -54,6 +54,12 @@
       :loading="groupInviteLoading"
     />
 
+    <!-- E'lon avto-yuborish statistikasi -->
+    <DashboardPostStatsCard
+      :summary="postSummary"
+      :loading="postStatsLoading"
+    />
+
     <!-- Platform statistics -->
     <section
       class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
@@ -103,6 +109,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
+import { usePostStore, type PostCampaignSummary } from '~/stores/post.store'
 import type { IBanner } from '~/types/banner'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
@@ -111,6 +118,9 @@ definePageMeta({
 })
 
 const authStore = useAuthStore()
+const postStore = usePostStore()
+const postSummary = computed<PostCampaignSummary | null>(() => postStore.campaignSummary)
+const postStatsLoading = computed(() => postStore.isCampaignStatsLoading)
 
 // --- User derived data ---
 const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
@@ -373,9 +383,12 @@ usePullToRefresh(async () => {
     fetchPlatformStats(),
     fetchPromoBanners(),
     fetchGroupInviteLeaderboard({ background: true }),
+    postStore.refreshCampaignData(),
     authStore.getMe().catch(() => {}),
   ])
 })
+
+let postStatsPollTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   loadCachedStats()
@@ -384,5 +397,16 @@ onMounted(() => {
   void fetchPlatformStats({ background: statsReady.value })
   void fetchPromoBanners()
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
+  void postStore.refreshCampaignData()
+
+  postStatsPollTimer = setInterval(() => {
+    if (postStore.campaignSummary?.activeCampaign?.active) {
+      void postStore.refreshCampaignData()
+    }
+  }, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (postStatsPollTimer) clearInterval(postStatsPollTimer)
 })
 </script>

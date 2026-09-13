@@ -44,6 +44,30 @@ export type PostCampaign = {
   lastFailed?: number
   lastCharged?: number
   lastError?: string
+  activeSince?: string
+  windowEndsAt?: string
+  windowTotalPlanned?: number
+  windowSent?: number
+  windowRemaining?: number
+  windowMaxRuns?: number
+  windowRunCount?: number
+  windowRunsRemaining?: number
+  autoPauseHours?: number
+}
+
+export type PostCampaignSummary = {
+  totalCampaigns: number
+  activeCount: number
+  activeCampaign: PostCampaign | null
+  totals: {
+    windowSent: number
+    windowTotalPlanned: number
+    windowRemaining: number
+    windowRunsRemaining: number
+    nextRunAt: string | null
+    windowEndsAt: string | null
+    intervalMin: number | null
+  }
 }
 
 /** @deprecated use PostCampaign */
@@ -63,7 +87,9 @@ export const usePostStore = defineStore('post', () => {
   const joiningId = ref<string | null>(null)
   const error = ref('')
   const campaigns = ref<PostCampaign[]>([])
+  const campaignSummary = ref<PostCampaignSummary | null>(null)
   const isCampaignsLoading = ref(false)
+  const isCampaignStatsLoading = ref(false)
   const campaignBusyId = ref<string | null>(null)
   const schedule = computed(() => campaigns.value.find((c) => c.active) || null)
   const isScheduleLoading = ref(false)
@@ -450,6 +476,26 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
+  const fetchCampaignStats = async () => {
+    try {
+      isCampaignStatsLoading.value = true
+      const res = await useApi('/groups/broadcast/campaigns/stats')
+      if (res.success) {
+        campaignSummary.value = res.data as PostCampaignSummary
+      }
+      return res
+    } catch {
+      campaignSummary.value = null
+      return null
+    } finally {
+      isCampaignStatsLoading.value = false
+    }
+  }
+
+  const refreshCampaignData = async () => {
+    await Promise.all([fetchCampaigns(), fetchCampaignStats()])
+  }
+
   const fetchSchedule = fetchCampaigns
 
   const createCampaign = async (
@@ -476,7 +522,7 @@ export const usePostStore = defineStore('post', () => {
       })
       if (res.success) {
         selected.value = new Set()
-        await fetchCampaigns()
+        await refreshCampaignData()
         await authStore.getMe()
       }
       return res
@@ -510,7 +556,7 @@ export const usePostStore = defineStore('post', () => {
           ...(payload.groupIds ? { groupIds: payload.groupIds } : {}),
         },
       })
-      if (res.success) await fetchCampaigns()
+      if (res.success) await refreshCampaignData()
       return res
     } catch (e: any) {
       error.value = e?.response?.data?.message || 'Yangilanmadi'
@@ -546,7 +592,7 @@ export const usePostStore = defineStore('post', () => {
       const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}/start`, {
         method: 'POST',
       })
-      if (res.success) await fetchCampaigns()
+      if (res.success) await refreshCampaignData()
       return res
     } catch (e: any) {
       handlePostActionError(e, 'Boshlanmadi')
@@ -563,7 +609,7 @@ export const usePostStore = defineStore('post', () => {
       const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}/stop`, {
         method: 'POST',
       })
-      if (res.success) await fetchCampaigns()
+      if (res.success) await refreshCampaignData()
       return res
     } catch (e: any) {
       error.value = e?.response?.data?.message || "To'xtatilmadi"
@@ -643,8 +689,10 @@ export const usePostStore = defineStore('post', () => {
     joiningId,
     error,
     campaigns,
+    campaignSummary,
     campaignBusyId,
     isCampaignsLoading,
+    isCampaignStatsLoading,
     schedule,
     isScheduleLoading,
     search,
@@ -672,6 +720,8 @@ export const usePostStore = defineStore('post', () => {
     leaveGroup,
     broadcast,
     fetchCampaigns,
+    fetchCampaignStats,
+    refreshCampaignData,
     fetchSchedule,
     createCampaign,
     updateCampaign,

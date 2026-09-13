@@ -72,6 +72,9 @@
                 max="1440"
                 class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
+              <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
+                Avto-yuborish 12 soat ishlaydi, keyin avtomatik to'xtaydi. Reja, yuborilgan va qolgan xabarlar statistikada ko'rinadi.
+              </p>
             </div>
 
             <div class="mt-4 flex flex-col gap-2">
