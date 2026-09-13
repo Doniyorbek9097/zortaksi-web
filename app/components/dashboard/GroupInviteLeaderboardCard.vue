@@ -1,3 +1,7 @@
+<!--
+  Guruh taklifi TOP 10 — haydovchi va admin dashboard.
+  Sarlavhada «A'zo qo'shish» tugmasi, pastki tugma yo'q.
+-->
 <template>
   <section
     v-if="visible"
@@ -131,6 +135,7 @@
 </template>
 
 <script setup lang="ts">
+/** TOP 10 haydovchilar — guruhga taklif statistikasi */
 import { useAuthStore } from '~/stores/auth.store'
 import { isTariffActive } from '~/utils/tariffActive'
 import { openTelegramExternalUrl } from '~/utils/telegramLinks'
@@ -156,6 +161,7 @@ const props = withDefaults(
 const authStore = useAuthStore()
 const { fetchGroups, openPublicGroup, groups } = useRegionGroupsWelcome()
 
+/** Kartani ko'rsatish shartlari */
 const visible = computed(() => {
   if (props.adminMode) return true
   if (!import.meta.client || !authStore.sessionReady) return false
@@ -202,6 +208,7 @@ const hasRegion = computed(() =>
   !!String(authStore.user?.regionSlug || '').trim(),
 )
 
+/** Hudud tanlangan haydovchi uchun a'zo qo'shish tugmasi */
 const showJoinSection = computed(() => {
   if (!props.showJoinButton || props.adminMode) return false
   return hasRegion.value
@@ -215,6 +222,7 @@ const groupUrl = computed(() => {
 
 const canOpenGroup = computed(() => !!groupUrl.value)
 
+/** Telegram guruh havolasini ochadi */
 const onOpenGroup = async () => {
   if (groupUrl.value) {
     openTelegramExternalUrl(groupUrl.value)

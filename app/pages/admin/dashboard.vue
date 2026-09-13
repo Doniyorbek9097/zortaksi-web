@@ -255,15 +255,17 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * Admin asosiy sahifa — daromad, statistika, trend grafiklar.
+ */
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import { isAdminUser } from '~/utils/userRole'
-import type { GroupInviteLeaderboardData } from '~/types/group-invite'
+import { useAdminDashboardStats } from '~/composables/dashboard/useAdminDashboardStats'
+import { useAdminChartData } from '~/composables/dashboard/useAdminChartData'
+import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
 
-definePageMeta({
-  layout: 'admin',
-})
+definePageMeta({ layout: 'admin' })
 
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
@@ -274,180 +276,41 @@ const driverAvatar = (owner: { avatar?: string; userId: string }) => {
   if (brokenDriverAvatars.value.has(owner.userId)) return undefined
   return avatarUrl(owner.avatar, owner.userId)
 }
-const isMainAdmin = computed(() => isAdminUser(authStore.user))
-
-const groupInviteLeaderboard = ref<GroupInviteLeaderboardData | null>(null)
-const groupInviteLoading = ref(false)
-const GROUP_INVITE_CACHE_KEY = 'zt:admin-group-invite-lb'
 
 const firstName = computed(() => authStore.user?.firstName || 'Admin')
-
 const { liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 
-const monthIncome = computed(() => store.monthIncome)
-const todayIncome = computed(() => store.data?.todayIncome ?? { amount: 0, payments: 0, total: 0 })
-const weekIncome = computed(() => store.data?.weekIncome ?? { amount: 0, payments: 0, total: 0 })
-const growth = computed(() => store.data?.growth)
-const driverPosts = computed(() => store.data?.driverPosts ?? null)
+const {
+  monthIncome,
+  todayIncome,
+  weekIncome,
+  growth,
+  driverPosts,
+  regionIncomeChart,
+  navItems,
+  heroStats,
+  chipStats,
+  tariffTab,
+  tariffTabs,
+  tariffStatsItems,
+} = useAdminDashboardStats(store)
 
-const navItems = computed(() => {
-  const items = [
-    { title: 'Haydovchilar', icon: 'fa-solid fa-users', tone: 'green' as const, to: '/admin/drivers' },
-    { title: "To'lovlar", icon: 'fa-solid fa-receipt', tone: 'amber' as const, to: '/admin/payments' },
-    { title: 'Tariflar', icon: 'fa-solid fa-tags', tone: 'violet' as const, to: '/admin/tariffs' },
-    { title: 'Bot guruhlari', icon: 'fa-solid fa-bullhorn', tone: 'rose' as const, to: '/admin/bot-groups' },
-    { title: 'Bloklanganlar', icon: 'fa-solid fa-ban', tone: 'rose' as const, to: '/admin/blocked' },
-  ]
-  if (isMainAdmin.value) {
-    items.splice(3, 0, { title: 'Bannerlar', icon: 'fa-solid fa-image', tone: 'blue' as const, to: '/admin/banners' })
-  }
-  return items
+const {
+  chartTab,
+  chartTabs,
+  chartSelectedTitle,
+  chartItems,
+  incomeDailyItems,
+} = useAdminChartData(store)
+
+const {
+  data: groupInviteLeaderboard,
+  loading: groupInviteLoading,
+  hydrateFromCache: hydrateGroupInvite,
+  fetchLeaderboard: fetchGroupInviteLeaderboard,
+} = useGroupInviteLeaderboard({
+  cacheKey: 'zt:admin-group-invite-lb',
 })
-
-const num = (...vals: Array<number | undefined | null>) => {
-  for (const v of vals) {
-    if (v != null && Number.isFinite(Number(v))) return Number(v)
-  }
-  return 0
-}
-
-const heroStats = computed(() => {
-  const s = store.data?.keyStats
-  const p = store.data?.platform
-  return {
-    orders: num(s?.ordersToday, p?.ordersToday),
-    active: num(s?.activeDrivers, p?.activeDrivers),
-  }
-})
-
-const chipStats = computed(() => {
-  const s = store.data?.keyStats
-  const p = store.data?.platform
-  return {
-    newToday: num(s?.newDriversToday),
-    total: num(s?.totalDrivers, p?.totalDrivers),
-    debtors: num(s?.debtorDrivers),
-    visits: num(s?.visitsToday),
-  }
-})
-
-const regionIncomeChart = computed(() => store.data?.regionIncomeChart ?? null)
-
-const tariffTab = ref('month')
-const tariffTabs = [
-  { label: 'Shu oy', value: 'month' },
-  { label: 'Jami', value: 'total' },
-]
-const tariffStatsItems = computed(() => {
-  const stats = store.data?.tariffStats
-  if (!stats) return []
-  const list = tariffTab.value === 'month' ? stats.month : stats.total
-  return list.slice(0, 5)
-})
-
-const chartTab = ref('amount')
-const chartTabs = [
-  { label: 'Daromad', value: 'amount' },
-  { label: "To'lov", value: 'payments' },
-  { label: 'Driver', value: 'drivers' },
-]
-
-const MONTH_FULL_UZ = [
-  'Yanvar', 'Fevral', 'Mart', 'Aprel', 'May', 'Iyun',
-  'Iyul', 'Avgust', 'Sentabr', 'Oktabr', 'Noyabr', 'Dekabr',
-]
-
-/** Hafta kunlari (0=Yakshanba) */
-const WEEKDAY_SHORT = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pash', 'Jum', 'Sham']
-
-const chartSelectedTitle = computed(() => {
-  if (chartTab.value === 'payments') return "To'lovlar"
-  if (chartTab.value === 'amount') return 'Daromad'
-  return 'Haydovchilar'
-})
-
-const chartItems = computed(() => {
-  const series = store.data?.chart ?? []
-  const now = new Date()
-  if (!series.length) {
-    const labels = ['YAN', 'FEV', 'MAR', 'APR', 'MAY', 'IYN', 'IYL', 'AVG', 'SEN', 'OKT', 'NOY', 'DEK']
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (6 - i), 1)
-      return {
-        label: labels[d.getMonth()],
-        detail: `${MONTH_FULL_UZ[d.getMonth()]} ${d.getFullYear()}`,
-        value: 0,
-      }
-    })
-  }
-  return series.map((m, i) => {
-    const d = new Date(now.getFullYear(), now.getMonth() - (series.length - 1 - i), 1)
-    return {
-      label: m.label,
-      detail: `${MONTH_FULL_UZ[d.getMonth()]} ${d.getFullYear()}`,
-      value:
-        chartTab.value === 'payments'
-          ? m.payments
-          : chartTab.value === 'amount'
-            ? m.amount
-            : m.newDrivers,
-    }
-  })
-})
-
-const incomeDailyItems = computed(() => {
-  const series = store.data?.incomeDailyChart ?? []
-  const today = new Date()
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  return series.map((d, i) => {
-    const date = new Date(todayStart.getTime() - (series.length - 1 - i) * 86400000)
-    const wd = date.getDay()
-    return {
-      label: WEEKDAY_SHORT[wd],
-      detail: d.label,
-      value: d.amount,
-    }
-  })
-})
-
-const loadCachedGroupInvite = () => {
-  if (!import.meta.client) return
-  try {
-    const raw = sessionStorage.getItem(GROUP_INVITE_CACHE_KEY)
-    if (!raw) return
-    groupInviteLeaderboard.value = JSON.parse(raw) as GroupInviteLeaderboardData
-  } catch {
-    /* */
-  }
-}
-
-const saveCachedGroupInvite = () => {
-  if (!import.meta.client || !groupInviteLeaderboard.value) return
-  try {
-    sessionStorage.setItem(GROUP_INVITE_CACHE_KEY, JSON.stringify(groupInviteLeaderboard.value))
-  } catch {
-    /* */
-  }
-}
-
-const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
-  if (!opts?.background && !groupInviteLeaderboard.value) {
-    groupInviteLoading.value = true
-  }
-  try {
-    const res = await useApi<{ success: boolean; data: GroupInviteLeaderboardData }>(
-      '/group-invite/leaderboard',
-    )
-    if (res?.success && res.data) {
-      groupInviteLeaderboard.value = res.data
-      saveCachedGroupInvite()
-    }
-  } catch {
-    /* */
-  } finally {
-    groupInviteLoading.value = false
-  }
-}
 
 const onDownloadApp = () => navigateTo('/admin/download-app')
 const onBonus = () => navigateTo('/admin/bonus')
@@ -462,13 +325,16 @@ usePullToRefresh(async () => {
 
 onMounted(() => {
   store.loadCached()
-  loadCachedGroupInvite()
+  hydrateGroupInvite()
   void store.fetchStats({ background: store.isReady })
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
+
   try {
     const accountStore = useAccountStore()
     accountStore.load()
     if (authStore.user) accountStore.ensureCurrent(authStore.user)
-  } catch { /* */ }
+  } catch {
+    /* */
+  }
 })
 </script>

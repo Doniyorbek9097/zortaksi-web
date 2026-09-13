@@ -1,9 +1,8 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
-    <!-- Header -->
     <DashboardHeader action-button="download" @download="onDownloadApp" @bonus="onBonus" />
 
-    <!-- Salomlashish -->
+    <!-- Salomlashish va vaqt -->
     <div
       class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900/80"
     >
@@ -23,10 +22,8 @@
       </div>
     </div>
 
-    <!-- Payment banner -->
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
-    <!-- Balans + promo bannerlar -->
     <DashboardBalanceCard
       :balance="balance"
       :active="tariffActive"
@@ -34,7 +31,6 @@
       @buy="onBuyTariff"
     />
 
-    <!-- Tarif -->
     <DashboardTariffCard
       :name="tariff.name"
       :info="tariff.info"
@@ -48,63 +44,22 @@
       @buy="onBuyTariff"
     />
 
-    <!-- Faol e'lon — tarif kartasidan keyin -->
     <DashboardPostStatsCard
       v-if="showPostCampaignCard"
       :campaign="activePostCampaign"
       :busy-id="postStore.campaignBusyId"
       :loading="postStatsLoading && !activePostCampaign"
-      @start="onPostCampaignStart"
-      @stop="onPostCampaignStop"
-      @delete="onPostCampaignDelete"
+      @start="startCampaign"
+      @stop="stopCampaign"
+      @delete="deleteCampaign"
     />
 
-    <!-- Ilova statistikasi — TOP 10 dan yuqorida -->
-    <section
-      class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
-    >
-      <div
-        class="px-3 py-2.5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-sky-50/50 dark:from-emerald-950/25 dark:via-teal-950/15 dark:to-sky-950/15"
-      >
-        <div class="flex items-center gap-2 min-w-0">
-          <div
-            class="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-xs shadow-sm shrink-0"
-          >
-            <font-awesome-icon icon="fa-solid fa-chart-line" />
-          </div>
-          <div class="min-w-0">
-            <p class="text-[12px] font-black text-slate-800 dark:text-slate-100 leading-tight">
-              Ilova statistikasi
-            </p>
-            <p class="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-              Jonli ma'lumotlar
-            </p>
-          </div>
-        </div>
-      </div>
+    <DashboardPlatformStatsSection
+      :stats="platformStats"
+      :loading="statsLoading"
+      :ready="statsReady"
+    />
 
-      <div class="p-2.5">
-        <div v-if="statsLoading && !statsReady" class="grid grid-cols-2 gap-1.5">
-          <div
-            v-for="n in 6"
-            :key="n"
-            class="h-12 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
-          />
-        </div>
-        <div v-else class="grid grid-cols-2 gap-1.5">
-          <DashboardStatCard
-            v-for="stat in stats"
-            :key="stat.label"
-            :value="stat.value"
-            :label="stat.label"
-            :icon="stat.icon"
-            :color="stat.color"
-          />
-        </div>
-      </div>
-    </section>
-
-    <!-- Guruh taklifi TOP 10 -->
     <DashboardGroupInviteLeaderboardCard
       :data="groupInviteLeaderboard"
       :loading="groupInviteLoading"
@@ -113,346 +68,82 @@
 </template>
 
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth.store'
-import { usePostStore, type PostCampaign } from '~/stores/post.store'
+/**
+ * Haydovchi asosiy sahifa — balans, tarif, statistika, TOP 10.
+ */
 import DashboardPostStatsCard from '~/components/dashboard/PostStatsCard.vue'
-import type { IBanner } from '~/types/banner'
-import type { GroupInviteLeaderboardData } from '~/types/group-invite'
+import { useDriverTariffCard } from '~/composables/dashboard/useDriverTariffCard'
+import { usePlatformStats } from '~/composables/dashboard/usePlatformStats'
+import { usePromoBanners } from '~/composables/dashboard/usePromoBanners'
+import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
+import { useDriverPostCampaign } from '~/composables/dashboard/useDriverPostCampaign'
+import { useAuthStore } from '~/stores/auth.store'
 
-definePageMeta({
-  layout: 'driver',
-})
+definePageMeta({ layout: 'driver' })
 
 const authStore = useAuthStore()
-const postStore = usePostStore()
-const postStatsLoading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
-const activePostCampaign = computed(() => postStore.activeCampaign)
-const showPostCampaignCard = computed(
-  () => !!activePostCampaign.value || postStatsLoading.value,
-)
-
-const onPostCampaignStart = async (c: PostCampaign) => {
-  await postStore.startCampaign(c.id)
-}
-
-const onPostCampaignStop = async (c: PostCampaign) => {
-  await postStore.stopCampaign(c.id)
-}
-
-const onPostCampaignDelete = async (c: PostCampaign) => {
-  await postStore.deleteCampaign(c.id)
-}
-
-// --- User derived data ---
-const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
-const balance = computed(() => authStore.user?.balance ?? 0)
-const tariffActive = computed(() => authStore.tariffActive)
-
-const promoBanners = ref<IBanner[]>([])
-const BANNERS_CACHE_KEY = 'zt:dashboard-banners'
-
-const groupInviteLeaderboard = ref<GroupInviteLeaderboardData | null>(null)
-const groupInviteLoading = ref(false)
-const GROUP_INVITE_CACHE_KEY = 'zt:dashboard-group-invite-lb'
-
-const loadCachedBanners = () => {
-  if (!import.meta.client) return
-  try {
-    const raw = sessionStorage.getItem(BANNERS_CACHE_KEY)
-    if (!raw) return
-    const data = JSON.parse(raw) as IBanner[]
-    if (Array.isArray(data)) promoBanners.value = data
-  } catch {
-    /* */
-  }
-}
-
-const saveCachedBanners = () => {
-  if (!import.meta.client) return
-  try {
-    sessionStorage.setItem(BANNERS_CACHE_KEY, JSON.stringify(promoBanners.value))
-  } catch {
-    /* */
-  }
-}
-
-const fetchPromoBanners = async () => {
-  try {
-    const res = await useApi<{ success: boolean; data: { banners: IBanner[] } }>('/banners')
-    if (res?.success && res.data?.banners) {
-      promoBanners.value = res.data.banners
-      saveCachedBanners()
-    }
-  } catch {
-    /* */
-  }
-}
-
-const loadCachedGroupInviteLeaderboard = () => {
-  if (!import.meta.client) return
-  try {
-    const raw = sessionStorage.getItem(GROUP_INVITE_CACHE_KEY)
-    if (!raw) return
-    const data = JSON.parse(raw) as GroupInviteLeaderboardData
-    if (data?.available) groupInviteLeaderboard.value = data
-  } catch {
-    /* */
-  }
-}
-
-const saveCachedGroupInviteLeaderboard = () => {
-  if (!import.meta.client || !groupInviteLeaderboard.value) return
-  try {
-    sessionStorage.setItem(GROUP_INVITE_CACHE_KEY, JSON.stringify(groupInviteLeaderboard.value))
-  } catch {
-    /* */
-  }
-}
-
-const fetchGroupInviteLeaderboard = async (opts?: { background?: boolean }) => {
-  if (!tariffActive.value) return
-  if (!opts?.background && !groupInviteLeaderboard.value) {
-    groupInviteLoading.value = true
-  }
-  try {
-    const res = await useApi<{ success: boolean; data: GroupInviteLeaderboardData }>(
-      '/group-invite/leaderboard'
-    )
-    if (res?.success && res.data) {
-      groupInviteLeaderboard.value = res.data
-      saveCachedGroupInviteLeaderboard()
-    }
-  } catch (e) {
-    console.warn('[Dashboard] group invite leaderboard:', e)
-  } finally {
-    groupInviteLoading.value = false
-  }
-}
 
 const { liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
+const { tariff, tariffActive, balance, firstName } = useDriverTariffCard()
 
-// --- Tariff card data ---
-const formatDate = (value?: string | Date) => {
-  if (!value) return '—'
-  const d = new Date(value)
-  if (Number.isNaN(d.getTime())) return '—'
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const yyyy = d.getFullYear()
-  return `${dd}/${mm}/${yyyy}`
-}
+const { banners: promoBanners, hydrateFromCache: hydrateBanners, fetchBanners } = usePromoBanners()
+const {
+  stats: platformStats,
+  loading: statsLoading,
+  ready: statsReady,
+  hydrateFromCache: hydrateStats,
+  fetchStats: fetchPlatformStats,
+} = usePlatformStats()
 
-const resolveStartedAt = () => {
-  const raw = authStore.user?.startedAt
-  if (raw) {
-    const d = new Date(raw)
-    if (!Number.isNaN(d.getTime())) return d
-  }
-  // Eski hisoblar: startedAt yo'q — tugash − expireDays
-  const end = authStore.user?.tariffExpireAt
-  const days = Number(authStore.user?.tariff?.expireDays || 0)
-  if (end && days > 0) {
-    const e = new Date(end)
-    if (!Number.isNaN(e.getTime())) {
-      return new Date(e.getTime() - days * 24 * 60 * 60 * 1000)
-    }
-  }
-  return null
-}
-
-const tariff = computed(() => {
-  const startedAt = resolveStartedAt()
-  return {
-    name: authStore.user?.tariff?.name || 'Kunlik sinov',
-    info: authStore.user?.tariff?.info || '1 - martalik sinov tarifi',
-    price: authStore.user?.tariff?.price ?? 5000,
-    expireDays: authStore.user?.tariff?.expireDays ?? 1,
-    startDate: formatDate(startedAt ?? undefined),
-    endDate: formatDate(authStore.user?.tariffExpireAt),
-    startedAt,
-    expireAt: authStore.user?.tariffExpireAt ?? null,
-  }
+const {
+  data: groupInviteLeaderboard,
+  loading: groupInviteLoading,
+  hydrateFromCache: hydrateGroupInvite,
+  fetchLeaderboard: fetchGroupInviteLeaderboard,
+} = useGroupInviteLeaderboard({
+  cacheKey: 'zt:dashboard-group-invite-lb',
+  requireActiveTariff: true,
+  tariffActive: () => tariffActive.value,
 })
 
-// --- Platform statistics (backend) ---
-type StatColor = 'blue' | 'amber' | 'green' | 'violet' | 'emerald' | 'pink'
-interface Stat {
-  value: number
-  label: string
-  icon: string
-  color: StatColor
-}
+const {
+  postStore,
+  loading: postStatsLoading,
+  activeCampaign: activePostCampaign,
+  showCard: showPostCampaignCard,
+  startCampaign,
+  stopCampaign,
+  deleteCampaign,
+  loadCampaign,
+  startPolling,
+  stopPolling,
+} = useDriverPostCampaign()
 
-const platform = ref({
-  ordersToday: 0,
-  ordersLastHour: 0,
-  ordersTotal: 0,
-  totalDrivers: 0,
-  activeDrivers: 0,
-  tariffsCount: 0,
-})
-const statsLoading = ref(false)
-const statsReady = ref(false)
-
-const stats = computed<Stat[]>(() => [
-  {
-    value: platform.value.ordersToday,
-    label: 'Bugun',
-    icon: 'fa-solid fa-clipboard-list',
-    color: 'blue',
-  },
-  {
-    value: platform.value.ordersLastHour,
-    label: '1 soat',
-    icon: 'fa-solid fa-bolt',
-    color: 'amber',
-  },
-  {
-    value: platform.value.ordersTotal,
-    label: 'Jami buyurtma',
-    icon: 'fa-solid fa-chart-line',
-    color: 'green',
-  },
-  {
-    value: platform.value.totalDrivers,
-    label: 'Haydovchilar',
-    icon: 'fa-solid fa-users',
-    color: 'violet',
-  },
-  {
-    value: platform.value.activeDrivers,
-    label: 'Faol',
-    icon: 'fa-solid fa-user-check',
-    color: 'emerald',
-  },
-  {
-    value: platform.value.tariffsCount,
-    label: 'Tariflar',
-    icon: 'fa-solid fa-tags',
-    color: 'pink',
-  },
-])
-
-const STATS_CACHE_KEY = 'zt:dashboard-platform-stats'
-
-const loadCachedStats = () => {
-  if (!import.meta.client) return
-  try {
-    const raw = sessionStorage.getItem(STATS_CACHE_KEY)
-    if (!raw) return
-    const data = JSON.parse(raw) as Partial<typeof platform.value>
-    platform.value = {
-      ordersToday: Number(data.ordersToday || 0),
-      ordersLastHour: Number(data.ordersLastHour || 0),
-      ordersTotal: Number(data.ordersTotal || 0),
-      totalDrivers: Number(data.totalDrivers || 0),
-      activeDrivers: Number(data.activeDrivers || 0),
-      tariffsCount: Number(data.tariffsCount || 0),
-    }
-    statsReady.value = true
-  } catch {
-    /* */
-  }
-}
-
-const saveCachedStats = () => {
-  if (!import.meta.client) return
-  try {
-    sessionStorage.setItem(STATS_CACHE_KEY, JSON.stringify(platform.value))
-  } catch {
-    /* */
-  }
-}
-
-const fetchPlatformStats = async (opts?: { background?: boolean }) => {
-  if (!opts?.background && !statsReady.value) {
-    statsLoading.value = true
-  }
-  try {
-    const res = await useApi('/dashboard/stats')
-    if (res?.success && res.data) {
-      platform.value = {
-        ordersToday: Number(res.data.ordersToday || 0),
-        ordersLastHour: Number(res.data.ordersLastHour || 0),
-        ordersTotal: Number(res.data.ordersTotal || 0),
-        totalDrivers: Number(res.data.totalDrivers || 0),
-        activeDrivers: Number(res.data.activeDrivers || 0),
-        tariffsCount: Number(res.data.tariffsCount || 0),
-      }
-      statsReady.value = true
-      saveCachedStats()
-    }
-  } catch (e) {
-    console.warn('[Dashboard] stats:', e)
-  } finally {
-    statsLoading.value = false
-  }
-}
-
-// --- Actions ---
-const onDownloadApp = () => {
-  navigateTo('/driver/download-app')
-}
+const onDownloadApp = () => navigateTo('/driver/download-app')
 const onBonus = () => navigateTo('/driver/bonus')
-
-const onBuyTariff = () => {
-  navigateTo('/driver/payment')
-}
+const onBuyTariff = () => navigateTo('/driver/payment')
 
 usePullToRefresh(async () => {
   await Promise.all([
     fetchPlatformStats(),
-    fetchPromoBanners(),
+    fetchBanners(),
     fetchGroupInviteLeaderboard({ background: true }),
     postStore.refreshCampaignData(),
     authStore.getMe().catch(() => {}),
   ])
 })
 
-let postStatsPollTimer: ReturnType<typeof setInterval> | null = null
-
-const loadPostCampaign = async () => {
-  if (!authStore.user || !authStore.sessionReady) {
-    try {
-      await authStore.getMe()
-    } catch {
-      /* */
-    }
-  }
-  postStore.hydrateActiveCampaignCache()
-  await postStore.refreshCampaignData()
-}
-
-watch(
-  () => [authStore.sessionReady, authStore.user?.userId, authStore.isAuthenticated] as const,
-  ([ready, uid, authed]) => {
-    if ((ready && uid) || authed) void loadPostCampaign()
-  },
-  { immediate: true },
-)
-
-onActivated(() => {
-  void loadPostCampaign()
-})
-
 onMounted(() => {
   postStore.hydrateActiveCampaignCache()
-  loadCachedStats()
-  loadCachedBanners()
-  loadCachedGroupInviteLeaderboard()
+  hydrateStats()
+  hydrateBanners()
+  hydrateGroupInvite()
   void fetchPlatformStats({ background: statsReady.value })
-  void fetchPromoBanners()
+  void fetchBanners()
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
-  void loadPostCampaign()
-
-  postStatsPollTimer = setInterval(() => {
-    if (postStore.activeCampaign?.active) {
-      void postStore.refreshCampaignData()
-    }
-  }, 30_000)
+  void loadCampaign()
+  startPolling()
 })
 
-onBeforeUnmount(() => {
-  if (postStatsPollTimer) clearInterval(postStatsPollTimer)
-})
+onBeforeUnmount(stopPolling)
 </script>
