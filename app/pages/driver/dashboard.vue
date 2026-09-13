@@ -59,13 +59,7 @@
       @delete="onPostCampaignDelete"
     />
 
-    <!-- Guruh taklifi TOP 10 -->
-    <DashboardGroupInviteLeaderboardCard
-      :data="groupInviteLeaderboard"
-      :loading="groupInviteLoading"
-    />
-
-    <!-- Platform statistics -->
+    <!-- Ilova statistikasi — TOP 10 dan yuqorida -->
     <section
       class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
     >
@@ -109,6 +103,12 @@
         </div>
       </div>
     </section>
+
+    <!-- Guruh taklifi TOP 10 -->
+    <DashboardGroupInviteLeaderboardCard
+      :data="groupInviteLeaderboard"
+      :loading="groupInviteLoading"
+    />
   </div>
 </template>
 

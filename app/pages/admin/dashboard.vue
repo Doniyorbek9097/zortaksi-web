@@ -215,19 +215,7 @@
       />
     </AdminSectionCard>
 
-    <!-- Tariflar -->
-    <AdminSectionCard
-      title="Eng ko'p sotilgan tariflar"
-      icon="fa-solid fa-tags"
-      icon-tone="violet"
-    >
-      <template #action>
-        <AdminSegmentTabs v-model="tariffTab" :tabs="tariffTabs" />
-      </template>
-      <AdminTariffRankGrid :items="tariffStatsItems" />
-    </AdminSectionCard>
-
-    <!-- Oylik trend -->
+    <!-- Oylik trend — 7 kunlikdan keyin -->
     <AdminSectionCard
       title="Oylik trend"
       icon="fa-solid fa-chart-line"
@@ -241,6 +229,18 @@
         :value-mode="chartTab === 'amount' ? 'amount' : 'number'"
         :selected-title="chartSelectedTitle"
       />
+    </AdminSectionCard>
+
+    <!-- Tariflar -->
+    <AdminSectionCard
+      title="Eng ko'p sotilgan tariflar"
+      icon="fa-solid fa-tags"
+      icon-tone="violet"
+    >
+      <template #action>
+        <AdminSegmentTabs v-model="tariffTab" :tabs="tariffTabs" />
+      </template>
+      <AdminTariffRankGrid :items="tariffStatsItems" />
     </AdminSectionCard>
 
     <!-- Guruh taklifi TOP 10 -->
@@ -345,10 +345,10 @@ const tariffStatsItems = computed(() => {
   return list.slice(0, 5)
 })
 
-const chartTab = ref('payments')
+const chartTab = ref('amount')
 const chartTabs = [
-  { label: "To'lov", value: 'payments' },
   { label: 'Daromad', value: 'amount' },
+  { label: "To'lov", value: 'payments' },
   { label: 'Driver', value: 'drivers' },
 ]
 

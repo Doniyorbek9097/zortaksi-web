@@ -20,8 +20,22 @@
             <span class="text-pink-500">{{ totalInvites }}</span> qo'shilgan
             <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
             <span class="text-violet-500">{{ totalInviters }}</span> haydovchi
+            <template v-if="showJoinSection">
+              <span class="text-slate-300 dark:text-slate-600 mx-1">·</span>
+              <span class="text-amber-600 dark:text-amber-400">+{{ formattedReward }}</span>
+            </template>
           </p>
         </div>
+        <button
+          v-if="showJoinSection"
+          type="button"
+          class="shrink-0 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white text-[10px] font-black px-2.5 py-1.5 shadow-sm shadow-violet-500/20 transition-all active:scale-[0.98] disabled:opacity-50"
+          :disabled="!canOpenGroup"
+          @click="onOpenGroup"
+        >
+          <font-awesome-icon icon="fa-brands fa-telegram" class="text-[11px]" />
+          A'zo qo'shish
+        </button>
       </div>
     </div>
 
@@ -113,24 +127,6 @@
       </div>
     </div>
 
-    <div
-      v-if="showJoinSection"
-      class="px-3 py-2 border-t border-slate-100 dark:border-slate-800 space-y-1.5"
-    >
-      <p class="text-center text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-        Har biri uchun
-        <span class="text-amber-600 dark:text-amber-400 font-black">+{{ formattedReward }} so'm</span>
-      </p>
-      <button
-        type="button"
-        class="w-full flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white text-[12px] font-black py-2.5 shadow-sm shadow-violet-500/20 transition-all active:scale-[0.99] disabled:opacity-50"
-        :disabled="!canOpenGroup"
-        @click="onOpenGroup"
-      >
-        <font-awesome-icon icon="fa-brands fa-telegram" class="text-sm" />
-        Guruhga a'zo qo'shish
-      </button>
-    </div>
   </section>
 </template>
 
