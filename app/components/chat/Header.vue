@@ -30,6 +30,7 @@
         :name="name"
         :src="avatar"
         :user-id="userId"
+        :profile-chat-id="profileChatId"
         size="sm"
         previewable
       />
@@ -95,6 +96,8 @@ interface Props {
   showDriverPage?: boolean
   showClearHistory?: boolean
   clearing?: boolean
+  /** Profil sahifasi uchun chat konteksti */
+  profileChatId?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -104,6 +107,7 @@ withDefaults(defineProps<Props>(), {
   showDriverPage: false,
   showClearHistory: false,
   clearing: false,
+  profileChatId: '',
 })
 
 defineEmits<{ back: []; clear: []; 'driver-page': [] }>()

@@ -1,15 +1,15 @@
 <template>
   <component
-    :is="previewable && showImg ? 'button' : 'div'"
-    :type="previewable && showImg ? 'button' : undefined"
+    :is="previewable && userId ? 'button' : 'div'"
+    :type="previewable && userId ? 'button' : undefined"
     class="overflow-hidden flex items-center justify-center font-black text-white shrink-0"
     :class="[
       sizeClass,
       shapeClass,
       !showImg && colorClass,
-      previewable && showImg && 'cursor-zoom-in active:scale-95 transition-transform',
+      previewable && userId && 'cursor-pointer active:scale-95 transition-transform',
     ]"
-    :aria-label="previewable && showImg ? `${name} rasmini ko'rish` : undefined"
+    :aria-label="previewable && userId ? `${name} profilini ko'rish` : undefined"
     @click="onClick"
   >
     <img
@@ -24,12 +24,6 @@
     <span v-else>{{ initial }}</span>
   </component>
 
-  <BaseImageLightbox
-    v-if="previewable"
-    v-model="lightboxOpen"
-    :src="resolvedSrc"
-    :alt="name"
-  />
 </template>
 
 <script setup lang="ts">
@@ -41,8 +35,10 @@ interface Props {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   /** Guruhlar uchun kvadratroq avatar */
   shape?: 'circle' | 'rounded'
-  /** Rasm ustiga bosilganda katta ko'rinish */
+  /** Rasm ustiga bosilganda Telegram profil sahifasi */
   previewable?: boolean
+  profileChatId?: string
+  profileOrderId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -50,8 +46,6 @@ const props = withDefaults(defineProps<Props>(), {
   shape: 'circle',
   previewable: false,
 })
-
-const lightboxOpen = ref(false)
 
 const { avatarUrl } = useMediaUrl()
 const broken = ref(false)
@@ -100,8 +94,17 @@ const onError = () => {
 }
 
 const onClick = (e: MouseEvent) => {
-  if (!props.previewable || !showImg.value) return
+  if (!props.previewable) return
+  const id = String(props.userId || '').trim()
+  if (!id) return
   e.stopPropagation()
-  lightboxOpen.value = true
+  void navigateTo({
+    path: `/driver/peers/${encodeURIComponent(id)}`,
+    query: {
+      ...(props.profileChatId ? { chatId: props.profileChatId } : {}),
+      ...(props.profileOrderId ? { orderId: props.profileOrderId } : {}),
+      name: props.name,
+    },
+  })
 }
 </script>

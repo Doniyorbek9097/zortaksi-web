@@ -10,6 +10,7 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
+      :profile-chat-id="effectiveChatId"
       :show-clear-history="showClearHistoryBtn && !selectionMode"
       :clearing="isClearingHistory"
       @back="goBack"
@@ -419,6 +420,7 @@ const {
   isOnline,
   peerAvatar,
   peerUserId,
+  effectiveChatId,
   scrollEl,
   draft,
 } = useDriverChatPage()
