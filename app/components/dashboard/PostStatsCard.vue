@@ -41,6 +41,9 @@
         :campaign="campaign"
         :busy="busyId === campaign.id"
         flat
+        compact-title
+        hide-active-badge
+        hide-text
         :edit-to="campaignEditPath(campaign.id)"
         @start="$emit('start', campaign)"
         @stop="$emit('stop', campaign)"

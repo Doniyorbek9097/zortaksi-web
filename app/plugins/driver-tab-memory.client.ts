@@ -70,6 +70,7 @@ export default defineNuxtPlugin(() => {
   })
 
   router.afterEach((to, from) => {
+    const orderStore = useOrderStore()
     const toPath = normalizePath(to.path)
     const fromPath = normalizePath(from.path)
     const tabSwitch = consumeDriverScrollLeave() === 'tab-switch'
@@ -86,6 +87,9 @@ export default defineNuxtPlugin(() => {
     releaseOtherDriverTabs(toPath)
 
     if (tabSwitch) {
+      if (toPath === '/driver/orders') {
+        orderStore.clearOrdersListScroll()
+      }
       window.scrollTo(0, 0)
     }
   })

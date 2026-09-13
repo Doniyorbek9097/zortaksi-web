@@ -48,18 +48,26 @@ export function useOrdersListSync(options: {
     persistScroll()
   }
 
+  const scrollWindowTo = (top: number) => {
+    if (!import.meta.client) return
+    window.scrollTo(0, Math.max(0, top))
+  }
+
   const restoreScroll = () => {
     if (!import.meta.client) return
     const y = orderStore.ordersListScrollY
 
     const apply = () => {
       if (y != null && y > 0) {
-        window.scrollTo({ top: y, left: 0, behavior: 'instant' })
+        scrollWindowTo(y)
         return
       }
 
       const anchorId = orderStore.ordersListAnchorOrderId
-      if (!anchorId) return
+      if (!anchorId) {
+        scrollWindowTo(0)
+        return
+      }
       const el = document.querySelector(
         `.order-seen-anchor[data-order-id="${anchorId}"]`,
       ) as HTMLElement | null
@@ -67,14 +75,11 @@ export function useOrdersListSync(options: {
       const top =
         el.getBoundingClientRect().top +
         (window.scrollY || document.documentElement.scrollTop || 0)
-      window.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'instant' })
+      scrollWindowTo(top)
     }
 
     apply()
-    requestAnimationFrame(() => {
-      apply()
-      requestAnimationFrame(apply)
-    })
+    requestAnimationFrame(apply)
   }
 
   const syncIfVisible = () => {
@@ -206,15 +211,21 @@ export function useOrdersListSync(options: {
       orderStore.listScope === 'all'
     if (hasCachedList && sameServerFilter) {
       await nextTick()
-      restoreScroll()
-      setTimeout(restoreScroll, 50)
-      setTimeout(restoreScroll, 200)
+      if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
+        restoreScroll()
+      } else {
+        scrollWindowTo(0)
+      }
       setTimeout(syncIfVisible, 2500)
     } else {
+      scrollWindowTo(0)
       await load()
     }
 
     await nextTick()
+    if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
+      restoreScroll()
+    }
     await fillViewport()
 
     pollTimer = setInterval(syncIfVisible, POLL_MS)
@@ -226,8 +237,11 @@ export function useOrdersListSync(options: {
   })
 
   onActivated(() => {
-    restoreScroll()
-    setTimeout(restoreScroll, 50)
+    if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
+      restoreScroll()
+    } else {
+      scrollWindowTo(0)
+    }
     syncIfVisible()
     bindSeenObserver()
     scheduleFillViewport()

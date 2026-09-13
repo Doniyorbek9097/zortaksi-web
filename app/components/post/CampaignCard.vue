@@ -13,7 +13,7 @@
     <div v-if="!hideHeader" class="flex items-center justify-between gap-2 min-w-0">
       <div class="min-w-0 flex-1 flex items-center gap-2">
         <span
-          v-if="campaign.active"
+          v-if="campaign.active && !hideActiveBadge"
           class="shrink-0 font-black uppercase tracking-wide rounded-full bg-emerald-500 text-white"
           :class="flat ? 'text-[10px] px-2 py-0.5' : compact ? 'text-[8px] px-1.5 py-0.5' : 'text-[11px] px-2 py-0.5'"
         >
@@ -21,7 +21,7 @@
         </span>
         <h3
           class="font-black text-slate-900 dark:text-white truncate"
-          :class="flat ? 'text-[16px]' : compact ? 'text-[13px]' : 'text-[15px]'"
+          :class="compactTitle ? 'text-[13px]' : flat ? 'text-[16px]' : compact ? 'text-[13px]' : 'text-[15px]'"
         >
           {{ campaign.name }}
         </h3>
@@ -41,6 +41,7 @@
     </div>
 
     <p
+      v-if="!hideText"
       class="font-medium text-slate-600 dark:text-slate-300 leading-snug"
       :class="[
         flat ? 'text-[14px] line-clamp-2' : compact ? 'text-[11px] line-clamp-1' : 'text-[13px] line-clamp-1',
@@ -131,6 +132,9 @@ const props = defineProps<{
   hideHeader?: boolean
   /** Berilsa Tahrirlash to'g'ridan-to'g'ri shu sahifaga o'tadi */
   editTo?: string
+  hideActiveBadge?: boolean
+  hideText?: boolean
+  compactTitle?: boolean
 }>()
 
 const emit = defineEmits<{
