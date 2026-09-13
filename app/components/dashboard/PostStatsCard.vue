@@ -30,17 +30,17 @@
       </div>
     </div>
 
-    <div class="p-3 space-y-3">
+    <div class="p-4 space-y-3">
       <div
         v-if="loading && !campaign"
-        class="h-24 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+        class="h-28 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
       />
 
       <PostCampaignCard
         v-else-if="campaign"
         :campaign="campaign"
         :busy="busyId === campaign.id"
-        compact
+        flat
         @start="$emit('start', campaign)"
         @stop="$emit('stop', campaign)"
         @edit="$emit('edit', campaign)"
