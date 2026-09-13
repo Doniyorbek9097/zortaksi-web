@@ -55,6 +55,8 @@
           :src="order.sender?.avatar"
           :user-id="order.sender?.userId"
           :profile-order-id="order._id"
+          :profile-phone="callPhone"
+          :profile-username="order.sender?.username"
           size="sm"
           previewable
           data-no-swipe

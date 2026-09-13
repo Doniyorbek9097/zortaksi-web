@@ -6,6 +6,7 @@ import { isTariffActive } from '~/utils/tariffActive'
 import { isAdminUser } from '~/utils/userRole'
 import { normalizeTelHref } from '~/utils/phone'
 import { compactQuery } from '~/utils/navigationQuery'
+import { useChatStore } from '~/stores/chat.store'
 
 /**
  * Birlashtirilgan profil sahifasi — Telegram profil + haydovchi ma'lumotlari.
@@ -123,14 +124,56 @@ export function useDriverProfilePage() {
   const openChat = async () => {
     const id = userId.value
     if (!id) return
+    const chatStore = useChatStore()
+    const displayName =
+      displayProfile.value?.name ||
+      profile.value?.name ||
+      String(route.query.name || '').trim()
+
     const chatId = String(route.query.chatId || '').trim()
     if (chatId) {
       await navigateTo({
         path: `/driver/chat/${chatId}`,
-        query: compactQuery({ name: profile.value?.name }),
+        query: compactQuery({ name: displayName }),
       })
       return
     }
+
+    const orderId = String(route.query.orderId || '').trim()
+    if (orderId) {
+      const existing =
+        chatStore.chats.find(
+          (c) =>
+            String(c.orderId || '') === orderId &&
+            String(c.peer?.userId || '') === id,
+        ) || chatStore.chats.find((c) => String(c.orderId || '') === orderId)
+
+      if (existing?._id) {
+        await navigateTo({
+          path: `/driver/chat/${existing._id}`,
+          query: compactQuery({
+            open: 'order',
+            orderId,
+            name: displayName,
+          }),
+        })
+        return
+      }
+
+      await navigateTo({
+        path: '/driver/chat/open',
+        query: compactQuery({
+          open: 'order',
+          orderId,
+          userId: id,
+          name: displayName,
+          phone: String(route.query.phone || '').trim() || undefined,
+          username: String(route.query.username || '').trim() || undefined,
+        }),
+      })
+      return
+    }
+
     if (isAdmin.value && driver.value) {
       try {
         const res = await useApi('/chats/support', {
@@ -148,14 +191,13 @@ export function useDriverProfilePage() {
         /* */
       }
     }
-    const orderId = String(route.query.orderId || '').trim()
+
     await navigateTo({
       path: '/driver/chat/open',
       query: compactQuery({
         open: 'user',
         userId: id,
-        orderId: orderId || undefined,
-        name: profile.value?.name,
+        name: displayName,
       }),
     })
   }

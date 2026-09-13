@@ -57,17 +57,25 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
     const id = String(unref(userId) || '').trim()
     const fromApi = profile.value?.photos || []
     const fromPreview = previewProfile.value?.photos || []
-
     const raw = fromApi.length ? fromApi : fromPreview
+
+    const hasGallery = raw.some((p) => /_\d+\.[a-z]+$/i.test(String(p || '')))
     const seen = new Set<string>()
     const urls: string[] = []
 
     for (const p of raw) {
-      const url = p
-        ? resolve(p) || avatarUrl(p, id)
-        : avatarUrl(undefined, id)
-      if (!url || seen.has(url)) continue
-      seen.add(url)
+      const path = String(p || '').trim()
+      if (!path || seen.has(path)) continue
+
+      // Galereya bor bo'lsa asosiy avatar (123.jpg) takrorlanmasin
+      if (hasGallery && /\/avatars\/\d+\.[a-z]+$/i.test(path) && !/_\d+\./.test(path)) {
+        continue
+      }
+
+      const url = resolve(path)
+      if (!url) continue
+
+      seen.add(path)
       urls.push(url)
     }
 

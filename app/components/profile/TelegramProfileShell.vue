@@ -8,28 +8,27 @@
     </div>
 
     <template v-else-if="profile">
-      <!-- Rasm bloki -->
       <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0 overflow-hidden">
         <div
           v-if="visiblePhotos.length"
           ref="galleryEl"
-          class="gallery-track h-full w-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
+          class="gallery-track h-full w-full"
           @scroll.passive="onGalleryScroll"
+          @touchstart.passive="onTouchStart"
+          @touchend.passive="onTouchEnd"
         >
           <div
             v-for="(src, i) in visiblePhotos"
-            :key="`photo-${i}-${src}`"
-            class="gallery-slide snap-center shrink-0 h-full flex items-center justify-center bg-slate-950"
-            :style="slideStyle"
+            :key="`slide-${i}-${src}`"
+            class="gallery-slide"
           >
             <img
               :src="src"
               :alt="`${profile.name} ${i + 1}`"
-              class="max-w-full max-h-full w-auto h-auto object-contain select-none pointer-events-none"
+              class="gallery-img"
               draggable="false"
               loading="eager"
               decoding="async"
-              @error="onImgError(src)"
             >
           </div>
         </div>
@@ -40,7 +39,6 @@
           {{ profile.name?.trim()?.[0]?.toUpperCase() || '?' }}
         </div>
 
-        <!-- Orqaga -->
         <button
           type="button"
           class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm"
@@ -50,7 +48,6 @@
           <font-awesome-icon icon="fa-solid fa-chevron-left" />
         </button>
 
-        <!-- Rasm soni — o'ng tomonda -->
         <div
           v-if="visiblePhotos.length > 1"
           class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
@@ -60,17 +57,15 @@
           </span>
         </div>
 
-        <!-- Yuklanish -->
         <div
           v-if="refreshing"
           class="absolute right-3 top-[max(2.75rem,env(safe-area-inset-top))] z-30"
         >
-          <span class="w-8 h-8 rounded-full bg-black/40 text-white text-[11px] font-bold backdrop-blur-sm flex items-center justify-center">
-            <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
+          <span class="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm">
+            <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-[11px]" />
           </span>
         </div>
 
-        <!-- Ism va holat -->
         <div class="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 pt-16 bg-gradient-to-t from-black/75 via-black/35 to-transparent pointer-events-none">
           <h1 class="text-[24px] font-black text-white leading-tight truncate">
             {{ profile.name }}
@@ -84,7 +79,6 @@
         </div>
       </section>
 
-      <!-- Kontent -->
       <div class="relative z-10 bg-slate-100 dark:bg-slate-950 pb-10">
         <div class="px-3 pt-3">
           <slot name="actions">
@@ -195,19 +189,10 @@ defineEmits<{
 }>()
 
 const galleryEl = ref<HTMLElement | null>(null)
-const slideWidth = ref(0)
 const activePhoto = ref(0)
-const failedUrls = ref<Set<string>>(new Set())
+const touchStartX = ref(0)
 
-const visiblePhotos = computed(() =>
-  props.photoUrls.filter((url) => Boolean(url) && !failedUrls.value.has(url)),
-)
-
-const slideStyle = computed(() =>
-  slideWidth.value > 0
-    ? { width: `${slideWidth.value}px`, minWidth: `${slideWidth.value}px` }
-    : { width: '100vw', minWidth: '100vw' },
-)
+const visiblePhotos = computed(() => props.photoUrls.filter(Boolean))
 
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
@@ -226,38 +211,54 @@ const telegramHref = computed(() => {
   return id ? `https://t.me/+${id}` : ''
 })
 
-const measureGallery = () => {
+const scrollToIndex = (index: number, smooth = false) => {
   const el = galleryEl.value
   if (!el) return
   const w = el.clientWidth
-  if (w > 0) slideWidth.value = w
+  if (!w) return
+  const next = Math.max(0, Math.min(visiblePhotos.value.length - 1, index))
+  el.scrollTo({ left: w * next, behavior: smooth ? 'smooth' : 'auto' })
+  activePhoto.value = next
+}
+
+const onGalleryScroll = () => {
+  const el = galleryEl.value
+  if (!el || !visiblePhotos.value.length) return
+  const w = el.clientWidth || 1
+  activePhoto.value = Math.max(
+    0,
+    Math.min(visiblePhotos.value.length - 1, Math.round(el.scrollLeft / w)),
+  )
+}
+
+const onTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.changedTouches[0]?.clientX || 0
+}
+
+const onTouchEnd = (e: TouchEvent) => {
+  const endX = e.changedTouches[0]?.clientX || 0
+  const delta = endX - touchStartX.value
+  if (Math.abs(delta) < 40) return
+  if (delta < 0 && activePhoto.value < visiblePhotos.value.length - 1) {
+    scrollToIndex(activePhoto.value + 1, true)
+  } else if (delta > 0 && activePhoto.value > 0) {
+    scrollToIndex(activePhoto.value - 1, true)
+  }
 }
 
 const preloadPhotos = (urls: string[]) => {
   if (!import.meta.client) return
-  urls.slice(0, 12).forEach((src) => {
+  urls.forEach((src) => {
     const img = new Image()
     img.src = src
   })
 }
 
-const onGalleryScroll = () => {
-  const el = galleryEl.value
-  if (!el || !visiblePhotos.value.length || !slideWidth.value) return
-  const idx = Math.round(el.scrollLeft / slideWidth.value)
-  activePhoto.value = Math.max(0, Math.min(visiblePhotos.value.length - 1, idx))
-}
-
-const onImgError = (src: string) => {
-  failedUrls.value = new Set([...failedUrls.value, src])
-}
-
 watch(
   () => props.photoUrls,
   (urls) => {
-    failedUrls.value = new Set()
     preloadPhotos(urls)
-    nextTick(measureGallery)
+    nextTick(() => scrollToIndex(0, false))
   },
   { immediate: true },
 )
@@ -266,49 +267,50 @@ watch(
   () => props.profile?.userId,
   () => {
     activePhoto.value = 0
-    failedUrls.value = new Set()
-    nextTick(() => {
-      measureGallery()
-      if (galleryEl.value) galleryEl.value.scrollLeft = 0
-    })
+    nextTick(() => scrollToIndex(0, false))
   },
 )
-
-onMounted(() => {
-  measureGallery()
-  preloadPhotos(props.photoUrls)
-
-  const el = galleryEl.value
-  if (!el || typeof ResizeObserver === 'undefined') return
-
-  const ro = new ResizeObserver(() => {
-    measureGallery()
-  })
-  ro.observe(el)
-  onUnmounted(() => ro.disconnect())
-})
 </script>
 
 <style scoped>
 .gallery-track {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
   touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
 }
 
 .gallery-slide {
-  touch-action: pan-x;
+  scroll-snap-align: start;
   scroll-snap-stop: always;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #020617;
 }
 
-.no-scrollbar {
+.gallery-img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+.gallery-track {
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
 }
 </style>

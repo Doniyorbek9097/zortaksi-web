@@ -39,6 +39,8 @@ interface Props {
   previewable?: boolean
   profileChatId?: string
   profileOrderId?: string
+  profilePhone?: string
+  profileUsername?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -105,6 +107,8 @@ const onClick = (e: MouseEvent) => {
       ...(props.profileOrderId ? { orderId: props.profileOrderId } : {}),
       name: props.name,
       ...(props.src ? { avatar: props.src } : {}),
+      ...(props.profilePhone ? { phone: props.profilePhone } : {}),
+      ...(props.profileUsername ? { username: props.profileUsername } : {}),
     },
   })
 }
