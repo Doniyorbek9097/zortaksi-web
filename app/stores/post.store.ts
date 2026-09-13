@@ -124,7 +124,8 @@ export const usePostStore = defineStore('post', () => {
     if (live) return live
     const summary = campaignSummary.value?.activeCampaign
     if (summary?.active) return summary
-    return cachedActiveCampaign.value
+    if (cachedActiveCampaign.value?.active) return cachedActiveCampaign.value
+    return readActiveCampaignCache()
   })
   const schedule = computed(() => activeCampaign.value)
   const isScheduleLoading = ref(false)
@@ -536,7 +537,11 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const refreshCampaignData = async () => {
-    if (!authStore.sessionReady || !authStore.user?.userId) return null
+    const canFetch =
+      !!authStore.user?.userId ||
+      authStore.isAuthenticated ||
+      !!authStore.token
+    if (!canFetch) return null
     await Promise.all([fetchCampaigns(), fetchCampaignStats()])
     const active = campaigns.value.find((c) => c.active)
       || (campaignSummary.value?.activeCampaign?.active

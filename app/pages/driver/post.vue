@@ -77,6 +77,7 @@
           :busy="store.campaignBusyId === store.activeCampaign.id"
           @start="onStartCampaign(store.activeCampaign)"
           @stop="onStopCampaign(store.activeCampaign)"
+          @edit="onEditCampaign(store.activeCampaign)"
           @delete="onAskDeleteCampaign(store.activeCampaign)"
         />
 
