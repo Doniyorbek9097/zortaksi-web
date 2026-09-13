@@ -10,26 +10,30 @@
     <template v-else-if="profile">
       <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0 overflow-hidden">
         <div
-          v-if="visiblePhotos.length"
-          ref="galleryEl"
-          class="gallery-track h-full w-full"
-          @scroll.passive="onGalleryScroll"
-          @touchstart.passive="onTouchStart"
-          @touchend.passive="onTouchEnd"
+          v-if="slides.length"
+          ref="viewportRef"
+          class="gallery-viewport h-full w-full touch-none select-none"
+          @pointerdown="onPointerDown"
+          @pointermove="onPointerMove"
+          @pointerup="onPointerUp"
+          @pointercancel="onPointerUp"
         >
-          <div
-            v-for="(src, i) in visiblePhotos"
-            :key="`slide-${i}-${src}`"
-            class="gallery-slide"
-          >
-            <img
-              :src="src"
-              :alt="`${profile.name} ${i + 1}`"
-              class="gallery-img"
-              draggable="false"
-              loading="eager"
-              decoding="async"
+          <div class="gallery-strip h-full" :style="stripStyle">
+            <div
+              v-for="(src, i) in slides"
+              :key="`slide-${i}`"
+              class="gallery-slide"
             >
+              <img
+                :src="src"
+                :alt="`${profile.name} ${i + 1}`"
+                class="gallery-img"
+                draggable="false"
+                loading="eager"
+                decoding="async"
+                @error="onImgError(src)"
+              >
+            </div>
           </div>
         </div>
         <div
@@ -49,11 +53,11 @@
         </button>
 
         <div
-          v-if="visiblePhotos.length > 1"
+          v-if="slides.length > 1"
           class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
         >
           <span class="px-2.5 py-1 rounded-full bg-black/45 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm">
-            {{ activePhoto + 1 }}/{{ visiblePhotos.length }}
+            {{ activePhoto + 1 }}/{{ slides.length }}
           </span>
         </div>
 
@@ -188,11 +192,27 @@ defineEmits<{
   call: []
 }>()
 
-const galleryEl = ref<HTMLElement | null>(null)
+const viewportRef = ref<HTMLElement | null>(null)
 const activePhoto = ref(0)
-const touchStartX = ref(0)
+const failedUrls = ref<Set<string>>(new Set())
+const dragging = ref(false)
+const dragPx = ref(0)
+let pointerStartX = 0
+let pointerId: number | null = null
 
-const visiblePhotos = computed(() => props.photoUrls.filter(Boolean))
+const slides = computed(() =>
+  props.photoUrls.filter((url) => Boolean(url) && !failedUrls.value.has(url)),
+)
+
+const stripStyle = computed(() => {
+  const vw = viewportRef.value?.clientWidth || 1
+  const dragPercent = dragging.value ? (dragPx.value / vw) * 100 : 0
+  const base = -(activePhoto.value * 100)
+  return {
+    transform: `translate3d(${base + dragPercent}%, 0, 0)`,
+    transition: dragging.value ? 'none' : 'transform 0.22s ease-out',
+  }
+})
 
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
@@ -211,83 +231,82 @@ const telegramHref = computed(() => {
   return id ? `https://t.me/+${id}` : ''
 })
 
-const scrollToIndex = (index: number, smooth = false) => {
-  const el = galleryEl.value
-  if (!el) return
-  const w = el.clientWidth
-  if (!w) return
-  const next = Math.max(0, Math.min(visiblePhotos.value.length - 1, index))
-  el.scrollTo({ left: w * next, behavior: smooth ? 'smooth' : 'auto' })
-  activePhoto.value = next
+const clampActive = () => {
+  const max = Math.max(0, slides.value.length - 1)
+  if (activePhoto.value > max) activePhoto.value = max
 }
 
-const onGalleryScroll = () => {
-  const el = galleryEl.value
-  if (!el || !visiblePhotos.value.length) return
-  const w = el.clientWidth || 1
-  activePhoto.value = Math.max(
-    0,
-    Math.min(visiblePhotos.value.length - 1, Math.round(el.scrollLeft / w)),
-  )
+const onImgError = (src: string) => {
+  failedUrls.value = new Set([...failedUrls.value, src])
+  clampActive()
 }
 
-const onTouchStart = (e: TouchEvent) => {
-  touchStartX.value = e.changedTouches[0]?.clientX || 0
+const onPointerDown = (e: PointerEvent) => {
+  if (slides.value.length <= 1) return
+  dragging.value = true
+  pointerStartX = e.clientX
+  dragPx.value = 0
+  pointerId = e.pointerId
+  viewportRef.value?.setPointerCapture(e.pointerId)
 }
 
-const onTouchEnd = (e: TouchEvent) => {
-  const endX = e.changedTouches[0]?.clientX || 0
-  const delta = endX - touchStartX.value
-  if (Math.abs(delta) < 40) return
-  if (delta < 0 && activePhoto.value < visiblePhotos.value.length - 1) {
-    scrollToIndex(activePhoto.value + 1, true)
-  } else if (delta > 0 && activePhoto.value > 0) {
-    scrollToIndex(activePhoto.value - 1, true)
+const onPointerMove = (e: PointerEvent) => {
+  if (!dragging.value || e.pointerId !== pointerId) return
+  dragPx.value = e.clientX - pointerStartX
+}
+
+const onPointerUp = (e: PointerEvent) => {
+  if (!dragging.value || e.pointerId !== pointerId) return
+  dragging.value = false
+  pointerId = null
+
+  const w = viewportRef.value?.clientWidth || 1
+  const threshold = Math.max(48, w * 0.15)
+
+  if (dragPx.value <= -threshold && activePhoto.value < slides.value.length - 1) {
+    activePhoto.value += 1
+  } else if (dragPx.value >= threshold && activePhoto.value > 0) {
+    activePhoto.value -= 1
   }
-}
 
-const preloadPhotos = (urls: string[]) => {
-  if (!import.meta.client) return
-  urls.forEach((src) => {
-    const img = new Image()
-    img.src = src
-  })
+  dragPx.value = 0
+  viewportRef.value?.releasePointerCapture(e.pointerId)
 }
-
-watch(
-  () => props.photoUrls,
-  (urls) => {
-    preloadPhotos(urls)
-    nextTick(() => scrollToIndex(0, false))
-  },
-  { immediate: true },
-)
 
 watch(
   () => props.profile?.userId,
   () => {
     activePhoto.value = 0
-    nextTick(() => scrollToIndex(0, false))
+    failedUrls.value = new Set()
+    dragPx.value = 0
+    dragging.value = false
   },
 )
+
+watch(slides, (next, prev) => {
+  if (!prev?.length || next[0] !== prev[0] || next.length !== prev.length) {
+    activePhoto.value = 0
+  }
+  clampActive()
+})
 </script>
 
 <style scoped>
-.gallery-track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  touch-action: pan-x;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-x: contain;
+.gallery-viewport {
+  overflow: hidden;
+  touch-action: none;
+}
+
+.gallery-strip {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  will-change: transform;
 }
 
 .gallery-slide {
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  flex: 0 0 100%;
+  width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
@@ -301,16 +320,8 @@ watch(
   width: auto;
   height: auto;
   object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
   pointer-events: none;
-}
-
-.gallery-track::-webkit-scrollbar {
-  display: none;
-}
-.gallery-track {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 </style>
