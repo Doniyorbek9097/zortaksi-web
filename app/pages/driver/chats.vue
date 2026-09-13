@@ -49,7 +49,7 @@
         :unread="chat.unreadCount"
         :selection-mode="selectionMode"
         :selected="selectedIds.includes(chat._id)"
-        :support="isSupport(chat)"
+        :support="isSupport(chat) && !isAdmin"
         :show-driver-page="showDriverPageFor(chat)"
         @open="openChat(chat)"
         @toggle="toggleOne(chat._id)"
@@ -102,6 +102,7 @@ definePageMeta({
 
 const {
   chatStore,
+  isAdmin,
   peerName,
   formatDate,
   isSupport,

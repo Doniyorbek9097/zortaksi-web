@@ -77,6 +77,9 @@ export function useChatPageMeta(opts: {
     () => chatStore.currentChat?.kind === 'support' || route.query.support === '1',
   )
 
+  /** Haydovchi uchun premium yordam UI — admin oddiy chat ko'radi */
+  const isSupportPremium = computed(() => isSupport.value && !isAdmin.value)
+
   const isDirect = computed(() => chatStore.currentChat?.kind === 'direct')
   const isInAppOnly = computed(() => !!chatStore.currentChat?.inAppOnly)
   const isInAppChat = computed(() => isSupport.value || isDirect.value || isInAppOnly.value)
@@ -258,6 +261,7 @@ export function useChatPageMeta(opts: {
     effectiveChatId,
     hasRealChatId,
     isSupport,
+    isSupportPremium,
     isDirect,
     isInAppOnly,
     isInAppChat,

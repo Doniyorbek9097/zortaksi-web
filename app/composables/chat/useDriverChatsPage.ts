@@ -23,7 +23,9 @@ export function useDriverChatsPage() {
   const chatStore = useChatStore()
   const authStore = useAuthStore()
 
-  const peerName = chatPeerName
+  const isAdmin = computed(() => isAdminUser(authStore.user))
+  const peerName = (chat: IChat) =>
+    chatPeerName(chat, { viewerIsAdmin: isAdmin.value })
   const formatDate = formatChatListDate
   const isSupport = isSupportChat
 
@@ -200,6 +202,7 @@ export function useDriverChatsPage() {
 
   return {
     chatStore,
+    isAdmin,
     peerName,
     formatDate,
     isSupport,

@@ -1,7 +1,7 @@
 <template>
   <div
     class="fixed z-40 flex flex-col overflow-hidden"
-    :class="isSupport ? SUPPORT_CHAT_SHELL : 'bg-slate-50 dark:bg-slate-950'"
+    :class="isSupportPremium ? SUPPORT_CHAT_SHELL : 'bg-slate-50 dark:bg-slate-950'"
     :style="frameStyle"
   >
     <ChatHeader
@@ -10,7 +10,7 @@
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
-      :support="isSupport"
+      :support="isSupportPremium"
       :profile-chat-id="effectiveChatId"
       :show-clear-history="showClearHistoryBtn && !selectionMode && !isSupport"
       :clearing="isClearingHistory"
@@ -22,7 +22,7 @@
       </template>
     </ChatHeader>
 
-    <ChatSupportWelcomeCard v-if="isSupport && !isAdmin" />
+    <ChatSupportWelcomeCard v-if="isSupportPremium" />
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -86,8 +86,8 @@
       >
         <span
           class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold shadow-sm backdrop-blur-sm"
-          :class="isSupport ? supportDatePillClass : 'text-white'"
-          :style="isSupport ? undefined : { background: 'rgba(34, 158, 87, 0.92)' }"
+          :class="isSupportPremium ? supportDatePillClass : 'text-white'"
+          :style="isSupportPremium ? undefined : { background: 'rgba(34, 158, 87, 0.92)' }"
         >
           {{ floatingDateLabel }}
         </span>
@@ -140,7 +140,7 @@
             :key="n"
             class="h-11 rounded-2xl animate-pulse"
             :class="[
-              isSupport ? supportSkeletonClass : 'bg-slate-100 dark:bg-slate-800',
+              isSupportPremium ? supportSkeletonClass : 'bg-slate-100 dark:bg-slate-800',
               n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto',
             ]"
           />
@@ -148,15 +148,14 @@
 
         <!-- Empty — darhol ko'rinsin (order konteksti bo'lsa) -->
         <div
-          v-else-if="!chatStore.messages.length && showReadyEmpty && isSupport"
+          v-else-if="!chatStore.messages.length && showReadyEmpty && isSupportPremium"
           class="flex-1 flex flex-col items-center justify-center px-6 py-8 text-center"
         >
-          <div class="w-14 h-14 rounded-2xl bg-violet-500/15 border border-violet-400/20 flex items-center justify-center text-violet-200 mb-3">
-            <font-awesome-icon icon="fa-solid fa-user-shield" class="text-xl" />
+          <div :class="supportEmptyIconWrapClass">
+            <font-awesome-icon icon="fa-solid fa-headset" class="text-xl" />
           </div>
-          <p class="text-[15px] font-black text-violet-100">Savolingizni yozing</p>
-          <p class="text-[12px] font-medium text-violet-300/65 mt-1 max-w-[240px] leading-snug">
-            Operator tez orada javob beradi
+          <p :class="supportEmptySubtitleClass">
+            {{ SUPPORT_WELCOME_TEXT }}
           </p>
         </div>
 
@@ -203,7 +202,7 @@
           :selection-mode="selectionMode"
           :selected="isMessageSelected(String(msg._id))"
           :reply-to="msg.replyTo"
-          :support="isSupport"
+          :support="isSupportPremium"
           @long-press="onMessageLongPress(String(msg._id))"
           @toggle-select="toggleMessageSelect(String(msg._id))"
           @reply="onMessageReply(msg)"
@@ -218,7 +217,7 @@
         >
           <div
             class="rounded-2xl rounded-bl-md px-3.5 py-2.5 text-[13px] font-bold border"
-            :class="isSupport ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
+            :class="isSupportPremium ? supportTypingClass : 'bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'"
           >
             <span class="inline-flex items-center gap-1">
               yozmoqda
@@ -325,7 +324,7 @@
     <ChatReplyBar
       v-if="replyTarget"
       :reply="replyTarget"
-      :support="isSupport"
+      :support="isSupportPremium"
       @cancel="replyTarget = null"
     />
 
@@ -335,7 +334,7 @@
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
       :slash-commands="adminSlashCommands"
-      :support="isSupport"
+      :support="isSupportPremium"
       @send="onSend"
       @voice="onVoice"
       @photo="onPhoto"
@@ -374,7 +373,10 @@ import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
 import { useDriverChatPage } from '~/composables/chat/useDriverChatPage'
 import {
   SUPPORT_CHAT_SHELL,
+  SUPPORT_WELCOME_TEXT,
   supportDatePillClass,
+  supportEmptyIconWrapClass,
+  supportEmptySubtitleClass,
   supportSkeletonClass,
   supportTypingClass,
 } from '~/utils/supportChatTheme'
@@ -446,6 +448,7 @@ const {
   goBack,
   goOrders,
   isSupport,
+  isSupportPremium,
   name,
   statusText,
   isOnline,
@@ -458,13 +461,6 @@ const {
 </script>
 
 <style scoped>
-.support-chat-shell {
-  background:
-    radial-gradient(ellipse 130% 70% at 50% -15%, rgba(124, 58, 237, 0.32), transparent 58%),
-    radial-gradient(ellipse 70% 45% at 100% 100%, rgba(99, 102, 241, 0.14), transparent 50%),
-    linear-gradient(180deg, #130a26 0%, #0c0718 48%, #080510 100%);
-}
-
 .typing-dots {
   display: inline-flex;
   align-items: center;
