@@ -47,13 +47,13 @@
         </div>
 
         <div class="space-y-1">
-          <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#2AABEE]">
-            ZorTaksi · Telegram
+          <p class="text-[10px] font-black uppercase tracking-[0.18em] text-[#2AABEE]">
+            ZorTaksi
           </p>
-          <h1 class="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+          <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
             {{ stepMeta.title }}
           </h1>
-          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug max-w-[280px] mx-auto">
+          <p class="text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug max-w-[300px] mx-auto">
             {{ stepMeta.subtitle }}
           </p>
         </div>
@@ -61,7 +61,7 @@
         <div class="flex items-center justify-center gap-1.5 max-w-full overflow-hidden flex-wrap">
           <template v-for="(s, i) in visibleSteps" :key="s.key">
             <div
-              class="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider transition-all"
+              class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all"
               :class="stepChipClass(s.key)"
             >
               <span
@@ -85,7 +85,7 @@
       >
         <div
           v-if="form.error"
-          class="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-widest text-center animate-shake"
+          class="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-500 text-xs font-bold text-center animate-shake"
         >
           {{ form.error }}
         </div>
@@ -93,26 +93,16 @@
         <template v-if="currentStep === 'register'">
           <BasePhoneInput
             v-model="form.phoneLocal"
-            label="Telegram telefon raqami"
+            label="Telefon raqam"
             :loading="authStore.isLoading"
             :disabled="authStore.isLoading"
             @submit="handleSendCode"
           />
 
-          <p class="text-[11px] text-center text-slate-500 dark:text-slate-400 leading-snug -mt-1">
-            Telegram'da ro'yxatdan o'tgan raqamni kiriting (998…)
-          </p>
-
-          <TermsConsent
-            v-if="showTermsConsent"
-            v-model="termsAccepted"
-            hint="Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi."
-          />
-
           <button
             type="button"
-            :disabled="authStore.isLoading || !isPhoneValid || !canProceedAuth"
-            class="w-full py-3 px-5 rounded-xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+            :disabled="authStore.isLoading || !isPhoneValid"
+            class="w-full py-3.5 px-5 rounded-xl bg-[#2AABEE] hover:bg-[#229ED9] text-white font-black text-sm shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleSendCode"
           >
             <span v-if="authStore.isLoading" class="inline-flex items-center justify-center gap-2">
@@ -121,7 +111,7 @@
             </span>
             <span v-else class="inline-flex items-center justify-center gap-2">
               <font-awesome-icon icon="fa-solid fa-paper-plane" />
-              Kodni Telegramga yuborish
+              Kod yuborish
             </span>
           </button>
         </template>
@@ -129,14 +119,14 @@
         <template v-else-if="currentStep === 'verify'">
           <div class="rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-100 dark:border-slate-800 px-3 py-2.5 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-[9px] font-bold uppercase tracking-widest text-slate-400">Raqam</p>
-              <p class="text-[13px] font-black text-slate-900 dark:text-white tabular-nums truncate">
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Raqam</p>
+              <p class="text-base font-black text-slate-900 dark:text-white tabular-nums truncate">
                 {{ formattedPhoneDisplay }}
               </p>
             </div>
             <button
               type="button"
-              class="shrink-0 text-[11px] font-black text-sky-500 hover:underline"
+              class="shrink-0 text-sm font-black text-sky-500 hover:underline"
               @click="currentStep = 'register'"
             >
               O‘zgartirish
@@ -153,7 +143,7 @@
             v-if="canResendSms"
             type="button"
             :disabled="authStore.isLoading"
-            class="w-full py-2.5 text-[11px] font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
+            class="w-full py-2.5 text-sm font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
             @click="handleResendSms"
           >
             SMS orqali olish
@@ -171,7 +161,7 @@
           <button
             type="button"
             :disabled="authStore.isLoading || !form.password"
-            class="w-full py-3 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[11px] uppercase tracking-[0.16em] shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+            class="w-full py-3.5 px-5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all disabled:opacity-45 disabled:cursor-not-allowed"
             @click="handleVerifyPassword"
           >
             <span v-if="authStore.isLoading" class="inline-flex items-center justify-center gap-2">
@@ -183,9 +173,6 @@
         </template>
       </div>
 
-      <p class="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 px-3 leading-snug">
-        Telegram hisobi buyurtmalarni yetkazish uchun avtomatik ishlatiladi.
-      </p>
     </main>
 
     <div class="relative z-10 h-3" />
@@ -201,9 +188,6 @@ import BasePhoneInput from './base/PhoneInput.vue'
 import { getAuthPhoneValidationError, isValidIntlPhone, normalizeAuthPhoneDigits } from '~/utils/phone'
 import { resolvePostAuthPath } from '~/utils/userRole'
 import { getApiErrorMessage } from '~/utils/apiError'
-import TermsConsent from './legal/TermsConsent.vue'
-import { hasStoredTermsConsent, storeTermsConsent } from '~/utils/termsConsent'
-
 const authStore = useAuthStore()
 const route = useRoute()
 
@@ -213,21 +197,12 @@ const referralRef = useCookie<string | null>('referral_ref', {
   sameSite: 'lax',
 })
 
-const termsAccepted = ref(false)
-const showTermsConsent = ref(true)
-
 onMounted(() => {
   const q = route.query.ref
   if (typeof q === 'string' && q.trim()) {
     referralRef.value = q.trim()
   }
-  if (hasStoredTermsConsent()) {
-    termsAccepted.value = true
-    showTermsConsent.value = false
-  }
 })
-
-const canProceedAuth = computed(() => termsAccepted.value)
 
 type Step = 'register' | 'verify' | 'password'
 const currentStep = ref<Step>('register')
@@ -246,18 +221,18 @@ const visibleSteps = computed(() =>
 const stepMeta = computed(() => {
   if (currentStep.value === 'register') {
     return {
-      title: 'Xush kelibsiz',
-      subtitle: 'Telegram raqamingizni davlat kodi bilan kiriting',
+      title: "Ro'yxatdan o'tish",
+      subtitle: 'Telegram raqamingizni kiriting',
     }
   }
   if (currentStep.value === 'verify') {
     return {
-      title: 'Kodni kiriting',
-      subtitle: deliveryHint.value || `Kod +${phoneDigits.value} raqamidagi Telegram ilovangizga yuborildi`,
+      title: 'Tasdiqlash kodi',
+      subtitle: deliveryHint.value || `Kod Telegramga yuborildi (+${phoneDigits.value})`,
     }
   }
   return {
-    title: 'Himoya',
+    title: 'Parol',
     subtitle: 'Telegram 2FA parolini kiriting',
   }
 })
@@ -328,7 +303,7 @@ const adoptFreshSession = (user: any) => {
 }
 
 const handleSendCode = async (opts?: { forceSms?: boolean }) => {
-  if (authStore.isLoading || !canProceedAuth.value) return
+  if (authStore.isLoading) return
   form.error = ''
 
   const parsed = normalizeAuthPhoneDigits(form.phoneLocal)
@@ -347,10 +322,9 @@ const handleSendCode = async (opts?: { forceSms?: boolean }) => {
   try {
     const response = await authStore.sendCode(parsed, opts)
     if (response.success) {
-      if (termsAccepted.value) storeTermsConsent()
       deliveryHint.value =
         response.data?.message ||
-        `Kod +${parsed} raqamidagi Telegram ilovangizga yuborildi`
+        `Kod Telegramga yuborildi (+${parsed})`
       canResendSms.value = !!response.data?.canResendSms
       if (!opts?.forceSms) currentStep.value = 'verify'
     } else {
