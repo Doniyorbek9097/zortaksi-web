@@ -32,62 +32,57 @@
         <div class="absolute -top-32 -right-32 w-80 h-80 rounded-full bg-emerald-400/25 dark:bg-emerald-400/20 blur-3xl pointer-events-none" />
         <div class="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-indigo-400/20 dark:bg-indigo-500/20 blur-3xl pointer-events-none" />
   
-        <div class="max-w-6xl mx-auto w-full grid md:grid-cols-2 gap-12 items-center relative z-10">
-          <div class="space-y-6 text-center md:text-left">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold tracking-wide
-                        bg-neutral-900/5 border border-neutral-900/10 text-neutral-700
-                        dark:bg-white/8 dark:border-white/10 dark:text-neutral-300">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Haydovchilar uchun</span>
-            </div>
-  
-            <div class="flex items-center justify-center md:justify-start gap-3">
-              <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/30
-                           bg-gradient-to-br from-emerald-500 to-cyan-500 dark:from-emerald-400 dark:to-cyan-400">
-                🚕
-              </span>
-              <h1 class="text-3xl font-black tracking-tight">
-                Zo'r <span class="text-emerald-600 dark:text-emerald-400">Taksi</span>
-              </h1>
-            </div>
-  
-            <div class="max-w-xl mx-auto md:mx-0 space-y-3 text-left">
-              <p class="text-base md:text-lg font-light leading-relaxed text-neutral-600 dark:text-neutral-400">
-                <strong class="font-semibold text-neutral-800 dark:text-neutral-200">O'nlab guruhda buyurtma kutmayapsiz</strong> —
-                Zo'r Taksi Telegramdagi buyurtmalarni bir joyga jamlab ko'rsatadi.
-              </p>
-              <p class="text-base md:text-lg font-light leading-relaxed text-neutral-600 dark:text-neutral-400">
-                Guruhlarga e'lon tarqatishga ko'p vaqt ketadi —
-                <strong class="font-semibold text-neutral-800 dark:text-neutral-200">Zo'r Taksi buni hal qiladi</strong>:
-                e'loningizni bir marta yozing, vaqtni belgilang — akkauntingiz orqali guruhlarga o'zi chiqadi.
-              </p>
-              <p
-                v-if="showApkDownload"
-                class="text-sm text-emerald-700 dark:text-emerald-400 font-medium"
-              >
-                📲 Ilovani yuklab oling — kirish oson, yangi buyurtmada bildirishnoma olasiz.
-              </p>
-            </div>
-  
-            <div class="flex flex-wrap gap-3 justify-center md:justify-start pt-2">
-              <LandingButton to="/auth" variant="primary">
-                Haydovchi bo'lish
-              </LandingButton>
-              <LandingButton to="/passenger-ad" variant="secondary">
-                Yo'lovchi e'lon berish
-              </LandingButton>
-              <LandingButton
-                v-if="showApkDownload"
-                to="/download-app"
-                variant="secondary"
-              >
-                Ilovani yuklab olish
-              </LandingButton>
-            </div>
+        <div class="max-w-4xl mx-auto w-full relative z-10 flex flex-col items-center text-center">
+          <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold tracking-wide
+                      bg-emerald-500/10 border border-emerald-500/25 text-emerald-800
+                      dark:bg-emerald-400/10 dark:border-emerald-400/25 dark:text-emerald-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Shofyorlar uchun smart yechim</span>
           </div>
-  
-          <!-- Telefon maketi — 3 ta aniq karточка -->
-          <div class="hidden md:flex justify-center items-center relative h-72">
+
+          <div class="flex items-center justify-center gap-3 mt-6">
+            <span class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/30
+                         bg-gradient-to-br from-emerald-500 to-cyan-500 dark:from-emerald-400 dark:to-cyan-400">
+              🚕
+            </span>
+            <h1 class="text-3xl md:text-4xl font-black tracking-tight">
+              Zo'r <span class="text-emerald-600 dark:text-emerald-400">Taksi</span>
+            </h1>
+          </div>
+
+          <p class="mt-5 text-xl md:text-2xl font-black max-w-2xl leading-snug text-neutral-900 dark:text-neutral-50">
+            Ko'proq safar.
+            <span class="text-emerald-600 dark:text-emerald-400">Kamroq kutish.</span>
+          </p>
+
+          <div class="mt-5 max-w-2xl space-y-3">
+            <p class="text-base md:text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
+              O'nlab guruhda buyurtma <strong class="font-bold text-neutral-800 dark:text-neutral-100">kutmang</strong> —
+              Telegramdagi barcha so'rovlar bitta ekranda, real vaqtda.
+            </p>
+            <p class="text-base md:text-lg leading-relaxed text-neutral-600 dark:text-neutral-400">
+              Har guruhga alohida e'lon yozishni <strong class="font-bold text-neutral-800 dark:text-neutral-100">to'xtating</strong> —
+              bir marta joylang, vaqtni belgilang, akkauntingiz orqali guruhlarga avtomatik chiqadi.
+            </p>
+            <p class="text-sm md:text-base font-semibold text-emerald-700 dark:text-emerald-400">
+              📲 Ilovada kirish oson — yangi buyurtmada bildirishnoma darhol keladi.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-3 justify-center pt-8">
+            <LandingButton to="/auth" variant="primary">
+              Bepul boshlash
+            </LandingButton>
+            <LandingButton to="/download-app" variant="secondary">
+              📲 Ilovani yuklab olish
+            </LandingButton>
+            <LandingButton to="/passenger-ad" variant="secondary">
+              Yo'lovchi e'lon berish
+            </LandingButton>
+          </div>
+
+          <!-- Telefon maketi -->
+          <div class="mt-12 w-full max-w-sm flex justify-center items-center relative h-72">
             <div class="absolute inset-0 rounded-3xl bg-emerald-500/20 dark:bg-emerald-400/10 opacity-60 scale-95 rotate-3" />
             <div class="relative rounded-3xl p-8 w-full max-w-sm shadow-2xl
                         bg-white border border-neutral-200
