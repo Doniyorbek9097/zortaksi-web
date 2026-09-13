@@ -41,9 +41,9 @@
         :campaign="campaign"
         :busy="busyId === campaign.id"
         flat
+        :edit-to="`/driver/campaigns/${encodeURIComponent(campaign.id)}/edit`"
         @start="$emit('start', campaign)"
         @stop="$emit('stop', campaign)"
-        @edit="$emit('edit', campaign)"
         @delete="$emit('delete', campaign)"
       />
     </div>

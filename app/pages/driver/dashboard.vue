@@ -56,7 +56,6 @@
       :loading="postStatsLoading && !activePostCampaign"
       @start="onPostCampaignStart"
       @stop="onPostCampaignStop"
-      @edit="onPostCampaignEdit"
       @delete="onPostCampaignDelete"
     />
 
@@ -138,10 +137,6 @@ const onPostCampaignStart = async (c: PostCampaign) => {
 
 const onPostCampaignStop = async (c: PostCampaign) => {
   await postStore.stopCampaign(c.id)
-}
-
-const onPostCampaignEdit = (c: PostCampaign) => {
-  navigateTo(`/driver/campaigns/${encodeURIComponent(c.id)}/edit`)
 }
 
 const onPostCampaignDelete = async (c: PostCampaign) => {

@@ -32,16 +32,14 @@
       tone="amber"
     />
 
-    <div v-else class="space-y-3">
-      <PostCampaignCard
+    <div v-else class="space-y-4">
+      <PostCampaignBoardCard
         v-for="c in sortedCampaigns"
         :key="c.id"
         :campaign="c"
         :busy="store.campaignBusyId === c.id"
-        flat
         @start="onStart(c)"
         @stop="onStop(c)"
-        @edit="onEdit(c)"
         @delete="onAskDelete(c)"
       />
     </div>
@@ -70,7 +68,7 @@
 <script setup lang="ts">
 import { usePostStore, type PostCampaign } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
-import PostCampaignCard from '~/components/post/CampaignCard.vue'
+import PostCampaignBoardCard from '~/components/post/CampaignBoardCard.vue'
 
 definePageMeta({ layout: 'driver' })
 
@@ -123,10 +121,6 @@ const onStop = async (c: PostCampaign) => {
     await store.stopCampaign(c.id)
     success.value = `«${c.name}» to'xtatildi`
   } catch { /* */ }
-}
-
-const onEdit = (c: PostCampaign) => {
-  navigateTo(`/driver/campaigns/${encodeURIComponent(c.id)}/edit`)
 }
 
 const onAskDelete = (c: PostCampaign) => {

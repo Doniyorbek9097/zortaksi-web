@@ -10,7 +10,7 @@
           : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900',
       ]"
   >
-    <div class="flex items-center justify-between gap-2 min-w-0">
+    <div v-if="!hideHeader" class="flex items-center justify-between gap-2 min-w-0">
       <div class="min-w-0 flex-1 flex items-center gap-2">
         <span
           v-if="campaign.active"
@@ -33,7 +33,7 @@
         {{ campaign.groupIds.length }}g · {{ campaign.intervalMin }}d
       </p>
       <p
-        v-else-if="flat"
+        v-else-if="flat && !hideHeader"
         class="shrink-0 font-bold text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap text-[12px]"
       >
         {{ campaign.groupIds.length }} guruh · {{ campaign.intervalMin }} daq
@@ -92,7 +92,17 @@
         <span class="truncate">{{ campaign.active ? "To'xtatish" : 'Boshlash' }}</span>
       </button>
 
+      <NuxtLink
+        v-if="editTo"
+        :to="editTo"
+        class="inline-flex items-center justify-center gap-1 rounded-xl font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95 whitespace-nowrap min-w-0"
+        :class="flat ? 'px-2 py-2.5 text-[11px]' : compact ? 'px-1 py-1.5 text-[9px]' : 'px-2 py-1.5 text-[11px]'"
+      >
+        <font-awesome-icon icon="fa-solid fa-pen-to-square" :class="flat ? 'text-[10px]' : 'text-[8px]'" class="shrink-0" />
+        <span class="truncate">Tahrirlash</span>
+      </NuxtLink>
       <button
+        v-else
         type="button"
         class="inline-flex items-center justify-center gap-1 rounded-xl font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95 whitespace-nowrap min-w-0"
         :class="flat ? 'px-2 py-2.5 text-[11px]' : compact ? 'px-1 py-1.5 text-[9px]' : 'px-2 py-1.5 text-[11px]'"
@@ -127,6 +137,10 @@ const props = defineProps<{
   compact?: boolean
   /** Dashboard: ichki yashil kartochka yo'q, asosiy kartada kattaroq */
   flat?: boolean
+  /** Tashqi kartada sarlavha allaqachon ko'rsatilgan */
+  hideHeader?: boolean
+  /** Berilsa Tahrirlash to'g'ridan-to'g'ri shu sahifaga o'tadi */
+  editTo?: string
 }>()
 
 const showWindowStats = computed(() => campaignHasWindowStats(props.campaign))

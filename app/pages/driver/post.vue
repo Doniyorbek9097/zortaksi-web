@@ -1,50 +1,89 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-4 space-y-3">
-    <header class="flex items-center justify-between gap-2 sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-      <div class="min-w-0 flex items-center gap-2">
-        <button
-          v-if="pickGroupsMode"
-          type="button"
-          class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900 active:scale-95 shrink-0"
-          @click="goBackFromPick"
-        >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" class="text-xs" />
-        </button>
-        <div class="min-w-0 leading-none">
-          <h1 class="text-base font-black text-slate-900 dark:text-white">
-            {{ pickGroupsMode ? 'Guruhlarni tanlash' : "E'lon joylash" }}
-          </h1>
-          <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
-            {{ pickGroupsMode ? 'Tanlangan guruhlar saqlanadi' : 'Meniki guruhlar' }}
-          </p>
+    <!-- Sticky: sarlavha + tanlangan guruhlar tugmalari -->
+    <div class="sticky top-0 z-30 -mx-4 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+      <header class="flex items-center justify-between gap-2 px-4 py-1.5">
+        <div class="min-w-0 flex items-center gap-2">
+          <button
+            v-if="pickGroupsMode"
+            type="button"
+            class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900 active:scale-95 shrink-0"
+            @click="goBackFromPick"
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-left" class="text-xs" />
+          </button>
+          <div class="min-w-0 leading-none">
+            <h1 class="text-base font-black text-slate-900 dark:text-white">
+              {{ pickGroupsMode ? 'Guruhlarni tanlash' : "E'lon joylash" }}
+            </h1>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
+              {{ pickGroupsMode ? 'Tanlangan guruhlar saqlanadi' : 'Meniki guruhlar' }}
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button
+            v-if="store.isAdmin"
+            type="button"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all active:scale-95 border"
+            :class="showFilter || filterActive
+              ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-400/50 dark:border-indigo-500/50'
+              : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
+            @click="showFilter = !showFilter"
+          >
+            <font-awesome-icon icon="fa-solid fa-location-dot" class="text-[10px]" />
+            Hudud
+          </button>
+          <button
+            type="button"
+            class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-400 bg-white dark:bg-slate-900 active:scale-95"
+            :disabled="store.isLoading"
+            @click="store.load(true)"
+          >
+            <font-awesome-icon
+              icon="fa-solid fa-rotate"
+              :class="store.isLoading ? 'animate-spin' : ''"
+            />
+          </button>
+        </div>
+      </header>
+
+      <div
+        v-if="selectedCount > 0"
+        class="px-4 py-2.5 border-t border-amber-200/70 dark:border-amber-900/40 bg-amber-50/95 dark:bg-amber-950/40"
+      >
+        <p class="text-[11px] font-black text-amber-800 dark:text-amber-200 mb-2">
+          {{ selectedCount }} ta guruh tanlangan
+        </p>
+        <div class="flex gap-2">
+          <button
+            v-if="pickGroupsMode"
+            type="button"
+            class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all"
+            @click="onSavePickedGroups"
+          >
+            <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+            Saqlash
+          </button>
+          <button
+            v-else
+            type="button"
+            class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all"
+            @click="openCompose"
+          >
+            <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[10px]" />
+            Xabar yuborish
+          </button>
+          <button
+            type="button"
+            class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-black text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 active:scale-95"
+            @click="store.clearSelection()"
+          >
+            Bekor
+          </button>
         </div>
       </div>
-      <div class="flex items-center gap-1 shrink-0">
-        <button
-          v-if="store.isAdmin"
-          type="button"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all active:scale-95 border"
-          :class="showFilter || filterActive
-            ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-400/50 dark:border-indigo-500/50'
-            : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-          @click="showFilter = !showFilter"
-        >
-          <font-awesome-icon icon="fa-solid fa-location-dot" class="text-[10px]" />
-          Hudud
-        </button>
-        <button
-          type="button"
-          class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-400 bg-white dark:bg-slate-900 active:scale-95"
-          :disabled="store.isLoading"
-          @click="store.load(true)"
-        >
-          <font-awesome-icon
-            icon="fa-solid fa-rotate"
-            :class="store.isLoading ? 'animate-spin' : ''"
-          />
-        </button>
-      </div>
-    </header>
+    </div>
 
     <OrdersFilterPanel
       v-if="store.isAdmin && showFilter"
@@ -60,43 +99,6 @@
     >
       Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilarga ko'rinadi.
     </p>
-
-    <!-- Tanlangan guruhlar paneli -->
-    <div
-      v-if="selectedCount > 0"
-      class="rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/90 dark:bg-amber-950/30 p-3 space-y-2.5"
-    >
-      <p class="text-[12px] font-black text-amber-800 dark:text-amber-200">
-        {{ selectedCount }} ta guruh tanlangan
-      </p>
-      <div class="flex gap-2">
-        <button
-          v-if="pickGroupsMode"
-          type="button"
-          class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all"
-          @click="onSavePickedGroups"
-        >
-          <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
-          Saqlash
-        </button>
-        <button
-          v-else
-          type="button"
-          class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all"
-          @click="openCompose"
-        >
-          <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[10px]" />
-          Xabar yuborish
-        </button>
-        <button
-          type="button"
-          class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-black text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 active:scale-95"
-          @click="store.clearSelection()"
-        >
-          Bekor
-        </button>
-      </div>
-    </div>
 
     <!-- Guruh qidiruvi -->
     <div class="relative">
