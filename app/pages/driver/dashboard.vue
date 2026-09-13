@@ -116,6 +116,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
 import { usePostStore, type PostCampaign } from '~/stores/post.store'
+import DashboardPostStatsCard from '~/components/dashboard/PostStatsCard.vue'
 import type { IBanner } from '~/types/banner'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
