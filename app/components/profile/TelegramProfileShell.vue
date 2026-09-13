@@ -9,51 +9,28 @@
 
     <template v-else-if="profile">
       <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0 overflow-hidden">
-        <div
-          v-if="photoCount > 0"
-          ref="viewportRef"
-          class="gallery-viewport h-full w-full touch-none select-none"
-          @pointerdown="onPointerDown"
-          @pointermove="onPointerMove"
-          @pointerup="onPointerUp"
-          @pointercancel="onPointerUp"
-        >
-          <div class="gallery-strip h-full" :style="stripStyle">
-            <div
-              v-for="(_, i) in photoCount"
-              :key="`slide-${i}`"
-              class="gallery-slide"
-            >
-              <img
-                v-if="isSlideLoaded(i) && slideUrl(i)"
-                :src="slideUrl(i)"
-                :alt="`${profile.name} ${i + 1}`"
-                class="gallery-img"
-                draggable="false"
-                :loading="i === 0 ? 'eager' : 'lazy'"
-                decoding="async"
-                @error="onImgError(i)"
-              >
-              <div v-else class="gallery-placeholder">
-                <font-awesome-icon
-                  v-if="isSlideLoaded(i)"
-                  icon="fa-solid fa-image"
-                  class="text-2xl text-white/25"
-                />
-              </div>
-            </div>
-          </div>
+        <div v-if="heroPhoto" class="h-full w-full flex items-center justify-center bg-slate-950">
+          <img
+            :src="heroPhoto"
+            :alt="profile.name"
+            class="max-w-full max-h-full w-auto h-auto object-contain select-none pointer-events-none"
+            draggable="false"
+            loading="eager"
+            decoding="async"
+            @error="heroBroken = true"
+          >
         </div>
         <div
           v-else
-          class="h-full flex items-center justify-center bg-gradient-to-br from-sky-600 to-indigo-700 text-white text-5xl font-black"
+          class="h-full flex items-center justify-center text-white text-6xl font-black"
+          :class="heroColorClass"
         >
-          {{ profile.name?.trim()?.[0]?.toUpperCase() || '?' }}
+          {{ heroInitial }}
         </div>
 
         <button
           type="button"
-          class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm"
+          class="absolute left-4 top-[max(1.25rem,env(safe-area-inset-top,0px))] z-30 w-10 h-10 rounded-full bg-black/45 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm shadow-lg shadow-black/20"
           aria-label="Orqaga"
           @click="$emit('back')"
         >
@@ -61,17 +38,8 @@
         </button>
 
         <div
-          v-if="photoCount > 1"
-          class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
-        >
-          <span class="px-2.5 py-1 rounded-full bg-black/45 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm">
-            {{ activePhoto + 1 }}/{{ photoCount }}
-          </span>
-        </div>
-
-        <div
           v-if="refreshing"
-          class="absolute right-3 top-[max(2.75rem,env(safe-area-inset-top))] z-30"
+          class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
         >
           <span class="w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center backdrop-blur-sm">
             <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-[11px]" />
@@ -92,7 +60,6 @@
       </section>
 
       <div class="relative z-10 bg-slate-100 dark:bg-slate-950 pb-10">
-        <!-- Yuqori: Xabar / Qo'ng'iroq -->
         <div v-if="showActions" class="px-3 pt-3">
           <slot name="actions">
             <div class="grid grid-cols-2 gap-2.5">
@@ -184,6 +151,7 @@
 
 <script setup lang="ts">
 import type { TelegramUserProfile } from '~/composables/useTelegramUserProfile'
+import { avatarColorClass, avatarInitial } from '~/utils/avatarPlaceholder'
 import { normalizeTo998 } from '~/utils/phone'
 
 const props = withDefaults(defineProps<{
@@ -204,42 +172,23 @@ defineEmits<{
   call: []
 }>()
 
-const viewportRef = ref<HTMLElement | null>(null)
-const activePhoto = ref(0)
-const failedIndexes = ref<Set<number>>(new Set())
-const loadedIndexes = ref<Set<number>>(new Set([0]))
-const dragging = ref(false)
-const dragPx = ref(0)
-let pointerStartX = 0
-let pointerId: number | null = null
+const heroBroken = ref(false)
 
-const allPhotos = computed(() =>
-  props.photoUrls.filter((url) => Boolean(url)),
+watch(
+  () => props.photoUrls,
+  () => {
+    heroBroken.value = false
+  },
 )
 
-const photoCount = computed(() => {
-  const n = allPhotos.value.length
-  return n > 0 ? n : 0
+/** Faqat asosiy rasm — galereya yo'q */
+const heroPhoto = computed(() => {
+  if (heroBroken.value) return ''
+  return props.photoUrls.find(Boolean) || ''
 })
 
-const slideUrl = (index: number) => allPhotos.value[index] || ''
-
-const isSlideLoaded = (index: number) => loadedIndexes.value.has(index)
-
-const markSlideLoaded = (index: number) => {
-  if (index < 0 || index >= photoCount.value) return
-  loadedIndexes.value = new Set([...loadedIndexes.value, index])
-}
-
-const stripStyle = computed(() => {
-  const vw = viewportRef.value?.clientWidth || 1
-  const dragPercent = dragging.value ? (dragPx.value / vw) * 100 : 0
-  const base = -(activePhoto.value * 100)
-  return {
-    transform: `translate3d(${base + dragPercent}%, 0, 0)`,
-    transition: dragging.value ? 'none' : 'transform 0.22s ease-out',
-  }
-})
+const heroInitial = computed(() => avatarInitial(props.profile?.name))
+const heroColorClass = computed(() => avatarColorClass(props.profile?.name))
 
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
@@ -257,114 +206,4 @@ const telegramHref = computed(() => {
   const id = props.profile?.userId
   return id ? `https://t.me/+${id}` : ''
 })
-
-const clampActive = () => {
-  const max = Math.max(0, photoCount.value - 1)
-  if (activePhoto.value > max) activePhoto.value = max
-}
-
-const onImgError = (index: number) => {
-  failedIndexes.value = new Set([...failedIndexes.value, index])
-  clampActive()
-}
-
-const onPointerDown = (e: PointerEvent) => {
-  if (photoCount.value <= 1) return
-  dragging.value = true
-  pointerStartX = e.clientX
-  dragPx.value = 0
-  pointerId = e.pointerId
-  viewportRef.value?.setPointerCapture(e.pointerId)
-}
-
-const onPointerMove = (e: PointerEvent) => {
-  if (!dragging.value || e.pointerId !== pointerId) return
-  dragPx.value = e.clientX - pointerStartX
-}
-
-const onPointerUp = (e: PointerEvent) => {
-  if (!dragging.value || e.pointerId !== pointerId) return
-  dragging.value = false
-  pointerId = null
-
-  const w = viewportRef.value?.clientWidth || 1
-  const threshold = Math.max(48, w * 0.15)
-
-  if (dragPx.value <= -threshold && activePhoto.value < photoCount.value - 1) {
-    activePhoto.value += 1
-  } else if (dragPx.value >= threshold && activePhoto.value > 0) {
-    activePhoto.value -= 1
-  }
-
-  dragPx.value = 0
-  viewportRef.value?.releasePointerCapture(e.pointerId)
-}
-
-watch(activePhoto, (idx) => {
-  markSlideLoaded(idx)
-  markSlideLoaded(idx + 1)
-  markSlideLoaded(idx - 1)
-})
-
-watch(
-  () => props.profile?.userId,
-  () => {
-    activePhoto.value = 0
-    failedIndexes.value = new Set()
-    loadedIndexes.value = new Set([0])
-    dragPx.value = 0
-    dragging.value = false
-  },
-)
-
-watch(allPhotos, (next, prev) => {
-  if (!prev?.length || next[0] !== prev[0] || next.length !== prev.length) {
-    activePhoto.value = 0
-    loadedIndexes.value = new Set([0])
-  }
-  clampActive()
-}, { immediate: true })
 </script>
-
-<style scoped>
-.gallery-viewport {
-  overflow: hidden;
-  touch-action: none;
-}
-
-.gallery-strip {
-  display: flex;
-  height: 100%;
-  will-change: transform;
-}
-
-.gallery-slide {
-  flex: 0 0 100%;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #020617;
-}
-
-.gallery-img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  pointer-events: none;
-  -webkit-user-drag: none;
-  user-select: none;
-}
-
-.gallery-placeholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #020617;
-}
-</style>

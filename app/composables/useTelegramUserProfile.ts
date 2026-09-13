@@ -79,10 +79,8 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
       urls.push(url)
     }
 
-    if (urls.length) return urls
-
-    const fallback = avatarUrl(undefined, id)
-    return fallback ? [fallback] : []
+    if (urls.length) return [urls[0]]
+    return []
   })
 
   const load = async () => {

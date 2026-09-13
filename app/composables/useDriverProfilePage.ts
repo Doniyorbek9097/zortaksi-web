@@ -6,6 +6,7 @@ import { isTariffActive } from '~/utils/tariffActive'
 import { isAdminUser } from '~/utils/userRole'
 import { normalizeTelHref } from '~/utils/phone'
 import { compactQuery } from '~/utils/navigationQuery'
+import { openSupportChatInstant } from '~/utils/openSupportChat'
 import { useChatStore } from '~/stores/chat.store'
 
 /**
@@ -178,22 +179,12 @@ export function useDriverProfilePage() {
       return
     }
 
-    if (isAdmin.value && driver.value) {
-      try {
-        const res = await useApi('/chats/support', {
-          method: 'POST',
-          body: { driverUserId: driver.value.id },
-        })
-        if (res.success && res.data?._id) {
-          await navigateTo({
-            path: `/driver/chat/${res.data._id}`,
-            query: { name: driver.value.name || 'Haydovchi', support: '1' },
-          })
-          return
-        }
-      } catch {
-        /* */
-      }
+    if (isAdmin.value) {
+      return openSupportChatInstant({
+        driverUserId: id,
+        name: displayName,
+        avatar: displayProfile.value?.avatar || profile.value?.avatar,
+      })
     }
 
     await navigateTo({

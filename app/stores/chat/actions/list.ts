@@ -340,6 +340,21 @@ export function createListActions(
         }
     }
 
+    /** Admin ↔ haydovchi support chat (haydovchi — body bo'sh) */
+    const startSupportChat = async (driverUserId?: string) => {
+        try {
+            return await useApi('/chats/support', {
+                method: 'POST',
+                body: driverUserId ? { driverUserId } : {},
+            })
+        } catch (error) {
+            return {
+                success: false,
+                message: getApiErrorMessage(error, 'Chat ochib bo\'lmadi'),
+            }
+        }
+    }
+
     /** O'qilgan deb belgilash */
     const markRead = async (chatId: string) => {
         try {
@@ -481,6 +496,7 @@ export function createListActions(
         startChatWithOrderOwner,
         startChatWithUser,
         startChatWithBookedDriver,
+        startSupportChat,
         markRead,
         markAllRead,
         deleteChats,

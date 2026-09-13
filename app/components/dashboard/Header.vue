@@ -10,13 +10,11 @@
         v-if="actionButton !== 'none'"
         type="button"
         class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-wider active:scale-95 transition-all shadow-sm shrink-0 border"
-        :class="effectiveAction === 'download'
-          ? 'bg-sky-500/10 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400'
-          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-amber-500'"
+        :class="actionClass"
         @click="onAction"
       >
-        <font-awesome-icon :icon="effectiveAction === 'download' ? 'fa-solid fa-download' : 'fa-solid fa-gift'" />
-        {{ effectiveAction === 'download' ? 'Yuklab olish' : 'Bonus' }}
+        <font-awesome-icon :icon="actionIcon" />
+        {{ actionLabel }}
       </button>
     </div>
   </header>
@@ -25,24 +23,50 @@
 <script setup lang="ts">
 const props = withDefaults(
   defineProps<{
-    actionButton?: 'download' | 'bonus' | 'none'
+    actionButton?: 'download' | 'bonus' | 'help' | 'none'
   }>(),
-  { actionButton: 'bonus' }
+  { actionButton: 'bonus' },
 )
 
-const emit = defineEmits<{ bonus: []; download: [] }>()
+const emit = defineEmits<{ bonus: []; download: []; help: [] }>()
 const { showDownloadButton } = useApkDownload()
 
-const effectiveAction = computed<'download' | 'bonus'>(() => {
+type HeaderAction = 'download' | 'bonus' | 'help'
+
+const effectiveAction = computed<HeaderAction>(() => {
   if (props.actionButton === 'download') {
-    return showDownloadButton.value ? 'download' : 'bonus'
+    return showDownloadButton.value ? 'download' : 'help'
   }
+  if (props.actionButton === 'help') return 'help'
   if (props.actionButton === 'bonus') return 'bonus'
   return 'bonus'
 })
 
+const actionClass = computed(() => {
+  if (effectiveAction.value === 'download') {
+    return 'bg-sky-500/10 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400'
+  }
+  if (effectiveAction.value === 'help') {
+    return 'bg-gradient-to-r from-violet-500/12 via-indigo-500/10 to-violet-500/12 dark:from-violet-950/50 dark:via-indigo-950/40 dark:to-violet-950/50 border-violet-200/80 dark:border-violet-800/60 text-violet-600 dark:text-violet-300 shadow-violet-500/10'
+  }
+  return 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-amber-500'
+})
+
+const actionIcon = computed(() => {
+  if (effectiveAction.value === 'download') return 'fa-solid fa-download'
+  if (effectiveAction.value === 'help') return 'fa-solid fa-headset'
+  return 'fa-solid fa-gift'
+})
+
+const actionLabel = computed(() => {
+  if (effectiveAction.value === 'download') return 'Yuklab olish'
+  if (effectiveAction.value === 'help') return 'Yordam'
+  return 'Bonus'
+})
+
 function onAction() {
   if (effectiveAction.value === 'download') emit('download')
+  else if (effectiveAction.value === 'help') emit('help')
   else emit('bonus')
 }
 </script>

@@ -112,7 +112,13 @@ export function useChatPageMeta(opts: {
     return resolveOrderTextHint(route.query as Record<string, unknown>, activeChatMeta.value)
   })
 
-  const hasInstantContext = computed(() => !!orderText.value || !!route.query.orderId)
+  const hasInstantContext = computed(
+    () =>
+      !!orderText.value ||
+      !!route.query.orderId ||
+      isSupport.value ||
+      String(route.query.open || '') === 'support',
+  )
 
   const isOrderSenderChat = computed(
     () =>
@@ -148,6 +154,7 @@ export function useChatPageMeta(opts: {
     if (chatStore.isPeerTyping) return 'yozmoqda...'
     if (chatStore.peerPresence?.label) return chatStore.peerPresence.label
     if (isDirect.value) return 'Haydovchi'
+    if (isSupport.value && !isAdmin.value) return 'Rasmiy yordam'
     if (hasInstantContext.value && chatStore.isLoadingMessages) return 'yangilanmoqda...'
     return '...'
   })

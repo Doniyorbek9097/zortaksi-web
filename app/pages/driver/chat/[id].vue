@@ -1,15 +1,18 @@
 <template>
   <div
-    class="fixed z-40 flex flex-col overflow-hidden bg-slate-50 dark:bg-slate-950"
+    class="fixed z-40 flex flex-col overflow-hidden"
+    :class="isSupport
+      ? 'bg-gradient-to-b from-violet-950/95 via-slate-950 to-slate-950'
+      : 'bg-slate-50 dark:bg-slate-950'"
     :style="frameStyle"
   >
-    <!-- Header — support ham oddiy chat ko'rinishida -->
     <ChatHeader
       :name="name"
       :status="statusText"
       :online="isOnline"
       :avatar="peerAvatar"
       :user-id="peerUserId"
+      :support="isSupport"
       :profile-chat-id="effectiveChatId"
       :show-clear-history="showClearHistoryBtn && !selectionMode"
       :clearing="isClearingHistory"
@@ -20,6 +23,20 @@
         <ChatCallBar :href="callTelHref" class="!mb-0" />
       </template>
     </ChatHeader>
+
+    <div
+      v-if="isSupport && !isAdmin"
+      class="shrink-0 mx-auto w-full max-w-2xl px-3 py-2"
+    >
+      <div class="flex items-center gap-2 rounded-2xl px-3 py-2 bg-violet-500/10 border border-violet-400/20 backdrop-blur-sm">
+        <span class="w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400/30 to-violet-500/30 flex items-center justify-center text-amber-200 shrink-0">
+          <font-awesome-icon icon="fa-solid fa-shield-halved" class="text-xs" />
+        </span>
+        <p class="text-[11px] font-bold leading-snug text-violet-100/90">
+          Rasmiy admin yordami — to'lov, tarif va texnik savollar uchun
+        </p>
+      </div>
+    </div>
 
     <!-- Xabarlar -->
     <div v-if="isOpening && openFailed" class="flex-1 min-h-0 flex flex-col overflow-y-auto">
@@ -415,6 +432,7 @@ const {
   executeClearHistory,
   goBack,
   goOrders,
+  isSupport,
   name,
   statusText,
   isOnline,

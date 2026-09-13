@@ -173,6 +173,7 @@ export const useChatStore = defineStore('chat', () => {
         startChatWithOrderOwner: list.startChatWithOrderOwner,
         startChatWithUser: list.startChatWithUser,
         startChatWithBookedDriver: list.startChatWithBookedDriver,
+        startSupportChat: list.startSupportChat,
         markRead: list.markRead,
         markAllRead: list.markAllRead,
         deleteChats: list.deleteChats,

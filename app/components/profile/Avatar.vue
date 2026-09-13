@@ -27,6 +27,8 @@
 </template>
 
 <script setup lang="ts">
+import { avatarColorClass, avatarInitial } from '~/utils/avatarPlaceholder'
+
 interface Props {
   name: string
   src?: string
@@ -77,19 +79,8 @@ const sizeClass = computed(() => sizeMap[props.size])
 const shapeClass = computed(() =>
   props.shape === 'rounded' ? 'rounded-2xl' : 'rounded-full'
 )
-const initial = computed(() => (props.name?.trim()?.[0] || '?').toUpperCase())
-const colorClass = computed(() => {
-  const code = (props.name || '?').charCodeAt(0) || 0
-  const palette = [
-    'bg-gradient-to-br from-pink-500 to-rose-500',
-    'bg-gradient-to-br from-violet-500 to-indigo-500',
-    'bg-gradient-to-br from-emerald-500 to-teal-500',
-    'bg-gradient-to-br from-amber-500 to-orange-500',
-    'bg-gradient-to-br from-sky-500 to-blue-500',
-    'bg-gradient-to-br from-fuchsia-500 to-purple-500',
-  ]
-  return palette[code % palette.length]
-})
+const initial = computed(() => avatarInitial(props.name))
+const colorClass = computed(() => avatarColorClass(props.name))
 
 const onError = () => {
   broken.value = true
@@ -97,19 +88,15 @@ const onError = () => {
 
 const onClick = (e: MouseEvent) => {
   if (!props.previewable) return
-  const id = String(props.userId || '').trim()
-  if (!id) return
   e.stopPropagation()
-  void navigateTo({
-    path: `/driver/user/${encodeURIComponent(id)}`,
-    query: {
-      ...(props.profileChatId ? { chatId: props.profileChatId } : {}),
-      ...(props.profileOrderId ? { orderId: props.profileOrderId } : {}),
-      name: props.name,
-      ...(props.src ? { avatar: props.src } : {}),
-      ...(props.profilePhone ? { phone: props.profilePhone } : {}),
-      ...(props.profileUsername ? { username: props.profileUsername } : {}),
-    },
+  openUserProfile({
+    userId: props.userId,
+    name: props.name,
+    avatar: props.src,
+    chatId: props.profileChatId,
+    orderId: props.profileOrderId,
+    phone: props.profilePhone,
+    username: props.profileUsername,
   })
 }
 </script>

@@ -1,8 +1,11 @@
 <template>
-  <div
-    class="flex items-center gap-2 py-2 border-b border-slate-100/80 dark:border-slate-800/80 last:border-0"
+  <button
+    type="button"
+    class="flex items-center gap-2 w-full py-2 border-b border-slate-100/80 dark:border-slate-800/80 last:border-0 text-left active:opacity-80 transition-opacity disabled:opacity-60"
+    :disabled="!userId"
+    @click="openProfile"
   >
-    <div class="relative shrink-0">
+    <div class="relative shrink-0 pointer-events-none">
       <ProfileAvatar :name="name" :src="avatar" :user-id="userId" size="sm" />
       <span
         class="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-0.5 rounded-full flex items-center justify-center text-[8px] font-black shadow ring-[1.5px] ring-white dark:ring-slate-900"
@@ -17,7 +20,7 @@
       </span>
     </div>
 
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 pointer-events-none">
       <p class="text-[12px] font-black text-slate-900 dark:text-white truncate leading-tight">
         {{ name }}
       </p>
@@ -30,7 +33,7 @@
       </p>
     </div>
 
-    <div class="text-right shrink-0">
+    <div class="text-right shrink-0 pointer-events-none">
       <p class="text-[11px] font-black tabular-nums leading-none">
         <span class="text-sky-600 dark:text-sky-400">{{ invites }}</span>
         <span class="text-[9px] font-bold text-slate-400 mx-0.5">ta</span>
@@ -38,7 +41,7 @@
         <span class="text-emerald-600 dark:text-emerald-400 ml-0.5">+{{ formattedBonus }}</span>
       </p>
     </div>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
@@ -63,4 +66,13 @@ const rankBadgeClass = computed(() => {
 })
 
 const formattedBonus = computed(() => props.bonus.toLocaleString('ru-RU'))
+
+const openProfile = () => {
+  openUserProfile({
+    userId: props.userId,
+    name: props.name,
+    avatar: props.avatar,
+    username: props.username,
+  })
+}
 </script>

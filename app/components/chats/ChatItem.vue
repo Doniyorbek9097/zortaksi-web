@@ -17,7 +17,7 @@
       class="relative z-10 w-full flex items-center gap-3 rounded-2xl px-3.5 py-3 text-left border will-change-transform"
       :class="[
         support
-          ? 'bg-teal-50 dark:bg-teal-950/40 border-teal-300 dark:border-teal-800/70'
+          ? 'bg-gradient-to-r from-violet-50 via-indigo-50/80 to-violet-50 dark:from-violet-950/40 dark:via-indigo-950/30 dark:to-violet-950/40 border-violet-200 dark:border-violet-800/60'
           : 'bg-white dark:bg-slate-900',
         selected
           ? 'border-indigo-400 dark:border-indigo-500/60 ring-2 ring-indigo-500/20'
@@ -46,9 +46,9 @@
 
       <div
         v-if="support"
-        class="w-11 h-11 shrink-0 rounded-xl bg-teal-500 text-white flex items-center justify-center"
+        class="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-violet-600 to-indigo-700 text-amber-100 flex items-center justify-center shadow-sm shadow-violet-500/20"
       >
-        <font-awesome-icon icon="fa-solid fa-headset" />
+        <font-awesome-icon icon="fa-solid fa-crown" class="text-sm" />
       </div>
       <ProfileAvatar v-else :name="name" :src="avatar" :user-id="userId" size="md" />
 

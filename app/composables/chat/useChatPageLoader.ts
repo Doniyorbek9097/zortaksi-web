@@ -17,6 +17,7 @@ import { getApiErrorMessage } from '~/utils/apiError'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
 import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+import { isAdminUser } from '~/utils/userRole'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ChatStore = ReturnType<typeof useChatStore>
@@ -154,6 +155,28 @@ export function useChatPageLoader(opts: {
     if (stub) applyStub(stub)
   }
 
+  /** Support chat — query dan darhol UI */
+  const applyInstantSupportUiFromQuery = () => {
+    const q = route.query as Record<string, unknown>
+    if (String(q.open || '') !== 'support') return
+
+    const userId = String(q.userId || '').trim()
+    const name = String(q.name || '').trim() || (userId ? 'Haydovchi' : 'Admin yordam')
+
+    chatStore.isLoadingMessages = false
+    chatStore.connectionStatus = 'ready'
+
+    const listed = resolveChatFromOpenQuery(q, chatStore.chats)
+    chatStore.currentChat = (listed || {
+      kind: 'support',
+      inAppOnly: true,
+      peer: userId
+        ? { userId, firstName: name }
+        : { firstName: 'Admin', lastName: 'yordam' },
+    }) as import('~/types').IChat
+    chatStore.primeFromChat(chatStore.currentChat)
+  }
+
   /** Guruh «Mijozni olish» — fon API to'ldirish */
   const enrichOrderUiFromApi = (orderId: string) => {
     void (async () => {
@@ -187,6 +210,7 @@ export function useChatPageLoader(opts: {
   }
 
   const primeInstantOrderUi = () => {
+    applyInstantSupportUiFromQuery()
     applyInstantOrderUiFromQuery()
     const orderId = String(route.query.orderId || '').trim()
     if (orderId && isFromGroupTakeClient(route.query as Record<string, unknown>)) {
@@ -311,6 +335,12 @@ export function useChatPageLoader(opts: {
       if (mode === 'agent' && orderId) return chatStore.startChatWithOrderOwner(orderId)
       if (mode === 'user' && userId) {
         return chatStore.startChatWithUser(userId, orderId || undefined)
+      }
+      if (mode === 'support') {
+        const adminCaller = isAdminUser(authStore.user)
+        if (adminCaller && userId) return chatStore.startSupportChat(userId)
+        if (!adminCaller) return chatStore.startSupportChat()
+        return null
       }
       return null
     }

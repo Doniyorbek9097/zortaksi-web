@@ -47,8 +47,13 @@
       v-if="showMe && data"
       class="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-violet-50/40 dark:bg-violet-950/20"
     >
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="relative shrink-0">
+      <button
+        type="button"
+        class="flex items-center gap-2 min-w-0 w-full text-left active:opacity-80 transition-opacity"
+        :disabled="!meUserId"
+        @click="openMeProfile"
+      >
+        <div class="relative shrink-0 pointer-events-none">
           <ProfileAvatar :name="meName" :src="meAvatar" :user-id="meUserId" size="sm" />
           <span
             v-if="meRank"
@@ -76,7 +81,7 @@
             <span class="text-emerald-600 dark:text-emerald-400 ml-0.5">+{{ formattedMeBonus }}</span>
           </p>
         </div>
-      </div>
+      </button>
     </div>
 
     <div v-if="loading && !data" class="px-3 py-2 space-y-1.5">
@@ -230,5 +235,14 @@ const onOpenGroup = async () => {
   }
   await fetchGroups()
   openPublicGroup()
+}
+
+const openMeProfile = () => {
+  openUserProfile({
+    userId: meUserId.value,
+    name: meName.value,
+    avatar: meAvatar.value,
+    username: meUsername.value,
+  })
 }
 </script>

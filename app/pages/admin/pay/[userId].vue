@@ -29,18 +29,13 @@
       <section
         class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-start gap-3"
       >
-        <div
-          class="w-14 h-14 rounded-2xl overflow-hidden bg-emerald-500/15 flex items-center justify-center shrink-0"
-        >
-          <img
-            v-if="payAvatarSrc"
-            :src="payAvatarSrc"
-            :alt="driver.name"
-            class="w-full h-full object-cover"
-            @error="payAvatarBroken = true"
-          >
-          <font-awesome-icon v-else icon="fa-solid fa-car" class="text-emerald-500 text-xl" />
-        </div>
+        <ProfileAvatar
+          :name="driver.name"
+          :src="driver.avatar"
+          :user-id="driver.id || userId"
+          size="lg"
+          shape="rounded"
+        />
         <div class="flex-1 min-w-0">
           <div class="flex items-start justify-between gap-2">
             <div class="min-w-0">
@@ -261,15 +256,6 @@ const loading = ref(true)
 const saving = ref(false)
 const error = ref('')
 const success = ref('')
-
-const { avatarUrl } = useMediaUrl()
-const payAvatarBroken = ref(false)
-watch(driver, () => { payAvatarBroken.value = false })
-const payAvatarSrc = computed(() =>
-  payAvatarBroken.value
-    ? undefined
-    : avatarUrl(driver.value?.avatar, driver.value?.id || userId.value)
-)
 
 const tariffs = computed(() => tariffStore.tariffs)
 const selectedTariff = computed(() =>

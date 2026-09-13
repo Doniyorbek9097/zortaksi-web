@@ -1,6 +1,6 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
-    <DashboardHeader action-button="download" @download="onDownloadApp" @bonus="onBonus" />
+    <DashboardHeader action-button="download" @download="onDownloadApp" @help="onHelp" />
 
     <!-- Salomlashish va vaqt -->
     <div
@@ -78,6 +78,7 @@ import { usePromoBanners } from '~/composables/dashboard/usePromoBanners'
 import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
 import { useDriverPostCampaign } from '~/composables/dashboard/useDriverPostCampaign'
 import { useAuthStore } from '~/stores/auth.store'
+import { openDriverSupportChatInstant } from '~/utils/openSupportChat'
 
 definePageMeta({ layout: 'driver' })
 
@@ -120,7 +121,7 @@ const {
 } = useDriverPostCampaign()
 
 const onDownloadApp = () => navigateTo('/driver/download-app')
-const onBonus = () => navigateTo('/driver/bonus')
+const onHelp = () => openDriverSupportChatInstant()
 const onBuyTariff = () => navigateTo('/driver/payment')
 
 usePullToRefresh(async () => {

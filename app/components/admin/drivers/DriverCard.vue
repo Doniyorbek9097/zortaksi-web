@@ -19,18 +19,13 @@
         <font-awesome-icon v-if="selected" icon="fa-solid fa-check" class="text-[9px]" />
       </button>
 
-      <div
-        class="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center"
-      >
-        <img
-          v-if="avatarSrc"
-          :src="avatarSrc"
-          :alt="name"
-          class="w-full h-full object-cover"
-          @error="avatarBroken = true"
-        >
-        <font-awesome-icon v-else icon="fa-solid fa-car" class="text-slate-400" />
-      </div>
+      <ProfileAvatar
+        :name="name"
+        :src="avatar"
+        :user-id="userId"
+        size="md"
+        shape="rounded"
+      />
 
       <div class="flex-1 min-w-0">
         <p
@@ -162,16 +157,6 @@ defineEmits<{
   block: []
   open: []
 }>()
-
-const { avatarUrl } = useMediaUrl()
-const avatarBroken = ref(false)
-watch(
-  () => [props.avatar, props.userId],
-  () => { avatarBroken.value = false }
-)
-const avatarSrc = computed(() =>
-  avatarBroken.value ? undefined : avatarUrl(props.avatar, props.userId)
-)
 
 const formattedBalance = computed(() => (props.balance ?? 0).toLocaleString('ru-RU'))
 </script>

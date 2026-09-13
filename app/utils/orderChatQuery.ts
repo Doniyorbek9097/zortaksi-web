@@ -151,6 +151,14 @@ export function resolveChatFromOpenQuery(
   if ((mode === 'booked' || mode === 'agent') && orderId) {
     return chats.find((c) => String(c.orderId || '') === orderId)
   }
+  if (mode === 'support') {
+    if (userId) {
+      return chats.find(
+        (c) => c.kind === 'support' && String(c.peer?.userId || '') === userId,
+      )
+    }
+    return chats.find((c) => c.kind === 'support')
+  }
   return undefined
 }
 

@@ -48,23 +48,25 @@
         @pointerup="onPointerUp"
         @pointercancel="onPointerUp"
       >
-      <!-- Sender -->
+      <!-- Sender — avatar va ism profilga -->
       <div class="flex items-center gap-3">
-        <ProfileAvatar
-          :name="senderName"
-          :src="order.sender?.avatar"
-          :user-id="order.sender?.userId"
-          :profile-order-id="order._id"
-          :profile-phone="callPhone"
-          :profile-username="order.sender?.username"
-          size="sm"
-          previewable
+        <button
+          type="button"
+          class="flex items-center gap-3 min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
           data-no-swipe
-        />
-        <div class="min-w-0 flex-1">
-          <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
-          <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
-        </div>
+          @click.stop="openSenderProfile"
+        >
+          <ProfileAvatar
+            :name="senderName"
+            :src="order.sender?.avatar"
+            :user-id="order.sender?.userId"
+            size="sm"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
+            <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
+          </div>
+        </button>
         <button
           v-if="interestCount > 0"
           type="button"
@@ -319,6 +321,19 @@ const senderName = computed(() => {
   const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
   return full || s?.username || 'Nomsiz foydalanuvchi'
 })
+
+const openSenderProfile = () => {
+  const uid = String(props.order.sender?.userId || '').trim()
+  if (!uid) return
+  openUserProfile({
+    userId: uid,
+    name: senderName.value,
+    avatar: props.order.sender?.avatar,
+    orderId: props.order._id,
+    phone: callPhone.value,
+    username: props.order.sender?.username,
+  })
+}
 
 const time = computed(() => {
   const value = props.order.message?.date

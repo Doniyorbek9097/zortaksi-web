@@ -3,7 +3,7 @@
     class="sticky top-0 shrink-0 z-40"
     :style="{ paddingTop: 'var(--zt-safe-top, 0px)' }"
     :class="support
-      ? 'bg-teal-600 dark:bg-teal-800 border-b border-teal-700/40'
+      ? 'bg-gradient-to-r from-violet-700 via-indigo-700 to-violet-800 border-b border-violet-500/30 shadow-lg shadow-violet-950/25'
       : 'bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50'"
   >
     <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-1.5 flex items-center gap-2">
@@ -19,34 +19,54 @@
         <font-awesome-icon icon="fa-solid fa-chevron-left" />
       </button>
 
-      <div
-        v-if="support"
-        class="w-9 h-9 shrink-0 rounded-xl bg-white/15 flex items-center justify-center text-white"
+      <button
+        v-if="!support && userId"
+        type="button"
+        class="flex flex-1 min-w-0 items-center gap-2 text-left active:opacity-85 transition-opacity"
+        @click="openPeerProfile"
       >
-        <font-awesome-icon icon="fa-solid fa-headset" />
-      </div>
-      <ProfileAvatar
-        v-else
-        :name="name"
-        :src="avatar"
-        :user-id="userId"
-        :profile-chat-id="profileChatId"
-        size="sm"
-        previewable
-      />
+        <ProfileAvatar
+          :name="name"
+          :src="avatar"
+          :user-id="userId"
+          size="sm"
+        />
+        <div class="flex-1 min-w-0 leading-none">
+          <p class="text-[13px] font-black truncate text-slate-900 dark:text-white">{{ name }}</p>
+          <p
+            class="text-[10px] font-medium truncate mt-0.5"
+            :class="online ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'"
+          >{{ status }}</p>
+        </div>
+      </button>
 
-      <div class="flex-1 min-w-0 leading-none">
-        <p
-          class="text-[13px] font-black truncate"
-          :class="support ? 'text-white' : 'text-slate-900 dark:text-white'"
-        >{{ name }}</p>
-        <p
-          class="text-[10px] font-medium truncate mt-0.5"
-          :class="support
-            ? (online ? 'text-emerald-200' : 'text-teal-100')
-            : online ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'"
-        >{{ status }}</p>
-      </div>
+      <template v-else>
+        <div
+          v-if="support"
+          class="w-9 h-9 shrink-0 rounded-xl bg-gradient-to-br from-amber-300/25 to-amber-500/20 ring-1 ring-amber-200/30 flex items-center justify-center text-amber-100"
+        >
+          <font-awesome-icon icon="fa-solid fa-crown" class="text-[15px]" />
+        </div>
+        <ProfileAvatar
+          v-else
+          :name="name"
+          :src="avatar"
+          :user-id="userId"
+          size="sm"
+        />
+        <div class="flex-1 min-w-0 leading-none">
+          <p
+            class="text-[13px] font-black truncate"
+            :class="support ? 'text-white' : 'text-slate-900 dark:text-white'"
+          >{{ name }}</p>
+          <p
+            class="text-[10px] font-medium truncate mt-0.5"
+            :class="support
+              ? (online ? 'text-emerald-200' : 'text-violet-100/90')
+              : online ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'"
+          >{{ status }}</p>
+        </div>
+      </template>
 
       <button
         v-if="showDriverPage"
@@ -92,15 +112,16 @@ interface Props {
   avatar?: string
   userId?: string
   support?: boolean
-  /** Admin uchun — haydovchi sahifasiga o'tish */
   showDriverPage?: boolean
   showClearHistory?: boolean
   clearing?: boolean
-  /** Profil sahifasi uchun chat konteksti */
   profileChatId?: string
+  profileOrderId?: string
+  profilePhone?: string
+  profileUsername?: string
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   status: '',
   online: false,
   support: false,
@@ -108,7 +129,22 @@ withDefaults(defineProps<Props>(), {
   showClearHistory: false,
   clearing: false,
   profileChatId: '',
+  profileOrderId: '',
+  profilePhone: '',
+  profileUsername: '',
 })
 
 defineEmits<{ back: []; clear: []; 'driver-page': [] }>()
+
+const openPeerProfile = () => {
+  openUserProfile({
+    userId: props.userId,
+    name: props.name,
+    avatar: props.avatar,
+    chatId: props.profileChatId,
+    orderId: props.profileOrderId,
+    phone: props.profilePhone,
+    username: props.profileUsername,
+  })
+}
 </script>
