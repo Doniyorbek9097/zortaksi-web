@@ -65,8 +65,6 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
     }
   }
 
-  watch(userId, () => { void load() }, { immediate: true })
-
   return {
     profile,
     loading,

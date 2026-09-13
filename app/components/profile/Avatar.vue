@@ -99,7 +99,7 @@ const onClick = (e: MouseEvent) => {
   if (!id) return
   e.stopPropagation()
   void navigateTo({
-    path: `/driver/peers/${encodeURIComponent(id)}`,
+    path: `/driver/user/${encodeURIComponent(id)}`,
     query: {
       ...(props.profileChatId ? { chatId: props.profileChatId } : {}),
       ...(props.profileOrderId ? { orderId: props.profileOrderId } : {}),
