@@ -22,6 +22,7 @@ export function useDriverProfilePage() {
 
   const {
     profile,
+    displayProfile,
     loading: tgLoading,
     error: tgError,
     photoUrls,
@@ -38,8 +39,14 @@ export function useDriverProfilePage() {
   const deleteOpen = ref(false)
   const deleting = ref(false)
 
-  const loading = computed(() => tgLoading.value || driverLoading.value)
-  const error = computed(() => tgError.value || driverError.value)
+  /** Sahifa darhol ochiladi — faqat preview bo'lmasa to'liq spinner */
+  const loading = computed(() => tgLoading.value && !displayProfile.value)
+  const refreshing = computed(() => tgLoading.value || driverLoading.value)
+  const error = computed(() => {
+    if (profile.value) return driverError.value
+    if (tgError.value && !displayProfile.value) return tgError.value
+    return driverError.value
+  })
 
   const paymentsApiPath = computed(() =>
     isAdmin.value && userId.value
@@ -109,7 +116,8 @@ export function useDriverProfilePage() {
   }
 
   const reload = async () => {
-    await Promise.all([reloadTg(), loadDriver()])
+    void loadDriver()
+    await reloadTg()
   }
 
   const openChat = async () => {
@@ -264,8 +272,10 @@ export function useDriverProfilePage() {
     isAdmin,
     userId,
     profile,
+    displayProfile,
     photoUrls,
     loading,
+    refreshing,
     error,
     success,
     driver,

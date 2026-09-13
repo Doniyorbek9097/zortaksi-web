@@ -104,6 +104,7 @@ const onClick = (e: MouseEvent) => {
       ...(props.profileChatId ? { chatId: props.profileChatId } : {}),
       ...(props.profileOrderId ? { orderId: props.profileOrderId } : {}),
       name: props.name,
+      ...(props.src ? { avatar: props.src } : {}),
     },
   })
 }

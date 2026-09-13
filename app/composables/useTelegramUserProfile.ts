@@ -18,6 +18,7 @@ export type TelegramUserProfile = {
 
 /**
  * Telegram uslubidagi foydalanuvchi profili — rasmlar, bio, telefon.
+ * Route query dan darhol preview ko'rsatadi (sahifa tez ochiladi).
  */
 export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>) {
   const route = useRoute()
@@ -27,13 +28,41 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
   const loading = ref(false)
   const error = ref('')
 
+  /** Avatar bosilganda uzatilgan ma'lumot — API kutmasdan ko'rsatiladi */
+  const previewProfile = computed<TelegramUserProfile | null>(() => {
+    const id = String(unref(userId) || '').trim()
+    if (!id) return null
+
+    const name = String(route.query.name || '').trim()
+    const avatarQ = String(route.query.avatar || '').trim()
+    const photos: string[] = []
+
+    if (avatarQ) {
+      const u = resolve(avatarQ) || avatarUrl(avatarQ, id)
+      if (u) photos.push(avatarQ)
+    }
+    if (!photos.length) photos.push('')
+
+    return {
+      userId: id,
+      name: name || id,
+      photos,
+      presence: { online: false, label: 'yuklanmoqda...' },
+    }
+  })
+
+  const displayProfile = computed(() => profile.value || previewProfile.value)
+
   const photoUrls = computed(() => {
-    const raw = profile.value?.photos || []
+    const src = profile.value || previewProfile.value
+    const raw = src?.photos || []
     const urls = raw
-      .map((p) => resolve(p) || avatarUrl(p, profile.value?.userId))
+      .map((p) => (p ? resolve(p) || avatarUrl(p, src?.userId) : null))
       .filter(Boolean) as string[]
+
     if (urls.length) return urls
-    const fallback = avatarUrl(undefined, profile.value?.userId)
+
+    const fallback = avatarUrl(undefined, src?.userId)
     return fallback ? [fallback] : []
   })
 
@@ -67,6 +96,8 @@ export function useTelegramUserProfile(userId: Ref<string> | ComputedRef<string>
 
   return {
     profile,
+    previewProfile,
+    displayProfile,
     loading,
     error,
     photoUrls,

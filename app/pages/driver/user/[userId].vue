@@ -1,10 +1,10 @@
 <template>
   <AuthSessionGate>
     <ProfileTelegramProfileShell
-      style="--zt-hero-h: min(48vh, 400px)"
-      :profile="profile"
+      :profile="displayProfile"
       :photo-urls="photoUrls"
       :loading="loading"
+      :refreshing="refreshing"
       :error="error"
       :tel-href="telHref"
       @back="goBack"
@@ -214,8 +214,10 @@ const store = useDriverStore()
 const {
   isAdmin,
   profile,
+  displayProfile,
   photoUrls,
   loading,
+  refreshing,
   error,
   success,
   driver,

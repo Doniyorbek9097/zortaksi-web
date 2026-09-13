@@ -1,7 +1,7 @@
 <template>
   <div
     class="min-h-[100dvh] bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-    style="--zt-hero-h: min(48vh, 400px)"
+    style="--zt-hero-h: min(55vh, 460px)"
   >
     <div v-if="loading" class="min-h-[100dvh] flex items-center justify-center">
       <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-2xl text-slate-400" />
@@ -10,21 +10,29 @@
     <template v-else-if="profile">
       <!-- Qotib turuvchi rasm (scroll paytida joyida qoladi) -->
       <div
-        class="fixed inset-x-0 top-0 z-0 h-[var(--zt-hero-h)] bg-slate-900"
+        class="fixed inset-x-0 top-0 z-0 h-[var(--zt-hero-h)] bg-slate-950"
         aria-hidden="false"
       >
         <div
           v-if="visiblePhotos.length"
           ref="galleryEl"
-          class="h-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
+          class="h-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar touch-pan-x"
           @scroll="onGalleryScroll"
         >
           <div
             v-for="(src, i) in visiblePhotos"
             :key="`${src}-${i}`"
-            class="inline-block w-full h-full snap-center align-top"
+            class="inline-flex w-full h-full snap-center align-top items-center justify-center bg-slate-950"
           >
-            <img :src="src" :alt="profile.name" class="w-full h-full object-cover">
+            <img
+              :src="src"
+              :alt="profile.name"
+              class="max-w-full max-h-full w-auto h-auto object-contain select-none"
+              draggable="false"
+              :fetchpriority="i === 0 ? 'high' : 'low'"
+              :loading="i === 0 ? 'eager' : 'lazy'"
+              decoding="async"
+            >
           </div>
         </div>
         <div
@@ -34,10 +42,22 @@
           {{ profile.name?.trim()?.[0]?.toUpperCase() || '?' }}
         </div>
 
+        <!-- Yuklanish indikatori -->
+        <div
+          v-if="refreshing"
+          class="absolute top-[max(0.5rem,env(safe-area-inset-top))] inset-x-0 z-30 flex justify-center pointer-events-none"
+        >
+          <span class="px-3 py-1 rounded-full bg-black/45 text-white text-[11px] font-bold backdrop-blur-sm">
+            <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin mr-1.5" />
+            Yangilanmoqda
+          </span>
+        </div>
+
         <!-- Progress chiziqlar -->
         <div
           v-if="visiblePhotos.length > 1"
           class="absolute top-0 inset-x-0 z-20 flex gap-1 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pointer-events-none"
+          :class="refreshing ? 'mt-8' : ''"
         >
           <span
             v-for="(_, i) in visiblePhotos"
@@ -76,54 +96,30 @@
         <div class="h-[calc(var(--zt-hero-h)-3.5rem)]" aria-hidden="true" />
 
         <div class="rounded-t-[1.75rem] bg-slate-100 dark:bg-slate-950 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] min-h-[55vh] pb-10">
-          <!-- Galereya navigatsiyasi — rasm ostida -->
-          <div
-            v-if="visiblePhotos.length > 1"
-            class="flex items-center justify-between px-4 pt-3 pb-1"
-          >
-            <button
-              type="button"
-              class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center active:scale-95 disabled:opacity-30"
-              :disabled="activePhoto <= 0"
-              aria-label="Oldingi rasm"
-              @click="slidePrev"
-            >
-              <font-awesome-icon icon="fa-solid fa-chevron-left" />
-            </button>
-            <span class="text-[12px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-              {{ activePhoto + 1 }} / {{ visiblePhotos.length }}
-            </span>
-            <button
-              type="button"
-              class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center active:scale-95 disabled:opacity-30"
-              :disabled="activePhoto >= visiblePhotos.length - 1"
-              aria-label="Keyingi rasm"
-              @click="slideNext"
-            >
-              <font-awesome-icon icon="fa-solid fa-chevron-right" />
-            </button>
-          </div>
-
           <!-- Tezkor tugmalar -->
-          <div class="px-3 pt-2">
+          <div class="px-3 pt-4">
             <slot name="actions">
-              <div class="grid grid-cols-2 gap-2">
+              <div class="grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-slate-800/95 dark:bg-slate-900 text-white active:scale-[0.98] transition-transform"
+                  class="group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-all"
                   @click="$emit('message')"
                 >
-                  <font-awesome-icon icon="fa-solid fa-comment" class="text-lg" />
-                  <span class="text-[11px] font-bold">Xabar</span>
+                  <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-active:bg-white/30 transition-colors">
+                    <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[15px]" />
+                  </span>
+                  <span class="text-[13px] font-black tracking-wide">Xabar</span>
                 </button>
                 <button
                   type="button"
-                  class="flex flex-col items-center gap-1.5 py-3 rounded-2xl bg-slate-800/95 dark:bg-slate-900 text-white active:scale-[0.98] transition-transform disabled:opacity-40"
+                  class="group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
                   :disabled="!telHref"
                   @click="$emit('call')"
                 >
-                  <font-awesome-icon icon="fa-solid fa-phone" class="text-lg" />
-                  <span class="text-[11px] font-bold">Chaqiruv</span>
+                  <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-active:bg-white/30 transition-colors">
+                    <font-awesome-icon icon="fa-solid fa-phone" class="text-[15px]" />
+                  </span>
+                  <span class="text-[13px] font-black tracking-wide">Chaqiruv</span>
                 </button>
               </div>
             </slot>
@@ -195,12 +191,13 @@
 
 <script setup lang="ts">
 import type { TelegramUserProfile } from '~/composables/useTelegramUserProfile'
-import { normalizeTelHref, normalizeTo998 } from '~/utils/phone'
+import { normalizeTo998 } from '~/utils/phone'
 
 const props = defineProps<{
   profile: TelegramUserProfile | null
   photoUrls: string[]
   loading?: boolean
+  refreshing?: boolean
   error?: string
   telHref?: string
 }>()
@@ -213,11 +210,8 @@ defineEmits<{
 
 const galleryEl = ref<HTMLElement | null>(null)
 const activePhoto = ref(0)
-const broken = ref<Set<number>>(new Set())
 
-const visiblePhotos = computed(() =>
-  props.photoUrls.filter((_, i) => !broken.value.has(i))
-)
+const visiblePhotos = computed(() => props.photoUrls.filter(Boolean))
 
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
@@ -244,24 +238,6 @@ const onGalleryScroll = () => {
     0,
     Math.min(visiblePhotos.value.length - 1, Math.round(el.scrollLeft / w)),
   )
-}
-
-const scrollToPhoto = (index: number) => {
-  const el = galleryEl.value
-  if (!el) return
-  const w = el.clientWidth || 1
-  el.scrollTo({ left: w * index, behavior: 'smooth' })
-  activePhoto.value = index
-}
-
-const slidePrev = () => {
-  if (activePhoto.value > 0) scrollToPhoto(activePhoto.value - 1)
-}
-
-const slideNext = () => {
-  if (activePhoto.value < visiblePhotos.value.length - 1) {
-    scrollToPhoto(activePhoto.value + 1)
-  }
 }
 </script>
 
