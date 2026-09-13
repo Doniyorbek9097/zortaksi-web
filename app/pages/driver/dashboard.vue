@@ -140,8 +140,8 @@ const onPostCampaignStop = async (c: PostCampaign) => {
   await postStore.stopCampaign(c.id)
 }
 
-const onPostCampaignEdit = () => {
-  navigateTo('/driver/post')
+const onPostCampaignEdit = (c: PostCampaign) => {
+  navigateTo(`/driver/campaigns/${encodeURIComponent(c.id)}/edit`)
 }
 
 const onPostCampaignDelete = async (c: PostCampaign) => {

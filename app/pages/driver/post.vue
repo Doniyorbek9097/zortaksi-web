@@ -1,12 +1,23 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-4 space-y-3">
-    <!-- Header -->
     <header class="flex items-center justify-between gap-2 sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-      <div class="min-w-0 leading-none">
-        <h1 class="text-base font-black text-slate-900 dark:text-white">E'lon joylash</h1>
-        <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
-          Hududlar Buyurtmalar bilan umumiy
-        </p>
+      <div class="min-w-0 flex items-center gap-2">
+        <button
+          v-if="pickGroupsMode"
+          type="button"
+          class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900 active:scale-95 shrink-0"
+          @click="goBackFromPick"
+        >
+          <font-awesome-icon icon="fa-solid fa-arrow-left" class="text-xs" />
+        </button>
+        <div class="min-w-0 leading-none">
+          <h1 class="text-base font-black text-slate-900 dark:text-white">
+            {{ pickGroupsMode ? 'Guruhlarni tanlash' : "E'lon joylash" }}
+          </h1>
+          <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
+            {{ pickGroupsMode ? 'Tanlangan guruhlar saqlanadi' : 'Meniki guruhlar' }}
+          </p>
+        </div>
       </div>
       <div class="flex items-center gap-1 shrink-0">
         <button
@@ -19,7 +30,7 @@
           @click="showFilter = !showFilter"
         >
           <font-awesome-icon icon="fa-solid fa-location-dot" class="text-[10px]" />
-          Hudud belgilash
+          Hudud
         </button>
         <button
           type="button"
@@ -43,101 +54,49 @@
       @cancel="onCancelFilter"
     />
 
-    <!-- Saqlangan xabarlar — faqat bor bo'lsa -->
-    <template v-if="store.campaigns.length || store.activeCampaign">
-      <section
-        class="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 space-y-1.5 shadow-sm"
-      >
-        <div class="flex items-center justify-between gap-2 px-0.5">
-          <h2 class="text-[13px] font-black text-slate-800 dark:text-slate-100">
-            Saqlangan xabarlar
-          </h2>
-          <button
-            type="button"
-            class="text-[13px] font-black text-amber-600 dark:text-amber-400"
-            :disabled="store.isCampaignsLoading"
-            @click="store.refreshCampaignData()"
-          >
-            <font-awesome-icon
-              icon="fa-solid fa-rotate"
-              :class="store.isCampaignsLoading ? 'animate-spin' : ''"
-              class="text-[12px]"
-            />
-          </button>
-        </div>
+    <p
+      v-if="store.isAdmin && !pickGroupsMode"
+      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
+    >
+      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilarga ko'rinadi.
+    </p>
 
-        <PostCampaignCardCompact
-          v-if="store.activeCampaign"
-          :campaign="store.activeCampaign"
-          :busy="store.campaignBusyId === store.activeCampaign.id"
-          @start="onStartCampaign(store.activeCampaign)"
-          @stop="onStopCampaign(store.activeCampaign)"
-          @edit="onEditCampaign(store.activeCampaign)"
-          @delete="onAskDeleteCampaign(store.activeCampaign)"
-        />
-
-        <div v-if="inactiveCampaigns.length" class="space-y-1.5">
-          <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 px-0.5">
-            To'xtatilgan
-          </p>
-          <PostCampaignListItem
-            v-for="c in inactiveCampaigns"
-            :key="c.id"
-            :campaign="c"
-            :busy="store.campaignBusyId === c.id"
-            @start="onStartCampaign(c)"
-            @edit="onEditCampaign(c)"
-            @delete="onAskDeleteCampaign(c)"
-          />
-        </div>
-      </section>
-
-      <div class="h-px bg-slate-200/80 dark:bg-slate-800/80" />
-    </template>
-
-    <!-- Tabs: Meniki / Boshqalar -->
-    <div class="flex gap-2">
-      <button
-        type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
-        :class="store.tab === 'mine'
-          ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
-          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-        @click="store.setTab('mine')"
-      >
-        <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
-        Meniki {{ store.mineTotal }}
-      </button>
-      <button
-        type="button"
-        class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black border transition-all"
-        :class="store.tab === 'ads'
-          ? 'border-amber-400 bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
-          : 'border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900'"
-        @click="store.setTab('ads')"
-      >
-        <font-awesome-icon icon="fa-solid fa-users" class="text-[10px]" />
-        Boshqalar {{ store.adsTotal }}
-      </button>
+    <!-- Tanlangan guruhlar paneli -->
+    <div
+      v-if="selectedCount > 0"
+      class="rounded-xl border border-amber-200/80 dark:border-amber-900/50 bg-amber-50/90 dark:bg-amber-950/30 p-3 space-y-2.5"
+    >
+      <p class="text-[12px] font-black text-amber-800 dark:text-amber-200">
+        {{ selectedCount }} ta guruh tanlangan
+      </p>
+      <div class="flex gap-2">
+        <button
+          v-if="pickGroupsMode"
+          type="button"
+          class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-emerald-500 hover:bg-emerald-600 active:scale-95 transition-all"
+          @click="onSavePickedGroups"
+        >
+          <font-awesome-icon icon="fa-solid fa-check" class="text-[10px]" />
+          Saqlash
+        </button>
+        <button
+          v-else
+          type="button"
+          class="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-black text-white bg-amber-500 hover:bg-amber-600 active:scale-95 transition-all"
+          @click="openCompose"
+        >
+          <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[10px]" />
+          Xabar yuborish
+        </button>
+        <button
+          type="button"
+          class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-[12px] font-black text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 active:scale-95"
+          @click="store.clearSelection()"
+        >
+          Bekor
+        </button>
+      </div>
     </div>
-
-    <p
-      v-if="store.tab === 'ads'"
-      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
-    >
-      Faqat public guruhlar (@username) va yozish mumkin bo'lganlari.
-      Yozish taqiqlangan guruhlar ko'rsatilmaydi.
-      <span v-if="!store.isAdmin">
-        Xabar yuborish: {{ ADS_BROADCAST_PRICE.toLocaleString('ru-RU') }} so'm/guruh.
-      </span>
-      «Guruhga qo'shilish» orqali Meniki ga ham qo'shishingiz mumkin.
-    </p>
-    <p
-      v-else-if="store.tab === 'mine' && store.isAdmin"
-      class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 leading-snug"
-    >
-      Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilar Boshqalar tabida ko'rinadi.
-    </p>
 
     <!-- Guruh qidiruvi -->
     <div class="relative">
@@ -153,10 +112,9 @@
       />
     </div>
 
-    <!-- Count + select -->
     <div class="flex items-center justify-between gap-2">
       <p class="text-[12px] font-bold text-slate-400">
-        {{ selectedCount }}/{{ MAX_POST_GROUPS }} tanlangan · {{ filtered.length }}/{{ store.totalGroups }} ko'rsatildi
+        {{ selectedCount }}/{{ MAX_POST_GROUPS }} tanlangan · {{ filtered.length }}/{{ store.mineTotal }} ko'rsatildi
       </p>
       <button
         type="button"
@@ -167,7 +125,6 @@
       </button>
     </div>
 
-    <!-- List -->
     <div v-if="store.isLoading" class="space-y-3">
       <div
         v-for="n in 5"
@@ -179,7 +136,7 @@
     <BaseEmptyState
       v-else-if="!filtered.length"
       icon="fa-solid fa-bullhorn"
-      :title="emptyTitle"
+      title="Guruhlar topilmadi — Telegram sessiyangizni tekshiring"
       tone="slate"
     />
 
@@ -190,15 +147,12 @@
         :group="g"
         :selectable="true"
         :selected="store.selected.has(g.id)"
-        :show-admin-badge="store.tab === 'mine'"
-        :show-visible-badge="store.tab === 'mine' && store.isAdmin"
-        :show-join="store.tab === 'ads'"
-        :joining="store.joiningId === g.id"
-        :show-leave="store.tab === 'mine'"
+        :show-admin-badge="true"
+        :show-visible-badge="store.isAdmin"
+        :show-leave="true"
         :leaving="store.joiningId === g.id"
-        :show-visibility="store.tab === 'mine' && store.isAdmin && g.isAdmin"
+        :show-visibility="store.isAdmin && g.isAdmin"
         @toggle="store.toggle(g.id)"
-        @join="onJoinGroup(g)"
         @leave="onAskLeave(g)"
         @toggle-visibility="onToggleVisibility(g)"
       />
@@ -228,96 +182,13 @@
       {{ success }}
     </p>
 
-    <div
-      v-if="store.schedule?.active && !store.campaigns.length"
-      class="rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/70 dark:bg-emerald-950/25 px-3 py-2"
-    >
-      <p class="text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-        «{{ store.schedule.name }}» ishlayapti — har {{ store.schedule.intervalMin }} daqiqada
-      </p>
-    </div>
-
-    <!-- Fixed send / block -->
-    <Teleport to="body">
-      <div
-        v-if="selectedCount > 0"
-        class="fixed bottom-20 inset-x-0 z-[60] px-4 pointer-events-none"
-      >
-        <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl pointer-events-auto">
-          <div
-            v-if="store.tab === 'ads'"
-            class="flex gap-2"
-          >
-            <button
-              type="button"
-              class="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
-              @click="openCompose"
-            >
-              <font-awesome-icon icon="fa-solid fa-paper-plane" />
-              Xabar yuborish
-              <span v-if="store.pricePerGroup > 0" class="text-[11px] opacity-90">
-                ({{ store.totalCost.toLocaleString('ru-RU') }} so'm)
-              </span>
-            </button>
-            <button
-              v-if="store.isAdmin"
-              type="button"
-              class="shrink-0 inline-flex items-center justify-center gap-1.5 px-4 py-3.5 rounded-2xl text-sm font-black text-white bg-rose-600 hover:bg-rose-700 shadow-xl shadow-rose-600/30 active:scale-[0.98] transition-all disabled:opacity-60"
-              :disabled="store.isBlocking"
-              @click="blockOpen = true"
-            >
-              <font-awesome-icon
-                :icon="store.isBlocking ? 'fa-solid fa-spinner' : 'fa-solid fa-ban'"
-                :class="store.isBlocking ? 'animate-spin' : ''"
-              />
-              Bloklash
-            </button>
-          </div>
-          <button
-            v-else
-            type="button"
-            class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-xl shadow-amber-500/30 active:scale-[0.98] transition-all"
-            @click="openCompose"
-          >
-            <font-awesome-icon icon="fa-solid fa-paper-plane" />
-            {{ selectedCount }} guruhga xabar yuborish
-          </button>
-        </div>
-      </div>
-    </Teleport>
-
     <PostComposeDialog
       v-model="composeOpen"
       :count="selectedCount"
-      :cost="store.totalCost"
+      :cost="0"
       :loading="store.isSending"
-      :edit-campaign="editCampaign"
       @once="onSendOnce"
       @save="onSaveCampaign"
-    />
-
-    <BaseConfirmDialog
-      v-model="deleteCampaignOpen"
-      title="Xabarni o'chirish"
-      :message="deleteCampaignTarget ? `«${deleteCampaignTarget.name}» o'chirilsinmi?` : ''"
-      confirm-text="O'chirish"
-      cancel-text="Bekor"
-      variant="danger"
-      :loading="!!store.campaignBusyId"
-      @confirm="onConfirmDeleteCampaign"
-      @cancel="deleteCampaignOpen = false"
-    />
-
-    <PostMembershipDialog
-      v-model="showJoinDialog"
-      title="Guruhga qo'shilish"
-      :message="joinMessage"
-      confirm-text="Qo'shilish"
-      variant="success"
-      :loading="!!store.joiningId"
-      :group="membershipTarget"
-      @confirm="onConfirmJoin"
-      @cancel="membershipTarget = null"
     />
 
     <PostMembershipDialog
@@ -331,24 +202,11 @@
       @confirm="onConfirmLeave"
       @cancel="membershipTarget = null"
     />
-    <BaseConfirmDialog
-      v-model="blockOpen"
-      title="Guruhlarni bloklash"
-      description="Bu guruhlardan boshqa buyurtma olinmaydi"
-      :message="`${selectedCount} ta guruh bloklansinmi?`"
-      confirm-text="Bloklash"
-      cancel-text="Bekor"
-      variant="danger"
-      :loading="store.isBlocking"
-      :close-on-confirm="false"
-      @confirm="onBlock"
-      @cancel="blockOpen = false"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { usePostStore, type PostGroup, type PostCampaign, ADS_BROADCAST_PRICE, MAX_POST_GROUPS } from '~/stores/post.store'
+import { usePostStore, type PostGroup, MAX_POST_GROUPS } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
   loadOrderFilterKeywords,
@@ -360,40 +218,30 @@ import {
   clearOrderFilterBotGroupId,
   clearOrderFilterKeywords,
   markOrderFilterConfigured,
+  filterGroupsByKeywords,
 } from '~/utils/orderFilterKeywords'
 
 definePageMeta({ layout: 'driver' })
 
+const route = useRoute()
 const store = usePostStore()
 const authStore = useAuthStore()
 
 const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
 
+const pickGroupsMode = computed(() => route.query.pickGroups === '1')
+const pickCampaignId = computed(() => String(route.query.campaignId || ''))
+
 const canPostWithTariff = computed(() => store.isAdmin || authStore.tariffActive)
 
-const inactiveCampaigns = computed(() => store.campaigns.filter((c) => !c.active))
-
-/** Meniki va saqlangan xabarlar (mine) — faol tarif kerak. Boshqalar — balans bilan. */
-const requiresTariffForPost = (mode: 'mine' | 'ads' = store.tab) =>
-  mode === 'mine' && !store.isAdmin
-
-const requireTariffForPost = (mode: 'mine' | 'ads' = store.tab): boolean => {
-  if (!requiresTariffForPost(mode)) return true
+const requireTariffForPost = (): boolean => {
+  if (store.isAdmin) return true
   if (canPostWithTariff.value) return true
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
 }
 
-const openCompose = () => {
-  if (store.tab === 'mine' && !requireTariffForPost('mine')) return
-  composeOpen.value = true
-}
-
 const composeOpen = ref(false)
-const editCampaign = ref<PostCampaign | null>(null)
-const deleteCampaignOpen = ref(false)
-const deleteCampaignTarget = ref<PostCampaign | null>(null)
-const blockOpen = ref(false)
 const success = ref('')
 const groupQuery = ref('')
 const showFilter = ref(false)
@@ -404,16 +252,13 @@ const appliedBotGroupId = ref('')
 const filterActive = computed(
   () => parseBotGroupIds(appliedBotGroupId.value).length > 0 || !!appliedKeywords.value.trim(),
 )
-const showJoinDialog = ref(false)
 const showLeaveDialog = ref(false)
 const membershipTarget = ref<PostGroup | null>(null)
 
-const joinMessage = computed(() => (
-  `Guruhga a'zo bo'lasiz.\n\n` +
-  `• Shu guruhdan keladigan buyurtmalarni 100% olasiz (Meniki bo'limida).\n` +
-  `• E'lon yuborganingizda xabar o'zingizning Telegram nomingizdan ketadi.\n\n` +
-  `Davom etasizmi?`
-))
+const openCompose = () => {
+  if (!requireTariffForPost()) return
+  composeOpen.value = true
+}
 
 const onSaveFilter = async () => {
   const kw = draftKeywords.value.trim()
@@ -434,7 +279,6 @@ const onSaveFilter = async () => {
   }
 
   markOrderFilterConfigured()
-
   showFilter.value = false
   await store.setSearch(appliedKeywords.value, gid)
 }
@@ -446,24 +290,16 @@ const onCancelFilter = () => {
 }
 
 const filtered = computed(() => {
-  if (appliedBotGroupId.value.trim()) return store.groups
+  if (appliedBotGroupId.value.trim()) return store.mineGroups
   const raw = appliedKeywords.value.trim()
-  if (!raw) return store.groups
-  return filterGroupsByKeywords(store.groups, raw)
-})
-
-const emptyTitle = computed(() => {
-  if (store.tab === 'mine') {
-    return "Guruhlar topilmadi — Telegram sessiyangizni tekshiring"
-  }
-  if (store.isAdmin) return 'Guruhlar topilmadi'
-  return "Qo'shilish uchun guruh qolmadi"
+  if (!raw) return store.mineGroups
+  return filterGroupsByKeywords(store.mineGroups, raw)
 })
 
 const selectedCount = computed(() => store.selected.size)
 
 const allFilteredSelected = computed(
-  () => filtered.value.length > 0 && filtered.value.every(g => store.selected.has(g.id))
+  () => filtered.value.length > 0 && filtered.value.every((g) => store.selected.has(g.id)),
 )
 
 const toggleSelectAll = () => {
@@ -472,25 +308,17 @@ const toggleSelectAll = () => {
 }
 
 const onSendOnce = async (text: string) => {
-  if (store.tab === 'mine' && !requireTariffForPost('mine')) return
+  if (!requireTariffForPost()) return
   success.value = ''
   try {
     const res = await store.broadcast(text)
     composeOpen.value = false
-    editCampaign.value = null
     const sent = res.data?.sent ?? 0
     const failed = res.data?.failed ?? 0
-    const charged = res.data?.charged ?? 0
-    if (failed) {
-      success.value = `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
-      if (charged) success.value += ` · ${charged.toLocaleString('ru-RU')} so'm yechildi`
-    } else {
-      success.value = `${sent} ta guruhga tushdi`
-      if (charged) success.value += ` · ${charged.toLocaleString('ru-RU')} so'm yechildi`
-    }
-  } catch {
-    /* store error */
-  }
+    success.value = failed
+      ? `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
+      : `${sent} ta guruhga tushdi`
+  } catch { /* */ }
 }
 
 const onSaveCampaign = async (payload: {
@@ -499,129 +327,61 @@ const onSaveCampaign = async (payload: {
   autoRepeat: boolean
   intervalMin: number
 }) => {
-  const willStart = payload.autoRepeat
-  const postMode = editCampaign.value?.mode ?? store.tab
-  if (willStart && !requireTariffForPost(postMode)) return
+  if (payload.autoRepeat && !requireTariffForPost()) return
   success.value = ''
   try {
-    if (editCampaign.value?.id) {
-      await store.updateCampaign(editCampaign.value.id, {
-        name: payload.name,
-        text: payload.text,
-        intervalMin: payload.intervalMin,
-        groupIds: [...store.selected],
-      })
-      if (payload.autoRepeat) {
-        await store.startCampaign(editCampaign.value.id)
-      }
-      success.value = payload.autoRepeat
-        ? `«${payload.name}» yangilandi va boshlandi`
-        : `«${payload.name}» yangilandi`
-    } else {
-      await store.createCampaign({
-        name: payload.name,
-        text: payload.text,
-        intervalMin: payload.intervalMin,
-        start: payload.autoRepeat,
-      })
-      success.value = payload.autoRepeat
-        ? `«${payload.name}» saqlandi va boshlandi`
-        : `«${payload.name}» saqlandi`
-    }
+    await store.createCampaign({
+      name: payload.name,
+      text: payload.text,
+      intervalMin: payload.intervalMin,
+      start: payload.autoRepeat,
+    })
     composeOpen.value = false
-    editCampaign.value = null
-  } catch {
-    /* store error */
-  }
+    store.clearSelection()
+    success.value = payload.autoRepeat
+      ? `«${payload.name}» saqlandi va boshlandi`
+      : `«${payload.name}» saqlandi`
+    setTimeout(() => navigateTo('/driver/campaigns'), 800)
+  } catch { /* */ }
 }
 
-const onStartCampaign = async (c: PostCampaign) => {
-  if (!requireTariffForPost(c.mode)) return
+const onSavePickedGroups = async () => {
+  const id = pickCampaignId.value
+  if (!id) return
+  const campaign = store.campaigns.find((c) => c.id === id)
+  if (!campaign) {
+    navigateTo('/driver/campaigns')
+    return
+  }
   success.value = ''
   try {
-    await store.startCampaign(c.id)
-    success.value = `«${c.name}» boshlandi`
-  } catch {
-    /* store error */
-  }
+    await store.updateCampaign(id, {
+      name: campaign.name,
+      text: campaign.text,
+      intervalMin: campaign.intervalMin,
+      groupIds: [...store.selected],
+    })
+    store.clearSelection()
+    navigateTo(`/driver/campaigns/${encodeURIComponent(id)}/edit`)
+  } catch { /* */ }
 }
 
-const onStopCampaign = async (c: PostCampaign) => {
-  success.value = ''
-  try {
-    await store.stopCampaign(c.id)
-    success.value = `«${c.name}» to'xtatildi`
-  } catch {
-    /* store error */
-  }
+const goBackFromPick = () => {
+  store.clearSelection()
+  const id = pickCampaignId.value
+  if (id) navigateTo(`/driver/campaigns/${encodeURIComponent(id)}/edit`)
+  else navigateTo('/driver/campaigns')
 }
 
-const onEditCampaign = (c: PostCampaign) => {
-  editCampaign.value = c
-  store.selected = new Set(c.groupIds)
-  composeOpen.value = true
-}
-
-const onAskDeleteCampaign = (c: PostCampaign) => {
-  deleteCampaignTarget.value = c
-  deleteCampaignOpen.value = true
-}
-
-const onConfirmDeleteCampaign = async () => {
-  const c = deleteCampaignTarget.value
-  if (!c) return
-  success.value = ''
-  try {
-    await store.deleteCampaign(c.id)
-    deleteCampaignOpen.value = false
-    deleteCampaignTarget.value = null
-    success.value = `«${c.name}» o'chirildi`
-  } catch {
-    /* store error */
-  }
-}
-
-const onBlock = async () => {
-  success.value = ''
-  const n = selectedCount.value
-  try {
-    const res = await store.blockGroups()
-    blockOpen.value = false
-    success.value = `${res?.data?.blocked ?? n} ta guruh bloklandi`
-  } catch {
-    /* store error */
-  }
-}
-
-const onToggleVisibility = async (g: any) => {
+const onToggleVisibility = async (g: PostGroup) => {
   try {
     await store.setVisibility(g, !g.visibleToDrivers)
-  } catch {
-    /* store error */
-  }
-}
-
-const onJoinGroup = (g: PostGroup) => {
-  membershipTarget.value = g
-  showJoinDialog.value = true
+  } catch { /* */ }
 }
 
 const onAskLeave = (g: PostGroup) => {
   membershipTarget.value = g
   showLeaveDialog.value = true
-}
-
-const onConfirmJoin = async () => {
-  const g = membershipTarget.value
-  if (!g) return
-  try {
-    await store.joinGroup(g)
-    showJoinDialog.value = false
-    success.value = `«${g.title}» Meniki ga qo'shildi`
-    membershipTarget.value = null
-  } catch {
-    /* store error */
-  }
 }
 
 const onConfirmLeave = async () => {
@@ -632,19 +392,22 @@ const onConfirmLeave = async () => {
     showLeaveDialog.value = false
     success.value = `«${g.title}» guruhidan chiqdingiz`
     membershipTarget.value = null
-  } catch {
-    /* store error */
-  }
+  } catch { /* */ }
 }
 
 const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
-watch(composeOpen, (open) => {
-  if (!open) editCampaign.value = null
-})
+const initPickGroups = async () => {
+  if (!pickGroupsMode.value || !pickCampaignId.value) return
+  await store.refreshCampaignData()
+  const c = store.campaigns.find((x) => x.id === pickCampaignId.value)
+  if (c) store.selected = new Set(c.groupIds)
+}
 
 onMounted(async () => {
+  store.tab = 'mine'
+
   if (store.isAdmin) {
     const saved = loadOrderFilterKeywords()
     const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
@@ -657,13 +420,11 @@ onMounted(async () => {
   }
 
   if (!authStore.user) {
-    try { await authStore.getMe() } catch { /* ignore */ }
+    try { await authStore.getMe() } catch { /* */ }
   }
-  if (!authStore.sessionReady) {
-    try { await authStore.getMe() } catch { /* ignore */ }
-  }
+
   await store.load()
-  void store.refreshCampaignData()
+  await initPickGroups()
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -683,38 +444,18 @@ watch(groupQuery, (val) => {
   }, 350)
 })
 
-let campaignPollTimer: ReturnType<typeof setInterval> | null = null
-
 watch(
-  () => [authStore.sessionReady, authStore.user?.userId] as const,
-  ([ready, uid]) => {
-    if (ready && uid) void store.refreshCampaignData()
-  },
-  { immediate: true },
-)
-
-watch(
-  () => !!store.activeCampaign?.active,
-  (hasActive) => {
-    if (campaignPollTimer) clearInterval(campaignPollTimer)
-    campaignPollTimer = null
-    if (!hasActive) return
-    campaignPollTimer = setInterval(() => {
-      void store.refreshCampaignData()
-    }, 30_000)
-  },
-  { immediate: true },
+  () => [route.query.pickGroups, route.query.campaignId] as const,
+  () => { void initPickGroups() },
 )
 
 onBeforeUnmount(() => {
   if (queryTimer) clearTimeout(queryTimer)
   if (observer) observer.disconnect()
-  if (campaignPollTimer) clearInterval(campaignPollTimer)
 })
 
 usePullToRefresh(async () => {
   await store.load(true)
-  await store.refreshCampaignData()
 })
 
 watch(sentinel, (el) => {

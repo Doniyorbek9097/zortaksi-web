@@ -32,6 +32,7 @@ function releaseDriverTabMemory(tab: DriverMainTab) {
     case '/driver/chats':
       chatStore.trimChatsForTabSwitch(TAB_LIST_KEEP)
       break
+    case '/driver/campaigns':
     case '/driver/post':
       postStore.releaseTabMemory()
       break

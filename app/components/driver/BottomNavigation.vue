@@ -69,13 +69,19 @@ const items = computed<NavItem[]>(() => {
       icon: 'fa-solid fa-comments',
       badge: chatsBadge > 0 ? chatsBadge : undefined,
     },
-    { to: '/driver/post', label: "E'lon joylash", icon: 'fa-solid fa-bullhorn' },
+    { to: '/driver/campaigns', label: "E'lonlar", icon: 'fa-solid fa-bullhorn' },
     { to: '/driver/profile', label: 'Profil', icon: 'fa-solid fa-user' },
   ]
 })
 
 const route = useRoute()
-const isActive = (to: string) => route.path === to || route.path.startsWith(to + '/')
+const isActive = (to: string) => {
+  if (to === '/driver/campaigns') {
+    const p = route.path
+    return p === to || p.startsWith('/driver/campaigns/') || p === '/driver/post'
+  }
+  return route.path === to || route.path.startsWith(to + '/')
+}
 
 onMounted(() => {
   orderStore.startRecentMinuteTicker()
