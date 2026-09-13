@@ -139,8 +139,10 @@
             v-for="n in CHAT_SKELETON_ROWS"
             :key="n"
             class="h-11 rounded-2xl animate-pulse"
-            :class="isSupport ? supportSkeletonClass : 'bg-slate-100 dark:bg-slate-800'"
-            :class="n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto'"
+            :class="[
+              isSupport ? supportSkeletonClass : 'bg-slate-100 dark:bg-slate-800',
+              n % 2 ? 'w-[58%]' : 'w-[72%] ml-auto',
+            ]"
           />
         </div>
 

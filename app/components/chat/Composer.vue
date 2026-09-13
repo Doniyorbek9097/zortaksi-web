@@ -160,10 +160,12 @@
             :disabled="disabled"
             :placeholder="inputPlaceholder"
             class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
-            :class="support
-              ? 'text-violet-50 placeholder:text-violet-300/45'
-              : 'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500'"
-            :class="hasSlashCommands ? 'pl-0.5' : 'pl-4'"
+            :class="[
+              support
+                ? 'text-violet-50 placeholder:text-violet-300/45'
+                : 'text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500',
+              hasSlashCommands ? 'pl-0.5' : 'pl-4',
+            ]"
             @touchstart.passive="unlockDraft"
             @mousedown="unlockDraft"
             @keydown.enter.prevent="onEnter"
