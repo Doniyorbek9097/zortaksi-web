@@ -48,9 +48,9 @@
       @buy="onBuyTariff"
     />
 
-    <!-- Faol e'lon — tarif kartasi uslubida -->
+    <!-- Faol e'lon — tarif kartasidan keyin -->
     <DashboardPostStatsCard
-      v-if="activePostCampaign || postStatsLoading"
+      v-if="showPostCampaignCard"
       :campaign="activePostCampaign"
       :busy-id="postStore.campaignBusyId"
       :loading="postStatsLoading && !activePostCampaign"
@@ -127,6 +127,9 @@ const authStore = useAuthStore()
 const postStore = usePostStore()
 const postStatsLoading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
 const activePostCampaign = computed(() => postStore.activeCampaign)
+const showPostCampaignCard = computed(
+  () => !!activePostCampaign.value || postStatsLoading.value,
+)
 
 const onPostCampaignStart = async (c: PostCampaign) => {
   await postStore.startCampaign(c.id)
@@ -412,29 +415,39 @@ usePullToRefresh(async () => {
 
 let postStatsPollTimer: ReturnType<typeof setInterval> | null = null
 
-const loadPostCampaign = () => {
-  void postStore.refreshCampaignData()
+const loadPostCampaign = async () => {
+  if (!authStore.user || !authStore.sessionReady) {
+    try {
+      await authStore.getMe()
+    } catch {
+      /* */
+    }
+  }
+  postStore.hydrateActiveCampaignCache()
+  await postStore.refreshCampaignData()
 }
 
 watch(
   () => [authStore.sessionReady, authStore.user?.userId, authStore.isAuthenticated] as const,
   ([ready, uid, authed]) => {
-    if ((ready && uid) || authed) loadPostCampaign()
+    if ((ready && uid) || authed) void loadPostCampaign()
   },
   { immediate: true },
 )
 
 onActivated(() => {
-  loadPostCampaign()
+  void loadPostCampaign()
 })
 
 onMounted(() => {
+  postStore.hydrateActiveCampaignCache()
   loadCachedStats()
   loadCachedBanners()
   loadCachedGroupInviteLeaderboard()
   void fetchPlatformStats({ background: statsReady.value })
   void fetchPromoBanners()
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
+  void loadPostCampaign()
 
   postStatsPollTimer = setInterval(() => {
     if (postStore.activeCampaign?.active) {

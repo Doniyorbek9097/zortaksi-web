@@ -38,19 +38,20 @@
 
       <PostCampaignCard
         v-else-if="campaign"
-          :campaign="campaign"
-          :busy="busyId === campaign.id"
-          compact
-          @start="$emit('start', campaign)"
-          @stop="$emit('stop', campaign)"
-          @edit="$emit('edit', campaign)"
-          @delete="$emit('delete', campaign)"
-        />
+        :campaign="campaign"
+        :busy="busyId === campaign.id"
+        compact
+        @start="$emit('start', campaign)"
+        @stop="$emit('stop', campaign)"
+        @edit="$emit('edit', campaign)"
+        @delete="$emit('delete', campaign)"
+      />
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
+import PostCampaignCard from '~/components/post/CampaignCard.vue'
 import type { PostCampaign } from '~/stores/post.store'
 
 defineProps<{

@@ -503,12 +503,13 @@ export const usePostStore = defineStore('post', () => {
       if (res.success) {
         campaigns.value = (res.data?.campaigns ?? []) as PostCampaign[]
         const active = campaigns.value.find((c) => c.active) || null
-        cachedActiveCampaign.value = active
-        writeActiveCampaignCache(active)
+        if (active) {
+          cachedActiveCampaign.value = active
+          writeActiveCampaignCache(active)
+        }
       }
       return res
     } catch {
-      campaigns.value = []
       return null
     } finally {
       isCampaignsLoading.value = false
@@ -529,10 +530,16 @@ export const usePostStore = defineStore('post', () => {
       }
       return res
     } catch {
-      campaignSummary.value = null
       return null
     } finally {
       isCampaignStatsLoading.value = false
+    }
+  }
+
+  const hydrateActiveCampaignCache = () => {
+    const cached = readActiveCampaignCache()
+    if (cached?.active) {
+      cachedActiveCampaign.value = cached
     }
   }
 
@@ -542,7 +549,19 @@ export const usePostStore = defineStore('post', () => {
       authStore.isAuthenticated ||
       !!authStore.token
     if (!canFetch) return null
-    await Promise.all([fetchCampaigns(), fetchCampaignStats()])
+
+    hydrateActiveCampaignCache()
+
+    const [campaignsRes, statsRes] = await Promise.all([
+      fetchCampaigns(),
+      fetchCampaignStats(),
+    ])
+
+    const fetchedOk = Boolean(campaignsRes?.success || statsRes?.success)
+    if (!fetchedOk) {
+      return cachedActiveCampaign.value || readActiveCampaignCache()
+    }
+
     const active = campaigns.value.find((c) => c.active)
       || (campaignSummary.value?.activeCampaign?.active
         ? campaignSummary.value.activeCampaign
@@ -781,6 +800,7 @@ export const usePostStore = defineStore('post', () => {
     broadcast,
     fetchCampaigns,
     fetchCampaignStats,
+    hydrateActiveCampaignCache,
     refreshCampaignData,
     fetchSchedule,
     createCampaign,
