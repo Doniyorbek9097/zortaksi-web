@@ -116,66 +116,80 @@
     </button>
 
     <!-- Jonli statistika -->
-    <section class="space-y-2">
-      <h3 class="text-[11px] font-black uppercase tracking-wide text-slate-400 px-0.5">
-        Jonli statistika
-      </h3>
-
-      <div v-if="store.isLoading && !store.isReady" class="space-y-2">
-        <div class="grid grid-cols-2 gap-2">
-          <div class="h-[88px] rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
-          <div class="h-[88px] rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div v-for="n in 4" :key="n" class="h-[52px] rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+    <section
+      class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
+    >
+      <div
+        class="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-sky-50/90 via-cyan-50/50 to-emerald-50/40 dark:from-sky-950/25 dark:via-cyan-950/15 dark:to-emerald-950/15"
+      >
+        <div class="flex items-center gap-2 min-w-0">
+          <div
+            class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center text-white text-xs shadow-sm shrink-0"
+          >
+            <font-awesome-icon icon="fa-solid fa-signal" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-[12px] font-black text-slate-800 dark:text-slate-100 leading-tight">
+              Jonli statistika
+            </p>
+            <p class="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+              Real vaqt ko'rsatkichlari
+            </p>
+          </div>
         </div>
       </div>
 
-      <template v-else>
-        <div class="grid grid-cols-2 gap-2">
+      <div class="p-2.5">
+        <div v-if="store.isLoading && !store.isReady" class="grid grid-cols-2 gap-1.5">
+          <div
+            v-for="n in 6"
+            :key="n"
+            class="h-12 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
+          />
+        </div>
+
+        <div v-else class="grid grid-cols-2 gap-1.5">
           <AdminStatHero
             :value="heroStats.orders"
-            label="Bugungi buyurtmalar"
+            label="Buyurtma (bugun)"
             icon="fa-solid fa-clipboard-list"
             tone="sky"
             :change="growth?.ordersTodayDelta"
           />
           <AdminStatHero
             :value="heroStats.active"
-            label="Faol haydovchilar"
+            label="Faol haydovchi"
             icon="fa-solid fa-user-check"
             tone="emerald"
           />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
           <AdminStatChip
             :value="chipStats.newToday"
-            label="Bugun qo'shilgan"
+            label="Yangi (bugun)"
             icon="fa-solid fa-user-plus"
             tone="green"
             :change="growth?.newDriversTodayDelta"
           />
           <AdminStatChip
             :value="chipStats.total"
-            label="Jami haydovchilar"
+            label="Jami haydovchi"
             icon="fa-solid fa-users"
             tone="violet"
             :change="growth?.newDriversMonthDelta"
           />
           <AdminStatChip
             :value="chipStats.debtors"
-            label="Qarzdor haydovchilar"
+            label="Qarzdor"
             icon="fa-solid fa-circle-exclamation"
             tone="rose"
           />
           <AdminStatChip
             :value="chipStats.visits"
-            label="Bugungi tashriflar"
+            label="Tashrif (bugun)"
             icon="fa-solid fa-eye"
             tone="sky"
           />
         </div>
-      </template>
+      </div>
     </section>
 
     <!-- Guruhlar daromadi -->
