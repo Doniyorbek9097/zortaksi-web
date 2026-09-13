@@ -131,7 +131,7 @@
       <div
         v-for="n in 5"
         :key="n"
-        class="h-[88px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        class="h-[72px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
       />
     </div>
 
@@ -165,7 +165,7 @@
         <div
           v-for="n in 2"
           :key="n"
-          class="h-[88px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+          class="h-[72px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
         />
       </div>
 
