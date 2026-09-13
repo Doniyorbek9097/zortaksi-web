@@ -1,51 +1,41 @@
 <template>
   <div
-    class="relative overflow-hidden rounded-2xl border shadow-sm"
+    class="relative overflow-hidden rounded-xl border"
     :class="campaign.active
-      ? 'border-emerald-400/60 dark:border-emerald-700/50 bg-gradient-to-br from-emerald-50 via-white to-teal-50/80 dark:from-emerald-950/40 dark:via-slate-900 dark:to-teal-950/20'
+      ? 'border-emerald-400/60 dark:border-emerald-700/50 bg-emerald-50/70 dark:bg-emerald-950/25'
       : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
   >
     <div
       v-if="campaign.active"
-      class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 to-teal-500"
+      class="absolute left-0 top-0 bottom-0 w-0.5 bg-emerald-500"
     />
 
-    <div class="px-3.5 py-3 pl-4">
-      <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2 min-w-0">
-            <span
-              v-if="campaign.active"
-              class="inline-flex items-center gap-1 shrink-0 text-[10px] font-black uppercase tracking-wide px-2 py-0.5 rounded-full bg-emerald-500 text-white"
-            >
-              <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              Faol
-            </span>
-            <h3 class="text-[15px] font-black text-slate-900 dark:text-white truncate">
-              {{ campaign.name }}
-            </h3>
-          </div>
-          <p class="text-[12px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-            {{ campaign.text }}
-          </p>
-        </div>
-
-        <div class="shrink-0 flex flex-col items-end gap-1">
-          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-[12px] font-black text-slate-700 dark:text-slate-200 tabular-nums">
-            <font-awesome-icon icon="fa-solid fa-clock" class="text-[10px] text-amber-500" />
-            {{ campaign.intervalMin }} daq
+    <div class="px-2.5 py-2 pl-3">
+      <div class="flex items-center justify-between gap-2 min-w-0">
+        <div class="min-w-0 flex-1 flex items-center gap-1.5">
+          <span
+            v-if="campaign.active"
+            class="shrink-0 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-500 text-white"
+          >
+            Faol
           </span>
-          <span class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700 text-[12px] font-black text-slate-700 dark:text-slate-200 tabular-nums">
-            <font-awesome-icon icon="fa-solid fa-users" class="text-[10px] text-sky-500" />
-            {{ campaign.groupIds.length }} guruh
-          </span>
+          <h3 class="text-[13px] font-black text-slate-900 dark:text-white truncate">
+            {{ campaign.name }}
+          </h3>
         </div>
+        <p class="shrink-0 text-[9px] font-black text-slate-500 tabular-nums whitespace-nowrap">
+          {{ campaign.intervalMin }} daq · {{ campaign.groupIds.length }} guruh
+        </p>
       </div>
 
-      <div class="flex items-center gap-1.5 mt-3 flex-wrap">
+      <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
+        {{ campaign.text }}
+      </p>
+
+      <div class="grid grid-cols-3 gap-1 mt-1.5">
         <button
           type="button"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black transition-all active:scale-95 disabled:opacity-50"
+          class="inline-flex items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[9px] font-black transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap min-w-0"
           :class="campaign.active
             ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/50'
             : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900/50'"
@@ -55,29 +45,29 @@
           <font-awesome-icon
             :icon="busy ? 'fa-solid fa-spinner' : (campaign.active ? 'fa-solid fa-pause' : 'fa-solid fa-play')"
             :class="busy ? 'animate-spin' : ''"
-            class="text-[9px]"
+            class="text-[8px] shrink-0"
           />
-          {{ campaign.active ? "To'xtatish" : 'Boshlash' }}
+          <span class="truncate">{{ campaign.active ? "To'xtatish" : 'Boshlash' }}</span>
         </button>
 
         <button
           type="button"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95"
+          class="inline-flex items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[9px] font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95 whitespace-nowrap min-w-0"
           :disabled="busy"
           @click="$emit('edit')"
         >
-          <font-awesome-icon icon="fa-solid fa-pen-to-square" class="text-[9px]" />
-          Tahrirlash
+          <font-awesome-icon icon="fa-solid fa-pen-to-square" class="text-[8px] shrink-0" />
+          <span class="truncate">Tahrirlash</span>
         </button>
 
         <button
           type="button"
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 active:scale-95 disabled:opacity-50"
+          class="inline-flex items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[9px] font-black text-rose-600 dark:text-rose-400 bg-rose-500/10 border border-rose-200 dark:border-rose-900/50 active:scale-95 disabled:opacity-50 whitespace-nowrap min-w-0"
           :disabled="busy"
           @click="$emit('delete')"
         >
-          <font-awesome-icon icon="fa-solid fa-trash" class="text-[9px]" />
-          O'chirish
+          <font-awesome-icon icon="fa-solid fa-trash" class="text-[8px] shrink-0" />
+          <span class="truncate">O'chirish</span>
         </button>
       </div>
     </div>

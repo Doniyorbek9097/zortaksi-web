@@ -1,60 +1,73 @@
 <template>
   <div
-    class="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-2.5 space-y-2"
+    class="rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40"
+    :class="compact ? 'p-2 space-y-1.5' : 'p-2.5 space-y-2'"
   >
     <div class="flex items-center justify-between gap-2">
-      <p class="text-[12px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <p
+        class="font-black uppercase tracking-wide text-slate-500 dark:text-slate-400"
+        :class="compact ? 'text-[9px]' : 'text-[12px]'"
+      >
         12 soat avto-yuborish
       </p>
       <span
         v-if="campaign.active"
-        class="text-[11px] font-black px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+        class="font-black rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 whitespace-nowrap"
+        :class="compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[11px] px-2 py-0.5'"
       >
         {{ countdownLabel }}
       </span>
     </div>
 
-    <div class="grid grid-cols-3 gap-1.5">
-      <div class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 px-2 py-1.5 text-center">
-        <p class="text-[16px] font-black tabular-nums text-slate-900 dark:text-white">
+    <div class="grid grid-cols-3 gap-1">
+      <div
+        class="rounded-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 text-center"
+        :class="compact ? 'px-1 py-1' : 'px-2 py-1.5'"
+      >
+        <p
+          class="font-black tabular-nums text-slate-900 dark:text-white"
+          :class="compact ? 'text-[13px]' : 'text-[16px]'"
+        >
           {{ campaign.windowTotalPlanned ?? 0 }}
         </p>
-        <p class="text-[11px] font-bold text-slate-500">Reja</p>
+        <p class="font-bold text-slate-500" :class="compact ? 'text-[8px]' : 'text-[11px]'">Reja</p>
       </div>
-      <div class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 px-2 py-1.5 text-center">
-        <p class="text-[16px] font-black tabular-nums text-emerald-600 dark:text-emerald-400">
+      <div
+        class="rounded-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 text-center"
+        :class="compact ? 'px-1 py-1' : 'px-2 py-1.5'"
+      >
+        <p
+          class="font-black tabular-nums text-emerald-600 dark:text-emerald-400"
+          :class="compact ? 'text-[13px]' : 'text-[16px]'"
+        >
           {{ campaign.windowSent ?? 0 }}
         </p>
-        <p class="text-[11px] font-bold text-slate-500">Yuborildi</p>
+        <p class="font-bold text-slate-500" :class="compact ? 'text-[8px]' : 'text-[11px]'">Yuborildi</p>
       </div>
-      <div class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 px-2 py-1.5 text-center">
-        <p class="text-[16px] font-black tabular-nums text-amber-600 dark:text-amber-400">
+      <div
+        class="rounded-md bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 text-center"
+        :class="compact ? 'px-1 py-1' : 'px-2 py-1.5'"
+      >
+        <p
+          class="font-black tabular-nums text-amber-600 dark:text-amber-400"
+          :class="compact ? 'text-[13px]' : 'text-[16px]'"
+        >
           {{ campaign.windowRemaining ?? 0 }}
         </p>
-        <p class="text-[11px] font-bold text-slate-500">Qoldi</p>
+        <p class="font-bold text-slate-500" :class="compact ? 'text-[8px]' : 'text-[11px]'">Qoldi</p>
       </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-1.5 text-[12px] font-semibold text-slate-500 dark:text-slate-400">
-      <p>
-        Keyingi:
-        <span class="font-black text-slate-700 dark:text-slate-200">
-          {{ nextRunLabel }}
-        </span>
-      </p>
-      <p class="text-right">
-        Interval:
-        <span class="font-black text-slate-700 dark:text-slate-200">
-          {{ campaign.intervalMin }} daq
-        </span>
-      </p>
-      <p v-if="campaign.windowEndsAt" class="col-span-2">
-        Avto to'xtash:
-        <span class="font-black text-slate-700 dark:text-slate-200">
-          {{ formatCampaignDateTime(campaign.windowEndsAt) }}
-        </span>
-      </p>
-    </div>
+    <p
+      class="font-semibold text-slate-500 dark:text-slate-400 leading-tight"
+      :class="compact ? 'text-[9px]' : 'text-[12px]'"
+    >
+      Keyingi: <span class="font-black text-slate-700 dark:text-slate-200">{{ nextRunLabel }}</span>
+      · {{ campaign.intervalMin }} daq
+      <template v-if="campaign.windowEndsAt">
+        · to'xtash {{ formatCampaignDateTime(campaign.windowEndsAt) }}
+      </template>
+    </p>
   </div>
 </template>
 
@@ -64,6 +77,7 @@ import { formatCampaignCountdown, formatCampaignDateTime } from '~/utils/postCam
 
 const props = defineProps<{
   campaign: PostCampaign
+  compact?: boolean
 }>()
 
 const now = ref(Date.now())

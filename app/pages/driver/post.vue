@@ -46,17 +46,12 @@
     <!-- Saqlangan xabarlar — faqat bor bo'lsa -->
     <template v-if="store.campaigns.length || store.activeCampaign">
       <section
-        class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 p-3 space-y-2.5 shadow-sm"
+        class="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 space-y-1.5 shadow-sm"
       >
-        <div class="flex items-center justify-between gap-2">
-          <div>
-            <h2 class="text-[14px] font-black text-slate-800 dark:text-slate-100">
-              Saqlangan xabarlar
-            </h2>
-            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-              Faol e'lon yuqorida, boshqalar ro'yxatda
-            </p>
-          </div>
+        <div class="flex items-center justify-between gap-2 px-0.5">
+          <h2 class="text-[13px] font-black text-slate-800 dark:text-slate-100">
+            Saqlangan xabarlar
+          </h2>
           <button
             type="button"
             class="text-[13px] font-black text-amber-600 dark:text-amber-400"
@@ -81,8 +76,8 @@
           @delete="onAskDeleteCampaign(store.activeCampaign)"
         />
 
-        <div v-if="inactiveCampaigns.length" class="space-y-2 pt-0.5">
-          <p class="text-[11px] font-black uppercase tracking-wide text-slate-400 px-0.5">
+        <div v-if="inactiveCampaigns.length" class="space-y-1.5">
+          <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 px-0.5">
             To'xtatilgan
           </p>
           <PostCampaignListItem
