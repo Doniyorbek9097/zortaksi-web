@@ -54,10 +54,16 @@
       :loading="groupInviteLoading"
     />
 
-    <!-- E'lon avto-yuborish statistikasi -->
+    <!-- Saqlangan xabarlar — to'liq statistika -->
     <DashboardPostStatsCard
-      :summary="postSummary"
+      v-if="postStore.campaigns.length || postStatsLoading"
+      :campaigns="postStore.campaigns"
+      :busy-id="postStore.campaignBusyId"
       :loading="postStatsLoading"
+      @start="onPostCampaignStart"
+      @stop="onPostCampaignStop"
+      @edit="onPostCampaignEdit"
+      @delete="onPostCampaignDelete"
     />
 
     <!-- Platform statistics -->
@@ -109,7 +115,7 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
-import { usePostStore, type PostCampaignSummary } from '~/stores/post.store'
+import { usePostStore, type PostCampaign } from '~/stores/post.store'
 import type { IBanner } from '~/types/banner'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
@@ -119,8 +125,23 @@ definePageMeta({
 
 const authStore = useAuthStore()
 const postStore = usePostStore()
-const postSummary = computed<PostCampaignSummary | null>(() => postStore.campaignSummary)
-const postStatsLoading = computed(() => postStore.isCampaignStatsLoading)
+const postStatsLoading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
+
+const onPostCampaignStart = async (c: PostCampaign) => {
+  await postStore.startCampaign(c.id)
+}
+
+const onPostCampaignStop = async (c: PostCampaign) => {
+  await postStore.stopCampaign(c.id)
+}
+
+const onPostCampaignEdit = () => {
+  navigateTo('/driver/post')
+}
+
+const onPostCampaignDelete = async (c: PostCampaign) => {
+  await postStore.deleteCampaign(c.id)
+}
 
 // --- User derived data ---
 const firstName = computed(() => authStore.user?.firstName || 'Haydovchi')
@@ -400,7 +421,7 @@ onMounted(() => {
   void postStore.refreshCampaignData()
 
   postStatsPollTimer = setInterval(() => {
-    if (postStore.campaignSummary?.activeCampaign?.active) {
+    if (postStore.campaigns.some((c) => c.active)) {
       void postStore.refreshCampaignData()
     }
   }, 30_000)

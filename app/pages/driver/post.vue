@@ -65,8 +65,17 @@
         </div>
 
         <div class="space-y-2">
+          <PostCampaignCardCompact
+            v-if="activeCampaign"
+            :campaign="activeCampaign"
+            :busy="store.campaignBusyId === activeCampaign.id"
+            @start="onStartCampaign(activeCampaign)"
+            @stop="onStopCampaign(activeCampaign)"
+            @delete="onAskDeleteCampaign(activeCampaign)"
+          />
+
           <PostCampaignCard
-            v-for="c in store.campaigns"
+            v-for="c in inactiveCampaigns"
             :key="c.id"
             :campaign="c"
             :busy="store.campaignBusyId === c.id"
@@ -356,6 +365,9 @@ const authStore = useAuthStore()
 const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
 
 const canPostWithTariff = computed(() => store.isAdmin || authStore.tariffActive)
+
+const activeCampaign = computed(() => store.campaigns.find((c) => c.active) || null)
+const inactiveCampaigns = computed(() => store.campaigns.filter((c) => !c.active))
 
 /** Meniki va saqlangan xabarlar (mine) — faol tarif kerak. Boshqalar — balans bilan. */
 const requiresTariffForPost = (mode: 'mine' | 'ads' = store.tab) =>
