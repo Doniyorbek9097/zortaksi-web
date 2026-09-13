@@ -70,6 +70,9 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      htmlAttrs: {
+        lang: 'uz-Latn',
+      },
       title: "Zo'r Taksi",
       viewport: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover',
       meta: [
@@ -116,7 +119,7 @@ export default defineNuxtConfig({
       orientation: 'portrait',
       start_url: '/',
       scope: '/',
-      lang: 'uz',
+      lang: 'uz-Latn',
       // PNG any icons first — required for Chrome installability
       icons: [
         {

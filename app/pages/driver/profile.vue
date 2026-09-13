@@ -67,7 +67,7 @@
     </ProfileSectionCard>
 
     <!-- Script (Yozuv) -->
-    <ProfileSectionCard title="Yozuv" subtitle="Lotin yoki Kirill">
+    <ProfileSectionCard title="Yozuv" subtitle="Standart: Lotin">
       <ProfileScriptToggle v-model="script" />
     </ProfileSectionCard>
 
