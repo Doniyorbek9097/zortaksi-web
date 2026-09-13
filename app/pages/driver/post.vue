@@ -222,6 +222,7 @@ import {
   markOrderFilterConfigured,
   filterGroupsByKeywords,
 } from '~/utils/orderFilterKeywords'
+import { campaignEditPath } from '~/utils/postCampaign'
 
 definePageMeta({ layout: 'driver' })
 
@@ -364,14 +365,14 @@ const onSavePickedGroups = async () => {
       groupIds: [...store.selected],
     })
     store.clearSelection()
-    navigateTo(`/driver/campaigns/${encodeURIComponent(id)}/edit`)
+    navigateTo(campaignEditPath(id))
   } catch { /* */ }
 }
 
 const goBackFromPick = () => {
   store.clearSelection()
   const id = pickCampaignId.value
-  if (id) navigateTo(`/driver/campaigns/${encodeURIComponent(id)}/edit`)
+  if (id) navigateTo(campaignEditPath(id))
   else navigateTo('/driver/campaigns')
 }
 

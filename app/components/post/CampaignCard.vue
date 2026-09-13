@@ -92,22 +92,12 @@
         <span class="truncate">{{ campaign.active ? "To'xtatish" : 'Boshlash' }}</span>
       </button>
 
-      <NuxtLink
-        v-if="editTo"
-        :to="editTo"
-        class="inline-flex items-center justify-center gap-1 rounded-xl font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95 whitespace-nowrap min-w-0"
-        :class="flat ? 'px-2 py-2.5 text-[11px]' : compact ? 'px-1 py-1.5 text-[9px]' : 'px-2 py-1.5 text-[11px]'"
-      >
-        <font-awesome-icon icon="fa-solid fa-pen-to-square" :class="flat ? 'text-[10px]' : 'text-[8px]'" class="shrink-0" />
-        <span class="truncate">Tahrirlash</span>
-      </NuxtLink>
       <button
-        v-else
         type="button"
         class="inline-flex items-center justify-center gap-1 rounded-xl font-black text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5 active:scale-95 whitespace-nowrap min-w-0"
         :class="flat ? 'px-2 py-2.5 text-[11px]' : compact ? 'px-1 py-1.5 text-[9px]' : 'px-2 py-1.5 text-[11px]'"
         :disabled="busy"
-        @click="$emit('edit')"
+        @click="onEdit"
       >
         <font-awesome-icon icon="fa-solid fa-pen-to-square" :class="flat ? 'text-[10px]' : 'text-[8px]'" class="shrink-0" />
         <span class="truncate">Tahrirlash</span>
@@ -129,7 +119,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { campaignHasWindowStats } from '~/utils/postCampaign'
+import { campaignEditPath, campaignHasWindowStats } from '~/utils/postCampaign'
 
 const props = defineProps<{
   campaign: PostCampaign
@@ -143,12 +133,18 @@ const props = defineProps<{
   editTo?: string
 }>()
 
-const showWindowStats = computed(() => campaignHasWindowStats(props.campaign))
-
-defineEmits<{
+const emit = defineEmits<{
   start: []
   stop: []
   edit: []
   delete: []
 }>()
+
+const showWindowStats = computed(() => campaignHasWindowStats(props.campaign))
+
+const onEdit = () => {
+  const path = props.editTo || campaignEditPath(props.campaign.id)
+  void navigateTo(path)
+  emit('edit')
+}
 </script>

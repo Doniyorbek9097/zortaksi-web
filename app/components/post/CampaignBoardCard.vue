@@ -58,7 +58,7 @@
         :busy="busy"
         flat
         hide-header
-        :edit-to="`/driver/campaigns/${encodeURIComponent(campaign.id)}/edit`"
+        :edit-to="campaignEditPath(campaign.id)"
         @start="$emit('start')"
         @stop="$emit('stop')"
         @delete="$emit('delete')"
@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import PostCampaignCard from '~/components/post/CampaignCard.vue'
 import type { PostCampaign } from '~/stores/post.store'
+import { campaignEditPath } from '~/utils/postCampaign'
 
 defineProps<{
   campaign: PostCampaign

@@ -144,7 +144,7 @@ const route = useRoute()
 const store = usePostStore()
 const authStore = useAuthStore()
 
-const campaignId = computed(() => String(route.params.id || ''))
+const campaignId = computed(() => decodeURIComponent(String(route.params.id || '')))
 const pageLoading = ref(true)
 const saving = ref(false)
 const success = ref('')

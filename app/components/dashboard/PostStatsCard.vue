@@ -41,7 +41,7 @@
         :campaign="campaign"
         :busy="busyId === campaign.id"
         flat
-        :edit-to="`/driver/campaigns/${encodeURIComponent(campaign.id)}/edit`"
+        :edit-to="campaignEditPath(campaign.id)"
         @start="$emit('start', campaign)"
         @stop="$emit('stop', campaign)"
         @delete="$emit('delete', campaign)"
@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import PostCampaignCard from '~/components/post/CampaignCard.vue'
 import type { PostCampaign } from '~/stores/post.store'
+import { campaignEditPath } from '~/utils/postCampaign'
 
 defineProps<{
   campaign: PostCampaign | null
