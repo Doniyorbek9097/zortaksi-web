@@ -44,12 +44,19 @@
     />
 
     <!-- Saqlangan xabarlar — faqat bor bo'lsa -->
-    <template v-if="store.campaigns.length">
-      <section class="space-y-2">
-        <div class="flex items-center justify-between gap-2 px-0.5">
-          <h2 class="text-[14px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
-            Saqlangan xabarlar
-          </h2>
+    <template v-if="store.campaigns.length || store.activeCampaign">
+      <section
+        class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-white to-slate-50/80 dark:from-slate-900 dark:to-slate-950 p-3 space-y-2.5 shadow-sm"
+      >
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 class="text-[14px] font-black text-slate-800 dark:text-slate-100">
+              Saqlangan xabarlar
+            </h2>
+            <p class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+              Faol e'lon yuqorida, boshqalar ro'yxatda
+            </p>
+          </div>
           <button
             type="button"
             class="text-[13px] font-black text-amber-600 dark:text-amber-400"
@@ -64,23 +71,25 @@
           </button>
         </div>
 
-        <div class="space-y-2">
-          <PostCampaignCardCompact
-            v-if="activeCampaign"
-            :campaign="activeCampaign"
-            :busy="store.campaignBusyId === activeCampaign.id"
-            @start="onStartCampaign(activeCampaign)"
-            @stop="onStopCampaign(activeCampaign)"
-            @delete="onAskDeleteCampaign(activeCampaign)"
-          />
+        <PostCampaignCardCompact
+          v-if="store.activeCampaign"
+          :campaign="store.activeCampaign"
+          :busy="store.campaignBusyId === store.activeCampaign.id"
+          @start="onStartCampaign(store.activeCampaign)"
+          @stop="onStopCampaign(store.activeCampaign)"
+          @delete="onAskDeleteCampaign(store.activeCampaign)"
+        />
 
-          <PostCampaignCard
+        <div v-if="inactiveCampaigns.length" class="space-y-2 pt-0.5">
+          <p class="text-[11px] font-black uppercase tracking-wide text-slate-400 px-0.5">
+            To'xtatilgan
+          </p>
+          <PostCampaignListItem
             v-for="c in inactiveCampaigns"
             :key="c.id"
             :campaign="c"
             :busy="store.campaignBusyId === c.id"
             @start="onStartCampaign(c)"
-            @stop="onStopCampaign(c)"
             @edit="onEditCampaign(c)"
             @delete="onAskDeleteCampaign(c)"
           />
@@ -366,7 +375,6 @@ const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
 
 const canPostWithTariff = computed(() => store.isAdmin || authStore.tariffActive)
 
-const activeCampaign = computed(() => store.campaigns.find((c) => c.active) || null)
 const inactiveCampaigns = computed(() => store.campaigns.filter((c) => !c.active))
 
 /** Meniki va saqlangan xabarlar (mine) — faol tarif kerak. Boshqalar — balans bilan. */
@@ -655,6 +663,9 @@ onMounted(async () => {
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* ignore */ }
   }
+  if (!authStore.sessionReady) {
+    try { await authStore.getMe() } catch { /* ignore */ }
+  }
   await store.load()
   void store.refreshCampaignData()
 
@@ -679,7 +690,15 @@ watch(groupQuery, (val) => {
 let campaignPollTimer: ReturnType<typeof setInterval> | null = null
 
 watch(
-  () => store.campaigns.some((c) => c.active),
+  () => [authStore.sessionReady, authStore.user?.userId] as const,
+  ([ready, uid]) => {
+    if (ready && uid) void store.refreshCampaignData()
+  },
+  { immediate: true },
+)
+
+watch(
+  () => !!store.activeCampaign?.active,
   (hasActive) => {
     if (campaignPollTimer) clearInterval(campaignPollTimer)
     campaignPollTimer = null

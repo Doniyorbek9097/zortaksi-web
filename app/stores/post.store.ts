@@ -73,6 +73,33 @@ export type PostCampaignSummary = {
 /** @deprecated use PostCampaign */
 export type PostSchedule = PostCampaign
 
+const ACTIVE_CAMPAIGN_CACHE_KEY = 'zt:active-post-campaign'
+
+function readActiveCampaignCache(): PostCampaign | null {
+  if (!import.meta.client) return null
+  try {
+    const raw = sessionStorage.getItem(ACTIVE_CAMPAIGN_CACHE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw) as PostCampaign
+    return data?.active ? data : null
+  } catch {
+    return null
+  }
+}
+
+function writeActiveCampaignCache(campaign: PostCampaign | null) {
+  if (!import.meta.client) return
+  try {
+    if (campaign?.active) {
+      sessionStorage.setItem(ACTIVE_CAMPAIGN_CACHE_KEY, JSON.stringify(campaign))
+    } else {
+      sessionStorage.removeItem(ACTIVE_CAMPAIGN_CACHE_KEY)
+    }
+  } catch {
+    /* */
+  }
+}
+
 export const usePostStore = defineStore('post', () => {
   const authStore = useAuthStore()
 
@@ -88,10 +115,18 @@ export const usePostStore = defineStore('post', () => {
   const error = ref('')
   const campaigns = ref<PostCampaign[]>([])
   const campaignSummary = ref<PostCampaignSummary | null>(null)
+  const cachedActiveCampaign = ref<PostCampaign | null>(readActiveCampaignCache())
   const isCampaignsLoading = ref(false)
   const isCampaignStatsLoading = ref(false)
   const campaignBusyId = ref<string | null>(null)
-  const schedule = computed(() => campaigns.value.find((c) => c.active) || null)
+  const activeCampaign = computed(() => {
+    const live = campaigns.value.find((c) => c.active)
+    if (live) return live
+    const summary = campaignSummary.value?.activeCampaign
+    if (summary?.active) return summary
+    return cachedActiveCampaign.value
+  })
+  const schedule = computed(() => activeCampaign.value)
   const isScheduleLoading = ref(false)
 
   const minePage = ref(1)
@@ -466,6 +501,9 @@ export const usePostStore = defineStore('post', () => {
       const res = await useApi('/groups/broadcast/campaigns')
       if (res.success) {
         campaigns.value = (res.data?.campaigns ?? []) as PostCampaign[]
+        const active = campaigns.value.find((c) => c.active) || null
+        cachedActiveCampaign.value = active
+        writeActiveCampaignCache(active)
       }
       return res
     } catch {
@@ -482,6 +520,11 @@ export const usePostStore = defineStore('post', () => {
       const res = await useApi('/groups/broadcast/campaigns/stats')
       if (res.success) {
         campaignSummary.value = res.data as PostCampaignSummary
+        const summaryActive = campaignSummary.value?.activeCampaign
+        if (summaryActive?.active) {
+          cachedActiveCampaign.value = summaryActive
+          writeActiveCampaignCache(summaryActive)
+        }
       }
       return res
     } catch {
@@ -493,7 +536,15 @@ export const usePostStore = defineStore('post', () => {
   }
 
   const refreshCampaignData = async () => {
+    if (!authStore.sessionReady || !authStore.user?.userId) return null
     await Promise.all([fetchCampaigns(), fetchCampaignStats()])
+    const active = campaigns.value.find((c) => c.active)
+      || (campaignSummary.value?.activeCampaign?.active
+        ? campaignSummary.value.activeCampaign
+        : null)
+    cachedActiveCampaign.value = active
+    writeActiveCampaignCache(active)
+    return active
   }
 
   const fetchSchedule = fetchCampaigns
@@ -575,6 +626,9 @@ export const usePostStore = defineStore('post', () => {
       })
       if (res.success) {
         campaigns.value = campaigns.value.filter((c) => c.id !== id)
+        const active = campaigns.value.find((c) => c.active) || null
+        cachedActiveCampaign.value = active
+        writeActiveCampaignCache(active)
       }
       return res
     } catch (e: any) {
@@ -690,6 +744,7 @@ export const usePostStore = defineStore('post', () => {
     error,
     campaigns,
     campaignSummary,
+    activeCampaign,
     campaignBusyId,
     isCampaignsLoading,
     isCampaignStatsLoading,

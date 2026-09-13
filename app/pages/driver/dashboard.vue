@@ -126,13 +126,7 @@ definePageMeta({
 const authStore = useAuthStore()
 const postStore = usePostStore()
 const postStatsLoading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
-
-const activePostCampaign = computed(() => {
-  const fromList = postStore.campaigns.find((c) => c.active)
-  if (fromList) return fromList
-  const fromSummary = postStore.campaignSummary?.activeCampaign
-  return fromSummary?.active ? fromSummary : null
-})
+const activePostCampaign = computed(() => postStore.activeCampaign)
 
 const onPostCampaignStart = async (c: PostCampaign) => {
   await postStore.startCampaign(c.id)
@@ -418,6 +412,14 @@ usePullToRefresh(async () => {
 
 let postStatsPollTimer: ReturnType<typeof setInterval> | null = null
 
+watch(
+  () => [authStore.sessionReady, authStore.user?.userId] as const,
+  ([ready, uid]) => {
+    if (ready && uid) void postStore.refreshCampaignData()
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   loadCachedStats()
   loadCachedBanners()
@@ -425,10 +427,9 @@ onMounted(() => {
   void fetchPlatformStats({ background: statsReady.value })
   void fetchPromoBanners()
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
-  void postStore.refreshCampaignData()
 
   postStatsPollTimer = setInterval(() => {
-    if (postStore.campaigns.some((c) => c.active)) {
+    if (postStore.activeCampaign?.active) {
       void postStore.refreshCampaignData()
     }
   }, 30_000)
