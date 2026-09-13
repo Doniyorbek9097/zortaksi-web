@@ -1,33 +1,30 @@
 <template>
   <div
     class="min-h-[100dvh] bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100"
-    style="--zt-hero-h: min(55vh, 460px)"
+    style="--zt-hero-h: min(52vh, 440px)"
   >
     <div v-if="loading" class="min-h-[100dvh] flex items-center justify-center">
       <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-2xl text-slate-400" />
     </div>
 
     <template v-else-if="profile">
-      <!-- Qotib turuvchi rasm (scroll paytida joyida qoladi) -->
-      <div
-        class="fixed inset-x-0 top-0 z-0 h-[var(--zt-hero-h)] bg-slate-950"
-        aria-hidden="false"
-      >
+      <!-- Rasm bloki — kontent ostida, ustiga chiqmaydi -->
+      <section class="relative h-[var(--zt-hero-h)] bg-slate-950 shrink-0">
         <div
           v-if="visiblePhotos.length"
           ref="galleryEl"
-          class="h-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar touch-pan-x"
+          class="gallery-track flex h-full w-full overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar"
           @scroll="onGalleryScroll"
         >
           <div
             v-for="(src, i) in visiblePhotos"
             :key="`${src}-${i}`"
-            class="inline-flex w-full h-full snap-center align-top items-center justify-center bg-slate-950"
+            class="gallery-slide flex-[0_0_100%] w-full h-full snap-center flex items-center justify-center bg-slate-950"
           >
             <img
               :src="src"
               :alt="profile.name"
-              class="max-w-full max-h-full w-auto h-auto object-contain select-none"
+              class="max-w-full max-h-full w-auto h-auto object-contain select-none pointer-events-none"
               draggable="false"
               :fetchpriority="i === 0 ? 'high' : 'low'"
               :loading="i === 0 ? 'eager' : 'lazy'"
@@ -42,136 +39,127 @@
           {{ profile.name?.trim()?.[0]?.toUpperCase() || '?' }}
         </div>
 
-        <!-- Yuklanish indikatori -->
+        <!-- Orqaga + rasm soni -->
         <div
-          v-if="refreshing"
-          class="absolute top-[max(0.5rem,env(safe-area-inset-top))] inset-x-0 z-30 flex justify-center pointer-events-none"
+          class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 flex items-center gap-2"
         >
-          <span class="px-3 py-1 rounded-full bg-black/45 text-white text-[11px] font-bold backdrop-blur-sm">
-            <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin mr-1.5" />
-            Yangilanmoqda
+          <button
+            type="button"
+            class="w-9 h-9 rounded-full bg-black/40 text-white flex items-center justify-center active:scale-95 backdrop-blur-sm"
+            aria-label="Orqaga"
+            @click="$emit('back')"
+          >
+            <font-awesome-icon icon="fa-solid fa-chevron-left" />
+          </button>
+          <span
+            v-if="visiblePhotos.length > 1"
+            class="px-2.5 py-1 rounded-full bg-black/40 text-white text-[12px] font-bold tabular-nums backdrop-blur-sm"
+          >
+            {{ activePhoto + 1 }}/{{ visiblePhotos.length }}
           </span>
         </div>
 
-        <!-- Progress chiziqlar -->
+        <!-- Yuklanish -->
         <div
-          v-if="visiblePhotos.length > 1"
-          class="absolute top-0 inset-x-0 z-20 flex gap-1 px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pointer-events-none"
-          :class="refreshing ? 'mt-8' : ''"
+          v-if="refreshing"
+          class="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30"
         >
-          <span
-            v-for="(_, i) in visiblePhotos"
-            :key="i"
-            class="h-0.5 flex-1 rounded-full transition-colors"
-            :class="i === activePhoto ? 'bg-white' : 'bg-white/35'"
-          />
+          <span class="px-2.5 py-1 rounded-full bg-black/40 text-white text-[11px] font-bold backdrop-blur-sm">
+            <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin" />
+          </span>
         </div>
 
-        <!-- Orqaga -->
-        <button
-          type="button"
-          class="absolute left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-30 w-9 h-9 rounded-full bg-black/35 text-white flex items-center justify-center active:scale-95"
-          aria-label="Orqaga"
-          @click="$emit('back')"
-        >
-          <font-awesome-icon icon="fa-solid fa-chevron-left" />
-        </button>
-
         <!-- Ism va holat -->
-        <div class="absolute inset-x-0 bottom-0 z-20 px-4 pb-5 pt-20 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none">
-          <h1 class="text-[26px] font-black text-white leading-tight truncate">
+        <div class="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 pt-16 bg-gradient-to-t from-black/75 via-black/35 to-transparent pointer-events-none">
+          <h1 class="text-[24px] font-black text-white leading-tight truncate">
             {{ profile.name }}
           </h1>
           <p
-            class="text-[13px] font-medium mt-0.5"
+            class="text-[12px] font-medium mt-0.5"
             :class="profile.presence.online ? 'text-emerald-300' : 'text-white/75'"
           >
             {{ profile.presence.online ? 'onlayn' : profile.presence.label }}
           </p>
         </div>
-      </div>
+      </section>
 
-      <!-- Scroll — kontent rasm ustidan ko'tariladi -->
-      <div class="relative z-10 min-h-[100dvh]">
-        <div class="h-[calc(var(--zt-hero-h)-3.5rem)]" aria-hidden="true" />
-
-        <div class="rounded-t-[1.75rem] bg-slate-100 dark:bg-slate-950 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] min-h-[55vh] pb-10">
-          <!-- Tezkor tugmalar -->
-          <div class="px-3 pt-4">
-            <slot name="actions">
-              <div class="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  class="group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-all"
-                  @click="$emit('message')"
-                >
-                  <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-active:bg-white/30 transition-colors">
-                    <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[15px]" />
-                  </span>
-                  <span class="text-[13px] font-black tracking-wide">Xabar</span>
-                </button>
-                <button
-                  type="button"
-                  class="group flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg shadow-emerald-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
-                  :disabled="!telHref"
-                  @click="$emit('call')"
-                >
-                  <span class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center group-active:bg-white/30 transition-colors">
-                    <font-awesome-icon icon="fa-solid fa-phone" class="text-[15px]" />
-                  </span>
-                  <span class="text-[13px] font-black tracking-wide">Chaqiruv</span>
-                </button>
-              </div>
-            </slot>
-          </div>
-
-          <!-- Asosiy ma'lumotlar -->
-          <section class="mx-3 mt-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 overflow-hidden">
-            <div v-if="displayPhone" class="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
-              <p class="text-[16px] font-semibold text-sky-500 dark:text-sky-400 tabular-nums">
-                {{ displayPhone }}
-              </p>
-              <p class="text-[12px] font-medium text-slate-400 mt-1">Mobil raqam</p>
-            </div>
-
-            <div v-if="profile.bio" class="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
-              <p class="text-[15px] font-medium leading-relaxed whitespace-pre-wrap break-words">
-                {{ profile.bio }}
-              </p>
-              <p class="text-[12px] font-medium text-slate-400 mt-1.5">Tarjimayi hol</p>
-            </div>
-
-            <div v-if="profile.username" class="px-4 py-3.5 flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="text-[16px] font-semibold text-sky-500 dark:text-sky-400 truncate">
-                  @{{ profile.username }}
-                </p>
-                <p class="text-[12px] font-medium text-slate-400 mt-1">Foydalanuvchi nomi</p>
-              </div>
-              <a
-                v-if="telegramHref"
-                :href="telegramHref"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="shrink-0 w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-95"
-                aria-label="Telegram"
+      <!-- Kontent — rasm ostida, ustiga chiqmaydi -->
+      <div class="relative z-10 bg-slate-100 dark:bg-slate-950 pb-10">
+        <!-- Tezkor tugmalar -->
+        <div class="px-3 pt-3">
+          <slot name="actions">
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-md shadow-sky-500/20 active:scale-[0.98] transition-all"
+                @click="$emit('message')"
               >
-                <font-awesome-icon icon="fa-brands fa-telegram" class="text-lg text-sky-500" />
-              </a>
+                <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                  <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-[13px]" />
+                </span>
+                <span class="text-[12px] font-bold">Xabar</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 text-white shadow-md shadow-emerald-500/20 active:scale-[0.98] transition-all disabled:opacity-40 disabled:shadow-none"
+                :disabled="!telHref"
+                @click="$emit('call')"
+              >
+                <span class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center">
+                  <font-awesome-icon icon="fa-solid fa-phone" class="text-[13px]" />
+                </span>
+                <span class="text-[12px] font-bold">Chaqiruv</span>
+              </button>
             </div>
+          </slot>
+        </div>
 
-            <div
-              v-if="!displayPhone && !profile.bio && !profile.username"
-              class="px-4 py-8 text-center text-[13px] font-medium text-slate-400"
-            >
-              Qo'shimcha ma'lumot yo'q
-            </div>
-          </section>
-
-          <!-- Haydovchi / admin qo'shimcha bloklari -->
-          <div v-if="$slots.extra" class="mx-3 mt-3 space-y-3">
-            <slot name="extra" />
+        <!-- Asosiy ma'lumotlar -->
+        <section class="mx-3 mt-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 overflow-hidden">
+          <div v-if="displayPhone" class="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+            <p class="text-[16px] font-semibold text-sky-500 dark:text-sky-400 tabular-nums">
+              {{ displayPhone }}
+            </p>
+            <p class="text-[12px] font-medium text-slate-400 mt-1">Mobil raqam</p>
           </div>
+
+          <div v-if="profile.bio" class="px-4 py-3.5 border-b border-slate-100 dark:border-slate-800">
+            <p class="text-[15px] font-medium leading-relaxed whitespace-pre-wrap break-words">
+              {{ profile.bio }}
+            </p>
+            <p class="text-[12px] font-medium text-slate-400 mt-1.5">Tarjimayi hol</p>
+          </div>
+
+          <div v-if="profile.username" class="px-4 py-3.5 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[16px] font-semibold text-sky-500 dark:text-sky-400 truncate">
+                @{{ profile.username }}
+              </p>
+              <p class="text-[12px] font-medium text-slate-400 mt-1">Foydalanuvchi nomi</p>
+            </div>
+            <a
+              v-if="telegramHref"
+              :href="telegramHref"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="shrink-0 w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-95"
+              aria-label="Telegram"
+            >
+              <font-awesome-icon icon="fa-brands fa-telegram" class="text-lg text-sky-500" />
+            </a>
+          </div>
+
+          <div
+            v-if="!displayPhone && !profile.bio && !profile.username"
+            class="px-4 py-8 text-center text-[13px] font-medium text-slate-400"
+          >
+            Qo'shimcha ma'lumot yo'q
+          </div>
+        </section>
+
+        <!-- Haydovchi / admin qo'shimcha bloklari -->
+        <div v-if="$slots.extra" class="mx-3 mt-3 space-y-3">
+          <slot name="extra" />
         </div>
       </div>
     </template>
@@ -213,6 +201,13 @@ const activePhoto = ref(0)
 
 const visiblePhotos = computed(() => props.photoUrls.filter(Boolean))
 
+watch(visiblePhotos, () => {
+  activePhoto.value = 0
+  nextTick(() => {
+    if (galleryEl.value) galleryEl.value.scrollLeft = 0
+  })
+})
+
 const displayPhone = computed(() => {
   const raw = String(props.profile?.phone || '').replace(/\D/g, '')
   if (!raw) return ''
@@ -242,6 +237,16 @@ const onGalleryScroll = () => {
 </script>
 
 <style scoped>
+.gallery-track {
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.gallery-slide {
+  touch-action: pan-x;
+}
+
 .no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
