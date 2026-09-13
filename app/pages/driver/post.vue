@@ -47,19 +47,19 @@
     <template v-if="store.campaigns.length">
       <section class="space-y-2">
         <div class="flex items-center justify-between gap-2 px-0.5">
-          <h2 class="text-[12px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
+          <h2 class="text-[14px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wide">
             Saqlangan xabarlar
           </h2>
           <button
             type="button"
-            class="text-[11px] font-black text-amber-600 dark:text-amber-400"
+            class="text-[13px] font-black text-amber-600 dark:text-amber-400"
             :disabled="store.isCampaignsLoading"
             @click="store.refreshCampaignData()"
           >
             <font-awesome-icon
               icon="fa-solid fa-rotate"
               :class="store.isCampaignsLoading ? 'animate-spin' : ''"
-              class="text-[10px]"
+              class="text-[12px]"
             />
           </button>
         </div>
