@@ -1,7 +1,16 @@
 <template>
-  <div
+  <component
+    :is="previewable && showImg ? 'button' : 'div'"
+    :type="previewable && showImg ? 'button' : undefined"
     class="overflow-hidden flex items-center justify-center font-black text-white shrink-0"
-    :class="[sizeClass, shapeClass, !showImg && colorClass]"
+    :class="[
+      sizeClass,
+      shapeClass,
+      !showImg && colorClass,
+      previewable && showImg && 'cursor-zoom-in active:scale-95 transition-transform',
+    ]"
+    :aria-label="previewable && showImg ? `${name} rasmini ko'rish` : undefined"
+    @click="onClick"
   >
     <img
       v-if="showImg"
@@ -9,11 +18,18 @@
       :alt="name"
       loading="lazy"
       decoding="async"
-      class="w-full h-full object-cover"
+      class="w-full h-full object-cover pointer-events-none"
       @error="onError"
     >
     <span v-else>{{ initial }}</span>
-  </div>
+  </component>
+
+  <BaseImageLightbox
+    v-if="previewable"
+    v-model="lightboxOpen"
+    :src="resolvedSrc"
+    :alt="name"
+  />
 </template>
 
 <script setup lang="ts">
@@ -25,12 +41,17 @@ interface Props {
   size?: 'sm' | 'md' | 'lg' | 'xl'
   /** Guruhlar uchun kvadratroq avatar */
   shape?: 'circle' | 'rounded'
+  /** Rasm ustiga bosilganda katta ko'rinish */
+  previewable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   shape: 'circle',
+  previewable: false,
 })
+
+const lightboxOpen = ref(false)
 
 const { avatarUrl } = useMediaUrl()
 const broken = ref(false)
@@ -76,5 +97,11 @@ const colorClass = computed(() => {
 
 const onError = () => {
   broken.value = true
+}
+
+const onClick = (e: MouseEvent) => {
+  if (!props.previewable || !showImg.value) return
+  e.stopPropagation()
+  lightboxOpen.value = true
 }
 </script>

@@ -1,11 +1,13 @@
-export type ThemeName = 'light' | 'dark'
-export type ThemePreference = ThemeName | 'system'
+import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
+import {
+  THEME_CHROME,
+  TABBAR_CHROME,
+  type ThemeName,
+  type ThemePreference,
+} from '~/utils/themeChrome'
 
-/** PWA / browser chrome — layout `bg-slate-50` / `dark:bg-slate-950` bilan mos */
-export const THEME_CHROME = {
-  light: '#f8fafc',
-  dark: '#020617',
-} as const
+export type { ThemeName, ThemePreference }
+export { THEME_CHROME }
 
 type TgWebApp = {
   colorScheme?: ThemeName
@@ -74,11 +76,11 @@ export function applyBrowserChrome(value: ThemeName) {
     /* */
   }
 
-  // Flutter WebView — og'ir DOM observer o'rniga to'g'ridan-to'g'ri bridge
-  void import('~/utils/flutterChromeBridge').then(({ notifyFlutterChrome, readTabbarChromeColor }) => {
-    const nav = readTabbarChromeColor()
-    notifyFlutterChrome({ mode: value, status: color, nav: nav ?? color })
-  })
+  // Flutter WebView — darhol native chrome yangilash (async import kechikmasin)
+  notifyFlutterChrome(
+    { mode: value, status: color, nav: TABBAR_CHROME[value] },
+    0,
+  )
 }
 
 export const useTheme = () => {

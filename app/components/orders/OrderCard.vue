@@ -50,7 +50,14 @@
       >
       <!-- Sender -->
       <div class="flex items-center gap-3">
-        <ProfileAvatar :name="senderName" :src="order.sender?.avatar" :user-id="order.sender?.userId" size="sm" />
+        <ProfileAvatar
+          :name="senderName"
+          :src="order.sender?.avatar"
+          :user-id="order.sender?.userId"
+          size="sm"
+          previewable
+          data-no-swipe
+        />
         <div class="min-w-0 flex-1">
           <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
           <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>

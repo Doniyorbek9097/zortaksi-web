@@ -25,7 +25,14 @@
       >
         <font-awesome-icon icon="fa-solid fa-headset" />
       </div>
-      <ProfileAvatar v-else :name="name" :src="avatar" :user-id="userId" size="sm" />
+      <ProfileAvatar
+        v-else
+        :name="name"
+        :src="avatar"
+        :user-id="userId"
+        size="sm"
+        previewable
+      />
 
       <div class="flex-1 min-w-0 leading-none">
         <p

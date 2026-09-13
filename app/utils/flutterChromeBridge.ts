@@ -1,5 +1,7 @@
-import { THEME_CHROME, type ThemeName } from '~/composables/useTheme'
 import { isFlutterWebView } from '~/utils/appEmbed'
+import { THEME_CHROME, TABBAR_CHROME, type ThemeName } from '~/utils/themeChrome'
+
+export { TABBAR_CHROME }
 
 type FlutterChromePayload = {
   mode?: ThemeName
@@ -52,34 +54,49 @@ function buildPayload(payload?: FlutterChromePayload): string {
 let lastSent = ''
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
+function postThemeToFlutter(value: string) {
+  if (value === lastSent) return
+  lastSent = value
+
+  const w = window as Window & {
+    __zortaksiLastTheme?: string
+    flutter_inappwebview?: { callHandler: (name: string, ...args: unknown[]) => void }
+    __zortaksiNotifyFlutterChrome?: () => void
+  }
+
+  w.__zortaksiLastTheme = value
+
+  try {
+    w.flutter_inappwebview?.callHandler?.('themeChanged', value)
+  } catch {
+    /* bridge hali tayyor emas */
+  }
+}
+
 /**
- * Flutter status/nav bar — faqat aniq o'zgarishda (MutationObserver o'rniga).
+ * Flutter status/nav bar — theme almashtirishda darhol (debounce=0).
  */
-export function notifyFlutterChrome(payload?: FlutterChromePayload, debounceMs = 80) {
+export function notifyFlutterChrome(payload?: FlutterChromePayload, debounceMs = 0) {
   if (!import.meta.client || !isFlutterWebView()) return
 
   if (payload?.nav) {
     document.documentElement.dataset.ztChromeNav = payload.nav
   }
 
+  const send = () => {
+    postThemeToFlutter(buildPayload(payload))
+  }
+
+  if (debounceMs <= 0) {
+    if (debounceTimer) clearTimeout(debounceTimer)
+    debounceTimer = null
+    send()
+    return
+  }
+
   if (debounceTimer) clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
     debounceTimer = null
-    const value = buildPayload(payload)
-    if (value === lastSent) return
-    lastSent = value
-
-    const w = window as Window & {
-      __zortaksiLastTheme?: string
-      flutter_inappwebview?: { callHandler: (name: string, ...args: unknown[]) => void }
-    }
-
-    w.__zortaksiLastTheme = value
-
-    try {
-      w.flutter_inappwebview?.callHandler?.('themeChanged', value)
-    } catch {
-      /* bridge hali tayyor emas */
-    }
+    send()
   }, debounceMs)
 }
