@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="campaigns.length"
+    v-if="campaign || loading"
     class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
   >
     <div
@@ -15,7 +15,7 @@
           </div>
           <div class="min-w-0">
             <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 leading-tight">
-              Saqlangan xabarlar
+              Faol e'lon
             </p>
             <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
               12 soat avto-yuborish statistikasi
@@ -31,18 +31,17 @@
       </div>
     </div>
 
-    <div class="p-3 space-y-2">
-      <div v-if="loading && !campaigns.length" class="h-28 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+    <div class="p-3">
+      <div v-if="loading && !campaign" class="h-28 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
 
       <PostCampaignCard
-        v-for="c in campaigns"
-        :key="c.id"
-        :campaign="c"
-        :busy="busyId === c.id"
-        @start="$emit('start', c)"
-        @stop="$emit('stop', c)"
-        @edit="$emit('edit', c)"
-        @delete="$emit('delete', c)"
+        v-else-if="campaign"
+        :campaign="campaign"
+        :busy="busyId === campaign.id"
+        @start="$emit('start', campaign)"
+        @stop="$emit('stop', campaign)"
+        @edit="$emit('edit', campaign)"
+        @delete="$emit('delete', campaign)"
       />
     </div>
   </section>
@@ -52,7 +51,7 @@
 import type { PostCampaign } from '~/stores/post.store'
 
 defineProps<{
-  campaigns: PostCampaign[]
+  campaign: PostCampaign | null
   busyId?: string | null
   loading?: boolean
 }>()

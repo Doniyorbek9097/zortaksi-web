@@ -54,10 +54,10 @@
       :loading="groupInviteLoading"
     />
 
-    <!-- Saqlangan xabarlar — to'liq statistika -->
+    <!-- Faol e'lon — to'liq statistika -->
     <DashboardPostStatsCard
-      v-if="postStore.campaigns.length || postStatsLoading"
-      :campaigns="postStore.campaigns"
+      v-if="activePostCampaign || postStatsLoading"
+      :campaign="activePostCampaign"
       :busy-id="postStore.campaignBusyId"
       :loading="postStatsLoading"
       @start="onPostCampaignStart"
@@ -126,6 +126,13 @@ definePageMeta({
 const authStore = useAuthStore()
 const postStore = usePostStore()
 const postStatsLoading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
+
+const activePostCampaign = computed(() => {
+  const fromList = postStore.campaigns.find((c) => c.active)
+  if (fromList) return fromList
+  const fromSummary = postStore.campaignSummary?.activeCampaign
+  return fromSummary?.active ? fromSummary : null
+})
 
 const onPostCampaignStart = async (c: PostCampaign) => {
   await postStore.startCampaign(c.id)
