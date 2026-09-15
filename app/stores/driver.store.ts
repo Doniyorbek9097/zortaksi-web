@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia'
 
-export type DriverFilter = 'all' | 'expiring' | 'debt'
+export type DriverFilter = 'all' | 'expiring' | 'debt' | 'in-app'
+
+export type DriverSubFilter =
+  | ''
+  | 'active'
+  | 'inactive'
+  | 'paid'
+  | 'unpaid'
+  | 'in-app'
+  | 'offline-app'
+  | 'listen-groups'
+  | 'expiring'
+  | 'debt'
 
 export interface DriverRow {
   id: string
@@ -38,7 +50,7 @@ export interface DriverRow {
 
 export const useDriverStore = defineStore('driver', () => {
   const drivers = ref<DriverRow[]>([])
-  const counts = ref({ all: 0, expiring: 0, debt: 0 })
+  const counts = ref({ all: 0, expiring: 0, debt: 0, inApp: 0 })
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const isSaving = ref(false)
@@ -46,6 +58,7 @@ export const useDriverStore = defineStore('driver', () => {
   const totalPages = ref(1)
   const total = ref(0)
   const listFilter = ref<DriverFilter>('all')
+  const listSubFilter = ref<DriverSubFilter>('')
   const listSearch = ref('')
   const listScrollY = ref(0)
   const listHydrated = ref(false)
@@ -58,6 +71,7 @@ export const useDriverStore = defineStore('driver', () => {
       limit?: number
       search?: string
       filter?: DriverFilter
+      subFilter?: DriverSubFilter
     } = {},
     opts: { append?: boolean } = {}
   ) => {
@@ -65,13 +79,18 @@ export const useDriverStore = defineStore('driver', () => {
       if (opts.append) isLoadingMore.value = true
       else isLoading.value = true
 
+      const tabFilter = params.filter || 'all'
       const response = await useApi('/drivers', {
         method: 'GET',
         params: {
           page: params.page ?? 1,
           limit: params.limit ?? 10,
           search: params.search || undefined,
-          filter: params.filter || 'all',
+          filter: tabFilter,
+          subFilter:
+            tabFilter === 'all' && params.subFilter
+              ? params.subFilter
+              : undefined,
         },
       })
       if (response.success) {
@@ -82,7 +101,7 @@ export const useDriverStore = defineStore('driver', () => {
         } else {
           drivers.value = list
         }
-        counts.value = response.data.counts ?? { all: 0, expiring: 0, debt: 0 }
+        counts.value = response.data.counts ?? { all: 0, expiring: 0, debt: 0, inApp: 0 }
         page.value = response.data.pagination?.page ?? params.page ?? 1
         totalPages.value = response.data.pagination?.totalPages ?? 1
         total.value = response.data.pagination?.total ?? drivers.value.length
@@ -102,6 +121,7 @@ export const useDriverStore = defineStore('driver', () => {
     limit?: number
     search?: string
     filter?: DriverFilter
+    subFilter?: DriverSubFilter
   } = {}) => {
     if (isLoading.value || isLoadingMore.value || !hasMore.value) return
     return fetchDrivers({ ...params, page: page.value + 1 }, { append: true })
@@ -303,6 +323,7 @@ export const useDriverStore = defineStore('driver', () => {
     total,
     hasMore,
     listFilter,
+    listSubFilter,
     listSearch,
     listScrollY,
     listHydrated,

@@ -1,7 +1,31 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-3">
     <header class="sticky top-0 z-30 -mx-4 px-4 py-1.5 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50">
-      <h1 class="text-base font-black text-slate-900 dark:text-white">Haydovchilar</h1>
+      <div class="flex items-center justify-between gap-2">
+        <h1 class="text-base font-black text-slate-900 dark:text-white">Haydovchilar</h1>
+        <button
+          v-if="filter === 'all'"
+          type="button"
+          class="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all active:scale-95"
+          :class="store.listSubFilter
+            ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-500/50'
+            : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900'"
+          aria-label="Filter"
+          @click="filterDialogOpen = true"
+        >
+          <font-awesome-icon icon="fa-solid fa-filter" class="text-[14px]" />
+          <span
+            v-if="store.listSubFilter"
+            class="absolute top-1 right-1 w-2 h-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-slate-900"
+          />
+        </button>
+      </div>
+      <p
+        v-if="filter === 'all' && store.listSubFilter"
+        class="mt-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 truncate"
+      >
+        {{ subFilterLabel }}
+      </p>
     </header>
 
     <AdminDriversFilterTabs v-model="filter" :tabs="filterTabs" />
@@ -101,6 +125,12 @@
       @confirm="sendMessages"
     />
 
+    <AdminDriversListFilterDialog
+      v-model="filterDialogOpen"
+      :value="store.listSubFilter"
+      @apply="onSubFilterApply"
+    />
+
     <BaseConfirmDialog
       v-model="blockOpen"
       :title="blockTarget?.active ? 'Bloklash' : 'Blokdan chiqarish'"
@@ -119,10 +149,11 @@
 </template>
 
 <script setup lang="ts">
-import type { DriverRow, DriverFilter } from '~/stores/driver.store'
+import type { DriverRow, DriverFilter, DriverSubFilter } from '~/stores/driver.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { openSupportChatInstant } from '~/utils/openSupportChat'
+import { driverSubFilterLabel } from '~/utils/driverSubFilters'
 
 definePageMeta({ layout: 'admin', keepalive: true })
 
@@ -156,6 +187,9 @@ const messageIds = ref<string[]>([])
 
 const blockOpen = ref(false)
 const blockTarget = ref<DriverRow | null>(null)
+const filterDialogOpen = ref(false)
+
+const subFilterLabel = computed(() => driverSubFilterLabel(store.listSubFilter))
 
 const withTariffLine = (d: DriverRow) => {
   if (!d.tariffName || !d.expireAt) return { ...d, tariffLine: undefined as string | undefined }
@@ -193,6 +227,13 @@ const filterTabs = computed(() => [
     count: store.counts.debt,
     tone: 'emerald' as const,
   },
+  {
+    value: 'in-app',
+    label: 'Ilovada',
+    icon: 'fa-solid fa-mobile-screen',
+    count: store.counts.inApp,
+    tone: 'violet' as const,
+  },
 ])
 
 const list = computed(() => store.drivers.map(withTariffLine))
@@ -221,6 +262,7 @@ const LIMIT = 10
 const queryParams = () => ({
   limit: LIMIT,
   filter: filter.value,
+  subFilter: filter.value === 'all' ? store.listSubFilter || undefined : undefined,
   search: search.value.trim() || undefined,
 })
 
@@ -260,6 +302,12 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+const onSubFilterApply = (value: DriverSubFilter) => {
+  store.listSubFilter = value
+  selected.value = new Set()
+  if (filter.value === 'all') void load()
+}
+
 watch(filter, () => {
   selected.value = new Set()
   load()

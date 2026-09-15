@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-type Tone = 'sky' | 'amber' | 'emerald'
+type Tone = 'sky' | 'amber' | 'emerald' | 'violet'
 
 export interface DriverFilterTab {
   value: string
@@ -37,6 +37,7 @@ const activeClass = (tone: Tone = 'sky') => {
     sky: 'bg-sky-50 dark:bg-sky-950/40 border-sky-400 text-sky-600 dark:text-sky-400',
     amber: 'bg-amber-50 dark:bg-amber-950/30 border-amber-400 text-amber-600 dark:text-amber-400',
     emerald: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-400 text-emerald-600 dark:text-emerald-400',
+    violet: 'bg-violet-50 dark:bg-violet-950/30 border-violet-400 text-violet-600 dark:text-violet-400',
   }
   return map[tone]
 }
