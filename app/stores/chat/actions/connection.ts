@@ -8,8 +8,10 @@ import { isAdminUser } from '~/utils/userRole'
 const CONNECT_TIMEOUT_MS = 45000
 /** Order chat — tez javob (haydovchi kutmasin) */
 const ORDER_CONNECT_TIMEOUT_MS = 6000
-/** Admin order/proksi ulanish */
+/** Admin o'z hisobi — tez probe */
 const ADMIN_CONNECT_TIMEOUT_MS = 10000
+/** Proksi — guruh tarixidan hash olish uzoq vaqt olishi mumkin */
+const PROXY_CONNECT_TIMEOUT_MS = 60000
 export const DRIVER_ORDER_CONNECT_FAIL =
     "Bu buyurtma bilan ulanib bo'lmadi. Admindan yordam so'rang."
 const SOCKET_WAIT_MS = 600
@@ -343,11 +345,13 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const isOrderChat = !!(chat?.orderId)
         const isAdmin = isAdminUser(authStore.user)
-        const connectTimeout = isAdmin
-            ? ADMIN_CONNECT_TIMEOUT_MS
-            : isOrderChat && !opts.viaProxy
-                ? ORDER_CONNECT_TIMEOUT_MS
-                : CONNECT_TIMEOUT_MS
+        const connectTimeout = opts.viaProxy
+            ? PROXY_CONNECT_TIMEOUT_MS
+            : isAdmin
+                ? ADMIN_CONNECT_TIMEOUT_MS
+                : isOrderChat
+                    ? ORDER_CONNECT_TIMEOUT_MS
+                    : CONNECT_TIMEOUT_MS
 
         try {
             const res = await requestConnect(chatId, {
