@@ -273,9 +273,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         let reason = data.reason ?? ''
         if (!CHAT_PROXY_CONNECT_ENABLED && next === 'proxy-required') {
             next = 'unreachable'
-        }
-        if (next === 'proxy-required') {
-            next = 'unreachable'
             reason = DRIVER_ORDER_CONNECT_FAIL
         }
 
@@ -371,9 +368,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             if (!res.success) {
                 if (opts.viaProxy) {
                     connectionStatus.value = 'unreachable'
-                    connectionReason.value =
-                        String(res.message || '').trim() ||
-                        "Proksi orqali ham bog'lanib bo'lmadi."
+                    connectionReason.value = isOrderChat
+                        ? DRIVER_ORDER_CONNECT_FAIL
+                        : String(res.message || '').trim() ||
+                          "Proksi orqali ham bog'lanib bo'lmadi."
                 } else if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
                     connectionReason.value = res.message ?? ''
@@ -385,9 +383,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             console.error('connect error:', err)
             if (opts.viaProxy) {
                 connectionStatus.value = 'unreachable'
-                connectionReason.value =
-                    String(err?.message || '').trim() ||
-                    "Proksi orqali ham bog'lanib bo'lmadi."
+                connectionReason.value = isOrderChat
+                    ? DRIVER_ORDER_CONNECT_FAIL
+                    : String(err?.message || '').trim() ||
+                      "Proksi orqali ham bog'lanib bo'lmadi."
             } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = err?.message ?? ''
@@ -527,12 +526,17 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (peerTypingChatId.value === chatId) peerTypingChatId.value = null
     }
 
-    const offerSendProxy = (chatId: string, _reason?: string) => {
+    const offerSendProxy = (chatId: string, reason?: string) => {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
         if (!isRelevant) return
-        connectionStatus.value = 'unreachable'
-        connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
+        if (!CHAT_PROXY_CONNECT_ENABLED) {
+            connectionStatus.value = 'unreachable'
+            connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
+            return
+        }
+        connectionStatus.value = 'proxy-required'
+        connectionReason.value = reason || ORDER_PROXY_PROMPT
     }
 
     return {

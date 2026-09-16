@@ -67,6 +67,7 @@ export function useChatComposerPanel(opts: {
         conn.value === 'ready' ||
         conn.value === 'connecting' ||
         conn.value === 'idle' ||
+        conn.value === 'proxy-required' ||
         conn.value === 'unreachable'),
   )
 
@@ -84,6 +85,9 @@ export function useChatComposerPanel(opts: {
     if (isOrderSenderChat.value && needsTelegramConnect.value && !hasPeerLink.value) {
       if (conn.value === 'unreachable') {
         return DRIVER_ORDER_CONNECT_FAIL
+      }
+      if (conn.value === 'proxy-required') {
+        return 'Proksi orqali ulanishni tasdiqlang'
       }
       if (conn.value === 'connecting' || conn.value === 'idle') {
         return 'Ulanmoqda...'

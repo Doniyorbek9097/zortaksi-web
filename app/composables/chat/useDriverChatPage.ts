@@ -18,6 +18,10 @@ import { useChatMessageSelection } from './useChatMessageSelection'
 import { useChatScrollPanel } from './useChatScrollPanel'
 import { useChatComposerPanel } from './useChatComposerPanel'
 import { useChatPageLoader } from './useChatPageLoader'
+import {
+  DRIVER_ORDER_CONNECT_FAIL,
+  ORDER_PROXY_PROMPT,
+} from '~/stores/chat/actions/connection'
 
 /**
  * Haydovchi chat sahifasi — barcha chat composablelarni birlashtiradi.
@@ -42,6 +46,7 @@ export function useDriverChatPage() {
 
   const openFailed = ref(false)
   const openError = ref('')
+  const proxyConnecting = ref(false)
   const draft = ref('')
   const replyTarget = ref<ChatReplyTarget | null>(null)
   const scrollEl = ref<HTMLElement | null>(null)
@@ -209,6 +214,24 @@ export function useDriverChatPage() {
     replyTarget.value = null
   })
 
+  /** O'z hisob ishlamaganda — tinglovchi userbot orqali proksi ulanish */
+  const confirmProxyConnect = async () => {
+    const id = meta.resolveActiveChatId()
+    if (!id || id === 'open' || proxyConnecting.value) return
+    proxyConnecting.value = true
+    try {
+      await chatStore.connect(id, { viaProxy: true })
+    } finally {
+      proxyConnecting.value = false
+    }
+  }
+
+  /** Proksi taklifini rad etish */
+  const dismissProxyConfirm = () => {
+    chatStore.connectionStatus = 'unreachable'
+    chatStore.connectionReason = DRIVER_ORDER_CONNECT_FAIL
+  }
+
   return {
     frameStyle,
     authStore,
@@ -234,5 +257,9 @@ export function useDriverChatPage() {
     goBack,
     goBackFromOpen,
     goOrders,
+    ORDER_PROXY_PROMPT,
+    proxyConnecting,
+    confirmProxyConnect,
+    dismissProxyConfirm,
   }
 }
