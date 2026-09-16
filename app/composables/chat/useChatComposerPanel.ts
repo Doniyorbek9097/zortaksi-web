@@ -93,7 +93,7 @@ export function useChatComposerPanel(opts: {
         return DRIVER_ORDER_CONNECT_FAIL
       }
       if (isAdmin.value && conn.value === 'proxy-required') {
-        return "Tinglovchi userbot orqali bog'lanib ko'ring"
+        return 'Proksi orqali ulanish uchun yuqoridagi tugmani bosing'
       }
       if (isAdmin.value && conn.value === 'unreachable') {
         return connReason.value || "Ulanib bo'lmadi"
@@ -110,7 +110,7 @@ export function useChatComposerPanel(opts: {
       return 'Telegram ulanmoqda...'
     }
     if (conn.value === 'proxy-required' && isAdmin.value) {
-      return "Tinglovchi userbot orqali bog'lanib ko'ring"
+      return 'Proksi orqali ulanish uchun yuqoridagi tugmani bosing'
     }
     if (conn.value === 'unreachable') {
       if (isOrderSenderChat.value && !isAdmin.value) {

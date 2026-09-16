@@ -552,7 +552,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         connectionStatus.value = 'proxy-required'
         connectionReason.value =
             reason?.trim() ||
-            "O'z hisobingiz orqali ulanib bo'lmadi. Tinglovchi userbot orqali bog'lanib ko'ring."
+            "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?"
     }
 
     return {

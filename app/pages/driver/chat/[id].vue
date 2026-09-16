@@ -240,7 +240,7 @@
         <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
           <p>
             <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-            {{ connReason || "O'z hisobingiz orqali ulanib bo'lmadi. Tinglovchi userbot orqali bog'lanib ko'ring." }}
+            {{ connReason || "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?" }}
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
             <button
@@ -250,7 +250,7 @@
               @click="confirmProxyConnect"
             >
               <font-awesome-icon icon="fa-solid fa-route" />
-              {{ proxyConnecting ? 'Ulanmoqda...' : "Tinglovchi userbot orqali bog'lanish" }}
+              {{ proxyConnecting ? 'Ulanmoqda...' : 'Ha, proksi orqali ulanish' }}
             </button>
             <button
               type="button"
