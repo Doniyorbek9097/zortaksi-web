@@ -77,22 +77,67 @@
           {{ stats.cpu.model }}
         </p>
       </div>
+
+      <button
+        type="button"
+        class="w-full rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/30 px-3 py-2.5 text-[11px] font-black text-rose-700 dark:text-rose-300 active:scale-[0.99] transition-transform disabled:opacity-60"
+        :disabled="maintaining"
+        @click="confirmOpen = true"
+      >
+        <font-awesome-icon
+          :icon="maintaining ? 'fa-solid fa-spinner' : 'fa-solid fa-rotate'"
+          :class="maintaining ? 'fa-spin' : ''"
+          class="mr-1.5"
+        />
+        {{ maintaining ? 'Bo\'shatilmoqda...' : 'RAM/CPU bo\'shatish (pm2 restart)' }}
+      </button>
+
+      <p
+        v-if="maintenanceMessage"
+        class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 text-center"
+      >
+        {{ maintenanceMessage }}
+      </p>
     </template>
 
     <p v-else-if="error" class="text-[10px] font-bold text-rose-500 text-center py-1">
       {{ error }}
     </p>
+
+    <BaseConfirmDialog
+      v-model="confirmOpen"
+      title="Serverni bo'shatish"
+      message="Barcha ilova keshlari tozalanadi va pm2 restart all bajariladi. 10–20 soniya API va socket uziladi. Davom etasizmi?"
+      confirm-text="Bo'shatish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="maintaining"
+      @confirm="onConfirmMaintenance"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { ServerResourceStats } from '~/composables/dashboard/useServerResources'
 
-defineProps<{
+const props = defineProps<{
   stats: ServerResourceStats | null
   loading: boolean
+  maintaining: boolean
+  maintenanceMessage: string
   error: string
 }>()
+
+const emit = defineEmits<{
+  maintenance: []
+}>()
+
+const confirmOpen = ref(false)
+
+const onConfirmMaintenance = () => {
+  emit('maintenance')
+  confirmOpen.value = false
+}
 
 const percentTone = (pct: number) => {
   if (pct >= 85) return 'text-rose-600 dark:text-rose-400'

@@ -22,6 +22,8 @@ export interface ServerResourceStats {
 export function useServerResources(pollMs = 3000) {
   const stats = ref<ServerResourceStats | null>(null)
   const loading = ref(false)
+  const maintaining = ref(false)
+  const maintenanceMessage = ref('')
   const error = ref('')
 
   let timer: ReturnType<typeof setInterval> | null = null
@@ -61,13 +63,41 @@ export function useServerResources(pollMs = 3000) {
     }
   }
 
+  const runMaintenance = async () => {
+    if (maintaining.value) return null
+    maintaining.value = true
+    maintenanceMessage.value = ''
+    error.value = ''
+    try {
+      const res = await useApi('/admin/server-maintenance', { method: 'POST' })
+      if (res?.success) {
+        maintenanceMessage.value =
+          String(res.data?.message || 'PM2 qayta ishga tushirilmoqda...')
+        setTimeout(() => void fetchResources(), 12_000)
+        setTimeout(() => void fetchResources(), 20_000)
+        return res
+      }
+      error.value = String(res?.message || 'Server bo\'shatilmadi')
+      return res
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      error.value = err?.response?.data?.message || 'Server bo\'shatilmadi'
+      throw e
+    } finally {
+      maintaining.value = false
+    }
+  }
+
   onMounted(start)
   onUnmounted(stop)
 
   return {
     stats,
     loading,
+    maintaining,
+    maintenanceMessage,
     error,
     refresh: fetchResources,
+    runMaintenance,
   }
 }

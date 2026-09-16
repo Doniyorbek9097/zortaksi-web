@@ -194,7 +194,10 @@
         <AdminServerResourceStats
           :stats="serverStats"
           :loading="serverResourcesLoading"
+          :maintaining="serverMaintaining"
+          :maintenance-message="serverMaintenanceMessage"
           :error="serverResourcesError"
+          @maintenance="onServerMaintenance"
         />
       </div>
     </section>
@@ -314,9 +317,20 @@ const {
 const {
   stats: serverStats,
   loading: serverResourcesLoading,
+  maintaining: serverMaintaining,
+  maintenanceMessage: serverMaintenanceMessage,
   error: serverResourcesError,
   refresh: refreshServerResources,
+  runMaintenance: runServerMaintenance,
 } = useServerResources(3000)
+
+const onServerMaintenance = async () => {
+  try {
+    await runServerMaintenance()
+  } catch {
+    /* xato composable ichida */
+  }
+}
 
 const {
   data: groupInviteLeaderboard,
