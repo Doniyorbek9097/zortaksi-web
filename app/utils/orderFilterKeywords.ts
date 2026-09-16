@@ -176,6 +176,19 @@ export function buildOrderFilterApiParams(
   return {}
 }
 
+/** Buyurtmalar ro'yxati — saqlangan filter bilan bir xil bootstrap params */
+export function buildOrdersListBootstrapParams(extra: { text?: string } = {}) {
+  const saved = loadOrderFilterKeywords()
+  const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
+  const text = String(extra.text || '').trim()
+  return {
+    page: 1,
+    limit: ORDERS_PAGE_LIMIT,
+    ...(text ? { text } : {}),
+    ...buildOrderFilterApiParams(savedGroup, saved),
+  }
+}
+
 export function orderMatchesListenerFilter(
   order: { owner?: { userId?: string } | null },
   listenerUserIds: string[],

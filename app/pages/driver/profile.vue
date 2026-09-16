@@ -188,23 +188,18 @@
 import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
-import { isAdminUser, hasPanelShellAccess, isPanelUser, resolveHomePath } from '~/utils/userRole'
+import { isAdminUser, isPanelUser } from '~/utils/userRole'
+import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
 
 definePageMeta({
   layout: 'driver',
 })
 
+usePanelShellLayout()
+
 const authStore = useAuthStore()
 const accountStore = useAccountStore()
 
-watch(
-  () => [authStore.sessionReady, authStore.user?.role, authStore.user?.active, authStore.user?.tariffExpireAt] as const,
-  ([ready]) => {
-    if (!ready || !import.meta.client) return
-    setPageLayout(hasPanelShellAccess(authStore.user) ? 'admin' : 'driver')
-  },
-  { immediate: true },
-)
 const { effectiveTheme, toggleTheme } = useTheme()
 const { script } = useAppScript()
 

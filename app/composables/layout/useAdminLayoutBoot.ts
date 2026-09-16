@@ -3,8 +3,8 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useOrderStore } from '~/stores/order.store'
 import { hasPanelShellAccess, resolveHomePath } from '~/utils/userRole'
-import { ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
+import { preloadOrdersList } from '~/composables/orders/preloadOrdersList'
 
 /**
  * Admin layout — sessiya tekshiruvi, statistika va chat badge.
@@ -35,13 +35,6 @@ export function useAdminLayoutBoot() {
     }
   }
 
-  const preloadOrders = () => {
-    if (!import.meta.client || !authStore.sessionReady) return
-    if (!hasPanelShellAccess(authStore.user)) return
-    if (orderStore.orders.length > 0 || orderStore.isLoading) return
-    void orderStore.fetchOrders({ page: 1, limit: ORDERS_PAGE_LIMIT })
-  }
-
   watch(
     () => authStore.sessionReady,
     (ready) => {
@@ -54,7 +47,7 @@ export function useAdminLayoutBoot() {
       void dashboardStore.fetchStats({ background: dashboardStore.isReady })
       orderStore.startRecentMinuteTicker()
       void refreshBadges()
-      preloadOrders()
+      preloadOrdersList(orderStore)
     },
     { immediate: true },
   )

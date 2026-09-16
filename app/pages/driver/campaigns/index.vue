@@ -69,8 +69,11 @@
 import { usePostStore, type PostCampaign } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import PostCampaignBoardCard from '~/components/post/CampaignBoardCard.vue'
+import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
 
-definePageMeta({ layout: 'driver' })
+definePageMeta({ layout: 'driver', keepalive: true })
+
+usePanelShellLayout()
 
 const store = usePostStore()
 const authStore = useAuthStore()

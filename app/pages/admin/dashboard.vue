@@ -279,11 +279,14 @@ import { useAdminDashboardStats } from '~/composables/dashboard/useAdminDashboar
 import { useAdminChartData } from '~/composables/dashboard/useAdminChartData'
 import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
 import { useServerResources } from '~/composables/dashboard/useServerResources'
+import { useOrderStore } from '~/stores/order.store'
+import { preloadOrdersList } from '~/composables/orders/preloadOrdersList'
 
 definePageMeta({ layout: 'admin' })
 
 const store = useAdminDashboardStore()
 const authStore = useAuthStore()
+const orderStore = useOrderStore()
 const { avatarUrl } = useMediaUrl()
 const brokenDriverAvatars = ref<Set<string>>(new Set())
 
@@ -362,6 +365,7 @@ onMounted(() => {
   hydrateGroupInvite()
   void store.fetchStats({ background: store.isReady })
   void fetchGroupInviteLeaderboard({ background: !!groupInviteLeaderboard.value })
+  preloadOrdersList(orderStore)
 
   try {
     const accountStore = useAccountStore()

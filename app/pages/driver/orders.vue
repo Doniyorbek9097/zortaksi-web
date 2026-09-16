@@ -174,12 +174,14 @@
 
 <script setup lang="ts">
 import { useDriverOrdersPage } from '~/composables/orders/useDriverOrdersPage'
-import { hasPanelShellAccess } from '~/utils/userRole'
+import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
 
 definePageMeta({
   layout: 'driver',
   keepalive: true,
 })
+
+usePanelShellLayout()
 
 const {
   authStore,
@@ -264,13 +266,4 @@ const {
   cancelAddToBot,
   selectBotGroup,
 } = useDriverOrdersPage()
-
-watch(
-  () => [authStore.sessionReady, authStore.user] as const,
-  ([ready]) => {
-    if (!ready || !import.meta.client) return
-    setPageLayout(hasPanelShellAccess(authStore.user) ? 'admin' : 'driver')
-  },
-  { immediate: true },
-)
 </script>

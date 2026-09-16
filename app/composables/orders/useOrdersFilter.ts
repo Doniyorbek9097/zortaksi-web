@@ -8,6 +8,7 @@ import {
   parseBotGroupIds,
   formatBotGroupIds,
   buildOrderFilterApiParams,
+  buildOrdersListBootstrapParams,
   splitStoredFilterPresetIds,
   saveOrderFilterKeywords,
   saveOrderFilterBotGroupId,
@@ -153,12 +154,7 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftBotGroupId.value = savedGroup
     appliedBotGroupId.value = savedGroup
     scope.value = 'all'
-    orderStore.applyListFilter({
-      page: 1,
-      limit: LIMIT,
-      text: '',
-      ...buildOrderFilterApiParams(savedGroup, saved),
-    })
+    orderStore.applyListFilter(buildOrdersListBootstrapParams())
   }
 
   return {

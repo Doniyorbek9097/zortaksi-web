@@ -95,10 +95,14 @@
 
 <script setup lang="ts">
 import { useDriverChatsPage } from '~/composables/chat/useDriverChatsPage'
+import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
 
 definePageMeta({
   layout: 'driver',
+  keepalive: true,
 })
+
+usePanelShellLayout()
 
 const {
   chatStore,
