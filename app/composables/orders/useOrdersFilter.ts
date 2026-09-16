@@ -154,7 +154,11 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
     draftBotGroupId.value = savedGroup
     appliedBotGroupId.value = savedGroup
     scope.value = 'all'
-    orderStore.applyListFilter(buildOrdersListBootstrapParams())
+    const text = appliedOrderQuery.value.trim()
+    orderStore.applyListFilter({
+      ...buildOrdersListBootstrapParams(),
+      ...(text ? { text } : {}),
+    })
   }
 
   return {

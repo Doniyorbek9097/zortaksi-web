@@ -51,8 +51,11 @@
       {{ displayOrders.length }}/{{ orderStore.total.toLocaleString('ru-RU') }} ko'rsatildi
     </p>
 
-    <div v-if="filterLoading || (orderStore.isLoading && !orderStore.orders.length)" class="pt-2">
-      <OrdersOrderCardSkeleton />
+    <div
+      v-if="filterLoading || (orderStore.isLoading && !orderStore.orders.length)"
+      class="space-y-2.5 pt-1"
+    >
+      <OrdersOrderCardSkeleton v-for="n in 4" :key="n" />
     </div>
 
     <BaseEmptyState

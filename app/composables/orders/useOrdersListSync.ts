@@ -24,6 +24,7 @@ const FILL_VIEWPORT_MAX = 10
 
 /**
  * Ro'yxat sync: poll (visibility-aware), infinite scroll va "ko'rilgan" badge.
+ * Chatlar sahifasi kabi — kesh bo'lsa darhol ko'rsatiladi, fon da yangilanadi.
  */
 export function useOrdersListSync(options: {
   orderStore: ReturnType<typeof useOrderStore>
@@ -33,7 +34,7 @@ export function useOrdersListSync(options: {
   loadMore: () => unknown
   hydrateFilter: () => void
 }) {
-  const { orderStore, displayOrders, queryParams, load, loadMore, hydrateFilter } = options
+  const { orderStore, displayOrders, queryParams, loadMore, hydrateFilter } = options
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
   let pageActive = true
@@ -90,8 +91,21 @@ export function useOrdersListSync(options: {
     requestAnimationFrame(apply)
   }
 
+  const restoreListScroll = (fromTabSwitch: boolean) => {
+    if (fromTabSwitch) {
+      orderStore.clearOrdersListScroll()
+      scrollWindowTo(0)
+      return
+    }
+    if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
+      restoreScroll()
+    } else {
+      scrollWindowTo(0)
+    }
+  }
+
   const syncIfVisible = () => {
-    if (!import.meta.client) return
+    if (!import.meta.client || !pageActive) return
     if (document.hidden) return
     void orderStore.syncLatest(queryParams())
   }
@@ -131,7 +145,6 @@ export function useOrdersListSync(options: {
     return rect.top <= window.innerHeight + 520
   }
 
-  /** Scroll yo'q — kontent ekrandan pastga tushmaydi */
   const viewportNotScrollable = () => {
     if (!import.meta.client) return false
     const doc = document.documentElement
@@ -139,7 +152,7 @@ export function useOrdersListSync(options: {
   }
 
   const shouldPrefetchMore = () => {
-    if (!import.meta.client || !orderStore.hasMore) return false
+    if (!import.meta.client || !pageActive || !orderStore.hasMore) return false
     if (!orderStore.orders.length) return false
     return sentinelInView() || viewportNotScrollable()
   }
@@ -169,7 +182,6 @@ export function useOrdersListSync(options: {
     }, 0)
   }
 
-  /** Ekran bo'sh yoki scroll yo'q bo'lsa — ketma-ket sahifalar yuklash */
   const fillViewport = async () => {
     if (!orderStore.hasMore) return
     await waitForListReady()
@@ -216,86 +228,70 @@ export function useOrdersListSync(options: {
     )
   }
 
-  onMounted(async () => {
-    orderStore.startRecentMinuteTicker()
+  /** Chatlar kabi: kesh bo'lsa darhol ko'rsatish, fon da silent yangilash */
+  const bootOrdersList = async (fromTabSwitch = false) => {
     hydrateFilter()
-
     const q = queryParams()
-    const hasCachedList = orderStore.orders.length > 0 && serverFilterMatches()
-    const fresh = orderStore.isOrdersListFresh({ page: 1, ...q })
+    const hasCached = orderStore.orders.length > 0 && serverFilterMatches()
 
-    if (hasCachedList) {
+    if (hasCached) {
+      void orderStore.fetchOrders({ page: 1, ...q }, { silent: true })
       await nextTick()
-      if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
-        restoreScroll()
-      } else {
-        scrollWindowTo(0)
-      }
-    } else {
-      scrollWindowTo(0)
+      restoreListScroll(fromTabSwitch)
+      return
     }
 
-    if (fresh) {
-      void load()
-      syncIfVisible()
-    } else {
-      await load()
-    }
-
+    if (fromTabSwitch) orderStore.clearOrdersListScroll()
+    await orderStore.fetchOrders({ page: 1, ...q })
     await nextTick()
-    await fillViewport()
+    restoreListScroll(fromTabSwitch)
+  }
 
-    pollTimer = setInterval(syncIfVisible, POLL_MS)
-    document.addEventListener('visibilitychange', onVisibility)
-
-    observer = new IntersectionObserver(onSentinelIntersect, { rootMargin: '520px' })
-    if (sentinel.value) observer.observe(sentinel.value)
-    bindSeenObserver()
-  })
-
-  onActivated(async () => {
-    pageActive = true
-    hydrateFilter()
-
-    const fromTabSwitch = consumeOrdersTabSwitchEntry()
-    if (fromTabSwitch) {
-      orderStore.clearOrdersListScroll()
-      scrollWindowTo(0)
-    } else if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
-      restoreScroll()
-    } else {
-      scrollWindowTo(0)
-    }
-
-    const q = queryParams()
-    const fresh = orderStore.isOrdersListFresh({ page: 1, ...q })
-
-    if (!orderStore.orders.length || !serverFilterMatches()) {
-      await load()
-    } else if (!fresh) {
-      void load()
-    }
-
+  const startPoll = () => {
     if (!pollTimer) {
       pollTimer = setInterval(syncIfVisible, POLL_MS)
     }
     document.addEventListener('visibilitychange', onVisibility)
+  }
 
+  const stopPoll = () => {
+    if (pollTimer) clearInterval(pollTimer)
+    pollTimer = null
+    document.removeEventListener('visibilitychange', onVisibility)
+  }
+
+  onMounted(() => {
+    orderStore.startRecentMinuteTicker()
+    observer = new IntersectionObserver(onSentinelIntersect, { rootMargin: '520px' })
+    if (sentinel.value) observer.observe(sentinel.value)
+  })
+
+  onActivated(async () => {
+    pageActive = true
+    const fromTabSwitch = consumeOrdersTabSwitchEntry()
+    await bootOrdersList(fromTabSwitch)
+
+    startPoll()
     syncIfVisible()
     bindSeenObserver()
+
+    if (observer && sentinel.value) observer.observe(sentinel.value)
+
     if (!fromTabSwitch) {
-      scheduleFillViewport()
+      if (orderStore.orders.length) {
+        scheduleFillViewport()
+      } else {
+        await fillViewport()
+      }
     }
   })
 
   onDeactivated(() => {
     pageActive = false
     saveScroll()
-    if (pollTimer) clearInterval(pollTimer)
-    pollTimer = null
+    stopPoll()
     if (fillViewportTimer) clearTimeout(fillViewportTimer)
     fillViewportTimer = null
-    document.removeEventListener('visibilitychange', onVisibility)
   })
 
   watch(sentinel, (el) => {
@@ -310,7 +306,6 @@ export function useOrdersListSync(options: {
     },
   )
 
-  // Faqat uzunlik o'zgarsa — to'liq id join emas
   watch(
     () => displayOrders.value.length,
     (len, prev) => {
@@ -323,11 +318,10 @@ export function useOrdersListSync(options: {
 
   onBeforeUnmount(() => {
     saveScroll()
-    if (pollTimer) clearInterval(pollTimer)
-    pollTimer = null
+    stopPoll()
     if (fillViewportTimer) clearTimeout(fillViewportTimer)
     fillViewportTimer = null
-    document.removeEventListener('visibilitychange', onVisibility)
+    orderStore.stopRecentMinuteTicker()
     if (observer) observer.disconnect()
     if (seenObserver) seenObserver.disconnect()
   })

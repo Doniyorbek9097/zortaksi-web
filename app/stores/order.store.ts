@@ -41,8 +41,10 @@ export const useOrderStore = defineStore('order', () => {
     const listText = ref('')
     /** Barchasi / Menki tab */
     const listScope = ref<'all' | 'mine'>('all')
-    /** Filtr/tab almashganda eski HTTP javoblarini rad etish */
+    /** Filtr o'zgarganda eski HTTP javoblarini rad etish */
     let listFetchSeq = 0
+    /** Tab trim — faqat loadMore (append) javoblarini rad etish */
+    let listAppendGen = 0
 
     const rememberListFilter = (params: FetchOrdersParams) => {
         const explicitListeners = formatBotGroupIds(parseBotGroupIds(String(params.listenerUserIds || '')))
@@ -236,7 +238,7 @@ export const useOrderStore = defineStore('order', () => {
 
     /** Boshqa tabga o'tganda — birinchi N ta saqlanadi, scroll tiklanmaydi */
     const trimListForTabSwitch = (keep = TAB_LIST_KEEP) => {
-        listFetchSeq += 1
+        listAppendGen += 1
         listPage1Inflight = null
         trimListForNavigation(keep)
         pruneSeenIdsToCurrentOrders()
@@ -607,15 +609,17 @@ export const useOrderStore = defineStore('order', () => {
 
     const runFetchOrders = async (
         params: FetchOrdersParams = {},
-        opts: { append?: boolean } = {},
+        opts: { append?: boolean; silent?: boolean } = {},
     ) => {
         const isFreshLoad = !opts.append
         const reqSeq = isFreshLoad ? listFetchSeq : -1
-        const appendGen = opts.append ? listFetchSeq : -1
+        const appendGen = opts.append ? listAppendGen : -1
         try {
             if (opts.append) isLoadingMore.value = true
-            else {
+            else if (!opts.silent) {
                 isLoading.value = true
+                rememberListFilter(params)
+            } else {
                 rememberListFilter(params)
             }
 
@@ -647,7 +651,7 @@ export const useOrderStore = defineStore('order', () => {
                 }
                 if (opts.append) {
                     if (!paramsMatchListFilter(params)) return response
-                    if (appendGen !== listFetchSeq) return response
+                    if (appendGen !== listAppendGen) return response
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
                 } else {
@@ -674,7 +678,7 @@ export const useOrderStore = defineStore('order', () => {
 
     const fetchOrders = async (
         params: FetchOrdersParams = {},
-        opts: { append?: boolean } = {},
+        opts: { append?: boolean; silent?: boolean } = {},
     ) => {
         const isFreshLoad = !opts.append && (params.page ?? 1) <= 1
         if (isFreshLoad && listPage1Inflight) {
