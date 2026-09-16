@@ -425,8 +425,8 @@ export const useOrderStore = defineStore('order', () => {
         const loaded = orders.value.length
         if (loaded >= ORDERS_SCROLL_MAX) return false
         const t = Number(total.value) || 0
-        if (t > 0) return loaded < t
-        return page.value < totalPages.value
+        if (t <= 0) return false
+        return loaded < t
     })
 
     const refreshNewCount = async () => {

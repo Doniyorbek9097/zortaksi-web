@@ -135,7 +135,7 @@ export function useOrdersListSync(options: {
 
   const shouldPrefetchMore = () => {
     if (!import.meta.client || !orderStore.hasMore) return false
-    if (!orderStore.orders.length) return true
+    if (!orderStore.orders.length) return false
     return sentinelInView() || viewportNotScrollable()
   }
 
@@ -236,7 +236,7 @@ export function useOrdersListSync(options: {
     bindSeenObserver()
   })
 
-  onActivated(() => {
+  onActivated(async () => {
     if (consumeOrdersTabSwitchEntry()) {
       orderStore.clearOrdersListScroll()
       scrollWindowTo(0)
@@ -244,6 +244,13 @@ export function useOrdersListSync(options: {
       restoreScroll()
     } else {
       scrollWindowTo(0)
+    }
+    if (
+      !orderStore.orders.length &&
+      !orderStore.isLoading &&
+      !orderStore.isLoadingMore
+    ) {
+      await load()
     }
     syncIfVisible()
     bindSeenObserver()
