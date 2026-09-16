@@ -190,6 +190,12 @@
             tone="sky"
           />
         </div>
+
+        <AdminServerResourceStats
+          :stats="serverStats"
+          :loading="serverResourcesLoading"
+          :error="serverResourcesError"
+        />
       </div>
     </section>
 
@@ -265,6 +271,7 @@ import { useAccountStore } from '~/stores/account.store'
 import { useAdminDashboardStats } from '~/composables/dashboard/useAdminDashboardStats'
 import { useAdminChartData } from '~/composables/dashboard/useAdminChartData'
 import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
+import { useServerResources } from '~/composables/dashboard/useServerResources'
 
 definePageMeta({ layout: 'admin' })
 
@@ -305,6 +312,13 @@ const {
 } = useAdminChartData(store)
 
 const {
+  stats: serverStats,
+  loading: serverResourcesLoading,
+  error: serverResourcesError,
+  refresh: refreshServerResources,
+} = useServerResources(3000)
+
+const {
   data: groupInviteLeaderboard,
   loading: groupInviteLoading,
   hydrateFromCache: hydrateGroupInvite,
@@ -319,6 +333,7 @@ const onBonus = () => navigateTo('/admin/bonus')
 usePullToRefresh(async () => {
   await Promise.all([
     store.fetchStats().catch(() => {}),
+    refreshServerResources().catch(() => {}),
     fetchGroupInviteLeaderboard({ background: true }),
     authStore.getMe().catch(() => {}),
   ])
