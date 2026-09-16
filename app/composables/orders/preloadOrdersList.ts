@@ -7,10 +7,8 @@ import { buildOrdersListBootstrapParams } from '~/utils/orderFilterKeywords'
  */
 export function preloadOrdersList(orderStore: ReturnType<typeof useOrderStore>) {
   if (!import.meta.client) return
-  if (orderStore.orders.length > 0 || orderStore.isLoading || orderStore.isLoadingMore) {
-    return
-  }
   const params = buildOrdersListBootstrapParams()
+  if (orderStore.isOrdersListFresh(params)) return
   orderStore.applyListFilter(params)
-  void orderStore.fetchOrders(params)
+  void orderStore.fetchOrders({ page: 1, ...params })
 }

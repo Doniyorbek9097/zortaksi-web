@@ -4,6 +4,10 @@ import {
   consumeOrdersTabSwitchEntry,
   shouldSaveDriverListScroll,
 } from '~/utils/driverScrollNav'
+import {
+  formatBotGroupIds,
+  parseBotGroupIds,
+} from '~/utils/orderFilterKeywords'
 
 type QueryParams = () => {
   limit: number
@@ -196,32 +200,44 @@ export function useOrdersListSync(options: {
     if (!document.hidden) syncIfVisible()
   }
 
-  onMounted(async () => {
-    orderStore.startRecentMinuteTicker()
-    hydrateFilter()
-
+  const serverFilterMatches = () => {
     const q = queryParams()
     const wantSearch = String(q.search || '').trim()
     const wantBotGroup = formatBotGroupIds(parseBotGroupIds(String(q.botGroupId || '')))
     const wantListeners = formatBotGroupIds(parseBotGroupIds(String(q.listenerUserIds || '')))
     const wantText = String(q.text || '').trim()
-    const hasCachedList = orderStore.orders.length > 0
-    const sameServerFilter =
+    return (
       String(orderStore.listSearch || '') === wantSearch &&
       String(orderStore.listBotGroupId || '') === wantBotGroup &&
       String(orderStore.listListenerUserIds || '') === wantListeners &&
       String(orderStore.listText || '') === wantText &&
       orderStore.listScope === 'all'
-    if (hasCachedList && sameServerFilter) {
+    )
+  }
+
+  onMounted(async () => {
+    orderStore.startRecentMinuteTicker()
+    hydrateFilter()
+
+    const q = queryParams()
+    const hasCachedList = orderStore.orders.length > 0 && serverFilterMatches()
+    const fresh = orderStore.isOrdersListFresh({ page: 1, ...q })
+
+    if (hasCachedList) {
       await nextTick()
       if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
         restoreScroll()
       } else {
         scrollWindowTo(0)
       }
-      setTimeout(syncIfVisible, 2500)
     } else {
       scrollWindowTo(0)
+    }
+
+    if (fresh) {
+      void load()
+      syncIfVisible()
+    } else {
       await load()
     }
 
@@ -237,6 +253,8 @@ export function useOrdersListSync(options: {
   })
 
   onActivated(async () => {
+    hydrateFilter()
+
     if (consumeOrdersTabSwitchEntry()) {
       orderStore.clearOrdersListScroll()
       scrollWindowTo(0)
@@ -245,13 +263,16 @@ export function useOrdersListSync(options: {
     } else {
       scrollWindowTo(0)
     }
-    if (
-      !orderStore.orders.length &&
-      !orderStore.isLoading &&
-      !orderStore.isLoadingMore
-    ) {
+
+    const q = queryParams()
+    const fresh = orderStore.isOrdersListFresh({ page: 1, ...q })
+
+    if (!orderStore.orders.length || !serverFilterMatches()) {
       await load()
+    } else if (!fresh) {
+      void load()
     }
+
     syncIfVisible()
     bindSeenObserver()
     scheduleFillViewport()

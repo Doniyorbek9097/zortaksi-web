@@ -71,7 +71,9 @@ export const useOrderStore = defineStore('order', () => {
 
     let syncLatestTimer: ReturnType<typeof setTimeout> | null = null
     let lastFullListFetchAt = 0
+    const ORDERS_LIST_FRESH_MS = 45_000
     const SYNC_SKIP_AFTER_FETCH_MS = 6000
+    let listPage1Inflight: Promise<unknown> | null = null
     let badgeRefreshTimer: ReturnType<typeof setTimeout> | null = null
     const scheduleSyncLatest = (params: FetchOrdersParams = {}, immediate = false) => {
         if (!import.meta.client) return
@@ -167,6 +169,13 @@ export const useOrderStore = defineStore('order', () => {
         if (wantSearch !== listSearch.value.trim()) return false
         if (String(params.text || '').trim() !== listText.value.trim()) return false
         return true
+    }
+
+    /** Preload yoki sahifa — to'liq ro'yxat yaqinda yuklanganmi */
+    const isOrdersListFresh = (params: FetchOrdersParams = {}) => {
+        if (!orders.value.length || !lastFullListFetchAt) return false
+        if (!paramsMatchListFilter(params)) return false
+        return Date.now() - lastFullListFetchAt < ORDERS_LIST_FRESH_MS
     }
 
     /** Tab/filtr o'zgarganda ro'yxat va pagination tozalash */
@@ -582,9 +591,9 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
-    const fetchOrders = async (
+    const runFetchOrders = async (
         params: FetchOrdersParams = {},
-        opts: { append?: boolean } = {}
+        opts: { append?: boolean } = {},
     ) => {
         const isFreshLoad = !opts.append
         const reqSeq = isFreshLoad ? listFetchSeq : -1
@@ -645,6 +654,24 @@ export const useOrderStore = defineStore('order', () => {
             isLoading.value = false
             isLoadingMore.value = false
         }
+    }
+
+    const fetchOrders = async (
+        params: FetchOrdersParams = {},
+        opts: { append?: boolean } = {},
+    ) => {
+        const isFreshLoad = !opts.append && (params.page ?? 1) <= 1
+        if (isFreshLoad && listPage1Inflight) {
+            return listPage1Inflight
+        }
+        const job = runFetchOrders(params, opts)
+        if (isFreshLoad) {
+            listPage1Inflight = job.finally(() => {
+                if (listPage1Inflight === job) listPage1Inflight = null
+            })
+            return listPage1Inflight
+        }
+        return job
     }
 
     // Keyingi sahifani yuklab, mavjud ro'yxatga qo'shadi (infinite scroll)
@@ -843,6 +870,7 @@ export const useOrderStore = defineStore('order', () => {
         listScope,
         applyListFilter,
         resetListForFilterChange,
+        isOrdersListFresh,
         hasActiveListFilter,
         scheduleSyncLatest,
         recentMinuteCount,
