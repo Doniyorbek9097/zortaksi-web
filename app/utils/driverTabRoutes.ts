@@ -30,6 +30,26 @@ export function isAppTabbarPath(path: string): boolean {
   return (APP_TABBAR_PATHS as readonly string[]).includes(normalizePath(path))
 }
 
+/** Haydovchi va admin pastki tabbar — ro'yxat xotirasini qisqartirish uchun */
+export const PANEL_TABBAR_PATHS = [
+  '/admin/dashboard',
+  ...DRIVER_MAIN_TABS,
+] as const
+
+export type PanelTabbarPath = (typeof PANEL_TABBAR_PATHS)[number]
+
+export function isPanelTabbarPath(path: string): path is PanelTabbarPath {
+  return (PANEL_TABBAR_PATHS as readonly string[]).includes(normalizePath(path))
+}
+
+/** Pastki tabbar orasida o'tish (admin dashboard ↔ buyurtmalar/chatlar va h.k.) */
+export function isPanelTabbarSwitch(fromPath: string, toPath: string): boolean {
+  const from = normalizePath(fromPath)
+  const to = normalizePath(toPath)
+  if (!from || !to || from === to) return false
+  return isPanelTabbarPath(from) && isPanelTabbarPath(to)
+}
+
 /** Asosiy tablar orasida o'tish — to'liq ekran loading kerak emas */
 export function isMainTabHop(fromPath: string, toPath: string): boolean {
   const from = normalizePath(fromPath)

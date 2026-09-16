@@ -11,17 +11,19 @@ import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 import {
   DRIVER_MAIN_TABS,
   isDriverMainTab,
+  isPanelTabbarPath,
+  isPanelTabbarSwitch,
   normalizePath,
   type DriverMainTab,
+  type PanelTabbarPath,
 } from '~/utils/driverTabRoutes'
 import {
-  isDriverMainTabSwitch,
   markDriverScrollLeave,
   consumeDriverScrollLeave,
   markOrdersTabSwitchEntry,
 } from '~/utils/driverScrollNav'
 
-function releaseDriverTabMemory(tab: DriverMainTab) {
+function releasePanelTabMemory(tab: PanelTabbarPath) {
   const orderStore = useOrderStore()
   const chatStore = useChatStore()
   const postStore = usePostStore()
@@ -45,7 +47,7 @@ function releaseDriverTabMemory(tab: DriverMainTab) {
 function releaseOtherDriverTabs(active: DriverMainTab) {
   for (const tab of DRIVER_MAIN_TABS) {
     if (tab === active) continue
-    releaseDriverTabMemory(tab)
+    releasePanelTabMemory(tab)
   }
   releaseSessionMediaCache()
 }
@@ -59,7 +61,7 @@ export default defineNuxtPlugin(() => {
     const fromPath = normalizePath(from.path)
     const toPath = normalizePath(to.path)
 
-    if (isDriverMainTabSwitch(fromPath, toPath)) {
+    if (isPanelTabbarSwitch(fromPath, toPath)) {
       markDriverScrollLeave('tab-switch')
       const orderStore = useOrderStore()
       const chatStore = useChatStore()
@@ -82,8 +84,25 @@ export default defineNuxtPlugin(() => {
       return
     }
 
-    if (!isDriverMainTab(toPath)) return
     if (fromPath === toPath) return
+
+    if (isPanelTabbarSwitch(fromPath, toPath)) {
+      if (isPanelTabbarPath(fromPath)) {
+        releasePanelTabMemory(fromPath)
+      }
+      releaseSessionMediaCache()
+
+      if (tabSwitch) {
+        if (toPath === '/driver/orders') {
+          orderStore.clearOrdersListScroll()
+          markOrdersTabSwitchEntry()
+        }
+        window.scrollTo(0, 0)
+      }
+      return
+    }
+
+    if (!isDriverMainTab(toPath)) return
 
     releaseOtherDriverTabs(toPath)
 
