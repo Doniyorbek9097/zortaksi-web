@@ -31,7 +31,7 @@ export function isFullscreenRoute(path: string): boolean {
   return FULLSCREEN_PREFIXES.some((prefix) => p.startsWith(prefix))
 }
 
-function isPanelShellDriverRoute(path: string): boolean {
+export function isPanelShellDriverRoute(path: string): boolean {
   const p = normalizePath(path)
   if (PANEL_SHELL_DRIVER_ROUTES.has(p)) return true
   return p.startsWith('/driver/campaigns/')

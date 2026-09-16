@@ -1,21 +1,20 @@
 import { useAuthStore } from '~/stores/auth.store'
-import { resolveRoutePageLayout } from '~/utils/pageLayoutRoute'
+import { hasPanelShellAccess } from '~/utils/userRole'
 
-/**
- * Keep-alive sahifalar qayta faollashganda layout tiklash.
- * Asosiy sinxronizatsiya — plugins/page-layout.client.ts
- */
+/** Admin panel foydalanuvchilari uchun pastki tabbar — admin layout */
 export function usePanelShellLayout() {
   const authStore = useAuthStore()
-  const route = useRoute()
 
-  onActivated(() => {
-    if (!import.meta.client) return
-    const layout = resolveRoutePageLayout(
-      route.path,
-      authStore.user,
-      route.meta.layout,
-    )
-    setPageLayout(layout)
-  })
+  const apply = () => {
+    if (!import.meta.client || !authStore.sessionReady) return
+    setPageLayout(hasPanelShellAccess(authStore.user) ? 'admin' : 'driver')
+  }
+
+  watch(
+    () => [authStore.sessionReady, authStore.user?.userId] as const,
+    () => apply(),
+    { immediate: true },
+  )
+
+  onActivated(() => apply())
 }

@@ -189,8 +189,6 @@ export function useDriverChatPage() {
   let prevHtmlOverflow = ''
 
   onMounted(() => {
-    setPageLayout(false)
-
     if (isAdmin.value) void loadAdminSlashCommands()
 
     prevBodyOverflow = document.body.style.overflow
@@ -198,10 +196,6 @@ export function useDriverChatPage() {
     document.body.style.overflow = 'hidden'
     document.documentElement.style.overflow = 'hidden'
     window.scrollTo(0, 0)
-  })
-
-  onActivated(() => {
-    setPageLayout(false)
   })
 
   onBeforeUnmount(() => {
