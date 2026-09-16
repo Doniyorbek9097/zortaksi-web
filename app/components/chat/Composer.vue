@@ -129,7 +129,7 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-[50px] self-stretch rounded-none flex items-center justify-center text-[17px] font-black leading-none transition-colors active:opacity-90 disabled:opacity-40"
+            class="shrink-0 w-[30px] self-stretch rounded-none flex items-center justify-center text-[13px] font-black leading-none transition-colors active:opacity-90 disabled:opacity-40"
             :class="slashMenuOpen
               ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white'
               : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
@@ -172,13 +172,14 @@
             @keydown.up.prevent="onSlashUp"
             @keydown.esc.prevent="closeSlashMenu"
             @input="onTextInput"
+            @compositionend="onCompositionEnd"
             @focus="onInputFocus"
             @blur="onInputBlur"
           />
         </div>
 
         <button
-          v-if="text.length > 0"
+          v-if="hasText"
           type="submit"
           :disabled="disabled"
           class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
@@ -257,6 +258,13 @@ const inputPlaceholder = computed(() => {
 
 const TEXTAREA_MIN_PX = 40
 const TEXTAREA_MAX_PX = 128
+
+/** v-model kechikishi bo'lmasin — birinchi belgida jo'natish tugmasi */
+const hasText = ref(false)
+
+const syncHasText = (value: string) => {
+  hasText.value = value.length > 0
+}
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const textInput = ref<HTMLTextAreaElement | null>(null)
@@ -345,15 +353,22 @@ const resizeTextarea = () => {
   el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? 'auto' : 'hidden'
 }
 
-const onTextInput = () => {
+const onTextInput = (e: Event) => {
+  unlockDraft()
+  const value = (e.target as HTMLTextAreaElement).value
+  syncHasText(value)
   resizeTextarea()
   if (!hasSlashCommands.value) return
-  if (text.value.startsWith('/')) {
+  if (value.startsWith('/')) {
     slashMenuOpen.value = true
-    if (text.value.length > 1) slashPickerMode.value = false
+    if (value.length > 1) slashPickerMode.value = false
   } else {
     closeSlashMenu()
   }
+}
+
+const onCompositionEnd = (e: CompositionEvent) => {
+  syncHasText((e.target as HTMLTextAreaElement).value)
 }
 
 const sendSlashCommand = (cmd: string) => {
@@ -362,6 +377,7 @@ const sendSlashCommand = (cmd: string) => {
   if (!value) return
   closeSlashMenu()
   text.value = ''
+  syncHasText('')
   emit('send', value)
 }
 
@@ -429,10 +445,12 @@ const send = () => {
   closeSlashMenu()
   emit('send', value)
   text.value = ''
+  syncHasText('')
   nextTick(resizeTextarea)
 }
 
-watch(text, () => {
+watch(text, (value) => {
+  syncHasText(value)
   nextTick(resizeTextarea)
 })
 
