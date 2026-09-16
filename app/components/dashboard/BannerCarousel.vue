@@ -18,7 +18,7 @@
           v-for="slide in slides"
           :key="slide.id"
           type="button"
-          class="w-full shrink-0 relative flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-900 aspect-[2.15/1] min-h-[132px] sm:min-h-[148px]"
+          class="w-full shrink-0 relative block overflow-hidden bg-slate-100 dark:bg-slate-900 aspect-[3/1]"
           :class="slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default'"
           :aria-label="slide.targetUrl ? 'Banner' : 'Reklama'"
           @click="openSlide(slide)"
@@ -26,7 +26,7 @@
           <img
             :src="slide.src"
             alt=""
-            class="w-full h-full object-contain"
+            class="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
             draggable="false"
           >
