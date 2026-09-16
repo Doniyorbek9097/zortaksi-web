@@ -1,7 +1,10 @@
 import { useChatStore } from '~/stores/chat.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
+import { useOrderStore } from '~/stores/order.store'
 import { hasPanelShellAccess, resolveHomePath } from '~/utils/userRole'
+import { ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
+import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
 
 /**
  * Admin layout — sessiya tekshiruvi, statistika va chat badge.
@@ -10,6 +13,7 @@ export function useAdminLayoutBoot() {
   const chatStore = useChatStore()
   const authStore = useAuthStore()
   const dashboardStore = useAdminDashboardStore()
+  const orderStore = useOrderStore()
 
   watch(
     () => [authStore.sessionReady, authStore.user] as const,
@@ -25,7 +29,17 @@ export function useAdminLayoutBoot() {
   const refreshBadges = async () => {
     if (!authStore.sessionReady || (!authStore.token && !authStore.user)) return
     if (!hasPanelShellAccess(authStore.user)) return
-    if (!chatStore.chats.length) await chatStore.fetchChats({ page: 1, limit: 20 })
+    void orderStore.refreshNewCount()
+    if (!chatStore.chats.length) {
+      void chatStore.fetchChats({ page: 1, limit: TAB_LIST_KEEP }, { silent: true })
+    }
+  }
+
+  const preloadOrders = () => {
+    if (!import.meta.client || !authStore.sessionReady) return
+    if (!hasPanelShellAccess(authStore.user)) return
+    if (orderStore.orders.length > 0 || orderStore.isLoading) return
+    void orderStore.fetchOrders({ page: 1, limit: ORDERS_PAGE_LIMIT })
   }
 
   watch(
@@ -38,8 +52,14 @@ export function useAdminLayoutBoot() {
       }
       dashboardStore.loadCached()
       void dashboardStore.fetchStats({ background: dashboardStore.isReady })
+      orderStore.startRecentMinuteTicker()
       void refreshBadges()
+      preloadOrders()
     },
     { immediate: true },
   )
+
+  onBeforeUnmount(() => {
+    orderStore.stopRecentMinuteTicker()
+  })
 }

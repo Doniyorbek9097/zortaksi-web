@@ -47,70 +47,24 @@
 
     <div v-else>
       <ul class="divide-y divide-slate-100 dark:divide-slate-800">
-        <li
-          v-for="item in items"
-          :key="item.id"
-          class="flex items-center gap-3 px-4 py-3"
-          :class="driverLinkable(item) ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/60 active:bg-slate-100 dark:active:bg-slate-800 transition-colors' : ''"
-          :role="driverLinkable(item) ? 'button' : undefined"
-          :tabindex="driverLinkable(item) ? 0 : undefined"
-          @click="openDriver(item)"
-          @keydown.enter.prevent="openDriver(item)"
-        >
-          <span
-            class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-            :class="iconClass(item)"
-          >
-            <font-awesome-icon :icon="iconName(item)" class="text-sm" />
-          </span>
-          <div class="flex-1 min-w-0">
-            <p class="text-[13px] font-black text-slate-900 dark:text-white truncate">
-              {{ titleFor(item) }}
-            </p>
-            <p
-              v-if="showDriver && (item.driverName || item.userId)"
-              class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 truncate"
-            >
-              {{ item.driverName || item.userId }}
-              <span v-if="item.driverPhone" class="font-medium text-slate-400">
-                · {{ item.driverPhone }}
-              </span>
-            </p>
-            <div class="mt-1 flex flex-wrap items-center gap-1.5">
-              <span
-                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide"
-                :class="methodBadgeClass(item.method)"
-              >
-                <font-awesome-icon :icon="methodIcon(item.method)" class="text-[8px]" />
-                {{ methodLabel(item.method) }}
-              </span>
-              <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                {{ formatDate(item.createdAt) }}
-              </span>
-            </div>
-          </div>
-          <div class="text-right shrink-0">
-            <p class="text-sm font-black text-emerald-500">
-              +{{ formatMoney(item.amount) }}
-            </p>
-            <p class="text-[10px] font-bold text-emerald-600/80 dark:text-emerald-400/80">
-              {{ statusLabel(item.status) }}
-            </p>
-          </div>
-          <button
-            v-if="deletable"
-            type="button"
-            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-500 text-white shadow-sm active:scale-95 transition-transform disabled:opacity-50"
-            aria-label="To'lovni o'chirish"
-            :disabled="deletingId === item.id"
-            @click.stop="askDelete(item)"
-          >
-            <font-awesome-icon
-              :icon="deletingId === item.id ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
-              :class="deletingId === item.id ? 'animate-spin' : ''"
-              class="text-[12px]"
-            />
-          </button>
+        <li v-for="item in items" :key="item.id">
+          <DriverPaymentHistoryRow
+            :deletable="deletable"
+            :deleting="deletingId === item.id"
+            :linkable="driverLinkable(item)"
+            :title="titleFor(item)"
+            :driver-line="driverLineFor(item)"
+            :method-label="methodLabel(item.method)"
+            :method-badge-class="methodBadgeClass(item.method)"
+            :method-icon="methodIcon(item.method)"
+            :date-label="formatDate(item.createdAt)"
+            :amount-label="formatMoney(item.amount)"
+            :status-label="statusLabel(item.status)"
+            :icon-name="iconName(item)"
+            :icon-class="iconClass(item)"
+            @open="openDriver(item)"
+            @delete="askDelete(item)"
+          />
         </li>
       </ul>
 
@@ -218,6 +172,12 @@ const emit = defineEmits<{ deleted: [] }>()
 
 const driverLinkable = (item: PaymentHistoryItem) =>
   Boolean(props.showDriver && item.userId)
+
+const driverLineFor = (item: PaymentHistoryItem) => {
+  if (!props.showDriver || (!item.driverName && !item.userId)) return ''
+  const who = item.driverName || item.userId
+  return item.driverPhone ? `${who} · ${item.driverPhone}` : String(who)
+}
 
 const openDriver = (item: PaymentHistoryItem) => {
   const id = String(item.userId || '').trim()

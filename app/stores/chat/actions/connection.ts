@@ -14,6 +14,8 @@ const ADMIN_CONNECT_TIMEOUT_MS = 10000
 const PROXY_CONNECT_TIMEOUT_MS = 60000
 export const DRIVER_ORDER_CONNECT_FAIL =
     "Bu buyurtma bilan ulanib bo'lmadi. Admindan yordam so'rang."
+const ADMIN_ORDER_PROXY_REASON =
+    "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?"
 const SOCKET_WAIT_MS = 600
 
 type ConnectAck = {
@@ -345,6 +347,17 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const isOrderChat = !!(chat?.orderId)
         const isAdmin = isAdminUser(authStore.user)
+
+        const offerAdminOrderProxy = (reason?: string): boolean => {
+            if (!isAdmin || !isOrderChat || opts.viaProxy || !CHAT_PROXY_CONNECT_ENABLED) {
+                return false
+            }
+            connectionStatus.value = 'proxy-required'
+            connectionReason.value =
+                String(reason || '').trim() || ADMIN_ORDER_PROXY_REASON
+            return true
+        }
+
         const connectTimeout = opts.viaProxy
             ? PROXY_CONNECT_TIMEOUT_MS
             : isAdmin
@@ -368,7 +381,14 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                     accessHash: res.data?.accessHash,
                 })
 
-                if (next === 'ready') {
+                if (
+                    connectionStatus.value === 'unreachable' &&
+                    next !== 'restricted'
+                ) {
+                    offerAdminOrderProxy(res.data?.reason || connectionReason.value)
+                }
+
+                if (connectionStatus.value === 'ready') {
                     void fetchPresence(chatId)
                 }
                 return res
@@ -380,6 +400,8 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                     connectionReason.value =
                         String(res.message || '').trim() ||
                         "Proksi orqali ham bog'lanib bo'lmadi."
+                } else if (offerAdminOrderProxy(res.message)) {
+                    /* admin order chat — proksi ruxsati */
                 } else if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
                     connectionReason.value = res.message ?? ''
@@ -394,6 +416,8 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 connectionReason.value =
                     String(err?.message || '').trim() ||
                     "Proksi orqali ham bog'lanib bo'lmadi."
+            } else if (offerAdminOrderProxy(err?.message)) {
+                /* admin order chat — proksi ruxsati */
             } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = err?.message ?? ''
@@ -550,9 +574,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             return
         }
         connectionStatus.value = 'proxy-required'
-        connectionReason.value =
-            reason?.trim() ||
-            "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?"
+        connectionReason.value = reason?.trim() || ADMIN_ORDER_PROXY_REASON
     }
 
     return {
