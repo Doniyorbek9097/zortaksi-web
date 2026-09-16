@@ -119,7 +119,7 @@
         >
 
         <div
-          class="flex-1 flex items-end min-w-0 rounded-2xl transition-all"
+          class="flex-1 flex items-center min-w-0 rounded-2xl transition-all"
           :class="[
             support ? supportComposerInputClass : 'bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30',
             disabled ? 'opacity-60' : '',
@@ -129,7 +129,7 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-9 h-9 ml-1 rounded-full flex items-center justify-center text-[15px] font-black transition-all active:scale-95 disabled:opacity-40 shadow-sm"
+            class="shrink-0 w-9 h-9 ml-1.5 my-1.5 self-center rounded-lg flex items-center justify-center text-[15px] font-black transition-all active:scale-95 disabled:opacity-40 shadow-sm"
             :class="slashMenuOpen
               ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sky-500/30 ring-2 ring-sky-400/40'
               : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200/80 dark:border-slate-600 hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
@@ -146,7 +146,7 @@
             v-model="text"
             name="zortaksi-chat-message"
             rows="1"
-            enterkeyhint="send"
+            enterkeyhint="enter"
             autocomplete="off"
             autocorrect="on"
             autocapitalize="sentences"
@@ -380,17 +380,9 @@ const onSlashUp = () => {
 }
 
 const onEnterKey = (e: KeyboardEvent) => {
-  if (e.shiftKey) return
+  if (!showSlashMenu.value || !filteredSlashCommands.value[slashHighlight.value]) return
   e.preventDefault()
-  onEnter()
-}
-
-const onEnter = () => {
-  if (showSlashMenu.value && filteredSlashCommands.value[slashHighlight.value]) {
-    sendSlashCommand(filteredSlashCommands.value[slashHighlight.value].cmd)
-    return
-  }
-  send()
+  sendSlashCommand(filteredSlashCommands.value[slashHighlight.value].cmd)
 }
 
 const unlockDraft = () => {
