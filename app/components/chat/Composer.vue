@@ -119,7 +119,7 @@
         >
 
         <div
-          class="flex-1 flex items-end min-w-0 rounded-2xl transition-all"
+          class="flex-1 flex items-stretch min-w-0 rounded-2xl overflow-hidden transition-all"
           :class="[
             support ? supportComposerInputClass : 'bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30',
             disabled ? 'opacity-60' : '',
@@ -129,10 +129,10 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-6 h-6 ml-1 mb-2 self-end rounded-md flex items-center justify-center text-[11px] font-black leading-none transition-all active:scale-95 disabled:opacity-40"
+            class="shrink-0 w-[50px] self-stretch rounded-none flex items-center justify-center text-[17px] font-black leading-none transition-colors active:opacity-90 disabled:opacity-40"
             :class="slashMenuOpen
-              ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sky-500/30 ring-2 ring-sky-400/40'
-              : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200/80 dark:border-slate-600 hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
+              ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white'
+              : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
             aria-label="Admin komandalar"
             :aria-expanded="slashMenuOpen"
             @mousedown.prevent
@@ -163,7 +163,7 @@
               support
                 ? 'text-violet-900 dark:text-violet-50 placeholder:text-violet-600/80 dark:placeholder:text-violet-300/50'
                 : 'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-500',
-              hasSlashCommands ? 'pl-0.5' : 'pl-4',
+              hasSlashCommands ? 'pl-3' : 'pl-4',
             ]"
             @touchstart.passive="unlockDraft"
             @mousedown="unlockDraft"
