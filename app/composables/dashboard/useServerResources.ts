@@ -1,24 +1,27 @@
+type ByteStats = {
+  totalBytes: number
+  usedBytes: number
+  freeBytes: number
+  usedPercent: number
+  totalGb: number
+  usedGb: number
+  freeGb: number
+}
+
 export interface ServerResourceStats {
-  memory: {
-    totalBytes: number
-    usedBytes: number
-    freeBytes: number
-    usedPercent: number
-    totalGb: number
-    usedGb: number
-    freeGb: number
-  }
+  memory: ByteStats
   cpu: {
     cores: number
     model: string
     usedPercent: number
   }
+  disk: ByteStats
   hostname: string
   platform: string
   updatedAt: string
 }
 
-/** Admin dashboard — server RAM/CPU (har 3s yangilanadi) */
+/** Admin dashboard — server RAM/CPU/Disk (har 3s yangilanadi) */
 export function useServerResources(pollMs = 3000) {
   const stats = ref<ServerResourceStats | null>(null)
   const loading = ref(false)
@@ -72,9 +75,8 @@ export function useServerResources(pollMs = 3000) {
       const res = await useApi('/admin/server-maintenance', { method: 'POST' })
       if (res?.success) {
         maintenanceMessage.value =
-          String(res.data?.message || 'PM2 qayta ishga tushirilmoqda...')
-        setTimeout(() => void fetchResources(), 12_000)
-        setTimeout(() => void fetchResources(), 20_000)
+          String(res.data?.message || 'Keshlar tozalandi.')
+        setTimeout(() => void fetchResources(), 3000)
         return res
       }
       error.value = String(res?.message || 'Server bo\'shatilmadi')

@@ -7,7 +7,7 @@
     >
       <div class="flex items-center gap-1.5 min-w-0">
         <div
-          class="w-6 h-6 rounded-md bg-slate-700 dark:bg-slate-600 flex items-center justify-center text-white text-[8px] shrink-0"
+          class="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[8px] shrink-0 shadow-sm"
         >
           <font-awesome-icon icon="fa-solid fa-server" />
         </div>
@@ -36,42 +36,27 @@
         class="h-10 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse"
       />
 
-      <div v-else-if="stats" class="grid grid-cols-2 gap-1.5">
-        <div class="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 px-2 py-1.5">
+      <div v-else-if="stats" class="grid grid-cols-3 gap-1.5">
+        <div
+          v-for="item in resourceItems(stats)"
+          :key="item.key"
+          class="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 px-2 py-1.5"
+        >
           <div class="flex items-center justify-between gap-1 mb-1">
-            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">RAM</span>
-            <span class="text-[10px] font-black tabular-nums" :class="percentTone(stats.memory.usedPercent)">
-              {{ stats.memory.usedPercent }}%
+            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">{{ item.label }}</span>
+            <span class="text-[10px] font-black tabular-nums" :class="percentTone(item.percent)">
+              {{ item.percent }}%
             </span>
           </div>
           <div class="h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
-              :class="barTone(stats.memory.usedPercent)"
-              :style="{ width: `${Math.min(100, stats.memory.usedPercent)}%` }"
+              :class="barTone(item.percent)"
+              :style="{ width: `${Math.min(100, item.percent)}%` }"
             />
           </div>
           <p class="mt-1 text-[8px] font-bold text-slate-400 tabular-nums truncate">
-            {{ stats.memory.usedGb }}/{{ stats.memory.totalGb }} GB
-          </p>
-        </div>
-
-        <div class="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 px-2 py-1.5">
-          <div class="flex items-center justify-between gap-1 mb-1">
-            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">CPU</span>
-            <span class="text-[10px] font-black tabular-nums" :class="percentTone(stats.cpu.usedPercent)">
-              {{ stats.cpu.usedPercent }}%
-            </span>
-          </div>
-          <div class="h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-            <div
-              class="h-full rounded-full transition-all duration-500"
-              :class="barTone(stats.cpu.usedPercent)"
-              :style="{ width: `${Math.min(100, stats.cpu.usedPercent)}%` }"
-            />
-          </div>
-          <p class="mt-1 text-[8px] font-bold text-slate-400 tabular-nums truncate">
-            {{ stats.cpu.cores }} yadro
+            {{ item.caption }}
           </p>
         </div>
       </div>
@@ -90,8 +75,8 @@
 
     <BaseConfirmDialog
       v-model="confirmOpen"
-      title="Serverni bo'shatish"
-      message="Keshlar tozalanadi va backend qayta ishga tushiriladi. 10–15 soniya API uziladi. Davom etasizmi?"
+      title="Keshni tozalash"
+      message="Ilova keshlari tozalanadi (admin, ulanish, guruhlar va boshqalar). Server qayta ishga tushirilmaydi. Davom etasizmi?"
       confirm-text="Bo'shatish"
       cancel-text="Bekor"
       variant="danger"
@@ -122,6 +107,29 @@ const onConfirmMaintenance = () => {
   emit('maintenance')
   confirmOpen.value = false
 }
+
+const resourceItems = (stats: ServerResourceStats) => [
+  {
+    key: 'ram',
+    label: 'RAM',
+    percent: stats.memory.usedPercent,
+    caption: `${stats.memory.usedGb}/${stats.memory.totalGb} GB`,
+  },
+  {
+    key: 'cpu',
+    label: 'CPU',
+    percent: stats.cpu.usedPercent,
+    caption: `${stats.cpu.cores} yadro`,
+  },
+  {
+    key: 'disk',
+    label: 'Disk',
+    percent: stats.disk?.usedPercent ?? 0,
+    caption: stats.disk?.totalGb
+      ? `${stats.disk.usedGb}/${stats.disk.totalGb} GB`
+      : '—',
+  },
+]
 
 const percentTone = (pct: number) => {
   if (pct >= 85) return 'text-rose-600 dark:text-rose-400'
