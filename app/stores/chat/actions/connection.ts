@@ -8,8 +8,8 @@ import { isAdminUser } from '~/utils/userRole'
 const CONNECT_TIMEOUT_MS = 45000
 /** Order chat — tez javob (haydovchi kutmasin) */
 const ORDER_CONNECT_TIMEOUT_MS = 6000
-/** Admin order chat — haydovchi kabi tez probe, keyin proksi taklifi */
-const ADMIN_ORDER_CONNECT_TIMEOUT_MS = ORDER_CONNECT_TIMEOUT_MS
+/** Admin order chat — tez + to'liq o'z hisob probe (keyin proksi) */
+const ADMIN_ORDER_CONNECT_TIMEOUT_MS = 35_000
 /** Proksi — guruh tarixidan hash olish uzoq vaqt olishi mumkin */
 const PROXY_CONNECT_TIMEOUT_MS = 60000
 export const DRIVER_ORDER_CONNECT_FAIL =
@@ -348,16 +348,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const isOrderChat = !!(chat?.orderId)
         const isAdmin = isAdminUser(authStore.user)
 
-        const offerAdminOrderProxy = (reason?: string): boolean => {
-            if (!isAdmin || !isOrderChat || opts.viaProxy || !CHAT_PROXY_CONNECT_ENABLED) {
-                return false
-            }
-            connectionStatus.value = 'proxy-required'
-            connectionReason.value =
-                String(reason || '').trim() || ADMIN_ORDER_PROXY_REASON
-            return true
-        }
-
         const connectTimeout = opts.viaProxy
             ? PROXY_CONNECT_TIMEOUT_MS
             : isAdmin && isOrderChat
@@ -381,13 +371,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                     accessHash: res.data?.accessHash,
                 })
 
-                if (
-                    connectionStatus.value === 'unreachable' &&
-                    next !== 'restricted'
-                ) {
-                    offerAdminOrderProxy(res.data?.reason || connectionReason.value)
-                }
-
                 if (connectionStatus.value === 'ready') {
                     void fetchPresence(chatId)
                 }
@@ -400,8 +383,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                     connectionReason.value =
                         String(res.message || '').trim() ||
                         "Proksi orqali ham bog'lanib bo'lmadi."
-                } else if (offerAdminOrderProxy(res.message)) {
-                    /* admin order chat — proksi ruxsati */
                 } else if (!opts.silent) {
                     connectionStatus.value = 'unreachable'
                     connectionReason.value = res.message ?? ''
@@ -416,8 +397,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
                 connectionReason.value =
                     String(err?.message || '').trim() ||
                     "Proksi orqali ham bog'lanib bo'lmadi."
-            } else if (offerAdminOrderProxy(err?.message)) {
-                /* admin order chat — proksi ruxsati */
             } else if (!opts.silent) {
                 connectionStatus.value = 'unreachable'
                 connectionReason.value = err?.message ?? ''

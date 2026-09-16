@@ -471,8 +471,7 @@ export function useChatPageLoader(opts: {
           chatStore.primeOrderChatConnecting(chatRef)
         }
         const connStatus = chatStore.connectionStatus
-        const skipRepeatOwnConnect =
-          !!orderChat && (connStatus === 'proxy-required' || connStatus === 'unreachable')
+        const skipRepeatOwnConnect = !!orderChat && connStatus === 'connecting'
         if (linked) {
           chatStore.connectionStatus = 'ready'
         } else if (!skipRepeatOwnConnect) {
