@@ -24,10 +24,11 @@
 
     <DashboardPaymentBanner v-if="!tariffActive" @action="onBuyTariff" />
 
+    <DashboardBannerCarousel v-if="promoBanners.length" :banners="promoBanners" />
+
     <DashboardBalanceCard
       :balance="balance"
       :active="tariffActive"
-      :banners="promoBanners"
       @buy="onBuyTariff"
     />
 

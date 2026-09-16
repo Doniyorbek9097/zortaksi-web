@@ -223,9 +223,9 @@
               </span>
             </span>
           </div>
+          </div>
         </div>
       </div>
-    </div>
     </div>
 
     <!-- Ulanish banneri — order chatda input placeholder yetarli -->
@@ -269,42 +269,42 @@
     <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl">
       <div class="px-3 pb-2">
         <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[12px] font-bold text-center">
-          <p>
-            <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
-            {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
-          </p>
+        <p>
+          <font-awesome-icon icon="fa-solid fa-exclamation-triangle" class="mr-1.5" />
+          {{ connReason || 'Hozircha bu foydalanuvchiga yozib bo\'lmaydi (spam yoki bloklangan).' }}
+        </p>
         </div>
       </div>
       <div v-if="!callPhone" class="px-3 pb-2">
-        <button
-          type="button"
+          <button
+            type="button"
           class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-amber-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          @click="goOrders"
-        >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-        </button>
+            @click="goOrders"
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+          </button>
       </div>
     </div>
 
     <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl">
       <div class="px-3 pb-2">
         <div class="py-3 px-3 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 text-[12px] font-bold text-center">
-          <p>
-            <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
-            {{ connReason || (callPhone
+        <p>
+          <font-awesome-icon icon="fa-solid fa-ban" class="mr-1.5" />
+          {{ connReason || (callPhone
               ? 'Telegram orqali ulanib bo\'lmadi. Telefon qiling.'
               : 'Telegram orqali ulanib bo\'lmadi.') }}
           </p>
         </div>
       </div>
       <div v-if="!hideBottomOnConnectFail && !callPhone" class="px-3 pb-2">
-        <button
-          type="button"
+          <button
+            type="button"
           class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-red-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all"
-          @click="goOrders"
-        >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
-        </button>
+            @click="goOrders"
+          >
+            <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
+          </button>
       </div>
     </div>
 

@@ -76,9 +76,18 @@
                 · {{ item.driverPhone }}
               </span>
             </p>
-            <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
-              {{ formatDate(item.createdAt) }}
-            </p>
+            <div class="mt-1 flex flex-wrap items-center gap-1.5">
+              <span
+                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wide"
+                :class="methodBadgeClass(item.method)"
+              >
+                <font-awesome-icon :icon="methodIcon(item.method)" class="text-[8px]" />
+                {{ methodLabel(item.method) }}
+              </span>
+              <span class="text-[11px] font-medium text-slate-400 dark:text-slate-500">
+                {{ formatDate(item.createdAt) }}
+              </span>
+            </div>
           </div>
           <div class="text-right shrink-0">
             <p class="text-sm font-black text-emerald-500">
@@ -150,11 +159,18 @@
 
 <script setup lang="ts">
 import { PAYMENT_PAGE_SIZE } from '~/utils/memoryBudget'
+import {
+  paymentMethodBadgeClass,
+  paymentMethodIcon,
+  paymentMethodLabel,
+  type PaymentMethod,
+} from '~/utils/paymentMethod'
 
 export interface PaymentHistoryItem {
   id: string
   amount: number
   kind: 'admin_credit' | 'self_buy' | 'admin_assign'
+  method?: PaymentMethod
   tariffName?: string | null
   note?: string
   createdAt: string | Date
@@ -228,6 +244,11 @@ const statusLabel = (status?: string) => {
   return 'Yakunlangan'
 }
 
+const methodLabel = (method?: PaymentMethod | string | null) => paymentMethodLabel(method)
+const methodBadgeClass = (method?: PaymentMethod | string | null) =>
+  paymentMethodBadgeClass(method)
+const methodIcon = (method?: PaymentMethod | string | null) => paymentMethodIcon(method)
+
 const titleFor = (item: PaymentHistoryItem) => {
   const note = String(item.note || '')
   if (item.kind === 'self_buy') {
@@ -244,11 +265,19 @@ const titleFor = (item: PaymentHistoryItem) => {
 }
 
 const iconName = (item: PaymentHistoryItem) => {
+  if (item.method === 'card') return 'fa-solid fa-credit-card'
+  if (item.method === 'click') return 'fa-solid fa-bolt'
   if (item.kind === 'self_buy' || item.kind === 'admin_assign') return 'fa-solid fa-tags'
   return 'fa-solid fa-wallet'
 }
 
 const iconClass = (item: PaymentHistoryItem) => {
+  if (item.method === 'card') {
+    return 'bg-violet-50 text-violet-500 dark:bg-violet-950/40 dark:text-violet-400'
+  }
+  if (item.method === 'click') {
+    return 'bg-sky-50 text-sky-500 dark:bg-sky-950/40 dark:text-sky-400'
+  }
   if (item.kind === 'self_buy' || item.kind === 'admin_assign') {
     return 'bg-violet-50 text-violet-500 dark:bg-violet-950/40 dark:text-violet-400'
   }
