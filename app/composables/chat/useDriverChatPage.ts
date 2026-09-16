@@ -4,7 +4,6 @@ import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
 import { groupMessagesByDate } from '~/utils/chatDate'
-import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 import {
   clearTelegramCloseOnBack,
   installTelegramChatBackTrap,
@@ -88,7 +87,6 @@ export function useDriverChatPage() {
     effectiveChatId: meta.effectiveChatId,
     isOpening,
     openFailed,
-    isAdmin,
     isInAppChat: meta.isInAppChat,
     needsTelegramConnect: meta.needsTelegramConnect,
     isOrderSenderChat: meta.isOrderSenderChat,
@@ -217,7 +215,6 @@ export function useDriverChatPage() {
     chatStore,
     isAdmin,
     adminSlashCommands,
-    CHAT_PROXY_CONNECT_ENABLED,
     chatId,
     isOpening,
     conn,

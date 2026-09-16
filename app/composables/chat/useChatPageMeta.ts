@@ -250,7 +250,6 @@ export function useChatPageMeta(opts: {
   const hideBottomOnConnectFail = computed(
     () =>
       isOrderSenderChat.value &&
-      !isAdmin.value &&
       needsTelegramConnect.value &&
       conn.value === 'unreachable',
   )

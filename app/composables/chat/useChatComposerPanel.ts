@@ -5,9 +5,7 @@ import type { ChatReplyTarget } from '~/components/chat/ReplyBar.vue'
 
 type ChatStore = ReturnType<typeof useChatStore>
 
-/**
- * Chat yozish paneli — composer holati, yuborish va proksi ulanish.
- */
+/** Chat yozish paneli — composer holati va yuborish */
 export function useChatComposerPanel(opts: {
   chatStore: ChatStore
   draft: Ref<string>
@@ -18,7 +16,6 @@ export function useChatComposerPanel(opts: {
   effectiveChatId: ComputedRef<string>
   isOpening: ComputedRef<boolean>
   openFailed: Ref<boolean>
-  isAdmin: ComputedRef<boolean>
   isInAppChat: ComputedRef<boolean>
   needsTelegramConnect: ComputedRef<boolean>
   isOrderSenderChat: ComputedRef<boolean>
@@ -42,7 +39,6 @@ export function useChatComposerPanel(opts: {
     effectiveChatId,
     isOpening,
     openFailed,
-    isAdmin,
     isInAppChat,
     needsTelegramConnect,
     isOrderSenderChat,
@@ -56,8 +52,6 @@ export function useChatComposerPanel(opts: {
     connReason,
     callPhone,
   } = opts
-
-  const proxyConnecting = ref(false)
 
   const composerBusy = computed(
     () => isOpening.value && !composerLikelyReady.value && !hasInstantContext.value,
@@ -73,7 +67,6 @@ export function useChatComposerPanel(opts: {
         conn.value === 'ready' ||
         conn.value === 'connecting' ||
         conn.value === 'idle' ||
-        conn.value === 'proxy-required' ||
         conn.value === 'unreachable'),
   )
 
@@ -89,14 +82,8 @@ export function useChatComposerPanel(opts: {
       return 'Ulanmoqda...'
     }
     if (isOrderSenderChat.value && needsTelegramConnect.value && !hasPeerLink.value) {
-      if (!isAdmin.value && (conn.value === 'unreachable' || conn.value === 'proxy-required')) {
+      if (conn.value === 'unreachable') {
         return DRIVER_ORDER_CONNECT_FAIL
-      }
-      if (isAdmin.value && conn.value === 'proxy-required') {
-        return 'Proksi orqali ulanish uchun yuqoridagi tugmani bosing'
-      }
-      if (isAdmin.value && conn.value === 'unreachable') {
-        return connReason.value || "Ulanib bo'lmadi"
       }
       if (conn.value === 'connecting' || conn.value === 'idle') {
         return 'Ulanmoqda...'
@@ -109,11 +96,8 @@ export function useChatComposerPanel(opts: {
     ) {
       return 'Telegram ulanmoqda...'
     }
-    if (conn.value === 'proxy-required' && isAdmin.value) {
-      return 'Proksi orqali ulanish uchun yuqoridagi tugmani bosing'
-    }
     if (conn.value === 'unreachable') {
-      if (isOrderSenderChat.value && !isAdmin.value) {
+      if (isOrderSenderChat.value) {
         return DRIVER_ORDER_CONNECT_FAIL
       }
       return callPhone.value
@@ -195,37 +179,7 @@ export function useChatComposerPanel(opts: {
     scrollToBottom()
   }
 
-  /** Admin — tinglovchi userbot orqali ulanish */
-  const confirmProxyConnect = async () => {
-    if (proxyConnecting.value) return
-    const id = effectiveChatId.value
-    if (!id || id === 'open') return
-    proxyConnecting.value = true
-    try {
-      const res = await chatStore.connect(id, { viaProxy: true })
-      const status = res?.data?.status
-      if (status === 'ready') {
-        chatStore.connectionStatus = 'ready'
-        chatStore.connectionReason = ''
-      } else {
-        chatStore.connectionStatus = status === 'restricted' ? 'restricted' : 'unreachable'
-        chatStore.connectionReason =
-          String(res?.data?.reason || res?.message || '').trim() ||
-          "Proksi orqali ham bog'lanib bo'lmadi."
-      }
-    } finally {
-      proxyConnecting.value = false
-    }
-  }
-
-  const dismissProxyConfirm = () => {
-    chatStore.connectionStatus = 'restricted'
-    chatStore.connectionReason =
-      "O'z hisobingiz orqali yozib bo'lmadi. Proksi orqali yozish rad etildi."
-  }
-
   return {
-    proxyConnecting,
     composerBusy,
     showComposer,
     composerDisabled,
@@ -234,7 +188,5 @@ export function useChatComposerPanel(opts: {
     onSend,
     onVoice,
     onPhoto,
-    confirmProxyConnect,
-    dismissProxyConfirm,
   }
 }

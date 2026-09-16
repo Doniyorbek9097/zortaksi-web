@@ -3,19 +3,14 @@ import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 import { useAuthStore } from '~/stores/auth.store'
-import { isAdminUser } from '~/utils/userRole'
 
 const CONNECT_TIMEOUT_MS = 45000
-/** Order chat — tez javob (haydovchi kutmasin) */
+/** Order chat — tez javob (haydovchi va admin bir xil) */
 const ORDER_CONNECT_TIMEOUT_MS = 6000
-/** Admin order chat — tez + to'liq o'z hisob probe (keyin proksi) */
-const ADMIN_ORDER_CONNECT_TIMEOUT_MS = 35_000
 /** Proksi — guruh tarixidan hash olish uzoq vaqt olishi mumkin */
 const PROXY_CONNECT_TIMEOUT_MS = 60000
 export const DRIVER_ORDER_CONNECT_FAIL =
     'Bu buyurtma bilan ulanish imkonsiz.'
-const ADMIN_ORDER_PROXY_REASON =
-    "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?"
 const SOCKET_WAIT_MS = 600
 
 type ConnectAck = {
@@ -279,8 +274,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (!CHAT_PROXY_CONNECT_ENABLED && next === 'proxy-required') {
             next = 'unreachable'
         }
-        const authStore = useAuthStore()
-        if (!isAdminUser(authStore.user) && next === 'proxy-required') {
+        if (next === 'proxy-required') {
             next = 'unreachable'
             reason = DRIVER_ORDER_CONNECT_FAIL
         }
@@ -346,15 +340,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         activeConnectChatId = chatId
 
         const isOrderChat = !!(chat?.orderId)
-        const isAdmin = isAdminUser(authStore.user)
 
         const connectTimeout = opts.viaProxy
             ? PROXY_CONNECT_TIMEOUT_MS
-            : isAdmin && isOrderChat
-                ? ADMIN_ORDER_CONNECT_TIMEOUT_MS
-                : isOrderChat
-                    ? ORDER_CONNECT_TIMEOUT_MS
-                    : CONNECT_TIMEOUT_MS
+            : isOrderChat
+                ? ORDER_CONNECT_TIMEOUT_MS
+                : CONNECT_TIMEOUT_MS
 
         try {
             const res = await requestConnect(chatId, {
@@ -536,24 +527,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (peerTypingChatId.value === chatId) peerTypingChatId.value = null
     }
 
-    const offerSendProxy = (chatId: string, reason?: string) => {
+    const offerSendProxy = (chatId: string, _reason?: string) => {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
         if (!isRelevant) return
-        const authStore = useAuthStore()
-        if (!isAdminUser(authStore.user)) {
-            connectionStatus.value = 'unreachable'
-            connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
-            return
-        }
-        if (!CHAT_PROXY_CONNECT_ENABLED) {
-            connectionStatus.value = 'unreachable'
-            connectionReason.value =
-                reason?.trim() || "Proksi orqali ulanish vaqtincha o'chirilgan."
-            return
-        }
-        connectionStatus.value = 'proxy-required'
-        connectionReason.value = reason?.trim() || ADMIN_ORDER_PROXY_REASON
+        connectionStatus.value = 'unreachable'
+        connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
     }
 
     return {

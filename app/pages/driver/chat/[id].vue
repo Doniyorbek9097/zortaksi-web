@@ -234,36 +234,6 @@
       </div>
     </div>
 
-    <!-- O'z hisob ishlamadi — faqat ulanish tugagach -->
-    <div v-else-if="CHAT_PROXY_CONNECT_ENABLED && isAdmin && needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl">
-      <div class="px-3 pb-2">
-        <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
-          <p>
-            <font-awesome-icon icon="fa-solid fa-user-shield" class="mr-1.5" />
-            {{ connReason || "O'z hisobingiz orqali buyurtmachiga ulanib bo'lmadi. Buyurtmani saqlagan tinglovchi userbot orqali proksi orqali ulanaylikmi?" }}
-          </p>
-          <div class="flex flex-col sm:flex-row items-center justify-center gap-2">
-            <button
-              type="button"
-              :disabled="proxyConnecting"
-              class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-sky-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
-              @click="confirmProxyConnect"
-            >
-              <font-awesome-icon icon="fa-solid fa-route" />
-              {{ proxyConnecting ? 'Ulanmoqda...' : 'Ha, proksi orqali ulanish' }}
-            </button>
-            <button
-              type="button"
-              class="inline-flex items-center gap-1.5 py-1.5 px-4 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-black uppercase tracking-wide active:scale-95 transition-all"
-              @click="dismissProxyConfirm"
-            >
-              Bekor qilish
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div v-else-if="needsTelegramConnect && conn === 'restricted'" class="mx-auto w-full max-w-2xl">
       <div class="px-3 pb-2">
         <div class="py-3 px-3 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 text-[12px] font-bold text-center">
@@ -384,7 +354,6 @@ const {
   chatStore,
   isAdmin,
   adminSlashCommands,
-  CHAT_PROXY_CONNECT_ENABLED,
   isOpening,
   openFailed,
   openError,
@@ -413,9 +382,6 @@ const {
   conn,
   connReason,
   isOrderSenderChat,
-  proxyConnecting,
-  confirmProxyConnect,
-  dismissProxyConfirm,
   hideBottomOnConnectFail,
   callPhone,
   callTelHref,
