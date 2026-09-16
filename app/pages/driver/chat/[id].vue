@@ -80,19 +80,6 @@
     </div>
 
     <div v-else class="relative flex-1 min-h-0 flex flex-col">
-      <div
-        v-if="floatingDateLabel && messagesMatchChat && !showMessageSkeleton"
-        class="pointer-events-none absolute top-2 left-0 right-0 z-20 flex justify-center"
-      >
-        <span
-          class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold shadow-sm backdrop-blur-sm"
-          :class="isSupportPremium ? supportDatePillClass : 'text-white'"
-          :style="isSupportPremium ? undefined : { background: 'rgba(34, 158, 87, 0.92)' }"
-        >
-          {{ floatingDateLabel }}
-        </span>
-      </div>
-
       <div ref="scrollEl" class="chat-msg-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain">
       <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
@@ -164,47 +151,58 @@
         />
 
         <template v-else-if="messagesMatchChat">
-        <ChatMessageBubble
-          v-for="msg in visibleMessages"
-          :key="String(msg._id)"
-          v-memo="[
-            msg._id,
-            msg.text,
-            msg.status,
-            msg.date,
-            msg.mediaPath,
-            msg.direction,
-            selectionMode,
-            isMessageSelected(String(msg._id)),
-            focusId === String(msg._id),
-          ]"
-          :id="`msg-${msg._id}`"
-          :text="msg.text"
-          :text-format="msg.textFormat"
-          :time="formatTime(msg.date)"
-          :date="msg.date"
-          :out="msg.direction === 'out'"
-          :read="msg.status === 'read'"
-          :status="msg.status"
-          :error="msg.error"
-          :type="chatMediaType(msg)"
-          :message-id="String(msg._id)"
-          :media-path="msg.mediaPath"
-          :mime-type="msg.mimeType"
-          :duration="msg.duration"
-          :location-lat="msg.locationLat"
-          :location-lng="msg.locationLng"
-          :location-title="msg.locationTitle"
-          :highlight="focusId === String(msg._id)"
-          :selection-mode="selectionMode"
-          :selected="isMessageSelected(String(msg._id))"
-          :reply-to="msg.replyTo"
-          :support="isSupportPremium"
-          @long-press="onMessageLongPress(String(msg._id))"
-          @toggle-select="toggleMessageSelect(String(msg._id))"
-          @reply="onMessageReply(msg)"
-          @delete="onMessageDeleteRequest(String(msg._id))"
-        />
+        <template v-for="group in messageDateGroups" :key="group.key">
+          <div class="sticky top-2 z-10 flex justify-center py-1.5 pointer-events-none">
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold shadow-sm backdrop-blur-sm"
+              :class="isSupportPremium ? supportDatePillClass : 'text-white'"
+              :style="isSupportPremium ? undefined : { background: 'rgba(34, 158, 87, 0.92)' }"
+            >
+              {{ group.label }}
+            </span>
+          </div>
+          <ChatMessageBubble
+            v-for="msg in group.messages"
+            :key="String(msg._id)"
+            v-memo="[
+              msg._id,
+              msg.text,
+              msg.status,
+              msg.date,
+              msg.mediaPath,
+              msg.direction,
+              selectionMode,
+              isMessageSelected(String(msg._id)),
+              focusId === String(msg._id),
+            ]"
+            :id="`msg-${msg._id}`"
+            :text="msg.text"
+            :text-format="msg.textFormat"
+            :time="formatTime(msg.date)"
+            :date="msg.date"
+            :out="msg.direction === 'out'"
+            :read="msg.status === 'read'"
+            :status="msg.status"
+            :error="msg.error"
+            :type="chatMediaType(msg)"
+            :message-id="String(msg._id)"
+            :media-path="msg.mediaPath"
+            :mime-type="msg.mimeType"
+            :duration="msg.duration"
+            :location-lat="msg.locationLat"
+            :location-lng="msg.locationLng"
+            :location-title="msg.locationTitle"
+            :highlight="focusId === String(msg._id)"
+            :selection-mode="selectionMode"
+            :selected="isMessageSelected(String(msg._id))"
+            :reply-to="msg.replyTo"
+            :support="isSupportPremium"
+            @long-press="onMessageLongPress(String(msg._id))"
+            @toggle-select="toggleMessageSelect(String(msg._id))"
+            @reply="onMessageReply(msg)"
+            @delete="onMessageDeleteRequest(String(msg._id))"
+          />
+        </template>
         </template>
 
         <!-- Admin yozmoqda... -->
@@ -394,7 +392,6 @@ const {
   orderGroupTitle,
   goBackFromOpen,
   telegramContactUrl,
-  floatingDateLabel,
   messagesMatchChat,
   showMessageSkeleton,
   showOrderBanner,
@@ -402,7 +399,7 @@ const {
   orderBannerLabel,
   displayOrderText,
   showReadyEmpty,
-  visibleMessages,
+  messageDateGroups,
   selectionMode,
   isMessageSelected,
   focusId,

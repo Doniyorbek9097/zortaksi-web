@@ -1,23 +1,19 @@
 import type { Ref, ComputedRef } from 'vue'
 import type { useChatStore } from '~/stores/chat.store'
-import { formatChatDateLabel } from '~/utils/chatDate'
 
 type ChatStore = ReturnType<typeof useChatStore>
 
 /**
- * Chat xabarlar ro'yxati scroll — pastga, fokus, eski xabarlar, suzuvchi sana.
+ * Chat xabarlar ro'yxati scroll — pastga, fokus, eski xabarlar.
  */
 export function useChatScrollPanel(opts: {
   chatStore: ChatStore
   chatId: ComputedRef<string>
   scrollEl: Ref<HTMLElement | null>
-  visibleMessages: ComputedRef<Array<{ _id: unknown; date: string | Date }>>
   focusId: Ref<string>
 }) {
-  const { chatStore, chatId, scrollEl, visibleMessages, focusId } = opts
+  const { chatStore, chatId, scrollEl, focusId } = opts
 
-  const floatingDateLabel = ref('')
-  let floatingDateRaf = 0
   let scrollLoadLock = false
 
   const formatTime = (value: string | Date) => {
@@ -25,39 +21,9 @@ export function useChatScrollPanel(opts: {
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
-  const updateFloatingDate = () => {
-    if (floatingDateRaf) cancelAnimationFrame(floatingDateRaf)
-    floatingDateRaf = requestAnimationFrame(() => {
-      floatingDateRaf = 0
-      const el = scrollEl.value
-      const msgs = visibleMessages.value
-      if (!el || !msgs.length) {
-        floatingDateLabel.value = ''
-        return
-      }
-
-      const anchor = el.getBoundingClientRect().top + 44
-      let picked = msgs[msgs.length - 1]?.date
-      for (const msg of msgs) {
-        const node = document.getElementById(`msg-${msg._id}`)
-        if (!node) continue
-        const rect = node.getBoundingClientRect()
-        if (rect.bottom <= anchor) {
-          picked = msg.date
-          continue
-        }
-        picked = msg.date
-        break
-      }
-
-      floatingDateLabel.value = formatChatDateLabel(picked)
-    })
-  }
-
   const scrollToBottom = () => {
     nextTick(() => {
       if (scrollEl.value) scrollEl.value.scrollTop = scrollEl.value.scrollHeight
-      updateFloatingDate()
     })
   }
 
@@ -81,8 +47,6 @@ export function useChatScrollPanel(opts: {
 
   /** Tepaga scroll — keyingi 10 ta eski xabar */
   const onMessagesScroll = async () => {
-    updateFloatingDate()
-
     const el = scrollEl.value
     const id = chatId.value
     if (!el || !id || id === 'open') return
@@ -111,13 +75,6 @@ export function useChatScrollPanel(opts: {
     })
 
     watch(
-      () => visibleMessages.value.map((m) => `${m._id}:${m.date}`).join('|'),
-      () => {
-        nextTick(() => updateFloatingDate())
-      },
-    )
-
-    watch(
       () => chatStore.messages.at(-1)?._id,
       (newId, oldId) => {
         if (newId && newId !== oldId) scrollToBottom()
@@ -129,12 +86,9 @@ export function useChatScrollPanel(opts: {
     })
   }
 
-  const disposeScroll = () => {
-    if (floatingDateRaf) cancelAnimationFrame(floatingDateRaf)
-  }
+  const disposeScroll = () => {}
 
   return {
-    floatingDateLabel,
     formatTime,
     scrollToBottom,
     scrollToFocus,

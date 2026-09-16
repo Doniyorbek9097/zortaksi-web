@@ -3,6 +3,7 @@ import { useChatStore } from '~/stores/chat.store'
 import { isAdminUser } from '~/utils/userRole'
 import { useAdminSlashCommands } from '~/composables/useAdminSlashCommands'
 import { isLegacyPaymentChatMessage } from '~/utils/legacyPaymentChatMessage'
+import { groupMessagesByDate } from '~/utils/chatDate'
 import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 import {
   clearTelegramCloseOnBack,
@@ -51,6 +52,8 @@ export function useDriverChatPage() {
     chatStore.messages.filter((m) => !isLegacyPaymentChatMessage(m)),
   )
 
+  const messageDateGroups = computed(() => groupMessagesByDate(visibleMessages.value))
+
   const meta = useChatPageMeta({
     route,
     chatStore,
@@ -72,7 +75,6 @@ export function useDriverChatPage() {
     chatStore,
     chatId,
     scrollEl,
-    visibleMessages,
     focusId,
   })
 
@@ -227,6 +229,7 @@ export function useDriverChatPage() {
     scrollEl,
     focusId,
     visibleMessages,
+    messageDateGroups,
     ...meta,
     ...selection,
     ...scroll,

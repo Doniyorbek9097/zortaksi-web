@@ -119,7 +119,7 @@
         >
 
         <div
-          class="flex-1 flex items-center min-w-0 rounded-2xl transition-all"
+          class="flex-1 flex items-end min-w-0 rounded-2xl transition-all"
           :class="[
             support ? supportComposerInputClass : 'bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30',
             disabled ? 'opacity-60' : '',
@@ -129,7 +129,7 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-9 h-9 ml-1.5 my-1.5 self-center rounded-lg flex items-center justify-center text-[15px] font-black transition-all active:scale-95 disabled:opacity-40 shadow-sm"
+            class="shrink-0 w-6 h-6 ml-1 mb-2 self-end rounded-md flex items-center justify-center text-[11px] font-black leading-none transition-all active:scale-95 disabled:opacity-40"
             :class="slashMenuOpen
               ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white shadow-sky-500/30 ring-2 ring-sky-400/40'
               : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 border border-slate-200/80 dark:border-slate-600 hover:border-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
@@ -178,7 +178,7 @@
         </div>
 
         <button
-          v-if="text.trim()"
+          v-if="text.length > 0"
           type="submit"
           :disabled="disabled"
           class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
