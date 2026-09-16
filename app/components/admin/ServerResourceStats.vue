@@ -91,7 +91,7 @@
     <BaseConfirmDialog
       v-model="confirmOpen"
       title="Serverni bo'shatish"
-      message="Keshlar tozalanadi va pm2 restart all bajariladi. 10–20 soniya API uziladi. Davom etasizmi?"
+      message="Keshlar tozalanadi va backend qayta ishga tushiriladi. 10–15 soniya API uziladi. Davom etasizmi?"
       confirm-text="Bo'shatish"
       cancel-text="Bekor"
       variant="danger"
