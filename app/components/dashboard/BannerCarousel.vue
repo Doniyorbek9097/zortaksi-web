@@ -1,91 +1,60 @@
 <template>
-  <section v-if="slides.length" class="space-y-2">
-    <div class="flex items-center justify-between gap-2 px-0.5">
-      <div class="flex items-center gap-2 min-w-0">
-        <span
-          class="inline-flex w-7 h-7 items-center justify-center rounded-lg bg-gradient-to-br from-rose-500 to-orange-500 text-white text-[11px] shadow-sm shadow-rose-500/25"
-        >
-          <font-awesome-icon icon="fa-solid fa-bullhorn" />
-        </span>
-        <p class="text-[12px] font-black text-slate-800 dark:text-slate-100 truncate">
-          Yangiliklar
-        </p>
-      </div>
-      <p
-        v-if="slides.length > 1"
-        class="text-[10px] font-bold tabular-nums text-slate-400 dark:text-slate-500 shrink-0"
-      >
-        {{ index + 1 }}/{{ slides.length }}
-      </p>
-    </div>
-
-    <div class="relative">
+  <div v-if="slides.length" class="relative">
+    <div
+      ref="rootEl"
+      class="relative overflow-hidden touch-pan-y rounded-2xl bg-slate-100 dark:bg-slate-900 shadow-lg shadow-slate-900/10 dark:shadow-black/30 ring-1 ring-slate-200/80 dark:ring-slate-700/80"
+      @pointerdown="onPointerDown"
+      @pointermove="onPointerMove"
+      @pointerup="onPointerUp"
+      @pointercancel="onPointerUp"
+      @pointerleave="onPointerUp"
+    >
       <div
-        ref="rootEl"
-        class="relative overflow-hidden touch-pan-y rounded-2xl bg-slate-900 shadow-lg shadow-slate-900/15 dark:shadow-black/40 ring-1 ring-slate-200/80 dark:ring-slate-700/80"
-        @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-        @pointercancel="onPointerUp"
-        @pointerleave="onPointerUp"
+        class="flex ease-out"
+        :class="dragging ? 'transition-none' : 'transition-transform duration-500'"
+        :style="{ transform: `translate3d(${-index * 100 + dragPct}%, 0, 0)` }"
+      >
+        <button
+          v-for="slide in slides"
+          :key="slide.id"
+          type="button"
+          class="w-full shrink-0 relative flex items-center justify-center overflow-hidden bg-slate-100 dark:bg-slate-900 aspect-[2.15/1] min-h-[132px] sm:min-h-[148px]"
+          :class="slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default'"
+          :aria-label="slide.targetUrl ? 'Banner' : 'Reklama'"
+          @click="openSlide(slide)"
+        >
+          <img
+            :src="slide.src"
+            alt=""
+            class="w-full h-full object-contain"
+            loading="lazy"
+            draggable="false"
+          >
+        </button>
+      </div>
+
+      <div
+        v-if="slides.length > 1"
+        class="absolute bottom-2.5 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none"
       >
         <div
-          class="flex ease-out"
-          :class="dragging ? 'transition-none' : 'transition-transform duration-500'"
-          :style="{ transform: `translate3d(${-index * 100 + dragPct}%, 0, 0)` }"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/35 backdrop-blur-md"
         >
           <button
-            v-for="slide in slides"
-            :key="slide.id"
+            v-for="(slide, i) in slides"
+            :key="`dot-${slide.id}`"
             type="button"
-            class="w-full shrink-0 relative block overflow-hidden bg-slate-800 aspect-[2.15/1] min-h-[132px] sm:min-h-[148px]"
-            :class="slide.targetUrl ? 'cursor-pointer active:opacity-95' : 'cursor-default'"
-            :aria-label="slide.targetUrl ? 'Banner' : 'Reklama'"
-            @click="openSlide(slide)"
-          >
-            <img
-              :src="slide.src"
-              alt=""
-              class="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-              draggable="false"
-            >
-            <div
-              class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent"
-            />
-            <div
-              v-if="slide.targetUrl"
-              class="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-black/40 backdrop-blur-md text-[9px] font-black uppercase tracking-wide text-white/90"
-            >
-              Batafsil
-              <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-[8px]" />
-            </div>
-          </button>
-        </div>
-
-        <div
-          v-if="slides.length > 1"
-          class="absolute bottom-3 inset-x-0 flex items-center justify-center gap-1.5 pointer-events-none"
-        >
-          <div
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md"
-          >
-            <button
-              v-for="(slide, i) in slides"
-              :key="`dot-${slide.id}`"
-              type="button"
-              class="rounded-full transition-all duration-300 pointer-events-auto"
-              :class="i === index
-                ? 'w-5 h-1.5 bg-white shadow-sm'
-                : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/70'"
-              :aria-label="`${i + 1}-banner`"
-              @click.stop="goTo(i)"
-            />
-          </div>
+            class="rounded-full transition-all duration-300 pointer-events-auto"
+            :class="i === index
+              ? 'w-5 h-1.5 bg-white shadow-sm'
+              : 'w-1.5 h-1.5 bg-white/45 hover:bg-white/70'"
+            :aria-label="`${i + 1}-banner`"
+            @click.stop="goTo(i)"
+          />
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </template>
 
 <script setup lang="ts">
