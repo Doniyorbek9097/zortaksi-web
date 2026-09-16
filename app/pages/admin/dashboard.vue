@@ -22,6 +22,7 @@
       :amount="monthIncome.amount"
       :payments="monthIncome.payments"
       :total="monthIncome.total"
+      :total-days="monthIncome.totalDays"
       :change-percent="growth?.monthIncomePercent"
       :today-amount="todayIncome.amount"
       :today-payments="todayIncome.payments"

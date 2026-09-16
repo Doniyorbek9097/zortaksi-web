@@ -8,6 +8,8 @@ import { isAdminUser } from '~/utils/userRole'
 const CONNECT_TIMEOUT_MS = 45000
 /** Order chat — tez javob (haydovchi kutmasin) */
 const ORDER_CONNECT_TIMEOUT_MS = 6000
+/** Admin order/proksi ulanish */
+const ADMIN_CONNECT_TIMEOUT_MS = 10000
 export const DRIVER_ORDER_CONNECT_FAIL =
     "Bu buyurtma bilan ulanib bo'lmadi. Admindan yordam so'rang."
 const SOCKET_WAIT_MS = 600
@@ -98,7 +100,7 @@ const requestConnect = async (
     }
 
     try {
-        return await requestConnectViaSocket(chatId, opts)
+        return await requestConnectViaSocket(chatId, opts, timeoutMs)
     } catch {
         return http
     }
@@ -108,6 +110,7 @@ const requestConnect = async (
 const requestConnectViaSocket = async (
     chatId: string,
     opts: { viaProxy?: boolean } = {},
+    timeoutMs = CONNECT_TIMEOUT_MS,
 ): Promise<ConnectAck> => {
     let socket = await waitForSocketConnected()
     if (!socket?.connected) {
@@ -121,7 +124,7 @@ const requestConnectViaSocket = async (
 
     return new Promise((resolve, reject) => {
         socket!
-            .timeout(CONNECT_TIMEOUT_MS)
+            .timeout(timeoutMs)
             .emit(
                 'chat:connect:request',
                 { chatId, viaProxy: !!opts.viaProxy },
@@ -339,8 +342,10 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         activeConnectChatId = chatId
 
         const isOrderChat = !!(chat?.orderId)
-        const connectTimeout =
-            isOrderChat && !opts.viaProxy
+        const isAdmin = isAdminUser(authStore.user)
+        const connectTimeout = isAdmin
+            ? ADMIN_CONNECT_TIMEOUT_MS
+            : isOrderChat && !opts.viaProxy
                 ? ORDER_CONNECT_TIMEOUT_MS
                 : CONNECT_TIMEOUT_MS
 

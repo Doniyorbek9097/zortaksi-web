@@ -4,6 +4,8 @@ export interface IncomeBlock {
   amount: number
   payments: number
   total: number
+  /** Birinchi to'lovdan bugungi kungacha kalendar kun */
+  totalDays?: number
   clickAmount?: number
   clickPayments?: number
   cardAmount?: number
@@ -131,7 +133,7 @@ export interface AdminDashboardData {
 
 const CACHE_KEY = 'zt:admin-dashboard-data'
 
-const emptyIncome = (): IncomeBlock => ({ amount: 0, payments: 0, total: 0 })
+const emptyIncome = (): IncomeBlock => ({ amount: 0, payments: 0, total: 0, totalDays: 0 })
 
 export const useAdminDashboardStore = defineStore('adminDashboard', () => {
   const data = ref<AdminDashboardData | null>(null)

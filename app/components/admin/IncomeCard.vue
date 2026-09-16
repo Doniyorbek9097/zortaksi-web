@@ -164,11 +164,17 @@
           Jami daromad
         </span>
       </div>
-      <span
-        class="text-[13px] font-black tabular-nums text-emerald-800 dark:text-emerald-100 shrink-0"
-      >
-        {{ formattedTotal }} so'm
-      </span>
+      <div class="text-right shrink-0">
+        <span class="text-[13px] font-black tabular-nums text-emerald-800 dark:text-emerald-100">
+          {{ formattedTotal }} so'm
+        </span>
+        <p
+          v-if="totalDays > 0"
+          class="text-[10px] font-bold tabular-nums text-emerald-600/80 dark:text-emerald-400/80"
+        >
+          {{ totalDays }} kun ichida
+        </p>
+      </div>
     </div>
   </section>
 </template>
@@ -179,6 +185,7 @@ interface Props {
   amount: number
   payments: number
   total?: number
+  totalDays?: number
   changePercent?: number | null
   todayAmount?: number
   todayPayments?: number
@@ -193,6 +200,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   label: 'Shu oy daromad',
   total: undefined,
+  totalDays: 0,
   changePercent: null,
   todayAmount: 0,
   todayPayments: 0,
