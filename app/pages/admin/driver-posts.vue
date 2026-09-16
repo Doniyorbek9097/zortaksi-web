@@ -152,7 +152,32 @@
         </div>
       </article>
 
-      <div ref="sentinel" class="h-1" />
+      <div
+        v-if="store.total > DRIVER_POSTS_PAGE_SIZE"
+        class="flex items-center justify-between gap-2 pt-1"
+      >
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 disabled:opacity-40 active:scale-95 transition-transform"
+          :disabled="store.page <= 1 || store.isLoading"
+          @click="goPage(store.page - 1)"
+        >
+          <font-awesome-icon icon="fa-solid fa-chevron-left" class="text-[9px]" />
+          Oldingi
+        </button>
+        <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+          {{ store.page }} / {{ totalPages }}
+        </span>
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 disabled:opacity-40 active:scale-95 transition-transform"
+          :disabled="!store.hasMore || store.isLoading"
+          @click="goPage(store.page + 1)"
+        >
+          Keyingi
+          <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[9px]" />
+        </button>
+      </div>
     </div>
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">{{ store.error }}</p>
@@ -206,6 +231,7 @@ import {
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
 import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { DRIVER_POSTS_PAGE_SIZE } from '~/utils/memoryBudget'
 
 definePageMeta({ layout: 'admin' })
 
@@ -216,7 +242,6 @@ const brokenAvatars = ref<Set<string>>(new Set())
 const filter = ref<'all' | 'active' | 'paused'>('all')
 const search = ref('')
 const driverFilter = ref('')
-const sentinel = ref<HTMLElement | null>(null)
 const editOpen = ref(false)
 const editTarget = ref<AdminDriverPostCampaign | null>(null)
 const editForm = ref({ name: '', text: '', intervalMin: MIN_POST_INTERVAL_MIN, groupCount: 0 })
@@ -228,6 +253,9 @@ const filterTabs = [
 ]
 
 const stats = computed(() => store.stats)
+const totalPages = computed(() =>
+  Math.max(1, Math.ceil(store.total / DRIVER_POSTS_PAGE_SIZE)),
+)
 const activeFilter = computed(() => {
   if (filter.value === 'active') return true
   if (filter.value === 'paused') return false
@@ -256,14 +284,14 @@ const reload = async () => {
   ])
 }
 
-const loadMore = async () => {
-  if (!store.hasMore || store.isLoadingMore || store.isLoading) return
+const goPage = async (nextPage: number) => {
+  if (nextPage < 1 || store.isLoading) return
+  if (nextPage > store.page && !store.hasMore) return
   await store.fetchCampaigns({
-    page: store.page + 1,
+    page: nextPage,
     active: activeFilter.value,
     q: search.value.trim() || undefined,
     userId: driverFilter.value || undefined,
-    append: true,
   })
 }
 
@@ -314,14 +342,5 @@ onMounted(async () => {
   const uid = String(route.query.userId || '').trim()
   if (uid) driverFilter.value = uid
   await reload()
-
-  if (!import.meta.client) return
-  const io = new IntersectionObserver((entries) => {
-    if (entries.some((e) => e.isIntersecting)) void loadMore()
-  }, { rootMargin: '200px' })
-  watch(sentinel, (el, _, onCleanup) => {
-    if (el) io.observe(el)
-    onCleanup(() => io.disconnect())
-  }, { immediate: true })
 })
 </script>

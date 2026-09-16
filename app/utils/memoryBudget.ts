@@ -12,6 +12,9 @@ export const LIST_PAGE_SIZE = 10
 /** To'lovlar tarixi — sahifa hajmi */
 export const PAYMENT_PAGE_SIZE = 10
 
+/** Admin saqlangan e'lonlar — sahifa hajmi */
+export const DRIVER_POSTS_PAGE_SIZE = 10
+
 /** Virtual scroll — taxminiy qator balandliklari (px, gap bilan) */
 export const ORDER_ROW_HEIGHT = 148
 export const ORDER_DIVIDER_HEIGHT = 44

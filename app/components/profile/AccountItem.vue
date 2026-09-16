@@ -28,11 +28,12 @@
 
     <button
       type="button"
-      class="w-10 h-10 -mr-1 rounded-lg flex items-center justify-center text-slate-400 active:text-red-500 active:bg-red-500/10 transition-colors shrink-0 touch-manipulation"
+      class="w-8 h-8 -mr-0.5 rounded-full flex items-center justify-center bg-red-500 text-white shadow-sm shrink-0 touch-manipulation active:scale-95 transition-transform disabled:opacity-50"
       aria-label="O'chirish"
+      :disabled="disabled"
       @click.stop="$emit('delete')"
     >
-      <font-awesome-icon icon="fa-solid fa-trash" class="text-sm" />
+      <font-awesome-icon icon="fa-solid fa-trash" class="text-[12px]" />
     </button>
   </div>
 </template>

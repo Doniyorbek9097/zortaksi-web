@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { DRIVER_POSTS_PAGE_SIZE } from '~/utils/memoryBudget'
 
 export type AdminDriverPostOwner = {
   userId: string
@@ -94,7 +95,7 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     try {
       const params = new URLSearchParams()
       params.set('page', String(nextPage))
-      params.set('limit', '20')
+      params.set('limit', String(DRIVER_POSTS_PAGE_SIZE))
       if (opts?.active === true) params.set('active', 'true')
       if (opts?.active === false) params.set('active', 'false')
       if (opts?.q) params.set('q', opts.q)

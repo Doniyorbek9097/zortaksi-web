@@ -100,7 +100,7 @@
           <button
             v-if="deletable"
             type="button"
-            class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 active:scale-95 transition-all disabled:opacity-50"
+            class="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-red-500 text-white shadow-sm active:scale-95 transition-transform disabled:opacity-50"
             aria-label="To'lovni o'chirish"
             :disabled="deletingId === item.id"
             @click.stop="askDelete(item)"
@@ -108,7 +108,7 @@
             <font-awesome-icon
               :icon="deletingId === item.id ? 'fa-solid fa-spinner' : 'fa-solid fa-trash'"
               :class="deletingId === item.id ? 'animate-spin' : ''"
-              class="text-xs"
+              class="text-[12px]"
             />
           </button>
         </li>

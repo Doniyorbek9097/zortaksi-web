@@ -2,14 +2,18 @@
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
     <AdminHeader action-button="download" @download="onDownloadApp" @bonus="onBonus" />
 
-    <div class="flex items-center gap-2 px-1">
-      <font-awesome-icon
-        :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'"
-        class="text-xs shrink-0"
-        :class="isNight ? 'text-indigo-400' : 'text-amber-500'"
-      />
+    <!-- Salomlashish va vaqt -->
+    <div
+      class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-white dark:from-slate-900 dark:to-slate-900/80"
+    >
+      <div
+        class="w-8 h-8 rounded-lg flex items-center justify-center text-sm shrink-0 shadow-sm"
+        :class="isNight ? 'bg-indigo-500 text-white' : 'bg-amber-400 text-white'"
+      >
+        <font-awesome-icon :icon="isNight ? 'fa-solid fa-moon' : 'fa-solid fa-sun'" />
+      </div>
       <div class="min-w-0">
-        <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 truncate">
+        <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">
           {{ greeting }}, {{ firstName }}!
         </p>
         <p class="text-[13px] font-bold tabular-nums text-slate-600 dark:text-slate-300 truncate">
@@ -71,7 +75,7 @@
           </span>
           <div>
             <p class="text-[12px] font-black text-slate-900 dark:text-white">Saqlangan e'lonlar</p>
-            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami</p>
+            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami · 10 tadan</p>
           </div>
         </div>
         <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[10px] text-slate-300" />

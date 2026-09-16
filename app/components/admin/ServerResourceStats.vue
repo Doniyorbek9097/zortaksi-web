@@ -7,12 +7,12 @@
     >
       <div class="flex items-center gap-1.5 min-w-0">
         <div
-          class="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-[8px] shrink-0 shadow-sm"
+          class="w-6 h-6 rounded-md bg-sky-500/12 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-[8px] shrink-0"
         >
           <font-awesome-icon icon="fa-solid fa-server" />
         </div>
         <p class="text-[11px] font-black text-slate-800 dark:text-slate-100 truncate">
-          Server statistika
+          Server quvvati
         </p>
       </div>
       <button
