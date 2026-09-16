@@ -129,10 +129,12 @@
             v-if="hasSlashCommands"
             type="button"
             :disabled="disabled"
-            class="shrink-0 w-[30px] self-stretch rounded-none flex items-center justify-center text-[13px] font-black leading-none transition-colors active:opacity-90 disabled:opacity-40"
+            class="shrink-0 w-[30px] self-stretch rounded-none flex items-center justify-center text-[14px] font-black leading-none transition-colors active:opacity-90 disabled:opacity-40 border-r"
             :class="slashMenuOpen
-              ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white'
-              : 'bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-300 hover:bg-sky-50 dark:hover:bg-slate-600'"
+              ? 'bg-gradient-to-br from-sky-500 to-indigo-500 text-white border-sky-500/30'
+              : support
+                ? 'bg-violet-200/80 dark:bg-slate-700 text-violet-800 dark:text-violet-200 border-violet-300/70 dark:border-slate-600 hover:bg-violet-300/70 dark:hover:bg-slate-600'
+                : 'bg-sky-100 dark:bg-slate-700 text-sky-700 dark:text-sky-300 border-sky-200/90 dark:border-slate-600 hover:bg-sky-200/80 dark:hover:bg-slate-600'"
             aria-label="Admin komandalar"
             :aria-expanded="slashMenuOpen"
             @mousedown.prevent
@@ -158,7 +160,7 @@
             :readonly="draftLocked"
             :disabled="disabled"
             :placeholder="inputPlaceholder"
-            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] leading-snug resize-none overflow-y-hidden focus:outline-none disabled:cursor-not-allowed"
+            class="chat-composer-textarea flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] leading-snug resize-none overflow-x-hidden overflow-y-hidden focus:outline-none disabled:cursor-not-allowed placeholder:whitespace-nowrap"
             :class="[
               support
                 ? 'text-violet-900 dark:text-violet-50 placeholder:text-violet-600/80 dark:placeholder:text-violet-300/50'
@@ -578,6 +580,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.chat-composer-textarea::placeholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .chat-call-bar-enter-active,
 .chat-call-bar-leave-active {
   transition: max-height 0.28s ease, opacity 0.24s ease, transform 0.28s ease;
