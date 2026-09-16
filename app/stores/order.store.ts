@@ -223,9 +223,23 @@ export const useOrderStore = defineStore('order', () => {
         }
     }
 
+    /** Ro'yxatda qolmagan buyurtmalarni seen keshidan chiqarish */
+    const pruneSeenIdsToCurrentOrders = () => {
+        const keepIds = new Set(orders.value.map((o) => String(o._id)))
+        const next: Record<string, true> = {}
+        for (const id of Object.keys(seenOrderIds.value)) {
+            if (keepIds.has(id)) next[id] = true
+        }
+        seenOrderIds.value = next
+        persistSeen()
+    }
+
     /** Boshqa tabga o'tganda — birinchi N ta saqlanadi, scroll tiklanmaydi */
     const trimListForTabSwitch = (keep = TAB_LIST_KEEP) => {
+        listFetchSeq += 1
+        listPage1Inflight = null
         trimListForNavigation(keep)
+        pruneSeenIdsToCurrentOrders()
         page.value = 1
         isLoading.value = false
         isLoadingMore.value = false
@@ -597,6 +611,7 @@ export const useOrderStore = defineStore('order', () => {
     ) => {
         const isFreshLoad = !opts.append
         const reqSeq = isFreshLoad ? listFetchSeq : -1
+        const appendGen = opts.append ? listFetchSeq : -1
         try {
             if (opts.append) isLoadingMore.value = true
             else {
@@ -632,6 +647,7 @@ export const useOrderStore = defineStore('order', () => {
                 }
                 if (opts.append) {
                     if (!paramsMatchListFilter(params)) return response
+                    if (appendGen !== listFetchSeq) return response
                     const merged = uniqueOrdersByContent([...orders.value, ...list])
                     orders.value = merged
                 } else {

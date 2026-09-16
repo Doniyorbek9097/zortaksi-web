@@ -36,6 +36,7 @@ export function useOrdersListSync(options: {
   const { orderStore, displayOrders, queryParams, load, loadMore, hydrateFilter } = options
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
+  let pageActive = true
 
   const sentinel = ref<HTMLElement | null>(null)
   let observer: IntersectionObserver | null = null
@@ -160,7 +161,7 @@ export function useOrdersListSync(options: {
   let fillViewportTimer: ReturnType<typeof setTimeout> | null = null
 
   const scheduleFillViewport = () => {
-    if (!import.meta.client) return
+    if (!import.meta.client || !pageActive) return
     if (fillViewportTimer) clearTimeout(fillViewportTimer)
     fillViewportTimer = setTimeout(() => {
       fillViewportTimer = null
@@ -253,9 +254,11 @@ export function useOrdersListSync(options: {
   })
 
   onActivated(async () => {
+    pageActive = true
     hydrateFilter()
 
-    if (consumeOrdersTabSwitchEntry()) {
+    const fromTabSwitch = consumeOrdersTabSwitchEntry()
+    if (fromTabSwitch) {
       orderStore.clearOrdersListScroll()
       scrollWindowTo(0)
     } else if (orderStore.ordersListScrollY > 0 || orderStore.ordersListAnchorOrderId) {
@@ -273,13 +276,26 @@ export function useOrdersListSync(options: {
       void load()
     }
 
+    if (!pollTimer) {
+      pollTimer = setInterval(syncIfVisible, POLL_MS)
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
     syncIfVisible()
     bindSeenObserver()
-    scheduleFillViewport()
+    if (!fromTabSwitch) {
+      scheduleFillViewport()
+    }
   })
 
   onDeactivated(() => {
+    pageActive = false
     saveScroll()
+    if (pollTimer) clearInterval(pollTimer)
+    pollTimer = null
+    if (fillViewportTimer) clearTimeout(fillViewportTimer)
+    fillViewportTimer = null
+    document.removeEventListener('visibilitychange', onVisibility)
   })
 
   watch(sentinel, (el) => {

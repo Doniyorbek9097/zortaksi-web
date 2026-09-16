@@ -19,7 +19,8 @@ import {
 } from '~/utils/driverTabRoutes'
 import {
   markDriverScrollLeave,
-  consumeDriverScrollLeave,
+  peekDriverScrollLeave,
+  finishDriverScrollLeave,
   markOrdersTabSwitchEntry,
 } from '~/utils/driverScrollNav'
 
@@ -73,24 +74,39 @@ export default defineNuxtPlugin(() => {
   })
 
   router.afterEach((to, from) => {
-    const orderStore = useOrderStore()
-    const toPath = normalizePath(to.path)
-    const fromPath = normalizePath(from.path)
-    const tabSwitch = consumeDriverScrollLeave() === 'tab-switch'
+    try {
+      const orderStore = useOrderStore()
+      const toPath = normalizePath(to.path)
+      const fromPath = normalizePath(from.path)
+      const tabSwitch = peekDriverScrollLeave() === 'tab-switch'
 
-    // Order → chat: ro'yxat va scroll saqlanadi (trim scroll pozitsiyasini buzardi)
-    if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
-      releaseSessionMediaCache()
-      return
-    }
-
-    if (fromPath === toPath) return
-
-    if (isPanelTabbarSwitch(fromPath, toPath)) {
-      if (isPanelTabbarPath(fromPath)) {
-        releasePanelTabMemory(fromPath)
+      // Order → chat: ro'yxat va scroll saqlanadi (trim scroll pozitsiyasini buzardi)
+      if (/^\/driver\/chat\//.test(toPath) && fromPath.startsWith('/driver/orders')) {
+        releaseSessionMediaCache()
+        return
       }
-      releaseSessionMediaCache()
+
+      if (fromPath === toPath) return
+
+      if (isPanelTabbarSwitch(fromPath, toPath)) {
+        if (isPanelTabbarPath(fromPath)) {
+          releasePanelTabMemory(fromPath)
+        }
+        releaseSessionMediaCache()
+
+        if (tabSwitch) {
+          if (toPath === '/driver/orders') {
+            orderStore.clearOrdersListScroll()
+            markOrdersTabSwitchEntry()
+          }
+          window.scrollTo(0, 0)
+        }
+        return
+      }
+
+      if (!isDriverMainTab(toPath)) return
+
+      releaseOtherDriverTabs(toPath)
 
       if (tabSwitch) {
         if (toPath === '/driver/orders') {
@@ -99,19 +115,8 @@ export default defineNuxtPlugin(() => {
         }
         window.scrollTo(0, 0)
       }
-      return
-    }
-
-    if (!isDriverMainTab(toPath)) return
-
-    releaseOtherDriverTabs(toPath)
-
-    if (tabSwitch) {
-      if (toPath === '/driver/orders') {
-        orderStore.clearOrdersListScroll()
-        markOrdersTabSwitchEntry()
-      }
-      window.scrollTo(0, 0)
+    } finally {
+      queueMicrotask(() => finishDriverScrollLeave())
     }
   })
 })

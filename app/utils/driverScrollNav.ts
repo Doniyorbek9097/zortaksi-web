@@ -21,10 +21,19 @@ export function shouldSaveDriverListScroll(): boolean {
   return leaveKind !== 'tab-switch'
 }
 
+export function peekDriverScrollLeave(): DriverScrollLeaveKind | null {
+  return leaveKind
+}
+
 export function consumeDriverScrollLeave(): DriverScrollLeaveKind | null {
   const kind = leaveKind
   leaveKind = null
   return kind
+}
+
+/** onDeactivated dan keyin leaveKind ni tozalash (afterEach erta consume qilmasligi uchun) */
+export function finishDriverScrollLeave() {
+  leaveKind = null
 }
 
 /** Buyurtmalar tabiga tabbar orqali kirildi — scroll tiklanmasin */
