@@ -190,17 +190,17 @@
             tone="sky"
           />
         </div>
-
-        <AdminServerResourceStats
-          :stats="serverStats"
-          :loading="serverResourcesLoading"
-          :maintaining="serverMaintaining"
-          :maintenance-message="serverMaintenanceMessage"
-          :error="serverResourcesError"
-          @maintenance="onServerMaintenance"
-        />
       </div>
     </section>
+
+    <AdminServerResourceStats
+      :stats="serverStats"
+      :loading="serverResourcesLoading"
+      :maintaining="serverMaintaining"
+      :maintenance-message="serverMaintenanceMessage"
+      :error="serverResourcesError"
+      @maintenance="onServerMaintenance"
+    />
 
     <!-- Guruhlar daromadi -->
     <AdminSectionCard

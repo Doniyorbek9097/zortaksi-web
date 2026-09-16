@@ -1,126 +1,110 @@
 <template>
-  <div class="mt-2 space-y-2">
+  <section
+    class="rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden"
+  >
     <div
-      v-if="loading && !stats"
-      class="h-20 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse"
-    />
-
-    <template v-else-if="stats">
-      <div
-        class="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-2.5"
-      >
-        <div class="flex items-center justify-between gap-2 mb-1.5">
-          <div class="flex items-center gap-2 min-w-0">
-            <div
-              class="w-6 h-6 rounded-md bg-indigo-500 flex items-center justify-center text-white text-[9px] shrink-0"
-            >
-              <font-awesome-icon icon="fa-solid fa-server" />
-            </div>
-            <div class="min-w-0">
-              <p class="text-[10px] font-black text-slate-700 dark:text-slate-200">RAM</p>
-              <p class="text-[9px] font-bold text-slate-400 truncate">
-                {{ stats.memory.usedGb }} / {{ stats.memory.totalGb }} GB
-              </p>
-            </div>
-          </div>
-          <span
-            class="text-[12px] font-black tabular-nums shrink-0"
-            :class="percentTone(stats.memory.usedPercent)"
-          >
-            {{ stats.memory.usedPercent }}%
-          </span>
+      class="px-2.5 py-1.5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-slate-100/80 dark:from-slate-900 dark:to-slate-950/80 flex items-center justify-between gap-2"
+    >
+      <div class="flex items-center gap-1.5 min-w-0">
+        <div
+          class="w-6 h-6 rounded-md bg-slate-700 dark:bg-slate-600 flex items-center justify-center text-white text-[8px] shrink-0"
+        >
+          <font-awesome-icon icon="fa-solid fa-server" />
         </div>
-        <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-500"
-            :class="barTone(stats.memory.usedPercent)"
-            :style="{ width: `${Math.min(100, stats.memory.usedPercent)}%` }"
-          />
-        </div>
-        <p class="mt-1 text-[8px] font-bold text-slate-400">
-          Bo'sh: {{ stats.memory.freeGb }} GB
+        <p class="text-[11px] font-black text-slate-800 dark:text-slate-100 truncate">
+          Server statistika
         </p>
       </div>
-
-      <div
-        class="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-2.5"
-      >
-        <div class="flex items-center justify-between gap-2 mb-1.5">
-          <div class="flex items-center gap-2 min-w-0">
-            <div
-              class="w-6 h-6 rounded-md bg-amber-500 flex items-center justify-center text-white text-[9px] shrink-0"
-            >
-              <font-awesome-icon icon="fa-solid fa-bolt" />
-            </div>
-            <div class="min-w-0">
-              <p class="text-[10px] font-black text-slate-700 dark:text-slate-200">CPU</p>
-              <p class="text-[9px] font-bold text-slate-400 truncate">
-                {{ stats.cpu.cores }} yadro
-              </p>
-            </div>
-          </div>
-          <span
-            class="text-[12px] font-black tabular-nums shrink-0"
-            :class="percentTone(stats.cpu.usedPercent)"
-          >
-            {{ stats.cpu.usedPercent }}%
-          </span>
-        </div>
-        <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
-          <div
-            class="h-full rounded-full transition-all duration-500"
-            :class="barTone(stats.cpu.usedPercent)"
-            :style="{ width: `${Math.min(100, stats.cpu.usedPercent)}%` }"
-          />
-        </div>
-        <p class="mt-1 text-[8px] font-bold text-slate-400 truncate" :title="stats.cpu.model">
-          {{ stats.cpu.model }}
-        </p>
-      </div>
-
       <button
         type="button"
-        class="w-full rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/30 px-3 py-2.5 text-[11px] font-black text-rose-700 dark:text-rose-300 active:scale-[0.99] transition-transform disabled:opacity-60"
-        :disabled="maintaining"
+        class="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black border border-rose-200/80 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 bg-rose-50/80 dark:bg-rose-950/30 disabled:opacity-50 active:scale-95 transition-transform"
+        :disabled="maintaining || (!stats && loading)"
         @click="confirmOpen = true"
       >
         <font-awesome-icon
           :icon="maintaining ? 'fa-solid fa-spinner' : 'fa-solid fa-rotate'"
           :class="maintaining ? 'fa-spin' : ''"
-          class="mr-1.5"
+          class="text-[8px]"
         />
-        {{ maintaining ? 'Bo\'shatilmoqda...' : 'RAM/CPU bo\'shatish (pm2 restart)' }}
+        Bo'shatish
       </button>
+    </div>
+
+    <div class="p-2">
+      <div
+        v-if="loading && !stats"
+        class="h-10 rounded-lg bg-slate-100 dark:bg-slate-800 animate-pulse"
+      />
+
+      <div v-else-if="stats" class="grid grid-cols-2 gap-1.5">
+        <div class="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 px-2 py-1.5">
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">RAM</span>
+            <span class="text-[10px] font-black tabular-nums" :class="percentTone(stats.memory.usedPercent)">
+              {{ stats.memory.usedPercent }}%
+            </span>
+          </div>
+          <div class="h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :class="barTone(stats.memory.usedPercent)"
+              :style="{ width: `${Math.min(100, stats.memory.usedPercent)}%` }"
+            />
+          </div>
+          <p class="mt-1 text-[8px] font-bold text-slate-400 tabular-nums truncate">
+            {{ stats.memory.usedGb }}/{{ stats.memory.totalGb }} GB
+          </p>
+        </div>
+
+        <div class="rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/40 px-2 py-1.5">
+          <div class="flex items-center justify-between gap-1 mb-1">
+            <span class="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase">CPU</span>
+            <span class="text-[10px] font-black tabular-nums" :class="percentTone(stats.cpu.usedPercent)">
+              {{ stats.cpu.usedPercent }}%
+            </span>
+          </div>
+          <div class="h-1 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500"
+              :class="barTone(stats.cpu.usedPercent)"
+              :style="{ width: `${Math.min(100, stats.cpu.usedPercent)}%` }"
+            />
+          </div>
+          <p class="mt-1 text-[8px] font-bold text-slate-400 tabular-nums truncate">
+            {{ stats.cpu.cores }} yadro
+          </p>
+        </div>
+      </div>
+
+      <p v-else-if="error" class="text-[9px] font-bold text-rose-500 text-center py-1">
+        {{ error }}
+      </p>
 
       <p
         v-if="maintenanceMessage"
-        class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 text-center"
+        class="mt-1.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 text-center leading-tight"
       >
         {{ maintenanceMessage }}
       </p>
-    </template>
-
-    <p v-else-if="error" class="text-[10px] font-bold text-rose-500 text-center py-1">
-      {{ error }}
-    </p>
+    </div>
 
     <BaseConfirmDialog
       v-model="confirmOpen"
       title="Serverni bo'shatish"
-      message="Barcha ilova keshlari tozalanadi va pm2 restart all bajariladi. 10–20 soniya API va socket uziladi. Davom etasizmi?"
+      message="Keshlar tozalanadi va pm2 restart all bajariladi. 10–20 soniya API uziladi. Davom etasizmi?"
       confirm-text="Bo'shatish"
       cancel-text="Bekor"
       variant="danger"
       :loading="maintaining"
       @confirm="onConfirmMaintenance"
     />
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import type { ServerResourceStats } from '~/composables/dashboard/useServerResources'
 
-const props = defineProps<{
+defineProps<{
   stats: ServerResourceStats | null
   loading: boolean
   maintaining: boolean
