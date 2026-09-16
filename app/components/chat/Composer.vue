@@ -96,7 +96,7 @@
           </p>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-end gap-2">
         <button
           type="button"
           :disabled="disabled"
@@ -119,7 +119,7 @@
         >
 
         <div
-          class="flex-1 flex items-center min-w-0 rounded-full transition-all"
+          class="flex-1 flex items-end min-w-0 rounded-2xl transition-all"
           :class="[
             support ? supportComposerInputClass : 'bg-slate-100 dark:bg-slate-800 focus-within:ring-2 focus-within:ring-sky-500/30',
             disabled ? 'opacity-60' : '',
@@ -141,12 +141,11 @@
             /
           </button>
 
-          <input
+          <textarea
             ref="textInput"
             v-model="text"
-            type="search"
             name="zortaksi-chat-message"
-            inputmode="text"
+            rows="1"
             enterkeyhint="send"
             autocomplete="off"
             autocorrect="on"
@@ -159,7 +158,7 @@
             :readonly="draftLocked"
             :disabled="disabled"
             :placeholder="inputPlaceholder"
-            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] focus:outline-none disabled:cursor-not-allowed appearance-none [&::-webkit-search-cancel-button]:hidden"
+            class="flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] leading-snug resize-none overflow-y-hidden focus:outline-none disabled:cursor-not-allowed"
             :class="[
               support
                 ? 'text-violet-900 dark:text-violet-50 placeholder:text-violet-600/80 dark:placeholder:text-violet-300/50'
@@ -168,14 +167,14 @@
             ]"
             @touchstart.passive="unlockDraft"
             @mousedown="unlockDraft"
-            @keydown.enter.prevent="onEnter"
+            @keydown.enter.exact="onEnterKey"
             @keydown.down.prevent="onSlashDown"
             @keydown.up.prevent="onSlashUp"
             @keydown.esc.prevent="closeSlashMenu"
             @input="onTextInput"
             @focus="onInputFocus"
             @blur="onInputBlur"
-          >
+          />
         </div>
 
         <button
@@ -208,7 +207,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import type { AdminSlashCommandItem } from '~/types/adminCommands'
 import { CHAT_PHOTO_MAX_INPUT, isChatPhotoFile, prepareChatPhoto } from '~/utils/prepareChatPhoto'
 import {
@@ -256,8 +255,11 @@ const inputPlaceholder = computed(() => {
   return 'Xabar yozing...'
 })
 
+const TEXTAREA_MIN_PX = 40
+const TEXTAREA_MAX_PX = 128
+
 const fileInput = ref<HTMLInputElement | null>(null)
-const textInput = ref<HTMLInputElement | null>(null)
+const textInput = ref<HTMLTextAreaElement | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
 const { keyboardOpen, scheduleMeasure } = useMobileKeyboardOpen()
@@ -334,7 +336,17 @@ const toggleSlashMenu = () => {
   })
 }
 
+const resizeTextarea = () => {
+  const el = textInput.value
+  if (!el) return
+  el.style.height = 'auto'
+  const next = Math.min(Math.max(el.scrollHeight, TEXTAREA_MIN_PX), TEXTAREA_MAX_PX)
+  el.style.height = `${next}px`
+  el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? 'auto' : 'hidden'
+}
+
 const onTextInput = () => {
+  resizeTextarea()
   if (!hasSlashCommands.value) return
   if (text.value.startsWith('/')) {
     slashMenuOpen.value = true
@@ -365,6 +377,12 @@ const onSlashUp = () => {
   const max = filteredSlashCommands.value.length
   if (!max) return
   slashHighlight.value = (slashHighlight.value - 1 + max) % max
+}
+
+const onEnterKey = (e: KeyboardEvent) => {
+  if (e.shiftKey) return
+  e.preventDefault()
+  onEnter()
 }
 
 const onEnter = () => {
@@ -419,7 +437,16 @@ const send = () => {
   closeSlashMenu()
   emit('send', value)
   text.value = ''
+  nextTick(resizeTextarea)
 }
+
+watch(text, () => {
+  nextTick(resizeTextarea)
+})
+
+onMounted(() => {
+  nextTick(resizeTextarea)
+})
 
 const recording = ref(false)
 const seconds = ref(0)
