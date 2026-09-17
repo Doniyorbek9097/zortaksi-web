@@ -10,6 +10,5 @@ export function preloadOrdersList(orderStore: ReturnType<typeof useOrderStore>) 
   const params = buildOrdersListBootstrapParams()
   if (orderStore.isOrdersListFresh(params)) return
   orderStore.applyListFilter(params)
-  const silent = orderStore.orders.length > 0
-  void orderStore.fetchOrders({ page: 1, ...params }, { silent })
+  void orderStore.fetchOrders({ page: 1, ...params }, { silent: true })
 }

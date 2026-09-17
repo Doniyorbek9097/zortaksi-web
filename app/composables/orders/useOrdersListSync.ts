@@ -4,11 +4,6 @@ import {
   consumeOrdersTabSwitchEntry,
   shouldSaveDriverListScroll,
 } from '~/utils/driverScrollNav'
-import {
-  formatBotGroupIds,
-  parseBotGroupIds,
-} from '~/utils/orderFilterKeywords'
-
 type QueryParams = () => {
   limit: number
   search?: string
@@ -213,26 +208,12 @@ export function useOrdersListSync(options: {
     if (!document.hidden) syncIfVisible()
   }
 
-  const serverFilterMatches = () => {
-    const q = queryParams()
-    const wantSearch = String(q.search || '').trim()
-    const wantBotGroup = formatBotGroupIds(parseBotGroupIds(String(q.botGroupId || '')))
-    const wantListeners = formatBotGroupIds(parseBotGroupIds(String(q.listenerUserIds || '')))
-    const wantText = String(q.text || '').trim()
-    return (
-      String(orderStore.listSearch || '') === wantSearch &&
-      String(orderStore.listBotGroupId || '') === wantBotGroup &&
-      String(orderStore.listListenerUserIds || '') === wantListeners &&
-      String(orderStore.listText || '') === wantText &&
-      orderStore.listScope === 'all'
-    )
-  }
-
   /** Chatlar kabi: kesh bo'lsa darhol ko'rsatish, fon da silent yangilash */
   const bootOrdersList = async (fromTabSwitch = false) => {
     hydrateFilter()
     const q = queryParams()
-    const hasCached = orderStore.orders.length > 0 && serverFilterMatches()
+    const hasCached =
+      orderStore.orders.length > 0 && orderStore.paramsMatchListFilter({ page: 1, ...q })
 
     if (hasCached) {
       void orderStore.fetchOrders({ page: 1, ...q }, { silent: true })
@@ -260,15 +241,10 @@ export function useOrdersListSync(options: {
     document.removeEventListener('visibilitychange', onVisibility)
   }
 
-  onMounted(() => {
-    orderStore.startRecentMinuteTicker()
-    observer = new IntersectionObserver(onSentinelIntersect, { rootMargin: '520px' })
-    if (sentinel.value) observer.observe(sentinel.value)
-  })
+  const pageMounted = ref(false)
 
-  onActivated(async () => {
+  const activateOrdersPage = async (fromTabSwitch = false) => {
     pageActive = true
-    const fromTabSwitch = consumeOrdersTabSwitchEntry()
     await bootOrdersList(fromTabSwitch)
 
     startPoll()
@@ -284,6 +260,21 @@ export function useOrdersListSync(options: {
         await fillViewport()
       }
     }
+  }
+
+  onMounted(() => {
+    orderStore.startRecentMinuteTicker()
+    observer = new IntersectionObserver(onSentinelIntersect, { rootMargin: '520px' })
+    if (sentinel.value) observer.observe(sentinel.value)
+    void activateOrdersPage(false).finally(() => {
+      pageMounted.value = true
+    })
+  })
+
+  onActivated(async () => {
+    if (!pageMounted.value) return
+    const fromTabSwitch = consumeOrdersTabSwitchEntry()
+    await activateOrdersPage(fromTabSwitch)
   })
 
   onDeactivated(() => {

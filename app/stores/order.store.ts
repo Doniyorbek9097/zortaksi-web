@@ -891,6 +891,7 @@ export const useOrderStore = defineStore('order', () => {
         applyListFilter,
         resetListForFilterChange,
         isOrdersListFresh,
+        paramsMatchListFilter,
         hasActiveListFilter,
         scheduleSyncLatest,
         recentMinuteCount,
