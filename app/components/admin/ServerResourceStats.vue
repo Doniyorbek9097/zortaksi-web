@@ -75,8 +75,8 @@
 
     <BaseConfirmDialog
       v-model="confirmOpen"
-      title="Keshni tozalash"
-      message="Ilova keshlari tozalanadi (admin, ulanish, guruhlar va boshqalar). Server qayta ishga tushirilmaydi. Davom etasizmi?"
+      title="RAM bo'shatish"
+      message="Keshlar tozalanadi va server PM2 orqali qayta ishga tushiriladi (pm2 restart all). Taxminan 15–30 soniya uzilish bo'ladi. Davom etasizmi?"
       confirm-text="Bo'shatish"
       cancel-text="Bekor"
       variant="danger"

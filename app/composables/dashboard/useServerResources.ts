@@ -75,8 +75,8 @@ export function useServerResources(pollMs = 3000) {
       const res = await useApi('/admin/server-maintenance', { method: 'POST' })
       if (res?.success) {
         maintenanceMessage.value =
-          String(res.data?.message || 'Keshlar tozalandi.')
-        setTimeout(() => void fetchResources(), 3000)
+          String(res.data?.message || 'PM2 qayta ishga tushirilmoqda.')
+        setTimeout(() => void fetchResources(), 12_000)
         return res
       }
       error.value = String(res?.message || 'Server bo\'shatilmadi')
