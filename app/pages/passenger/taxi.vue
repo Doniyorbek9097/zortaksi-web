@@ -37,36 +37,36 @@
           </p>
         </div>
 
-        <div v-if="step !== 'loading' && step !== 'unavailable'" class="flex items-center justify-center gap-1.5">
-          <div
-            v-for="(label, i) in stepLabels"
-            :key="label"
-            class="flex items-center gap-1"
-          >
-            <span
-              class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all"
-              :class="stepDotClass(i)"
+        <div v-if="step !== 'unavailable' && step !== 'done'" class="flex items-center justify-center gap-1.5">
+          <template v-for="(label, i) in stepLabels" :key="label">
+            <button
+              type="button"
+              class="flex items-center gap-1 rounded-full transition-all"
+              :class="canGoBackToStep(i) ? 'cursor-pointer active:scale-95' : 'cursor-default'"
+              :disabled="!canGoBackToStep(i)"
+              :title="canGoBackToStep(i) ? `${label} — orqaga` : label"
+              @click="goToStep(i)"
             >
-              {{ i + 1 }}
-            </span>
+              <span
+                class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all"
+                :class="stepDotClass(i)"
+              >
+                {{ i + 1 }}
+              </span>
+            </button>
             <span
               v-if="i < stepLabels.length - 1"
               class="w-6 h-0.5 rounded-full"
               :class="i < stepIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'"
             />
-          </div>
+          </template>
         </div>
       </div>
 
       <div
         class="rounded-[1.75rem] border bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl shadow-amber-500/5 dark:shadow-none border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4"
       >
-        <div v-if="step === 'loading'" class="py-10 flex flex-col items-center gap-3">
-          <font-awesome-icon icon="fa-solid fa-spinner" class="text-2xl text-amber-500 animate-spin" />
-          <p class="text-sm font-semibold text-slate-500">Yuklanmoqda…</p>
-        </div>
-
-        <div v-else-if="step === 'unavailable'" class="py-6 text-center space-y-4">
+        <div v-if="step === 'unavailable'" class="py-6 text-center space-y-4">
           <div class="w-12 h-12 mx-auto rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
             <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="text-xl" />
           </div>
@@ -89,7 +89,7 @@
             />
           </label>
           <p class="text-[12px] text-slate-400 leading-snug">
-            Manzil, yo'nalish va odamlar sonini yozing. Ovozli xabar hozircha bot orqali.
+            Manzil, yo'nalish va odamlar sonini yozing.
           </p>
           <button
             type="button"
@@ -121,15 +121,6 @@
             />
           </label>
 
-          <button
-            type="button"
-            class="w-full py-3 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 font-bold text-sm active:scale-[0.98] transition-all"
-            @click="onRequestPhone"
-          >
-            <font-awesome-icon icon="fa-brands fa-telegram" class="mr-1.5" />
-            Telegram orqali raqam yuborish
-          </button>
-
           <div class="flex gap-2 pt-1">
             <button
               type="button"
@@ -154,17 +145,24 @@
           <div class="text-center space-y-2 pb-1">
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider">
               <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              E'lon yuborildi
+              Yetkazildi
             </div>
-            <p class="text-sm text-slate-500 dark:text-slate-400">
-              Haydovchilar tez orada bog'lanadi. Shofyor topilgach pastdagi tugmani bosing.
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
+              Buyurtmangiz shofyorlarimizga yetib bordi. Sizga tez orada aloqaga chiqishadi.
             </p>
           </div>
 
           <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4 space-y-2 text-[14px]">
             <p><span class="font-bold text-slate-400">Marshrut:</span> {{ activeOrder?.route || routeText }}</p>
-            <p v-if="activeOrder?.phone"><span class="font-bold text-slate-400">Tel:</span> +{{ activeOrder.phone }}</p>
+            <p v-if="activeOrder?.phone || phoneInput">
+              <span class="font-bold text-slate-400">Tel:</span>
+              +{{ activeOrder?.phone || phoneInput }}
+            </p>
           </div>
+
+          <p class="text-[12px] text-slate-400 text-center leading-snug">
+            Shofyor topilgach pastdagi tugmani bosing.
+          </p>
 
           <button
             type="button"
@@ -194,10 +192,10 @@
             </p>
             <button
               type="button"
-              class="w-full py-3.5 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-sm active:scale-[0.98]"
-              @click="closeOrNew"
+              class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98]"
+              @click="startNewOrder"
             >
-              {{ doneIsCancel ? 'Yangi buyurtma' : 'Yopish' }}
+              🚕 Yangi buyurtma berish
             </button>
           </div>
         </template>
@@ -230,9 +228,11 @@ const {
   firstName,
   canSubmitRoute,
   canSubmitPhone,
+  canGoBackToStep,
+  goToStep,
   goToPhone,
   goBackToRoute,
-  requestTelegramPhone,
+  goBackOneStep,
   submitOrder,
   confirmDriverFound,
   cancelOrder,
@@ -244,19 +244,23 @@ const stepLabels = ['Marshrut', 'Telefon', 'Tayyor']
 const stepIndex = computed(() => {
   if (step.value === 'route') return 0
   if (step.value === 'phone') return 1
-  if (step.value === 'active' || step.value === 'done') return 2
-  return 0
+  if (step.value === 'active') return 2
+  return 2
 })
 
 function stepDotClass(i: number) {
   const active = i <= stepIndex.value
+  const clickable = canGoBackToStep(i)
+  if (clickable) {
+    return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 ring-2 ring-amber-400/50'
+  }
   return active
     ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
     : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
 }
 
 const headline = computed(() => {
-  if (step.value === 'active') return 'Buyurtmangiz faol'
+  if (step.value === 'active') return 'Buyurtma qabul qilindi'
   if (step.value === 'done') return 'Tayyor!'
   const name = firstName.value
   return name ? `Salom, ${name}!` : 'Taksi chaqirish'
@@ -265,37 +269,17 @@ const headline = computed(() => {
 const subtitle = computed(() => {
   if (step.value === 'route') return 'Qayerdan va qayerga borishingizni yozing — haydovchilar ko\'radi.'
   if (step.value === 'phone') return 'Aloqa uchun telefon raqamingiz kerak.'
-  if (step.value === 'active') return 'Haydovchi topilgach kontaktni yopish uchun tugmani bosing.'
+  if (step.value === 'active') return 'Haydovchilar xabaringizni ko\'rib, tez orada bog\'lanadi.'
   if (step.value === 'done') return 'Zo\'r Taksi xizmatidan foydalanganingiz uchun rahmat.'
   return 'Bir necha qadamda tez buyurtma bering.'
 })
 
-const doneIsCancel = computed(() => doneMessage.value.toLowerCase().includes('bekor'))
-
-async function onRequestPhone() {
-  const ok = await requestTelegramPhone()
-  if (!ok) {
-    error.value = 'Telefon ruxsati berilmadi yoki qo\'llab-quvvatlanmaydi.'
-  }
-}
-
 function handleBack() {
-  if (step.value === 'phone') {
-    goBackToRoute()
-    return
-  }
+  if (goBackOneStep()) return
   if (closeTelegramMiniApp()) return
   if (import.meta.client && window.history.length > 1) {
     useRouter().back()
   }
-}
-
-function closeOrNew() {
-  if (doneIsCancel.value) {
-    startNewOrder()
-    return
-  }
-  closeTelegramMiniApp()
 }
 
 onMounted(() => {

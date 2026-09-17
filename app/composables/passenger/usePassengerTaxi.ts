@@ -14,7 +14,18 @@ export type PassengerOrderView = {
   createdAt?: string | null
 }
 
-type Step = 'loading' | 'route' | 'phone' | 'active' | 'done' | 'unavailable'
+type Step = 'route' | 'phone' | 'active' | 'done' | 'unavailable'
+
+const CACHE_KEY = 'zt:passenger-taxi-state'
+
+type CachedState = {
+  groupId: string
+  step: Step
+  routeText: string
+  phoneInput: string
+  activeOrder: PassengerOrderView | null
+  doneMessage: string
+}
 
 async function passengerApi<T = unknown>(
   path: string,
@@ -40,18 +51,60 @@ async function passengerApi<T = unknown>(
   return res.data as T
 }
 
+function readCache(groupId: string): CachedState | null {
+  if (!import.meta.client) return null
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as CachedState
+    if (!parsed || parsed.groupId !== groupId) return null
+    if (!['route', 'phone', 'active', 'done', 'unavailable'].includes(parsed.step)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeCache(state: CachedState) {
+  if (!import.meta.client) return
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(state))
+  } catch {
+    /* */
+  }
+}
+
+function clearCache() {
+  if (!import.meta.client) return
+  try {
+    sessionStorage.removeItem(CACHE_KEY)
+  } catch {
+    /* */
+  }
+}
+
 export function usePassengerTaxi() {
   const route = useRoute()
 
-  const step = ref<Step>('loading')
-  const routeText = ref('')
-  const phoneInput = ref('')
-  const activeOrder = ref<PassengerOrderView | null>(null)
-  const error = ref('')
-  const busy = ref(false)
-  const doneMessage = ref('')
-
   const botLaunchGroupId = computed(() => String(route.query.groupId || '').trim())
+
+  const cached = import.meta.client ? readCache(botLaunchGroupId.value) : null
+  const hasInitData = !!getTelegramWebAppInitData()
+
+  const step = ref<Step>(
+    !hasInitData
+      ? 'unavailable'
+      : cached?.step || 'route',
+  )
+  const routeText = ref(cached?.routeText || '')
+  const phoneInput = ref(cached?.phoneInput || '')
+  const activeOrder = ref<PassengerOrderView | null>(cached?.activeOrder || null)
+  const error = ref(
+    !hasInitData ? 'Bu sahifa faqat Telegram ilovasi ichida ishlaydi.' : '',
+  )
+  const busy = ref(false)
+  const doneMessage = ref(cached?.doneMessage || '')
+
   const firstName = computed(() => {
     const tg = getTelegramWebAppUser()
     return String(tg?.first_name || tg?.username || '').trim()
@@ -61,29 +114,31 @@ export function usePassengerTaxi() {
   const phoneDigits = computed(() => normalizePhoneDigits(phoneInput.value) || '')
   const canSubmitPhone = computed(() => !!phoneDigits.value)
 
-  async function loadActiveOrder() {
-    step.value = 'loading'
-    error.value = ''
+  const canGoBackToStep = (index: number) => {
+    if (step.value === 'phone' && index === 0) return true
+    if (step.value === 'active' && index <= 1) return false
+    if (step.value === 'done' || step.value === 'unavailable') return false
+    return false
+  }
 
-    const initData = getTelegramWebAppInitData()
-    if (!initData) {
-      step.value = 'unavailable'
-      error.value = 'Bu sahifa faqat Telegram ilovasi ichida ishlaydi.'
-      return
-    }
+  function persistCache() {
+    writeCache({
+      groupId: botLaunchGroupId.value,
+      step: step.value,
+      routeText: routeText.value,
+      phoneInput: phoneInput.value,
+      activeOrder: activeOrder.value,
+      doneMessage: doneMessage.value,
+    })
+  }
 
-    try {
-      const data = await passengerApi<PassengerOrderView | null>('/passenger/orders/active')
-      if (data?.id) {
-        activeOrder.value = data
-        step.value = 'active'
-        return
-      }
-      activeOrder.value = null
-      step.value = 'route'
-    } catch (e: unknown) {
-      step.value = 'unavailable'
-      error.value = (e as Error)?.message || 'Yuklab bo\'lmadi'
+  watch([step, routeText, phoneInput, activeOrder, doneMessage, botLaunchGroupId], persistCache, {
+    deep: true,
+  })
+
+  function goToStep(index: number) {
+    if (index === 0 && canGoBackToStep(0)) {
+      goBackToRoute()
     }
   }
 
@@ -102,25 +157,37 @@ export function usePassengerTaxi() {
     step.value = 'route'
   }
 
-  async function requestTelegramPhone() {
-    const tg = getTelegramWebApp()
-    if (!tg?.requestPhoneNumber) return false
+  function goBackOneStep() {
+    if (step.value === 'phone') {
+      goBackToRoute()
+      return true
+    }
+    return false
+  }
 
-    return await new Promise<boolean>((resolve) => {
-      try {
-        tg.requestPhoneNumber((ok, data) => {
-          const digits = normalizePhoneDigits(data?.phone_number)
-          if (ok && digits) {
-            phoneInput.value = digits
-            resolve(true)
-            return
-          }
-          resolve(false)
-        })
-      } catch {
-        resolve(false)
+  async function syncActiveOrderSilent() {
+    if (!hasInitData) return
+    if (step.value === 'done') return
+
+    try {
+      const data = await passengerApi<PassengerOrderView | null>('/passenger/orders/active')
+      if (data?.id) {
+        activeOrder.value = data
+        if (data.route) routeText.value = data.route
+        if (data.phone) phoneInput.value = data.phone
+        if (step.value === 'route' || step.value === 'phone') {
+          step.value = 'active'
+        }
+        return
       }
-    })
+
+      if (step.value === 'active') {
+        activeOrder.value = null
+        step.value = 'route'
+      }
+    } catch {
+      /* kesh holatini saqlab qolamiz */
+    }
   }
 
   async function submitOrder() {
@@ -164,8 +231,9 @@ export function usePassengerTaxi() {
         contactHidden?: boolean
       }>(`/passenger/orders/${id}/driver-found`, { method: 'POST' })
       doneMessage.value = data?.alreadyBooked
-        ? 'Buyurtma allaqachon band qilingan. Haydovchi tez orada bog\'lanadi.'
-        : 'Ajoyib! Kontakt yashirildi. Haydovchi siz bilan bog\'lanadi.'
+        ? 'Buyurtma allaqachon band qilingan. Haydovchi tez orada siz bilan bog\'lanadi.'
+        : 'Shofyor topildi! Kontakt yashirildi. Tez orada siz bilan bog\'lanishadi.'
+      activeOrder.value = null
       step.value = 'done'
       hapticSuccess()
     } catch (e: unknown) {
@@ -205,10 +273,15 @@ export function usePassengerTaxi() {
     doneMessage.value = ''
     error.value = ''
     step.value = 'route'
+    clearCache()
+    void syncActiveOrderSilent()
   }
 
   onMounted(() => {
-    void loadActiveOrder()
+    if (!hasInitData) return
+    if (!cached) {
+      void syncActiveOrderSilent()
+    }
   })
 
   return {
@@ -222,13 +295,14 @@ export function usePassengerTaxi() {
     firstName,
     canSubmitRoute,
     canSubmitPhone,
+    canGoBackToStep,
+    goToStep,
     goToPhone,
     goBackToRoute,
-    requestTelegramPhone,
+    goBackOneStep,
     submitOrder,
     confirmDriverFound,
     cancelOrder,
     startNewOrder,
-    loadActiveOrder,
   }
 }
