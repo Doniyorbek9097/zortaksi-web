@@ -142,6 +142,14 @@ export function usePassengerTaxi() {
     }
   }
 
+  function setRouteText(value: string) {
+    routeText.value = String(value ?? '')
+  }
+
+  function setPhoneInput(value: string) {
+    phoneInput.value = String(value ?? '')
+  }
+
   function goToPhone() {
     if (!canSubmitRoute.value) {
       error.value = 'Marshrutni batafsil yozing (kamida 3 belgi).'
@@ -297,6 +305,8 @@ export function usePassengerTaxi() {
     canSubmitPhone,
     canGoBackToStep,
     goToStep,
+    setRouteText,
+    setPhoneInput,
     goToPhone,
     goBackToRoute,
     goBackOneStep,

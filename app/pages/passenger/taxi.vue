@@ -37,13 +37,12 @@
           </p>
         </div>
 
-        <div v-if="step !== 'unavailable' && step !== 'done'" class="flex items-center justify-center gap-1.5">
+        <div v-if="step !== 'unavailable' && step !== 'done'" class="flex items-start justify-center gap-1.5">
           <template v-for="(label, i) in stepLabels" :key="label">
             <button
               type="button"
-              class="flex items-center gap-1 rounded-full transition-all"
+              class="flex flex-col items-center gap-1 min-w-[52px] rounded-xl transition-all"
               :class="canGoBackToStep(i) ? 'cursor-pointer active:scale-95' : 'cursor-default'"
-              :disabled="!canGoBackToStep(i)"
               :title="canGoBackToStep(i) ? `${label} — orqaga` : label"
               @click="goToStep(i)"
             >
@@ -53,10 +52,16 @@
               >
                 {{ i + 1 }}
               </span>
+              <span
+                class="text-[9px] font-bold uppercase tracking-wide leading-none"
+                :class="i <= stepIndex ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'"
+              >
+                {{ label }}
+              </span>
             </button>
             <span
               v-if="i < stepLabels.length - 1"
-              class="w-6 h-0.5 rounded-full"
+              class="w-5 h-0.5 rounded-full mt-3.5 shrink-0"
               :class="i < stepIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'"
             />
           </template>
@@ -81,11 +86,13 @@
               Qayerdan — qayerga
             </span>
             <textarea
-              v-model="routeText"
+              :value="routeText"
               rows="4"
               maxlength="500"
-              placeholder="Masalan: Chilonzor 15-kvartal → Sergeli bozori, 2 kishi"
+              enterkeyhint="next"
+              placeholder="Masalan: Chilonzor → Sergeli, 2 kishi"
               class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-4 py-3.5 text-[15px] leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+              @input="onRouteInput"
             />
           </label>
           <p class="text-[12px] text-slate-400 leading-snug">
@@ -93,8 +100,8 @@
           </p>
           <button
             type="button"
-            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-            :disabled="!canSubmitRoute"
+            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all"
+            :class="canSubmitRoute ? 'opacity-100' : 'opacity-45'"
             @click="goToPhone"
           >
             Keyingi — telefon
@@ -112,12 +119,14 @@
               Telefon raqam
             </span>
             <input
-              v-model="phoneInput"
+              :value="phoneInput"
               type="tel"
               inputmode="tel"
               autocomplete="tel"
+              enterkeyhint="done"
               placeholder="998901234567"
               class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-4 py-3.5 text-[16px] font-semibold tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+              @input="onPhoneInput"
             />
           </label>
 
@@ -131,8 +140,8 @@
             </button>
             <button
               type="button"
-              class="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98] disabled:opacity-50"
-              :disabled="busy || !canSubmitPhone"
+              class="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
+              :class="busy || !canSubmitPhone ? 'opacity-45' : 'opacity-100'"
               @click="submitOrder"
             >
               <font-awesome-icon v-if="busy" icon="fa-solid fa-spinner" class="animate-spin mr-1.5" />
@@ -229,6 +238,8 @@ const {
   canSubmitRoute,
   canSubmitPhone,
   canGoBackToStep,
+  setRouteText,
+  setPhoneInput,
   goToStep,
   goToPhone,
   goBackToRoute,
@@ -239,7 +250,7 @@ const {
   startNewOrder,
 } = usePassengerTaxi()
 
-const stepLabels = ['Marshrut', 'Telefon', 'Tayyor']
+const stepLabels = ['Manzil', 'Tel', 'Tayyor']
 
 const stepIndex = computed(() => {
   if (step.value === 'route') return 0
@@ -267,12 +278,20 @@ const headline = computed(() => {
 })
 
 const subtitle = computed(() => {
-  if (step.value === 'route') return 'Qayerdan va qayerga borishingizni yozing — haydovchilar ko\'radi.'
-  if (step.value === 'phone') return 'Aloqa uchun telefon raqamingiz kerak.'
-  if (step.value === 'active') return 'Haydovchilar xabaringizni ko\'rib, tez orada bog\'lanadi.'
-  if (step.value === 'done') return 'Zo\'r Taksi xizmatidan foydalanganingiz uchun rahmat.'
-  return 'Bir necha qadamda tez buyurtma bering.'
+  if (step.value === 'route') return 'Qayerdan va qayerga yozing.'
+  if (step.value === 'phone') return 'Telefon raqamingiz.'
+  if (step.value === 'active') return 'Tez orada bog\'lanishadi.'
+  if (step.value === 'done') return 'Rahmat!'
+  return 'Tez buyurtma bering.'
 })
+
+function onRouteInput(event: Event) {
+  setRouteText((event.target as HTMLTextAreaElement).value)
+}
+
+function onPhoneInput(event: Event) {
+  setPhoneInput((event.target as HTMLInputElement).value)
+}
 
 function handleBack() {
   if (goBackOneStep()) return
