@@ -83,12 +83,17 @@
 
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
 
-      <!-- Ovozli buyurtma (bot) -->
-      <OrderVoicePlayer
+      <!-- Ovozli buyurtma (ZorTaksi bot) -->
+      <div
         v-if="hasBotVoice"
-        :order-id="String(order._id || '')"
-        class="mb-3"
-      />
+        class="mb-3 rounded-xl border border-sky-200/80 dark:border-sky-800/60 bg-sky-500/5 px-3 py-2"
+        data-no-swipe
+      >
+        <p class="text-[11px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400 mb-2">
+          Ovozli buyurtma
+        </p>
+        <OrdersOrderVoicePlayer :order-id="String(order._id || '')" />
+      </div>
 
       <!-- Message -->
       <p
@@ -228,8 +233,11 @@
 
 <script setup lang="ts">
 import type { IOrder } from '~/types'
+import OrdersOrderVoicePlayer from '~/components/orders/OrderVoicePlayer.vue'
 import { hidePhoneNumbers, normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
 import { buildGroupViewUrl } from '~/utils/telegramLinks'
+
+const ZORTAKSI_BOT_GROUP_ID = 'zortaksi-bot'
 
 interface Props {
   order: IOrder
@@ -319,13 +327,25 @@ const groupViewUrl = computed(() =>
 
 const interestCount = computed(() => Math.max(0, Number(props.order.interestCount || 0)))
 
-/** Matnda telefonlar yashirilgan ko'rinish (server + qo'shimcha himoya) */
-const orderMessageText = computed(() => hidePhoneNumbers(props.order.message?.text))
-
 const hasBotVoice = computed(() => {
+  if (props.order.hasVoice) return true
   if (String(props.order.botVoiceFileId || '').trim()) return true
   if (String(props.order.botVoiceMediaPath || '').trim()) return true
-  return props.order.message?.mediaType === 'voice' && !!props.order.message?.hasMedia
+  const isBotOrder = String(props.order.group?.groupId || '') === ZORTAKSI_BOT_GROUP_ID
+  if (!isBotOrder) return false
+  if (props.order.message?.mediaType === 'voice' && props.order.message?.hasMedia) return true
+  return /ovozli\s*xabar/i.test(String(props.order.message?.text || ''))
+})
+
+/** Matnda telefonlar yashirilgan; ovozli qator alohida pleerda */
+const orderMessageText = computed(() => {
+  let text = hidePhoneNumbers(props.order.message?.text)
+  if (!hasBotVoice.value) return text
+  return text
+    .replace(/Yo'lovchi:\s*🎤[^\n]*/gi, '')
+    .replace(/🎤\s*Ovozli xabar/gi, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 })
 
 /** 1) callPhone / xabar (oxirgi telefon) → 2) sender.phone */

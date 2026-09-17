@@ -78,6 +78,8 @@ export interface IOrder {
     /** Bot orqali berilgan ovozli xabar (Telegram file_id) */
     botVoiceFileId?: string | null;
     botVoiceMediaPath?: string | null;
+    /** Server: ovozli buyurtma */
+    hasVoice?: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;
 }
