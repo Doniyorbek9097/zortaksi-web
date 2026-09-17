@@ -25,6 +25,15 @@ export function useDriverOrdersPage() {
 
   const filter = useOrdersFilter(orderStore)
 
+  const showOrdersLoading = computed(() => {
+    if (filter.filterLoading.value) return true
+    if (!orderStore.isLoading) return false
+    return !orderStore.isOrdersListReadyForParams({
+      page: 1,
+      ...filter.queryParams(),
+    })
+  })
+
   const { sentinel, listRoot, persistScroll } = useOrdersListSync({
     orderStore,
     displayOrders: filter.displayOrders,
@@ -85,6 +94,7 @@ export function useDriverOrdersPage() {
   return {
     authStore,
     orderStore,
+    showOrdersLoading,
     role,
     active,
     isAdmin,

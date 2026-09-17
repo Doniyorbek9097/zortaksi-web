@@ -212,18 +212,18 @@ export function useOrdersListSync(options: {
   const bootOrdersList = async (fromTabSwitch = false) => {
     hydrateFilter()
     const q = queryParams()
-    const hasCached =
-      orderStore.orders.length > 0 && orderStore.paramsMatchListFilter({ page: 1, ...q })
+    const pageParams = { page: 1, ...q }
+    const hasCached = orderStore.isOrdersListReadyForParams(pageParams)
 
     if (hasCached) {
-      void orderStore.fetchOrders({ page: 1, ...q }, { silent: true })
+      void orderStore.fetchOrders(pageParams, { silent: true })
       await nextTick()
       restoreListScroll(fromTabSwitch)
       return
     }
 
     if (fromTabSwitch) orderStore.clearOrdersListScroll()
-    await orderStore.fetchOrders({ page: 1, ...q })
+    await orderStore.fetchOrders(pageParams)
     await nextTick()
     restoreListScroll(fromTabSwitch)
   }

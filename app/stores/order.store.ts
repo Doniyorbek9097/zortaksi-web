@@ -173,9 +173,15 @@ export const useOrderStore = defineStore('order', () => {
         return true
     }
 
+    /** Joriy filter uchun page-1 yuklanganmi (buyurtma bo'lmasa ham) */
+    const isOrdersListReadyForParams = (params: FetchOrdersParams = {}) => {
+        if (!lastFullListFetchAt) return false
+        return paramsMatchListFilter(params)
+    }
+
     /** Preload yoki sahifa — to'liq ro'yxat yaqinda yuklanganmi */
     const isOrdersListFresh = (params: FetchOrdersParams = {}) => {
-        if (!orders.value.length || !lastFullListFetchAt) return false
+        if (!lastFullListFetchAt) return false
         if (!paramsMatchListFilter(params)) return false
         return Date.now() - lastFullListFetchAt < ORDERS_LIST_FRESH_MS
     }
@@ -194,6 +200,7 @@ export const useOrderStore = defineStore('order', () => {
         ordersListScrollY.value = 0
         ordersListAnchorOrderId.value = null
         isLoadingMore.value = false
+        lastFullListFetchAt = 0
         if (import.meta.client) {
             window.scrollTo(0, 0)
         }
@@ -682,6 +689,14 @@ export const useOrderStore = defineStore('order', () => {
     ) => {
         const isFreshLoad = !opts.append && (params.page ?? 1) <= 1
         if (isFreshLoad && listPage1Inflight) {
+            if (!opts.silent) {
+                isLoading.value = true
+                try {
+                    return await listPage1Inflight
+                } finally {
+                    isLoading.value = false
+                }
+            }
             return listPage1Inflight
         }
         const job = runFetchOrders(params, opts)
@@ -868,6 +883,7 @@ export const useOrderStore = defineStore('order', () => {
         ordersListAnchorOrderId.value = null
         isLoading.value = false
         isLoadingMore.value = false
+        lastFullListFetchAt = 0
         pruneSeenIds()
     }
 
@@ -891,6 +907,7 @@ export const useOrderStore = defineStore('order', () => {
         applyListFilter,
         resetListForFilterChange,
         isOrdersListFresh,
+        isOrdersListReadyForParams,
         paramsMatchListFilter,
         hasActiveListFilter,
         scheduleSyncLatest,

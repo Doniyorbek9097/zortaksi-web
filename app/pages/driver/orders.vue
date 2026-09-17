@@ -52,7 +52,7 @@
     </p>
 
     <div
-      v-if="filterLoading || (orderStore.isLoading && !orderStore.orders.length)"
+      v-if="showOrdersLoading"
       class="space-y-2.5 pt-1"
     >
       <OrdersOrderCardSkeleton v-for="n in 4" :key="n" />
@@ -189,6 +189,7 @@ usePanelShellLayout()
 const {
   authStore,
   orderStore,
+  showOrdersLoading,
   role,
   active,
   isAdmin,
