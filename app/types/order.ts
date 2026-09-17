@@ -77,6 +77,7 @@ export interface IOrder {
     dedupeKey?: string | null;
     /** Bot orqali berilgan ovozli xabar (Telegram file_id) */
     botVoiceFileId?: string | null;
+    botVoiceMediaPath?: string | null;
     createdAt: string | Date;
     updatedAt: string | Date;
 }

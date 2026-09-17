@@ -85,7 +85,7 @@
 
       <!-- Ovozli buyurtma (bot) -->
       <OrderVoicePlayer
-        v-if="hasBotVoice && !locked"
+        v-if="hasBotVoice"
         :order-id="String(order._id || '')"
         class="mb-3"
       />
@@ -322,7 +322,11 @@ const interestCount = computed(() => Math.max(0, Number(props.order.interestCoun
 /** Matnda telefonlar yashirilgan ko'rinish (server + qo'shimcha himoya) */
 const orderMessageText = computed(() => hidePhoneNumbers(props.order.message?.text))
 
-const hasBotVoice = computed(() => !!String(props.order.botVoiceFileId || '').trim())
+const hasBotVoice = computed(() => {
+  if (String(props.order.botVoiceFileId || '').trim()) return true
+  if (String(props.order.botVoiceMediaPath || '').trim()) return true
+  return props.order.message?.mediaType === 'voice' && !!props.order.message?.hasMedia
+})
 
 /** 1) callPhone / xabar (oxirgi telefon) → 2) sender.phone */
 const callPhone = computed(() => resolveOrderPhone(props.order))

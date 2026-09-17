@@ -30,7 +30,7 @@
           :style="{ width: `${progress}%` }"
         />
       </div>
-      <p class="mt-1 text-[10px] font-bold text-slate-400 tabular-nums">
+      <p class="mt-1 text-[10px] font-bold tabular-nums" :class="error ? 'text-red-500' : 'text-slate-400'">
         {{ timeLabel }}
       </p>
     </div>
@@ -39,16 +39,19 @@
       ref="audioEl"
       class="hidden"
       preload="none"
+      playsinline
       @timeupdate="onTimeUpdate"
       @loadedmetadata="onLoadedMetadata"
       @ended="onEnded"
       @pause="playing = false"
       @play="playing = true"
+      @error="onAudioError"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { api } from '~/config/axios'
 import { buildApiUrl } from '~/utils/buildApiUrl'
 import { resolveAuthToken } from '~/utils/activeAccount'
 import { getAuthCookieOptions } from '~/utils/authCookie'
@@ -63,6 +66,7 @@ const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
 const audioEl = ref<HTMLAudioElement | null>(null)
 const loading = ref(false)
 const playing = ref(false)
+const error = ref('')
 const current = ref(0)
 const total = ref(0)
 const src = ref('')
@@ -80,6 +84,7 @@ const formatSec = (sec: number) => {
 }
 
 const timeLabel = computed(() => {
+  if (error.value) return error.value
   if (loading.value) return 'Yuklanmoqda...'
   if (!src.value) return 'Ovozli xabar'
   return `${formatSec(current.value)} / ${formatSec(total.value || 0)}`
@@ -91,38 +96,72 @@ const ensureSrc = async () => {
   if (!id) return
 
   loading.value = true
+  error.value = ''
   try {
     const token = resolveAuthToken(cookie.value)
     const url = buildApiUrl(config.public.baseUrl, `/orders/${id}/voice`)
-    const res = await fetch(url, {
+    const res = await api.get<ArrayBuffer>(url, {
+      responseType: 'arraybuffer',
       headers: token ? { authorization: `Bearer ${token}` } : {},
-      credentials: 'include',
     })
-    if (!res.ok) throw new Error('Ovoz yuklanmadi')
-    const blob = await res.blob()
+    const mime = String(res.headers['content-type'] || 'audio/mp4').split(';')[0]
+    const blob = new Blob([res.data], { type: mime || 'audio/mp4' })
     if (!blob.size) throw new Error('Bo\'sh fayl')
     src.value = URL.createObjectURL(blob)
     if (audioEl.value) {
       audioEl.value.src = src.value
+      audioEl.value.load()
     }
+  } catch (e: any) {
+    error.value = 'Yuklab bo\'lmadi'
+    console.warn('[OrderVoice]', e?.message || e)
   } finally {
     loading.value = false
   }
 }
 
+const waitCanPlay = (a: HTMLAudioElement, ms = 12_000) =>
+  new Promise<void>((resolve, reject) => {
+    if (a.readyState >= 2) {
+      resolve()
+      return
+    }
+    const t = setTimeout(() => {
+      cleanup()
+      reject(new Error('audio timeout'))
+    }, ms)
+    const onOk = () => {
+      cleanup()
+      resolve()
+    }
+    const onErr = () => {
+      cleanup()
+      reject(new Error('audio error'))
+    }
+    const cleanup = () => {
+      clearTimeout(t)
+      a.removeEventListener('canplay', onOk)
+      a.removeEventListener('error', onErr)
+    }
+    a.addEventListener('canplay', onOk)
+    a.addEventListener('error', onErr)
+  })
+
 const toggle = async () => {
   if (loading.value) return
   await ensureSrc()
+  if (error.value) return
   const a = audioEl.value
-  if (!a) return
+  if (!a || !src.value) return
   if (playing.value) {
     a.pause()
     return
   }
   try {
+    await waitCanPlay(a)
     await a.play()
   } catch {
-    /* ignore */
+    error.value = 'Ijro bo\'lmadi'
   }
 }
 
@@ -148,6 +187,11 @@ const onLoadedMetadata = () => {
 const onEnded = () => {
   playing.value = false
   current.value = 0
+}
+
+const onAudioError = () => {
+  error.value = 'Ijro bo\'lmadi'
+  playing.value = false
 }
 
 onBeforeUnmount(() => {
