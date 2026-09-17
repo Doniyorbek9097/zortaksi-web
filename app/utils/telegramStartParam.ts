@@ -11,6 +11,7 @@ const TELEGRAM_START_ENTRY_PATHS = new Set([
   '/login',
   '/register',
   '/driver/dashboard',
+  '/passenger/taxi',
 ])
 
 function isTelegramStartParamConsumed(): boolean {
@@ -56,6 +57,18 @@ export function routeFromTelegramStartParam(
 
   if (param === 'dashboard' || param === 'driver') {
     return { path: '/driver/dashboard' }
+  }
+
+  if (param === 'taxi') {
+    return { path: '/passenger/taxi' }
+  }
+
+  if (/^taxi_[a-f0-9]{24}$/i.test(param)) {
+    const groupId = param.slice('taxi_'.length).trim()
+    return {
+      path: '/passenger/taxi',
+      query: { groupId },
+    }
   }
 
   return null
@@ -228,6 +241,11 @@ export function matchesTelegramStartRoute(
 export function resolveTelegramStartNavigation(
   to: RouteLocationNormalized,
 ): RouteLocationRaw | null {
+  if (to.path === '/passenger/taxi') {
+    clearTelegramStartParamStorage()
+    return null
+  }
+
   // Chat ochilgan — start_param qayta ishlatilmasin
   if (to.path.startsWith('/driver/chat/')) {
     if (to.path === '/driver/chat/open') {

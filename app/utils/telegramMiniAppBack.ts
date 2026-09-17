@@ -47,7 +47,8 @@ export function shouldTelegramCloseOnBack(): boolean {
 }
 
 export function isTelegramChatEntryPath(path: string): boolean {
-  return String(path || '').startsWith('/driver/chat/')
+  const p = String(path || '')
+  return p.startsWith('/driver/chat/') || p === '/passenger/taxi'
 }
 
 export function isTelegramBackTrapState(state: unknown): boolean {
@@ -60,7 +61,7 @@ export function maybeMarkTelegramCloseOnBackFromStartParam(
 ): void {
   const raw = String(param || '').trim()
   if (!raw) return
-  if (/^order_/i.test(raw) || /^[a-f0-9]{24}$/i.test(raw)) {
+  if (/^order_/i.test(raw) || /^[a-f0-9]{24}$/i.test(raw) || /^taxi/i.test(raw)) {
     markTelegramCloseOnBack()
   }
 }
