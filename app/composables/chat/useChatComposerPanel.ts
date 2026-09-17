@@ -87,7 +87,7 @@ export function useChatComposerPanel(opts: {
         return DRIVER_ORDER_CONNECT_FAIL
       }
       if (conn.value === 'proxy-required') {
-        return 'Proksi orqali ulanishni tasdiqlang'
+        return 'Ulanmoqda...'
       }
       if (conn.value === 'connecting' || conn.value === 'idle') {
         return 'Ulanmoqda...'

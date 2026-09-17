@@ -83,9 +83,18 @@
 
       <div class="my-3 border-t border-slate-100 dark:border-slate-800" />
 
+      <!-- Ovozli buyurtma (bot) -->
+      <OrderVoicePlayer
+        v-if="hasBotVoice && !locked"
+        :order-id="String(order._id || '')"
+        class="mb-3"
+      />
+
       <!-- Message -->
-      <p class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words select-text">{{
-        orderMessageText }}</p>
+      <p
+        v-if="orderMessageText"
+        class="text-[15px] font-bold leading-relaxed text-slate-800 dark:text-slate-100 whitespace-pre-line break-words select-text"
+      >{{ orderMessageText }}</p>
 
       <!-- Qulflangan (aktiv emas, admin emas) -->
       <button
@@ -312,6 +321,8 @@ const interestCount = computed(() => Math.max(0, Number(props.order.interestCoun
 
 /** Matnda telefonlar yashirilgan ko'rinish (server + qo'shimcha himoya) */
 const orderMessageText = computed(() => hidePhoneNumbers(props.order.message?.text))
+
+const hasBotVoice = computed(() => !!String(props.order.botVoiceFileId || '').trim())
 
 /** 1) callPhone / xabar (oxirgi telefon) → 2) sender.phone */
 const callPhone = computed(() => resolveOrderPhone(props.order))

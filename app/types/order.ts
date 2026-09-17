@@ -35,7 +35,7 @@ export interface IMessage {
     text: string;
     date: string | Date;
     hasMedia: boolean;
-    mediaType?: 'photo' | 'video' | 'document' | 'none';
+    mediaType?: 'photo' | 'video' | 'document' | 'voice' | 'none';
     replyToMessageId?: number;
     rawEntities?: any[];
 }
@@ -75,6 +75,8 @@ export interface IOrder {
     /** Admin: admin userbot creator guruhi — guruhdan ban */
     canRestrictSender?: boolean;
     dedupeKey?: string | null;
+    /** Bot orqali berilgan ovozli xabar (Telegram file_id) */
+    botVoiceFileId?: string | null;
     createdAt: string | Date;
     updatedAt: string | Date;
 }

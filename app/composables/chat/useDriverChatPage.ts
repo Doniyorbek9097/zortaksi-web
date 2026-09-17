@@ -18,11 +18,6 @@ import { useChatMessageSelection } from './useChatMessageSelection'
 import { useChatScrollPanel } from './useChatScrollPanel'
 import { useChatComposerPanel } from './useChatComposerPanel'
 import { useChatPageLoader } from './useChatPageLoader'
-import {
-  DRIVER_ORDER_CONNECT_FAIL,
-  ORDER_PROXY_PROMPT,
-} from '~/stores/chat/actions/connection'
-
 /**
  * Haydovchi chat sahifasi — barcha chat composablelarni birlashtiradi.
  */
@@ -226,12 +221,6 @@ export function useDriverChatPage() {
     }
   }
 
-  /** Proksi taklifini rad etish */
-  const dismissProxyConfirm = () => {
-    chatStore.connectionStatus = 'unreachable'
-    chatStore.connectionReason = DRIVER_ORDER_CONNECT_FAIL
-  }
-
   return {
     frameStyle,
     authStore,
@@ -257,9 +246,7 @@ export function useDriverChatPage() {
     goBack,
     goBackFromOpen,
     goOrders,
-    ORDER_PROXY_PROMPT,
     proxyConnecting,
     confirmProxyConnect,
-    dismissProxyConfirm,
   }
 }

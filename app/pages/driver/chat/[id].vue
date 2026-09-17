@@ -255,34 +255,18 @@
     </div>
 
     <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
-      <div class="py-3 px-3 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 text-[12px] font-bold text-center space-y-2">
-        <p>
-          <font-awesome-icon icon="fa-solid fa-link" class="mr-1.5" />
-          {{ connReason || ORDER_PROXY_PROMPT }}
-        </p>
-        <div class="flex flex-col gap-2 pt-1">
-          <button
-            type="button"
-            class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-sky-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
-            :disabled="proxyConnecting"
-            @click="confirmProxyConnect"
-          >
-            <font-awesome-icon
-              :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
-              :class="{ 'animate-spin': proxyConnecting }"
-            />
-            Proksi orqali bog'lanib ko'rish
-          </button>
-          <button
-            type="button"
-            class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl bg-slate-200/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[11px] font-bold active:scale-95 transition-all"
-            :disabled="proxyConnecting"
-            @click="dismissProxyConfirm"
-          >
-            Bekor qilish
-          </button>
-        </div>
-      </div>
+      <button
+        type="button"
+        class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-sky-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
+        :disabled="proxyConnecting"
+        @click="confirmProxyConnect"
+      >
+        <font-awesome-icon
+          :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
+          :class="{ 'animate-spin': proxyConnecting }"
+        />
+        Proksi orqali bog'lanib ko'rish
+      </button>
     </div>
 
     <div v-else-if="needsTelegramConnect && conn === 'unreachable'" class="mx-auto w-full max-w-2xl">
@@ -415,10 +399,8 @@ const {
   conn,
   connReason,
   isOrderSenderChat,
-  ORDER_PROXY_PROMPT,
   proxyConnecting,
   confirmProxyConnect,
-  dismissProxyConfirm,
   hideBottomOnConnectFail,
   callPhone,
   callTelHref,
