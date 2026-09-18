@@ -72,6 +72,7 @@ export function releaseSessionMediaCache() {
   cacheOrder.length = 0
   inflight.clear()
   localOnly.clear()
+  mediaCacheEpoch.value += 1
 }
 
 function normalizeMessageId(messageId: string): string {
@@ -254,10 +255,17 @@ async function fetchMediaBlobFromNetwork(
       }
     }
   }
-  if (kind === 'voice' && (/json|text/i.test(mime) || !mime.startsWith('audio/'))) {
-    mime = raw.type?.startsWith('audio/') ? raw.type.split(';')[0]! : fallbackMime
+  if (kind === 'voice') {
+    if (/json|text/i.test(mime) || !mime.startsWith('audio/')) {
+      mime = raw.type?.startsWith('audio/') ? raw.type.split(';')[0]! : fallbackMime
+    }
+    const head = await readBlobHead(raw, 12)
+    if (head[4] === 0x66 && head[5] === 0x74) mime = 'audio/mp4'
+    else if (head[0] === 0x4f && head[1] === 0x67) mime = 'audio/ogg'
+    else if (head[0] === 0x1a && head[1] === 0x45) mime = 'audio/webm'
   }
-  const blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
+  let blob = raw.type === mime ? raw : new Blob([raw], { type: mime })
+  if (kind === 'voice') blob = await normalizeVoiceBlob(blob)
 
   if (!blob.size) throw new Error('Media bo\'sh')
   if (await isCorruptMediaBlob(blob, kind)) {
@@ -275,17 +283,43 @@ function idbPathMatches(stored?: string, expected?: string | null): boolean {
   return got === exp
 }
 
+function prefersM4aVoicePlayback(): boolean {
+  if (!import.meta.client) return false
+  if (isFlutterWebView()) return true
+  const ua = navigator.userAgent || ''
+  if (/iPhone|iPad|iPod/i.test(ua)) return true
+  return navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1
+}
+
+async function normalizeVoiceBlob(blob: Blob): Promise<Blob> {
+  const head = await readBlobHead(blob, 12)
+  if (head[4] === 0x66 && head[5] === 0x74) {
+    const mime = 'audio/mp4'
+    return blob.type === mime ? blob : new Blob([blob], { type: mime })
+  }
+  return blob
+}
+
 async function loadFromIdb(
   id: string,
   kind: 'voice' | 'photo' | 'document',
   mediaPath?: string | null,
 ): Promise<Blob | null> {
   const row = await idbGetMediaRecord(id)
-  const idbBlob = row?.blob
+  let idbBlob = row?.blob
   if (!idbBlob?.size) return null
   if (!idbPathMatches(row?.mediaPath, mediaPath)) {
     void idbDeleteMedia(id)
     return null
+  }
+  if (kind === 'voice') {
+    const head = await readBlobHead(idbBlob, 4)
+    const isOgg = head[0] === 0x4f && head[1] === 0x67
+    if (isOgg && prefersM4aVoicePlayback()) {
+      void idbDeleteMedia(id)
+      return null
+    }
+    idbBlob = await normalizeVoiceBlob(idbBlob)
   }
   if (!(await isValidMediaBlob(idbBlob, kind))) {
     void idbDeleteMedia(id)
@@ -301,6 +335,7 @@ async function blobToObjectUrl(
   persistIdb: boolean,
   mediaPath?: string | null,
 ): Promise<string> {
+  if (kind === 'voice') blob = await normalizeVoiceBlob(blob)
   if (await isCorruptMediaBlob(blob, kind)) {
     void idbDeleteMedia(messageId)
     throw new Error('Media buzilgan')

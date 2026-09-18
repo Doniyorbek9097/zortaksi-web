@@ -66,6 +66,7 @@ export async function isValidMediaBlob(
   if (head[0] === 0x4f && head[1] === 0x67) return true
   if (head[4] === 0x66 && head[5] === 0x74) return true
   if (head[0] === 0x49 && head[1] === 0x44) return true
+  if (head[0] === 0x1a && head[1] === 0x45) return true
   if (head[0] === 0xff && (head[1]! & 0xe0) === 0xe0) return true
   return blob.type.startsWith('audio/') && blob.size > 32
 }

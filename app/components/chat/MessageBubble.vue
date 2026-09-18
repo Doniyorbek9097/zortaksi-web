@@ -611,7 +611,9 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
     invalidateMedia(props.messageId)
     applySrc('')
   } else if (src.value) {
-    return
+    const live = peekUrl(props.messageId, props.mediaPath || 'remote')
+    if (live && live === src.value) return
+    applySrc('')
   }
   const cached = peekUrl(props.messageId, props.mediaPath || 'remote')
   if (cached && !opts.force) {
@@ -663,7 +665,9 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
     invalidateMedia(props.messageId)
     applySrc('')
   } else if (src.value) {
-    return
+    const live = peekUrl(props.messageId, props.mediaPath || 'remote')
+    if (live && live === src.value) return
+    applySrc('')
   }
   const cached = peekUrl(props.messageId, props.mediaPath || 'remote')
   if (cached && !opts.force) {
@@ -919,20 +923,11 @@ watch(
   },
 )
 
-/** Profil → kesh tozalanganda bubble ni qayta yuklash */
+/** Sessiya kesh tozalanganda eski (revoke qilingan) blob URL ni tashlash */
 watch(mediaCacheEpoch, () => {
   if (!isMediaBubble.value) return
-  if (props.type === 'voice') {
-    stopLocalVoice()
-    applySrc('')
-    void ensureVoiceSrc({ force: true })
-    return
-  }
   stopLocalVoice()
   applySrc('')
-  if (!isRemoteMedia(props.mediaPath) && props.type === 'photo') {
-    void ensureSrc({ force: true })
-  }
 })
 
 onBeforeUnmount(() => {
