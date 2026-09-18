@@ -6,6 +6,7 @@ import {
     applyMessagesRead,
     findSendingTempMediaIndex,
     findSendingTempTextIndex,
+    messageAlreadyExists,
     replaceTempWithReal,
 } from '../helpers/merge-messages'
 import type { ChatStoreRefs } from '../types'
@@ -100,6 +101,14 @@ export function createSocketActions(
             // temp bilan birlashtirildi
         } else if (mergeOutgoingTextFromSocket(normalized)) {
             // matn temp bilan birlashtirildi
+        } else if (messageAlreadyExists(messages.value, normalized)) {
+            const idx = messages.value.findIndex((m) => m._id === normalized._id)
+            if (idx !== -1) {
+                messages.value[idx] = {
+                    ...messages.value[idx],
+                    ...normalized,
+                } as IChatMessage
+            }
         } else {
             appendMessage(normalized)
         }
