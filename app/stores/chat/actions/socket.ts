@@ -62,16 +62,22 @@ export function createSocketActions(
             (msg.type === 'voice' || msg.type === 'photo') &&
             (msg.mediaPath || msg.tgMessageId)
         ) {
-            const kind = msg.type === 'voice' ? 'voice' : 'photo'
             const prevPath = prev?.mediaPath
             const wasRemote = !prevPath || prevPath === 'remote'
             const nowReady = msg.mediaPath && msg.mediaPath !== 'remote'
-            useChatMedia()
-                .getUrl(msg._id, kind, {
-                    forceNetwork: !!(wasRemote && nowReady),
-                    mediaPath: msg.mediaPath || 'remote',
-                })
-                .catch(() => {})
+            const media = useChatMedia()
+            if (msg.type === 'voice') {
+                media
+                    .getVoiceAudioUrl(msg._id, { force: !!(wasRemote && nowReady) })
+                    .catch(() => {})
+            } else {
+                media
+                    .getUrl(msg._id, 'photo', {
+                        forceNetwork: !!(wasRemote && nowReady),
+                        mediaPath: msg.mediaPath || 'remote',
+                    })
+                    .catch(() => {})
+            }
         }
     }
 
@@ -103,10 +109,16 @@ export function createSocketActions(
             (normalized.type === 'voice' || normalized.type === 'photo') &&
             (normalized.mediaPath || normalized.tgMessageId)
         ) {
-            const kind = normalized.type === 'voice' ? 'voice' : 'photo'
-            useChatMedia()
-                .getUrl(normalized._id, kind, { mediaPath: normalized.mediaPath || 'remote' })
-                .catch(() => {})
+            const media = useChatMedia()
+            if (normalized.type === 'voice') {
+                media.getVoiceAudioUrl(normalized._id).catch(() => {})
+            } else {
+                media
+                    .getUrl(normalized._id, 'photo', {
+                        mediaPath: normalized.mediaPath || 'remote',
+                    })
+                    .catch(() => {})
+            }
         }
 
         // Ro'yxatda oxirgi xabar + tartib (owner socket — faqat o'z chatlari)

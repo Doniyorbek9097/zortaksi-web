@@ -59,9 +59,9 @@ const cache = new Map<string, string>()
 const cacheMediaPath = new Map<string, string>()
 const cacheOrder: string[] = []
 const inflight = new Map<string, Promise<string>>()
-/** Ovoz — tokenli HTTPS havola (blob revoke muammosiz) */
-const voiceStreamCache = new Map<string, { url: string; expiresAt: number }>()
-const voiceStreamInflight = new Map<string, Promise<string>>()
+/** Ovoz ijrosi — tab almashganda revoke qilinmaydi (rasm keshidan alohida) */
+const voicePlayBlobUrl = new Map<string, string>()
+const voicePlayInflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
 const localOnly = new Set<string>()
 
@@ -112,12 +112,26 @@ function revokeCachedUrl(messageId: string) {
   if (i >= 0) cacheOrder.splice(i, 1)
 }
 
+function revokeVoicePlayBlob(messageId: string) {
+  const id = normalizeMessageId(messageId)
+  if (!id) return
+  const prev = voicePlayBlobUrl.get(id)
+  if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+  voicePlayBlobUrl.delete(id)
+  voicePlayInflight.delete(id)
+}
+
+/** Ovoz blob URL — sinxron (play gesture uchun kesh) */
+export function peekVoiceAudioUrl(messageId: string): string {
+  const id = normalizeMessageId(messageId)
+  return id ? voicePlayBlobUrl.get(id) || '' : ''
+}
+
 export function invalidateChatMediaCache(messageId: string) {
   const id = normalizeMessageId(messageId)
   if (!id) return
   revokeCachedUrl(id)
-  voiceStreamCache.delete(id)
-  voiceStreamInflight.delete(id)
+  revokeVoicePlayBlob(id)
   void idbDeleteMedia(id)
 }
 
@@ -188,26 +202,69 @@ async function fetchMediaOpenLink(
   return data
 }
 
-/** Backend absolyut URL ni WebView uchun same-origin /api/v1 ga aylantiradi */
-function normalizeVoiceStreamUrl(url: string): string {
-  if (!import.meta.client || !url) return url
-  try {
-    const parsed = new URL(url, window.location.origin)
-    const pathQuery = `${parsed.pathname}${parsed.search}`
-    if (
-      parsed.hostname === 'api.zortaksi.uz' &&
-      parsed.pathname.startsWith('/api/v1/')
-    ) {
-      return pathQuery
-    }
-    if (parsed.origin === window.location.origin) return pathQuery
-  } catch {
-    /* */
-  }
-  return url
+function sniffVoiceMimeFromBuffer(data: ArrayBuffer, headerMime: string): string {
+  const head = new Uint8Array(data.slice(0, Math.min(12, data.byteLength)))
+  if (head[4] === 0x66 && head[5] === 0x74) return 'audio/mp4'
+  if (head[0] === 0x4f && head[1] === 0x67) return 'audio/ogg'
+  if (head[0] === 0x1a && head[1] === 0x45) return 'audio/webm'
+  const mime = String(headerMime || '').split(';')[0]?.trim() || ''
+  if (mime.startsWith('audio/') && !/json|text/i.test(mime)) return mime
+  return 'audio/mp4'
 }
 
-async function fetchVoicePlayUrl(
+/** OrderVoicePlayer bilan bir xil — arraybuffer + blob URL */
+async function fetchVoiceArrayBuffer(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+): Promise<{ data: ArrayBuffer; mime: string }> {
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
+  const token = resolveAuthToken(cookie.value)
+  const url = resolveMediaRequestUrl(messageId, urlBuilder)
+
+  let res: { data: ArrayBuffer; headers: Record<string, string> }
+  try {
+    res = await api.get<ArrayBuffer>(url, {
+      responseType: 'arraybuffer',
+      timeout: 120_000,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    })
+  } catch (err: any) {
+    const status = err?.response?.status
+    agentDebugLog({
+      hypothesisId: 'B',
+      location: 'useVoiceMedia.ts:fetchVoiceArrayBuffer',
+      message: 'voice_http_error',
+      data: {
+        messageId,
+        status,
+        hasToken: !!token,
+        mediaUrl: url,
+        err: String(err?.response?.data || err?.message || '').slice(0, 120),
+      },
+    })
+    throw new Error('Ovoz yuklanmadi')
+  }
+
+  const data = res.data
+  if (!data?.byteLength) throw new Error('Ovoz bo\'sh')
+
+  const head = new Uint8Array(data.slice(0, Math.min(4, data.byteLength)))
+  if (head[0] === 0x7b || head[0] === 0x3c) throw new Error('Ovoz yuklanmadi')
+
+  const headerMime = String(
+    (res.headers as Record<string, string> | undefined)?.['content-type'] || '',
+  )
+  if (/json|text\/html/i.test(headerMime)) throw new Error('Ovoz yuklanmadi')
+
+  const mime = sniffVoiceMimeFromBuffer(data, headerMime)
+  return { data, mime }
+}
+
+async function resolveVoiceAudioUrl(
   messageId: string,
   urlBuilder?: ChatMediaUrlBuilder | null,
   force = false,
@@ -216,34 +273,38 @@ async function fetchVoicePlayUrl(
   if (!id) return ''
 
   if (!force) {
-    const hit = voiceStreamCache.get(id)
-    if (hit && hit.expiresAt > Date.now()) return hit.url
+    const hit = voicePlayBlobUrl.get(id)
+    if (hit) return hit
+
+    const idbBlob = await loadFromIdb(id, 'voice', null)
+    if (idbBlob) {
+      const url = URL.createObjectURL(idbBlob)
+      voicePlayBlobUrl.set(id, url)
+      return url
+    }
   } else {
-    voiceStreamCache.delete(id)
+    revokeVoicePlayBlob(id)
   }
 
-  const pending = voiceStreamInflight.get(id)
+  const pending = voicePlayInflight.get(id)
   if (pending && !force) return pending
 
   const job = (async () => {
-    const link = await fetchMediaOpenLink(id, {
-      urlBuilder,
-      disposition: 'inline',
-    })
-    const playUrl = normalizeVoiceStreamUrl(link.url)
-    const ttlMs = Math.max(60, (link.expiresInSec ?? 900) - 30) * 1000
-    voiceStreamCache.set(id, {
-      url: playUrl,
-      expiresAt: Date.now() + ttlMs,
-    })
-    return playUrl
+    const { data, mime } = await fetchVoiceArrayBuffer(id, urlBuilder)
+    const blob = new Blob([data], { type: mime })
+    const url = URL.createObjectURL(blob)
+    voicePlayBlobUrl.set(id, url)
+    if (!id.startsWith('temp-')) {
+      void idbPutMedia(id, blob, 'voice', 'remote')
+    }
+    return url
   })()
 
-  voiceStreamInflight.set(id, job)
+  voicePlayInflight.set(id, job)
   try {
     return await job
   } finally {
-    voiceStreamInflight.delete(id)
+    voicePlayInflight.delete(id)
   }
 }
 
@@ -459,11 +520,13 @@ export function useChatMedia() {
     const id = normalizeMessageId(messageId)
     if (!id || !import.meta.client) return
     revokeCachedUrl(id)
+    revokeVoicePlayBlob(id)
     const url = URL.createObjectURL(blob)
     cache.set(id, url)
     cacheMediaPath.set(id, 'local')
     touchCacheOrder(id)
     localOnly.add(id)
+    voicePlayBlobUrl.set(id, url)
   }
 
   const adoptLocalUrl = (fromId: string, toId: string) => {
@@ -483,6 +546,7 @@ export function useChatMedia() {
     if (pathTag) cacheMediaPath.set(to, pathTag)
     else cacheMediaPath.set(to, 'local')
     if (keepLocal) localOnly.add(to)
+    if (url.startsWith('blob:')) voicePlayBlobUrl.set(to, url)
 
     void (async () => {
       try {
@@ -632,16 +696,18 @@ export function useChatMedia() {
     return fetchMediaOpenLink(id, { ...opts, urlBuilder: builder })
   }
 
-  /** Ovoz ijrosi — tokenli HTTPS (blob/IDB o'rniga) */
-  const getVoicePlayUrl = async (
+  /** Chat ovoz — arraybuffer → blob URL (tab almashganda saqlanadi) */
+  const getVoiceAudioUrl = async (
     messageId: string,
     opts: { force?: boolean; urlBuilder?: ChatMediaUrlBuilder | null } = {},
   ): Promise<string> => {
     const id = normalizeMessageId(messageId)
     if (!id) return ''
     const builder = resolveBuilder(opts.urlBuilder)
-    return fetchVoicePlayUrl(id, builder, !!opts.force)
+    return resolveVoiceAudioUrl(id, builder, !!opts.force)
   }
+
+  const peekVoiceUrl = (messageId: string) => peekVoiceAudioUrl(messageId)
 
   /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
@@ -657,9 +723,15 @@ export function useChatMedia() {
     for (const m of messages) {
       const id = normalizeMessageId(m._id)
       if (!id || id.startsWith('temp-')) continue
+      const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
-      if (!isPhoto) continue
+      if (!isVoice && !isPhoto) continue
       if (!m.mediaPath && !m.tgMessageId) continue
+
+      if (isVoice) {
+        getVoiceAudioUrl(id, { urlBuilder }).catch(() => {})
+        continue
+      }
 
       getUrl(id, 'photo', {
         urlBuilder,
@@ -673,8 +745,11 @@ export function useChatMedia() {
   }
 
   const clearDeviceCache = async () => {
-    voiceStreamCache.clear()
-    voiceStreamInflight.clear()
+    for (const url of voicePlayBlobUrl.values()) {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+    }
+    voicePlayBlobUrl.clear()
+    voicePlayInflight.clear()
     revokeAll()
     await clearMediaCachesOnly()
     mediaCacheEpoch.value += 1
@@ -688,7 +763,8 @@ export function useChatMedia() {
 
   return {
     getUrl,
-    getVoicePlayUrl,
+    getVoiceAudioUrl,
+    peekVoiceUrl,
     getMediaOpenLink,
     peekUrl,
     setLocalUrl,

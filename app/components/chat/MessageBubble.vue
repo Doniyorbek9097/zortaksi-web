@@ -277,8 +277,9 @@
         v-if="type === 'voice'"
         ref="audioEl"
         :src="src || undefined"
-        preload="metadata"
+        preload="auto"
         playsinline
+        webkit-playsinline
         class="hidden"
         @timeupdate="onTime"
         @ended="onEnded"
@@ -528,7 +529,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, getVoicePlayUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
+const { getUrl, getVoiceAudioUrl, peekVoiceUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
@@ -652,7 +653,7 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
   }
 }
 
-/** Ovoz — play bosilganda tokenli HTTPS havola olinadi (blob kesh muammosiz) */
+/** Ovoz — arraybuffer → blob URL (OrderVoicePlayer usuli) */
 const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
   const id = String(props.messageId)
@@ -664,15 +665,16 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
-  } else if (src.value) {
-    if (src.value.startsWith('http://') || src.value.startsWith('https://')) return
-    const live = peekUrl(id)
-    if (live && live === src.value) return
-    applySrc('')
+  } else {
+    const ready = peekVoiceUrl(id) || src.value
+    if (ready?.startsWith('blob:')) {
+      applySrc(ready)
+      return
+    }
   }
   loading.value = true
   try {
-    const url = await getVoicePlayUrl(props.messageId, { force: !!opts.force })
+    const url = await getVoiceAudioUrl(props.messageId, { force: !!opts.force })
     if (url) applySrc(url)
   } catch (e) {
     console.error('voice load', e)
@@ -749,12 +751,15 @@ const playAudio = async () => {
   await nextTick()
   const a = audioEl.value
   if (!a || !src.value) throw new Error('audio yo\'q')
-  // Boshqa bubble dagi voice to'xtasin
   if (props.messageId) {
     claimVoicePlay(props.messageId, stopLocalVoice)
   }
-  a.src = src.value
-  await waitCanPlay(a)
+  if (a.src !== src.value) {
+    a.src = src.value
+  }
+  if (a.readyState < 2) {
+    await waitCanPlay(a)
+  }
   await a.play()
   playing.value = true
 }
@@ -768,6 +773,18 @@ const toggle = async () => {
   if (playing.value && a) {
     stopLocalVoice()
     return
+  }
+
+  const id = String(props.messageId || '')
+  const cached = id.startsWith('temp-') ? peekUrl(id) : peekVoiceUrl(id)
+  if (cached) {
+    applySrc(cached)
+    try {
+      await playAudio()
+      return
+    } catch {
+      /* kesh buzilgan — qayta yuklash */
+    }
   }
 
   await ensureVoiceSrc()
