@@ -59,6 +59,9 @@ const cache = new Map<string, string>()
 const cacheMediaPath = new Map<string, string>()
 const cacheOrder: string[] = []
 const inflight = new Map<string, Promise<string>>()
+/** Ovoz — tokenli HTTPS havola (blob revoke muammosiz) */
+const voiceStreamCache = new Map<string, { url: string; expiresAt: number }>()
+const voiceStreamInflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
 const localOnly = new Set<string>()
 
@@ -113,6 +116,8 @@ export function invalidateChatMediaCache(messageId: string) {
   const id = normalizeMessageId(messageId)
   if (!id) return
   revokeCachedUrl(id)
+  voiceStreamCache.delete(id)
+  voiceStreamInflight.delete(id)
   void idbDeleteMedia(id)
 }
 
@@ -181,6 +186,65 @@ async function fetchMediaOpenLink(
     throw new Error(res.data?.message || 'Media havolasi olinmadi')
   }
   return data
+}
+
+/** Backend absolyut URL ni WebView uchun same-origin /api/v1 ga aylantiradi */
+function normalizeVoiceStreamUrl(url: string): string {
+  if (!import.meta.client || !url) return url
+  try {
+    const parsed = new URL(url, window.location.origin)
+    const pathQuery = `${parsed.pathname}${parsed.search}`
+    if (
+      parsed.hostname === 'api.zortaksi.uz' &&
+      parsed.pathname.startsWith('/api/v1/')
+    ) {
+      return pathQuery
+    }
+    if (parsed.origin === window.location.origin) return pathQuery
+  } catch {
+    /* */
+  }
+  return url
+}
+
+async function fetchVoicePlayUrl(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+  force = false,
+): Promise<string> {
+  const id = normalizeMessageId(messageId)
+  if (!id) return ''
+
+  if (!force) {
+    const hit = voiceStreamCache.get(id)
+    if (hit && hit.expiresAt > Date.now()) return hit.url
+  } else {
+    voiceStreamCache.delete(id)
+  }
+
+  const pending = voiceStreamInflight.get(id)
+  if (pending && !force) return pending
+
+  const job = (async () => {
+    const link = await fetchMediaOpenLink(id, {
+      urlBuilder,
+      disposition: 'inline',
+    })
+    const playUrl = normalizeVoiceStreamUrl(link.url)
+    const ttlMs = Math.max(60, (link.expiresInSec ?? 900) - 30) * 1000
+    voiceStreamCache.set(id, {
+      url: playUrl,
+      expiresAt: Date.now() + ttlMs,
+    })
+    return playUrl
+  })()
+
+  voiceStreamInflight.set(id, job)
+  try {
+    return await job
+  } finally {
+    voiceStreamInflight.delete(id)
+  }
 }
 
 async function fetchMediaBlobFromNetwork(
@@ -568,6 +632,17 @@ export function useChatMedia() {
     return fetchMediaOpenLink(id, { ...opts, urlBuilder: builder })
   }
 
+  /** Ovoz ijrosi — tokenli HTTPS (blob/IDB o'rniga) */
+  const getVoicePlayUrl = async (
+    messageId: string,
+    opts: { force?: boolean; urlBuilder?: ChatMediaUrlBuilder | null } = {},
+  ): Promise<string> => {
+    const id = normalizeMessageId(messageId)
+    if (!id) return ''
+    const builder = resolveBuilder(opts.urlBuilder)
+    return fetchVoicePlayUrl(id, builder, !!opts.force)
+  }
+
   /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
     messages: {
@@ -582,13 +657,11 @@ export function useChatMedia() {
     for (const m of messages) {
       const id = normalizeMessageId(m._id)
       if (!id || id.startsWith('temp-')) continue
-      const isVoice = m.type === 'voice'
       const isPhoto = m.type === 'photo'
-      if (!isVoice && !isPhoto) continue
+      if (!isPhoto) continue
       if (!m.mediaPath && !m.tgMessageId) continue
-      const kind = isVoice ? 'voice' : 'photo'
 
-      getUrl(id, kind, {
+      getUrl(id, 'photo', {
         urlBuilder,
         mediaPath: m.mediaPath || 'remote',
       }).catch(() => {})
@@ -600,6 +673,8 @@ export function useChatMedia() {
   }
 
   const clearDeviceCache = async () => {
+    voiceStreamCache.clear()
+    voiceStreamInflight.clear()
     revokeAll()
     await clearMediaCachesOnly()
     mediaCacheEpoch.value += 1
@@ -613,6 +688,7 @@ export function useChatMedia() {
 
   return {
     getUrl,
+    getVoicePlayUrl,
     getMediaOpenLink,
     peekUrl,
     setLocalUrl,

@@ -161,9 +161,9 @@
               {{ group.label }}
             </span>
           </div>
-          <ChatMessageBubble
+        <ChatMessageBubble
             v-for="msg in group.messages"
-            :key="String(msg._id)"
+          :key="String(msg._id)"
             v-memo="[
               msg._id,
               msg.text,
@@ -175,25 +175,25 @@
               isMessageSelected(String(msg._id)),
               focusId === String(msg._id),
             ]"
-            :id="`msg-${msg._id}`"
-            :text="msg.text"
+          :id="`msg-${msg._id}`"
+          :text="msg.text"
             :text-format="msg.textFormat"
-            :time="formatTime(msg.date)"
-            :date="msg.date"
-            :out="msg.direction === 'out'"
-            :read="msg.status === 'read'"
-            :status="msg.status"
+          :time="formatTime(msg.date)"
+          :date="msg.date"
+          :out="msg.direction === 'out'"
+          :read="msg.status === 'read'"
+          :status="msg.status"
             :error="msg.error"
-            :type="chatMediaType(msg)"
-            :message-id="String(msg._id)"
-            :media-path="msg.mediaPath"
+          :type="chatMediaType(msg)"
+          :message-id="String(msg._id)"
+          :media-path="msg.mediaPath"
             :mime-type="msg.mimeType"
-            :duration="msg.duration"
-            :location-lat="msg.locationLat"
-            :location-lng="msg.locationLng"
-            :location-title="msg.locationTitle"
-            :highlight="focusId === String(msg._id)"
-            :selection-mode="selectionMode"
+          :duration="msg.duration"
+          :location-lat="msg.locationLat"
+          :location-lng="msg.locationLng"
+          :location-title="msg.locationTitle"
+          :highlight="focusId === String(msg._id)"
+          :selection-mode="selectionMode"
             :selected="isMessageSelected(String(msg._id))"
             :reply-to="msg.replyTo"
             :support="isSupportPremium"
@@ -201,7 +201,7 @@
             @toggle-select="toggleMessageSelect(String(msg._id))"
             @reply="onMessageReply(msg)"
             @delete="onMessageDeleteRequest(String(msg._id))"
-          />
+        />
         </template>
         </template>
 
@@ -251,8 +251,8 @@
           >
             <font-awesome-icon icon="fa-solid fa-arrow-left" /> Buyurtmalarga o'tish
           </button>
+        </div>
       </div>
-    </div>
 
     <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
       <button

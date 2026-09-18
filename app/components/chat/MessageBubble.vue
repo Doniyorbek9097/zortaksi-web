@@ -528,7 +528,7 @@ const mapsUrl = computed(() => {
   return `https://maps.google.com/?q=${lat},${lng}`
 })
 
-const { getUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
+const { getUrl, getVoicePlayUrl, peekUrl, invalidateMedia, mediaCacheEpoch } = useChatMedia()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
@@ -652,7 +652,7 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
   }
 }
 
-/** Ovoz — play bosilganda yuklanadi */
+/** Ovoz — play bosilganda tokenli HTTPS havola olinadi (blob kesh muammosiz) */
 const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId) return
   const id = String(props.messageId)
@@ -665,28 +665,28 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
     invalidateMedia(props.messageId)
     applySrc('')
   } else if (src.value) {
-    const live = peekUrl(props.messageId, props.mediaPath || 'remote')
+    if (src.value.startsWith('http://') || src.value.startsWith('https://')) return
+    const live = peekUrl(id)
     if (live && live === src.value) return
     applySrc('')
   }
-  const cached = peekUrl(props.messageId, props.mediaPath || 'remote')
-  if (cached && !opts.force) {
-    applySrc(cached)
-    return
-  }
   loading.value = true
   try {
-    const url = await getUrl(
-      props.messageId,
-      'voice',
-      {
-        forceNetwork: !!opts.force,
-        mediaPath: props.mediaPath || 'remote',
-      },
-    )
+    const url = await getVoicePlayUrl(props.messageId, { force: !!opts.force })
     if (url) applySrc(url)
   } catch (e) {
     console.error('voice load', e)
+    agentDebugLog({
+      hypothesisId: 'V',
+      location: 'MessageBubble.vue:ensureVoiceSrc',
+      message: 'voice_src_fail',
+      data: {
+        messageId: props.messageId,
+        mediaPath: props.mediaPath || null,
+        force: !!opts.force,
+        err: String((e as Error)?.message || e),
+      },
+    })
     if (opts.force && props.messageId) invalidateMedia(props.messageId)
     applySrc('')
   } finally {
@@ -770,8 +770,7 @@ const toggle = async () => {
     return
   }
 
-  // Play bosilganda serverdan yuklab olamiz
-  await ensureVoiceSrc({ force: !src.value })
+  await ensureVoiceSrc()
   try {
     await playAudio()
   } catch (e) {
@@ -923,9 +922,9 @@ watch(
   },
 )
 
-/** Sessiya kesh tozalanganda eski (revoke qilingan) blob URL ni tashlash */
+/** Sessiya kesh tozalanganda rasm blob URL ni tashlash (ovoz HTTPS da qoladi) */
 watch(mediaCacheEpoch, () => {
-  if (!isMediaBubble.value) return
+  if (!isMediaBubble.value || props.type === 'voice') return
   stopLocalVoice()
   applySrc('')
 })
