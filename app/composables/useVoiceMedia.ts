@@ -159,6 +159,34 @@ function resolveMediaRequestUrl(
   return `${buildApiUrl(base, `/chats/messages/${messageId}/media`)}?_cb=${cb}`
 }
 
+/** WebView / audio element uchun to'liq same-origin URL */
+function toAbsoluteMediaUrl(url: string): string {
+  if (!import.meta.client || !url) return url
+  if (url.startsWith('blob:')) return url
+  try {
+    const parsed = new URL(url, window.location.origin)
+    if (
+      parsed.hostname === 'api.zortaksi.uz' &&
+      parsed.pathname.startsWith('/api/v1/')
+    ) {
+      return `${window.location.origin}${parsed.pathname}${parsed.search}`
+    }
+    if (parsed.origin === window.location.origin) {
+      return `${parsed.pathname}${parsed.search}`
+    }
+    return parsed.href
+  } catch {
+    return url
+  }
+}
+
+function resolveAbsoluteMediaRequestUrl(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+): string {
+  return toAbsoluteMediaUrl(resolveMediaRequestUrl(messageId, urlBuilder))
+}
+
 function resolveMediaLinkRequestUrl(
   messageId: string,
   urlBuilder?: ChatMediaUrlBuilder | null,
@@ -219,7 +247,7 @@ async function fetchVoiceArrayBuffer(
 ): Promise<{ data: ArrayBuffer; mime: string }> {
   const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
   const token = resolveAuthToken(cookie.value)
-  const url = resolveMediaRequestUrl(messageId, urlBuilder)
+  const url = resolveAbsoluteMediaRequestUrl(messageId, urlBuilder)
 
   let res: { data: ArrayBuffer; headers: Record<string, string> }
   try {
@@ -290,14 +318,33 @@ async function resolveVoiceAudioUrl(
   if (pending && !force) return pending
 
   const job = (async () => {
-    const { data, mime } = await fetchVoiceArrayBuffer(id, urlBuilder)
-    const blob = new Blob([data], { type: mime })
-    const url = URL.createObjectURL(blob)
-    voicePlayBlobUrl.set(id, url)
-    if (!id.startsWith('temp-')) {
-      void idbPutMedia(id, blob, 'voice', 'remote')
+    try {
+      const { data, mime } = await fetchVoiceArrayBuffer(id, urlBuilder)
+      const blob = new Blob([data], { type: mime })
+      const blobUrl = URL.createObjectURL(blob)
+      voicePlayBlobUrl.set(id, blobUrl)
+      if (!id.startsWith('temp-')) {
+        void idbPutMedia(id, blob, 'voice', 'remote')
+      }
+      return blobUrl
+    } catch (blobErr) {
+      agentDebugLog({
+        hypothesisId: 'V',
+        location: 'useVoiceMedia.ts:resolveVoiceAudioUrl',
+        message: 'voice_blob_fail_try_stream',
+        data: {
+          messageId: id,
+          err: String((blobErr as Error)?.message || blobErr),
+        },
+      })
+      const link = await fetchMediaOpenLink(id, {
+        urlBuilder,
+        disposition: 'inline',
+      })
+      const streamUrl = toAbsoluteMediaUrl(link.url)
+      voicePlayBlobUrl.set(id, streamUrl)
+      return streamUrl
     }
-    return url
   })()
 
   voicePlayInflight.set(id, job)

@@ -78,14 +78,20 @@
       </div>
 
       <!-- Voice player -->
-      <div v-if="type === 'voice'" class="flex items-center gap-2.5 min-w-[180px] px-2 py-0.5">
+      <div
+        v-if="type === 'voice'"
+        class="flex items-center gap-2.5 min-w-[180px] px-2 py-0.5"
+        data-no-swipe
+      >
         <button
           type="button"
           class="w-9 h-9 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all"
           :class="out ? 'bg-sky-100 text-sky-600' : 'bg-sky-500/15 text-sky-500'"
           :aria-label="playing ? 'To\'xtatish' : 'Tinglash'"
           :disabled="loading"
-          @click="toggle"
+          data-no-swipe
+          @click.stop="toggle"
+          @pointerdown.stop
         >
           <font-awesome-icon
             v-if="loading"
@@ -103,7 +109,9 @@
           <div
             class="h-1 rounded-full overflow-hidden cursor-pointer"
             :class="out ? 'bg-slate-200' : 'bg-slate-200'"
-            @click="seek"
+            data-no-swipe
+            @click.stop="seek"
+            @pointerdown.stop
           >
             <div
               class="h-full rounded-full transition-[width] duration-100"
@@ -112,11 +120,11 @@
             />
           </div>
           <div
-            class="mt-1 flex justify-between text-[10px] tabular-nums"
-            :class="'text-slate-400'"
+            class="mt-1 flex justify-between text-[10px] tabular-nums gap-2"
+            :class="voiceError ? 'text-red-500' : 'text-slate-400'"
           >
-            <span>{{ currentLabel }}</span>
-            <span>{{ durationLabel }}</span>
+            <span class="truncate">{{ voiceError || currentLabel }}</span>
+            <span class="shrink-0">{{ voiceError ? '' : durationLabel }}</span>
           </div>
         </div>
       </div>
@@ -409,6 +417,12 @@ const errorText = computed(() => {
 const emit = defineEmits<{ 'long-press': []; 'toggle-select': []; reply: []; delete: [] }>()
 
 const SWIPE_REVEAL = 56
+
+const isInteractivePointerTarget = (e: PointerEvent) => {
+  const t = e.target as HTMLElement | null
+  return !!t?.closest('button, a, audio, input, textarea, [data-no-swipe]')
+}
+
 const swipeX = ref(0)
 const swipeDragging = ref(false)
 const swipeStartX = ref(0)
@@ -426,7 +440,7 @@ const swipeDeleteOpacity = computed(() =>
 )
 
 const onSwipePointerDown = (e: PointerEvent) => {
-  if (props.selectionMode) return
+  if (props.selectionMode || isInteractivePointerTarget(e)) return
   swipeDragging.value = true
   swipeMoved.value = false
   swipeAxis.value = null
@@ -496,7 +510,7 @@ const clearLongPress = () => {
 }
 
 const onSelectPointerDown = (e: PointerEvent) => {
-  if (!isSelectable.value || props.selectionMode) return
+  if (!isSelectable.value || props.selectionMode || isInteractivePointerTarget(e)) return
   clearLongPress()
   longPressTimer = setTimeout(() => {
     longPressTimer = null
@@ -535,6 +549,7 @@ const audioEl = ref<HTMLAudioElement | null>(null)
 const src = ref('')
 const loading = ref(false)
 const playing = ref(false)
+const voiceError = ref('')
 const lightbox = ref(false)
 const closeLightbox = () => {
   lightbox.value = false
@@ -667,17 +682,20 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
     applySrc('')
   } else {
     const ready = peekVoiceUrl(id) || src.value
-    if (ready?.startsWith('blob:')) {
+    if (ready) {
       applySrc(ready)
       return
     }
   }
   loading.value = true
+  voiceError.value = ''
   try {
     const url = await getVoiceAudioUrl(props.messageId, { force: !!opts.force })
     if (url) applySrc(url)
+    else voiceError.value = 'Yuklanmadi'
   } catch (e) {
     console.error('voice load', e)
+    voiceError.value = 'Yuklanmadi'
     agentDebugLog({
       hypothesisId: 'V',
       location: 'MessageBubble.vue:ensureVoiceSrc',
@@ -762,6 +780,7 @@ const playAudio = async () => {
   }
   await a.play()
   playing.value = true
+  voiceError.value = ''
 }
 
 const toggle = async () => {
@@ -775,7 +794,13 @@ const toggle = async () => {
     return
   }
 
+  voiceError.value = ''
   const id = String(props.messageId || '')
+  if (!id || id === 'undefined') {
+    voiceError.value = 'Xabar topilmadi'
+    return
+  }
+
   const cached = id.startsWith('temp-') ? peekUrl(id) : peekVoiceUrl(id)
   if (cached) {
     applySrc(cached)
@@ -788,16 +813,19 @@ const toggle = async () => {
   }
 
   await ensureVoiceSrc()
+  if (!src.value) return
   try {
     await playAudio()
   } catch (e) {
     console.error('play', e)
     applySrc('')
     await ensureVoiceSrc({ force: true })
+    if (!src.value) return
     try {
       await playAudio()
     } catch (e2) {
       console.error('play retry', e2)
+      voiceError.value = 'Ijro bo\'lmadi'
       // #region agent log
       agentDebugLog({
         hypothesisId: 'E',

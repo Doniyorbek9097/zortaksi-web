@@ -210,6 +210,12 @@ export function createListActions(
         messagesPage.value = cached.page
         messagesTotalPages.value = cached.totalPages
         isLoadingMessages.value = false
+        if (import.meta.client) {
+            useChatMedia().prefetch(
+                messages.value.slice(-MEDIA_PREFETCH_BATCH),
+                null,
+            )
+        }
         return true
     }
 
