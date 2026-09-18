@@ -247,7 +247,11 @@ import {
 } from '~/utils/voiceRecording'
 import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
 import { useMobileKeyboardOpen } from '~/composables/useMobileKeyboardOpen'
+import { getTelegramWebApp } from '~/utils/telegramWebApp'
 import { supportComposerFooterClass, supportComposerInputClass, supportComposerSendClass } from '~/utils/supportChatTheme'
+
+const MIC_HOLD_MS = 400
+const MIC_HOLD_HINT = "Ovoz yozish uchun tugmani bosib turing"
 
 const text = defineModel<string>({ default: '' })
 
@@ -496,7 +500,24 @@ let mediaStream: MediaStream | null = null
 let chunks: BlobPart[] = []
 let mimeType = ''
 let micPointerActive = false
+let micSessionCancelled = false
+let micHoldTimer: ReturnType<typeof setTimeout> | null = null
 let releaseListenerBound = false
+
+const showMicHoldHint = () => {
+  const tg = getTelegramWebApp() as { showAlert?: (msg: string) => void } | null
+  if (tg?.showAlert) {
+    tg.showAlert(MIC_HOLD_HINT)
+    return
+  }
+  window.alert(MIC_HOLD_HINT)
+}
+
+const clearMicHoldTimer = () => {
+  if (!micHoldTimer) return
+  clearTimeout(micHoldTimer)
+  micHoldTimer = null
+}
 
 const formattedTime = computed(() => {
   const m = Math.floor(seconds.value / 60)
@@ -557,6 +578,11 @@ const startRecording = async () => {
     }
 
     // Timeslicesiz — stop paytida bitta to'liq chunk
+    if (micSessionCancelled) {
+      stopTracks()
+      return
+    }
+
     mediaRecorder.start()
     recording.value = true
     seconds.value = 0
@@ -586,6 +612,8 @@ const bindMicReleaseListeners = () => {
 const cancelRecording = () => {
   unbindMicReleaseListeners()
   micPointerActive = false
+  micSessionCancelled = true
+  clearMicHoldTimer()
   clearTimer()
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.ondataavailable = null
@@ -653,27 +681,43 @@ const sendVoicePreview = () => {
   emit('voice', preview.blob, preview.duration)
 }
 
-const onMicPointerDown = async (e: PointerEvent) => {
+const onMicPointerDown = (e: PointerEvent) => {
   if (props.disabled || recording.value || voicePreview.value) return
   if (e.button !== 0) return
   micPointerActive = true
+  micSessionCancelled = false
   bindMicReleaseListeners()
-  await startRecording()
-  if (!recording.value) {
-    micPointerActive = false
-    unbindMicReleaseListeners()
-  }
+  clearMicHoldTimer()
+  micHoldTimer = setTimeout(() => {
+    micHoldTimer = null
+    if (!micPointerActive || micSessionCancelled) return
+    void startRecording()
+  }, MIC_HOLD_MS)
 }
 
 const onMicPointerUp = () => {
   if (!micPointerActive) return
   micPointerActive = false
   unbindMicReleaseListeners()
-  if (recording.value) void finishRecordingToPreview()
+
+  if (micHoldTimer) {
+    clearMicHoldTimer()
+    showMicHoldHint()
+    return
+  }
+
+  if (!recording.value) {
+    micSessionCancelled = true
+    stopTracks()
+    return
+  }
+
+  void finishRecordingToPreview()
 }
 
 onBeforeUnmount(() => {
   unbindMicReleaseListeners()
+  clearMicHoldTimer()
   clearTimer()
   cancelRecording()
   cancelVoicePreview()
