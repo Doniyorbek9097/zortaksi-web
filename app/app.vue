@@ -13,6 +13,7 @@
       @install="install"
       @later="remindLater"
     />
+    <AppTopToastHost />
   </div>
 </template>
 

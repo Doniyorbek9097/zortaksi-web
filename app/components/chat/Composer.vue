@@ -21,7 +21,7 @@
       novalidate
       @submit.prevent="send"
     >
-      <!-- Bosib turilganda yozish -->
+      <!-- Ovoz yozish -->
       <div v-if="recording" class="flex items-center gap-3">
         <button
           type="button"
@@ -45,36 +45,12 @@
           <span class="ml-auto text-[12px] font-bold tabular-nums text-slate-500 dark:text-slate-400">{{ formattedTime }}</span>
         </div>
 
-        <div
-          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500/30 text-sky-400"
-          aria-hidden="true"
-        >
-          <font-awesome-icon icon="fa-solid fa-microphone" class="animate-pulse" />
-        </div>
-      </div>
-
-      <!-- Qo'yib yuborilgandan keyin — yuborish tugmasi -->
-      <div v-else-if="voicePreview" class="flex items-center gap-3">
         <button
           type="button"
-          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-red-500 text-white active:scale-95 transition-all"
-          aria-label="Bekor"
-          @click="cancelVoicePreview"
-        >
-          <font-awesome-icon icon="fa-solid fa-times" />
-        </button>
-
-        <div class="flex-1 flex items-center gap-3 px-4 py-2.5 rounded-full bg-slate-100 dark:bg-slate-800">
-          <font-awesome-icon icon="fa-solid fa-microphone" class="text-sky-500 shrink-0" />
-          <span class="text-[13px] font-bold text-slate-600 dark:text-slate-300">Ovozli xabar</span>
-          <span class="ml-auto text-[12px] font-bold tabular-nums text-slate-500 dark:text-slate-400">{{ formattedPreviewTime }}</span>
-        </div>
-
-        <button
-          type="button"
-          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500 text-white active:scale-95 transition-all"
+          :disabled="seconds < 1"
+          class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center bg-sky-500 text-white active:scale-95 transition-all disabled:opacity-40"
           aria-label="Yuborish"
-          @click="sendVoicePreview"
+          @click="stopAndSend"
         >
           <font-awesome-icon icon="fa-solid fa-paper-plane" />
         </button>
@@ -220,8 +196,8 @@
           :disabled="disabled"
           class="w-11 h-11 shrink-0 rounded-full flex items-center justify-center active:scale-95 transition-all select-none touch-none disabled:opacity-40 disabled:cursor-not-allowed"
           :class="support ? supportComposerSendClass : 'bg-sky-500 text-white'"
-          aria-label="Ovozli xabar — bosib turing"
-          @pointerdown.prevent="onMicPointerDown"
+          aria-label="Ovozli xabar"
+          @pointerdown.prevent="onMicPress"
           @click.prevent
         >
           <font-awesome-icon icon="fa-solid fa-microphone" />
@@ -247,11 +223,7 @@ import {
 } from '~/utils/voiceRecording'
 import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
 import { useMobileKeyboardOpen } from '~/composables/useMobileKeyboardOpen'
-import { getTelegramWebApp } from '~/utils/telegramWebApp'
 import { supportComposerFooterClass, supportComposerInputClass, supportComposerSendClass } from '~/utils/supportChatTheme'
-
-const MIC_HOLD_MS = 400
-const MIC_HOLD_HINT = "Ovoz yozish uchun tugmani bosib turing"
 
 const text = defineModel<string>({ default: '' })
 
@@ -490,7 +462,6 @@ onMounted(() => {
 })
 
 const recording = ref(false)
-const voicePreview = ref<{ blob: Blob; duration: number } | null>(null)
 const seconds = ref(0)
 const micError = ref('')
 const bars = [6, 12, 18, 10, 14, 8, 16, 11]
@@ -499,36 +470,11 @@ let mediaRecorder: MediaRecorder | null = null
 let mediaStream: MediaStream | null = null
 let chunks: BlobPart[] = []
 let mimeType = ''
-let micPointerActive = false
-let micSessionCancelled = false
-let micHoldTimer: ReturnType<typeof setTimeout> | null = null
-let releaseListenerBound = false
-
-const showMicHoldHint = () => {
-  const tg = getTelegramWebApp() as { showAlert?: (msg: string) => void } | null
-  if (tg?.showAlert) {
-    tg.showAlert(MIC_HOLD_HINT)
-    return
-  }
-  window.alert(MIC_HOLD_HINT)
-}
-
-const clearMicHoldTimer = () => {
-  if (!micHoldTimer) return
-  clearTimeout(micHoldTimer)
-  micHoldTimer = null
-}
+let micStarting = false
 
 const formattedTime = computed(() => {
   const m = Math.floor(seconds.value / 60)
   const s = seconds.value % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-})
-
-const formattedPreviewTime = computed(() => {
-  const dur = voicePreview.value?.duration ?? 0
-  const m = Math.floor(dur / 60)
-  const s = dur % 60
   return `${m}:${String(s).padStart(2, '0')}`
 })
 
@@ -556,10 +502,12 @@ const waitForRecorderStop = (recorder: MediaRecorder): Promise<void> =>
   })
 
 const startRecording = async () => {
-  if (props.disabled) return
+  if (props.disabled || recording.value || micStarting) return
+  micStarting = true
   micError.value = ''
   if (!canRecordVoice()) {
     micError.value = 'Bu brauzer ovoz yozishni qo\'llab-quvvatlamaydi'
+    micStarting = false
     return
   }
   try {
@@ -578,11 +526,6 @@ const startRecording = async () => {
     }
 
     // Timeslicesiz — stop paytida bitta to'liq chunk
-    if (micSessionCancelled) {
-      stopTracks()
-      return
-    }
-
     mediaRecorder.start()
     recording.value = true
     seconds.value = 0
@@ -592,28 +535,12 @@ const startRecording = async () => {
     micError.value = err?.name === 'NotAllowedError'
       ? 'Mikrofon ruxsati berilmadi'
       : 'Mikrofonni yoqib bo\'lmadi'
+  } finally {
+    micStarting = false
   }
 }
 
-const unbindMicReleaseListeners = () => {
-  if (!releaseListenerBound) return
-  releaseListenerBound = false
-  document.removeEventListener('pointerup', onMicPointerUp)
-  document.removeEventListener('pointercancel', onMicPointerUp)
-}
-
-const bindMicReleaseListeners = () => {
-  if (releaseListenerBound) return
-  releaseListenerBound = true
-  document.addEventListener('pointerup', onMicPointerUp)
-  document.addEventListener('pointercancel', onMicPointerUp)
-}
-
 const cancelRecording = () => {
-  unbindMicReleaseListeners()
-  micPointerActive = false
-  micSessionCancelled = true
-  clearMicHoldTimer()
   clearTimer()
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     mediaRecorder.ondataavailable = null
@@ -625,19 +552,13 @@ const cancelRecording = () => {
   seconds.value = 0
 }
 
-const cancelVoicePreview = () => {
-  voicePreview.value = null
-}
-
-const finalizeRecorderBlob = async (): Promise<Blob | null> => {
+const stopAndSend = async () => {
   const dur = seconds.value
   clearTimer()
   const recorder = mediaRecorder
   if (!recorder || recorder.state === 'inactive') {
-    stopTracks()
-    recording.value = false
-    seconds.value = 0
-    return null
+    cancelRecording()
+    return
   }
 
   try {
@@ -647,80 +568,27 @@ const finalizeRecorderBlob = async (): Promise<Blob | null> => {
     await new Promise<void>((r) => requestAnimationFrame(() => r()))
   } catch {
     cancelRecording()
-    return null
+    return
   }
 
   const raw = new Blob(chunks, { type: mimeType || recorder.mimeType || 'audio/ogg' })
   const blob = normalizeVoiceBlob(raw, mimeType || recorder.mimeType || 'audio/ogg')
   stopTracks()
   recording.value = false
-  if (dur < 1 || blob.size <= 0) {
-    seconds.value = 0
-    return null
-  }
-  return blob
-}
-
-const finishRecordingToPreview = async () => {
-  if (!recording.value) return
-  const dur = seconds.value
-  const blob = await finalizeRecorderBlob()
   seconds.value = 0
-  if (!blob) {
-    micError.value = dur > 0 && dur < 1 ? 'Ovoz juda qisqa' : ''
-    return
-  }
-  micError.value = ''
-  voicePreview.value = { blob, duration: dur }
+  if (dur >= 1 && blob.size > 0) emit('voice', blob, dur)
+  else if (dur > 0 && dur < 1) micError.value = 'Ovoz juda qisqa'
 }
 
-const sendVoicePreview = () => {
-  const preview = voicePreview.value
-  if (!preview) return
-  voicePreview.value = null
-  emit('voice', preview.blob, preview.duration)
-}
-
-const onMicPointerDown = (e: PointerEvent) => {
-  if (props.disabled || recording.value || voicePreview.value) return
+const onMicPress = (e: PointerEvent) => {
+  if (props.disabled || recording.value) return
   if (e.button !== 0) return
-  micPointerActive = true
-  micSessionCancelled = false
-  bindMicReleaseListeners()
-  clearMicHoldTimer()
-  micHoldTimer = setTimeout(() => {
-    micHoldTimer = null
-    if (!micPointerActive || micSessionCancelled) return
-    void startRecording()
-  }, MIC_HOLD_MS)
-}
-
-const onMicPointerUp = () => {
-  if (!micPointerActive) return
-  micPointerActive = false
-  unbindMicReleaseListeners()
-
-  if (micHoldTimer) {
-    clearMicHoldTimer()
-    showMicHoldHint()
-    return
-  }
-
-  if (!recording.value) {
-    micSessionCancelled = true
-    stopTracks()
-    return
-  }
-
-  void finishRecordingToPreview()
+  void startRecording()
 }
 
 onBeforeUnmount(() => {
-  unbindMicReleaseListeners()
-  clearMicHoldTimer()
   clearTimer()
   cancelRecording()
-  cancelVoicePreview()
 })
 </script>
 
