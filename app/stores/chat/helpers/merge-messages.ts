@@ -15,7 +15,9 @@ export function isCurrentChatMessage(
     return String(currentChatId || '') === String(msg.chatId || '')
 }
 
-/** ID yoki tgMessageId bo'yicha dublikat bormi */
+const VOICE_DEDUP_MS = 90_000
+
+/** ID, tgMessageId yoki yaqin ovoz davomiyligi bo'yicha dublikat bormi */
 export function messageAlreadyExists(
     messages: IChatMessage[],
     msg: IChatMessage,
@@ -26,6 +28,24 @@ export function messageAlreadyExists(
         messages.some((m) => m.tgMessageId === msg.tgMessageId)
     ) {
         return true
+    }
+    if (
+        msg.direction === 'in' &&
+        msg.type === 'voice' &&
+        msg.duration != null &&
+        msg.chatId
+    ) {
+        const at = new Date(msg.date).getTime()
+        if (
+            messages.some((m) => {
+                if (m.direction !== 'in' || m.type !== 'voice') return false
+                if (String(m.chatId) !== String(msg.chatId)) return false
+                if (m.duration !== msg.duration) return false
+                return Math.abs(new Date(m.date).getTime() - at) < VOICE_DEDUP_MS
+            })
+        ) {
+            return true
+        }
     }
     return false
 }
