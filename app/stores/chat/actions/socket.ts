@@ -73,10 +73,7 @@ export function createSocketActions(
                     .catch(() => {})
             } else {
                 media
-                    .getUrl(msg._id, 'photo', {
-                        forceNetwork: !!(wasRemote && nowReady),
-                        mediaPath: msg.mediaPath || 'remote',
-                    })
+                    .getPhotoDisplayUrl(msg._id, { force: !!(wasRemote && nowReady) })
                     .catch(() => {})
             }
         }
@@ -122,11 +119,7 @@ export function createSocketActions(
             if (normalized.type === 'voice') {
                 media.getVoiceAudioUrl(normalized._id).catch(() => {})
             } else {
-                media
-                    .getUrl(normalized._id, 'photo', {
-                        mediaPath: normalized.mediaPath || 'remote',
-                    })
-                    .catch(() => {})
+                media.getPhotoDisplayUrl(normalized._id).catch(() => {})
             }
         }
 

@@ -62,6 +62,9 @@ const inflight = new Map<string, Promise<string>>()
 /** Ovoz ijrosi — tab almashganda revoke qilinmaydi (rasm keshidan alohida) */
 const voicePlayBlobUrl = new Map<string, string>()
 const voicePlayInflight = new Map<string, Promise<string>>()
+/** Rasm — tokenli HTTPS (WebView da blob dan ishonchli) */
+const photoStreamUrl = new Map<string, string>()
+const photoStreamInflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
 const localOnly = new Set<string>()
 
@@ -127,11 +130,17 @@ export function peekVoiceAudioUrl(messageId: string): string {
   return id ? voicePlayBlobUrl.get(id) || '' : ''
 }
 
+function revokePhotoStreamUrl(messageId: string) {
+  photoStreamUrl.delete(normalizeMessageId(messageId))
+  photoStreamInflight.delete(normalizeMessageId(messageId))
+}
+
 export function invalidateChatMediaCache(messageId: string) {
   const id = normalizeMessageId(messageId)
   if (!id) return
   revokeCachedUrl(id)
   revokeVoicePlayBlob(id)
+  revokePhotoStreamUrl(id)
   void idbDeleteMedia(id)
 }
 
@@ -290,6 +299,61 @@ async function fetchVoiceArrayBuffer(
 
   const mime = sniffVoiceMimeFromBuffer(data, headerMime)
   return { data, mime }
+}
+
+/** Rasm — avvalo tokenli HTTPS, keyin blob (Telegram WebView uchun) */
+async function resolvePhotoDisplayUrl(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+  force = false,
+): Promise<string> {
+  const id = normalizeMessageId(messageId)
+  if (!id) return ''
+
+  if (!force) {
+    const stream = photoStreamUrl.get(id)
+    if (stream) return stream
+    const blobHit = cache.get(id)
+    if (blobHit?.startsWith('blob:')) return blobHit
+  } else {
+    revokePhotoStreamUrl(id)
+    revokeCachedUrl(id)
+    void idbDeleteMedia(id)
+  }
+
+  const pending = photoStreamInflight.get(id)
+  if (pending && !force) return pending
+
+  const job = (async () => {
+    try {
+      const link = await fetchMediaOpenLink(id, {
+        urlBuilder,
+        disposition: 'inline',
+      })
+      const streamUrl = toAbsoluteMediaUrl(link.url)
+      photoStreamUrl.set(id, streamUrl)
+      return streamUrl
+    } catch (linkErr) {
+      agentDebugLog({
+        hypothesisId: 'P',
+        location: 'useVoiceMedia.ts:resolvePhotoDisplayUrl',
+        message: 'photo_link_fail_try_blob',
+        data: {
+          messageId: id,
+          err: String((linkErr as Error)?.message || linkErr).slice(0, 120),
+        },
+      })
+      const blob = await fetchMediaBlobFromNetwork(id, 'photo', urlBuilder)
+      return blobToObjectUrl(id, blob, 'photo', true, 'remote')
+    }
+  })()
+
+  photoStreamInflight.set(id, job)
+  try {
+    return await job
+  } finally {
+    photoStreamInflight.delete(id)
+  }
 }
 
 async function resolveVoiceAudioUrl(
@@ -771,6 +835,21 @@ export function useChatMedia() {
 
   const peekVoiceUrl = (messageId: string) => peekVoiceAudioUrl(messageId)
 
+  const getPhotoDisplayUrl = async (
+    messageId: string,
+    opts: { force?: boolean; urlBuilder?: ChatMediaUrlBuilder | null } = {},
+  ): Promise<string> => {
+    const id = normalizeMessageId(messageId)
+    if (!id) return ''
+    const builder = resolveBuilder(opts.urlBuilder)
+    return resolvePhotoDisplayUrl(id, builder, !!opts.force)
+  }
+
+  const peekPhotoUrl = (messageId: string) => {
+    const id = normalizeMessageId(messageId)
+    return photoStreamUrl.get(id) || cache.get(id) || ''
+  }
+
   /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (
     messages: {
@@ -795,10 +874,7 @@ export function useChatMedia() {
         continue
       }
 
-      getUrl(id, 'photo', {
-        urlBuilder,
-        mediaPath: m.mediaPath || 'remote',
-      }).catch(() => {})
+      getPhotoDisplayUrl(id, { urlBuilder }).catch(() => {})
     }
   }
 
@@ -825,6 +901,8 @@ export function useChatMedia() {
 
   return {
     getUrl,
+    getPhotoDisplayUrl,
+    peekPhotoUrl,
     getVoiceAudioUrl,
     peekVoiceUrl,
     getMediaOpenLink,
