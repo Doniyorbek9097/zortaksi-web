@@ -691,9 +691,24 @@ export function useChatMedia() {
         }
       }
 
-      // 2) Server → kerak bo'lsa Telegramdan yuklab beradi
-      const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
-      return blobToObjectUrl(id, blob, kind, true, mediaPath || 'remote')
+      try {
+        // 2) Server → kerak bo'lsa Telegramdan yuklab beradi
+        const blob = await fetchMediaBlobFromNetwork(id, kind, builder)
+        return blobToObjectUrl(id, blob, kind, true, mediaPath || 'remote')
+      } catch (blobErr) {
+        if (kind === 'photo') {
+          const link = await fetchMediaOpenLink(id, {
+            urlBuilder: builder,
+            disposition: 'inline',
+          })
+          const streamUrl = toAbsoluteMediaUrl(link.url)
+          cache.set(id, streamUrl)
+          cacheMediaPath.set(id, String(mediaPath || 'remote').trim() || 'remote')
+          touchCacheOrder(id)
+          return streamUrl
+        }
+        throw blobErr
+      }
     })()
 
     inflight.set(id, job)
