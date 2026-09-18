@@ -62,9 +62,9 @@ const inflight = new Map<string, Promise<string>>()
 /** Ovoz ijrosi — tab almashganda revoke qilinmaydi (rasm keshidan alohida) */
 const voicePlayBlobUrl = new Map<string, string>()
 const voicePlayInflight = new Map<string, Promise<string>>()
-/** Rasm — tokenli HTTPS (WebView da blob dan ishonchli) */
-const photoStreamUrl = new Map<string, string>()
-const photoStreamInflight = new Map<string, Promise<string>>()
+/** Rasm ko'rish — ovoz kabi (tab almashganda saqlanadi) */
+const photoPlayBlobUrl = new Map<string, string>()
+const photoPlayInflight = new Map<string, Promise<string>>()
 /** Yuborilayotgan temp preview */
 const localOnly = new Set<string>()
 
@@ -130,9 +130,19 @@ export function peekVoiceAudioUrl(messageId: string): string {
   return id ? voicePlayBlobUrl.get(id) || '' : ''
 }
 
-function revokePhotoStreamUrl(messageId: string) {
-  photoStreamUrl.delete(normalizeMessageId(messageId))
-  photoStreamInflight.delete(normalizeMessageId(messageId))
+function revokePhotoPlayBlob(messageId: string) {
+  const id = normalizeMessageId(messageId)
+  if (!id) return
+  const prev = photoPlayBlobUrl.get(id)
+  if (prev?.startsWith('blob:')) URL.revokeObjectURL(prev)
+  photoPlayBlobUrl.delete(id)
+  photoPlayInflight.delete(id)
+}
+
+/** Rasm URL — sinxron kesh (ovoz peekVoiceAudioUrl kabi) */
+export function peekPhotoPlayUrl(messageId: string): string {
+  const id = normalizeMessageId(messageId)
+  return id ? photoPlayBlobUrl.get(id) || '' : ''
 }
 
 export function invalidateChatMediaCache(messageId: string) {
@@ -140,7 +150,7 @@ export function invalidateChatMediaCache(messageId: string) {
   if (!id) return
   revokeCachedUrl(id)
   revokeVoicePlayBlob(id)
-  revokePhotoStreamUrl(id)
+  revokePhotoPlayBlob(id)
   void idbDeleteMedia(id)
 }
 
@@ -301,7 +311,70 @@ async function fetchVoiceArrayBuffer(
   return { data, mime }
 }
 
-/** Rasm — avvalo tokenli HTTPS, keyin blob (Telegram WebView uchun) */
+function sniffPhotoMimeFromBuffer(data: ArrayBuffer, headerMime: string): string {
+  const head = new Uint8Array(data.slice(0, Math.min(12, data.byteLength)))
+  if (head[0] === 0xff && head[1] === 0xd8) return 'image/jpeg'
+  if (head[0] === 0x89 && head[1] === 0x50) return 'image/png'
+  if (head[0] === 0x47 && head[1] === 0x49) return 'image/gif'
+  if (head[0] === 0x52 && head[1] === 0x49) return 'image/webp'
+  const mime = String(headerMime || '').split(';')[0]?.trim() || ''
+  if (mime.startsWith('image/')) return mime
+  return 'image/jpeg'
+}
+
+/** OrderVoicePlayer / ovoz bilan bir xil — arraybuffer → blob URL */
+async function fetchPhotoArrayBuffer(
+  messageId: string,
+  urlBuilder?: ChatMediaUrlBuilder | null,
+): Promise<{ data: ArrayBuffer; mime: string }> {
+  const cookie = useCookie('auth_token', { ...getAuthCookieOptions() })
+  const token = resolveAuthToken(cookie.value)
+  const url = resolveAbsoluteMediaRequestUrl(messageId, urlBuilder)
+
+  let res: { data: ArrayBuffer; headers: Record<string, string> }
+  try {
+    res = await api.get<ArrayBuffer>(url, {
+      responseType: 'arraybuffer',
+      timeout: 120_000,
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    })
+  } catch (err: any) {
+    const status = err?.response?.status
+    agentDebugLog({
+      hypothesisId: 'P',
+      location: 'useVoiceMedia.ts:fetchPhotoArrayBuffer',
+      message: 'photo_http_error',
+      data: {
+        messageId,
+        status,
+        hasToken: !!token,
+        mediaUrl: url,
+        err: String(err?.response?.data || err?.message || '').slice(0, 120),
+      },
+    })
+    throw new Error('Rasm yuklanmadi')
+  }
+
+  const data = res.data
+  if (!data?.byteLength) throw new Error('Rasm bo\'sh')
+
+  const head = new Uint8Array(data.slice(0, Math.min(4, data.byteLength)))
+  if (head[0] === 0x7b || head[0] === 0x3c) throw new Error('Rasm yuklanmadi')
+
+  const headerMime = String(
+    (res.headers as Record<string, string> | undefined)?.['content-type'] || '',
+  )
+  if (/json|text\/html/i.test(headerMime)) throw new Error('Rasm yuklanmadi')
+
+  const mime = sniffPhotoMimeFromBuffer(data, headerMime)
+  return { data, mime }
+}
+
+/** Rasm — ovoz bilan bir xil: arraybuffer → blob, keyin media-link fallback */
 async function resolvePhotoDisplayUrl(
   messageId: string,
   urlBuilder?: ChatMediaUrlBuilder | null,
@@ -311,48 +384,57 @@ async function resolvePhotoDisplayUrl(
   if (!id) return ''
 
   if (!force) {
-    const stream = photoStreamUrl.get(id)
-    if (stream) return stream
-    const blobHit = cache.get(id)
-    if (blobHit?.startsWith('blob:')) return blobHit
+    const hit = photoPlayBlobUrl.get(id)
+    if (hit) return hit
+
+    const idbBlob = await loadFromIdb(id, 'photo', null)
+    if (idbBlob) {
+      const url = URL.createObjectURL(idbBlob)
+      photoPlayBlobUrl.set(id, url)
+      return url
+    }
   } else {
-    revokePhotoStreamUrl(id)
-    revokeCachedUrl(id)
-    void idbDeleteMedia(id)
+    revokePhotoPlayBlob(id)
   }
 
-  const pending = photoStreamInflight.get(id)
+  const pending = photoPlayInflight.get(id)
   if (pending && !force) return pending
 
   const job = (async () => {
     try {
+      const { data, mime } = await fetchPhotoArrayBuffer(id, urlBuilder)
+      const blob = new Blob([data], { type: mime })
+      const blobUrl = URL.createObjectURL(blob)
+      photoPlayBlobUrl.set(id, blobUrl)
+      if (!id.startsWith('temp-')) {
+        void idbPutMedia(id, blob, 'photo', 'remote')
+      }
+      return blobUrl
+    } catch (blobErr) {
+      agentDebugLog({
+        hypothesisId: 'P',
+        location: 'useVoiceMedia.ts:resolvePhotoDisplayUrl',
+        message: 'photo_blob_fail_try_stream',
+        data: {
+          messageId: id,
+          err: String((blobErr as Error)?.message || blobErr),
+        },
+      })
       const link = await fetchMediaOpenLink(id, {
         urlBuilder,
         disposition: 'inline',
       })
       const streamUrl = toAbsoluteMediaUrl(link.url)
-      photoStreamUrl.set(id, streamUrl)
+      photoPlayBlobUrl.set(id, streamUrl)
       return streamUrl
-    } catch (linkErr) {
-      agentDebugLog({
-        hypothesisId: 'P',
-        location: 'useVoiceMedia.ts:resolvePhotoDisplayUrl',
-        message: 'photo_link_fail_try_blob',
-        data: {
-          messageId: id,
-          err: String((linkErr as Error)?.message || linkErr).slice(0, 120),
-        },
-      })
-      const blob = await fetchMediaBlobFromNetwork(id, 'photo', urlBuilder)
-      return blobToObjectUrl(id, blob, 'photo', true, 'remote')
     }
   })()
 
-  photoStreamInflight.set(id, job)
+  photoPlayInflight.set(id, job)
   try {
     return await job
   } finally {
-    photoStreamInflight.delete(id)
+    photoPlayInflight.delete(id)
   }
 }
 
@@ -845,10 +927,7 @@ export function useChatMedia() {
     return resolvePhotoDisplayUrl(id, builder, !!opts.force)
   }
 
-  const peekPhotoUrl = (messageId: string) => {
-    const id = normalizeMessageId(messageId)
-    return photoStreamUrl.get(id) || cache.get(id) || ''
-  }
+  const peekPhotoUrl = (messageId: string) => peekPhotoPlayUrl(messageId)
 
   /** Fon: kesh → server (Telegram lazy) */
   const prefetch = (

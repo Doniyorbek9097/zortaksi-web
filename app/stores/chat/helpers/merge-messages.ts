@@ -15,9 +15,10 @@ export function isCurrentChatMessage(
     return String(currentChatId || '') === String(msg.chatId || '')
 }
 
-const VOICE_DEDUP_MS = 90_000
+const MEDIA_DEDUP_MS = 90_000
+const PHOTO_DEDUP_TIGHT_MS = 15_000
 
-/** ID, tgMessageId yoki yaqin ovoz davomiyligi bo'yicha dublikat bormi */
+/** ID, tgMessageId yoki yaqin media (ovoz/rasm) bo'yicha dublikat bormi */
 export function messageAlreadyExists(
     messages: IChatMessage[],
     msg: IChatMessage,
@@ -41,7 +42,22 @@ export function messageAlreadyExists(
                 if (m.direction !== 'in' || m.type !== 'voice') return false
                 if (String(m.chatId) !== String(msg.chatId)) return false
                 if (m.duration !== msg.duration) return false
-                return Math.abs(new Date(m.date).getTime() - at) < VOICE_DEDUP_MS
+                return Math.abs(new Date(m.date).getTime() - at) < MEDIA_DEDUP_MS
+            })
+        ) {
+            return true
+        }
+    }
+    if (msg.direction === 'in' && msg.type === 'photo' && msg.chatId) {
+        const at = new Date(msg.date).getTime()
+        const win = msg.fileSize ? MEDIA_DEDUP_MS : PHOTO_DEDUP_TIGHT_MS
+        if (
+            messages.some((m) => {
+                if (m.direction !== 'in' || m.type !== 'photo') return false
+                if (String(m.chatId) !== String(msg.chatId)) return false
+                if (Math.abs(new Date(m.date).getTime() - at) >= win) return false
+                if (msg.fileSize && m.fileSize && msg.fileSize !== m.fileSize) return false
+                return true
             })
         ) {
             return true

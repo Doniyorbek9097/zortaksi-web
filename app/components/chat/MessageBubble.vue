@@ -623,7 +623,8 @@ const applySrc = (url: string) => {
   src.value = url || ''
 }
 
-const ensureSrc = async (opts: { force?: boolean } = {}) => {
+/** Rasm — ovoz (ensureVoiceSrc) bilan bir xil oqim */
+const ensurePhotoSrc = async (opts: { force?: boolean } = {}) => {
   if (!props.messageId || props.type !== 'photo') return
   const id = String(props.messageId)
   if (id.startsWith('temp-')) {
@@ -634,29 +635,25 @@ const ensureSrc = async (opts: { force?: boolean } = {}) => {
   if (opts.force) {
     invalidateMedia(props.messageId)
     applySrc('')
-  } else if (src.value) {
-    const live = peekPhotoUrl(props.messageId) || peekUrl(props.messageId, props.mediaPath || 'remote')
-    if (live && live === src.value) return
-    applySrc('')
-  }
-  const cached = peekPhotoUrl(props.messageId) || peekUrl(props.messageId, props.mediaPath || 'remote')
-  if (cached && !opts.force) {
-    applySrc(cached)
-    return
+  } else {
+    const ready = peekPhotoUrl(id) || src.value
+    if (ready) {
+      applySrc(ready)
+      return
+    }
   }
   loading.value = true
   try {
     const url = await getPhotoDisplayUrl(props.messageId, { force: !!opts.force })
     if (url) applySrc(url)
   } catch (e) {
-    console.error('media load', e)
+    console.error('photo load', e)
     agentDebugLog({
-      hypothesisId: 'D',
-      location: 'MessageBubble.vue:ensureSrc',
-      message: 'ensureSrc_fail',
+      hypothesisId: 'P',
+      location: 'MessageBubble.vue:ensurePhotoSrc',
+      message: 'photo_src_fail',
       data: {
         messageId: props.messageId,
-        type: props.type,
         mediaPath: props.mediaPath || null,
         force: !!opts.force,
         err: String((e as any)?.message || e),
@@ -721,7 +718,7 @@ const retryMedia = async () => {
     await ensureVoiceSrc({ force: true })
     return
   }
-  await ensureSrc({ force: true })
+  await ensurePhotoSrc({ force: true })
 }
 
 /** Audio element tayyor bo'lguncha kutadi */
@@ -858,7 +855,7 @@ const handlePhotoTap = async () => {
   if (!src.value) {
     loading.value = true
     try {
-      await ensureSrc({ force: true })
+      await ensurePhotoSrc({ force: true })
     } finally {
       loading.value = false
     }
@@ -919,7 +916,7 @@ watch(
         return
       }
       if (props.type === 'photo') {
-        void ensureSrc()
+        void ensurePhotoSrc()
       }
     }
   },
@@ -936,11 +933,11 @@ watch(
       isRemoteMedia(prev) && !isRemoteMedia(path)
     if (becameReady) {
       applySrc('')
-      if (props.type === 'photo') await ensureSrc({ force: true })
+      if (props.type === 'photo') await ensurePhotoSrc({ force: true })
       return
     }
     if (!src.value && props.type === 'photo') {
-      await ensureSrc()
+      await ensurePhotoSrc()
     }
   },
 )
@@ -952,7 +949,7 @@ watch(
     if (!props.messageId) return
     if (status === 'failed' && props.mediaPath && !src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else if (props.type === 'photo') await ensureSrc()
+      else if (props.type === 'photo') await ensurePhotoSrc()
       return
     }
     if (prev !== 'sending' || status === 'sending') return
@@ -963,22 +960,16 @@ watch(
     }
     if (!src.value) {
       if (props.type === 'voice') await ensureVoiceSrc()
-      else if (props.type === 'photo') await ensureSrc()
+      else if (props.type === 'photo') await ensurePhotoSrc()
     }
   },
 )
 
-/** Sessiya kesh tozalanganda — HTTPS rasm URL saqlanadi */
+/** Sessiya kesh tozalanganda ovoz/rasm URL saqlanadi */
 watch(mediaCacheEpoch, () => {
-  if (!isMediaBubble.value || props.type === 'voice') return
+  if (!isMediaBubble.value || props.type === 'voice' || props.type === 'photo') return
   stopLocalVoice()
-  const stream = props.messageId ? peekPhotoUrl(props.messageId) : ''
-  if (stream) {
-    applySrc(stream)
-    return
-  }
   applySrc('')
-  if (props.type === 'photo' && props.messageId) void ensureSrc()
 })
 
 onBeforeUnmount(() => {
