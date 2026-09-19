@@ -116,6 +116,9 @@ export const useOrderStore = defineStore('order', () => {
         return ids
     }
 
+    const warmInflight = new Map<string, Promise<void>>()
+
+    /** Backend: faqat o'z hisob + ruxsatli tinglovchi (proxy yo'q) */
     const postWarmPeers = async (orderIds: string[]) => {
         if (!import.meta.client || !orderIds.length) return
         try {
@@ -140,20 +143,33 @@ export const useOrderStore = defineStore('order', () => {
         void postWarmPeers(ids)
     }
 
-    /** Bitta order — "Xabar yozish" hover */
-    const warmOrderPeer = (orderId: string) => {
+    /** Bitta order — fon warm (proxy ishlatilmaydi) */
+    const warmOrderPeerAsync = async (orderId: string): Promise<void> => {
         if (!import.meta.client) return
         const authStore = useAuthStore()
         const driverId = String(authStore.user?.userId || '')
         if (!driverId) return
         const id = String(orderId)
         if (warmedOrderIds.has(id)) return
+
+        const pending = warmInflight.get(id)
+        if (pending) return pending
+
         const order = orders.value.find((o) => String(o._id) === id)
         if (order && !orderNeedsWarm(order, driverId)) {
             warmedOrderIds.add(id)
             return
         }
-        void postWarmPeers([id])
+
+        const job = postWarmPeers([id]).finally(() => {
+            warmInflight.delete(id)
+        })
+        warmInflight.set(id, job)
+        return job
+    }
+
+    const warmOrderPeer = (orderId: string) => {
+        void warmOrderPeerAsync(orderId)
     }
 
     const applyListFilter = (params: FetchOrdersParams) => {
@@ -601,6 +617,7 @@ export const useOrderStore = defineStore('order', () => {
                     totalPages.value = response.data.pagination.totalPages
                 }
                 rememberListFilter(params)
+                scheduleWarmOrderPeers(list)
             } else {
                 const fresh = list.filter((o) => o._id && !prevIds.has(String(o._id)))
                 if (fresh.length) {
@@ -671,6 +688,7 @@ export const useOrderStore = defineStore('order', () => {
                     rememberListFilter(params)
                     noteRecentOrdersFromList(list)
                     lastFullListFetchAt = Date.now()
+                    scheduleWarmOrderPeers(list)
                 }
                 total.value = response.data.pagination?.total ?? orders.value.length
                 page.value = response.data.pagination?.page ?? params.page ?? 1
@@ -949,5 +967,6 @@ export const useOrderStore = defineStore('order', () => {
         trimListForTabSwitch,
         clearOrdersListScroll,
         warmOrderPeer,
+        warmOrderPeerAsync,
     }
 })
