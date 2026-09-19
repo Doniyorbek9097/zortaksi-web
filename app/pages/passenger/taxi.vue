@@ -1,99 +1,92 @@
 <template>
   <div
-    class="relative min-h-[100dvh] w-full overflow-x-hidden flex flex-col px-4 py-5 text-slate-900 dark:text-slate-100"
+    class="relative min-h-[100dvh] w-full overflow-x-hidden flex flex-col px-3 py-3 text-slate-100"
   >
-    <div class="pointer-events-none absolute inset-0 bg-gradient-to-b from-amber-50 via-white to-emerald-50/40 dark:from-slate-950 dark:via-slate-950 dark:to-emerald-950/20" />
-    <div class="pointer-events-none absolute -top-16 right-0 w-56 h-56 rounded-full bg-amber-400/20 blur-3xl" />
-    <div class="pointer-events-none absolute bottom-0 left-0 w-64 h-64 rounded-full bg-emerald-400/15 blur-3xl" />
+    <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900" />
+    <div class="pointer-events-none absolute top-0 right-0 w-40 h-40 rounded-full bg-sky-500/10 blur-3xl" />
+    <div class="pointer-events-none absolute bottom-20 left-0 w-48 h-48 rounded-full bg-violet-600/10 blur-3xl" />
 
-    <header class="relative z-10 w-full max-w-md mx-auto flex items-center justify-between gap-3">
+    <header class="relative z-10 w-full max-w-sm mx-auto flex items-center gap-2 mb-3">
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-black text-slate-400 hover:text-amber-600 transition-all active:scale-95"
+        class="w-8 h-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 hover:bg-white/15 active:scale-95 transition-all"
+        aria-label="Orqaga"
         @click="handleBack"
       >
-        <font-awesome-icon icon="fa-solid fa-chevron-left" />
-        Orqaga
+        <font-awesome-icon icon="fa-solid fa-chevron-left" class="text-xs" />
       </button>
-      <span class="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400">
-        Taxi chaqirish
-      </span>
+      <div class="flex-1 min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-widest text-sky-400/90">
+          ZorTaksi
+        </p>
+        <h1 class="text-base font-black tracking-tight truncate">
+          {{ headline }}
+        </h1>
+      </div>
+      <span class="text-xl shrink-0" aria-hidden="true">🚕</span>
     </header>
 
-    <main class="relative z-10 w-full max-w-md mx-auto my-auto py-6 space-y-5">
-      <div class="text-center space-y-3">
-        <div class="relative w-16 h-16 mx-auto">
-          <div class="absolute inset-0 rounded-2xl bg-amber-400/30 blur-xl animate-pulse" />
-          <div class="relative w-full h-full rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/70 dark:border-amber-800/40 shadow-xl flex items-center justify-center text-3xl">
-            🚕
-          </div>
-        </div>
-        <div class="space-y-1">
-          <h1 class="text-2xl font-black tracking-tight">
-            {{ headline }}
-          </h1>
-          <p class="text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug max-w-xs mx-auto">
-            {{ subtitle }}
-          </p>
-        </div>
-
-        <PassengerTaxiStepper
-          v-if="step !== 'unavailable' && step !== 'done'"
-          :current="stepIndex"
-          :can-go-back="canGoBackToStep"
-          @go="goToStep"
-        />
-      </div>
+    <main class="relative z-10 w-full max-w-sm mx-auto flex-1 flex flex-col gap-2.5">
+      <PassengerTaxiStepper
+        v-if="step !== 'unavailable' && step !== 'done'"
+        :current="stepIndex"
+        :can-go-back="canGoBackToStep"
+        @go="goToStep"
+      />
 
       <div
-        class="rounded-[1.75rem] border bg-white/90 dark:bg-slate-900/80 backdrop-blur-xl shadow-2xl shadow-amber-500/5 dark:shadow-none border-slate-100 dark:border-slate-800 p-5 sm:p-6 space-y-4"
+        class="flex-1 rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur-md shadow-xl shadow-black/30 p-3.5 space-y-3"
       >
-        <div v-if="step === 'unavailable'" class="py-6 text-center space-y-4">
-          <div class="w-12 h-12 mx-auto rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center">
-            <font-awesome-icon icon="fa-solid fa-circle-exclamation" class="text-xl" />
+        <p
+          v-if="step !== 'unavailable' && step !== 'done'"
+          class="text-[11px] text-slate-400 leading-snug"
+        >
+          {{ subtitle }}
+        </p>
+
+        <div v-if="step === 'unavailable'" class="py-4 text-center space-y-2">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center">
+            <font-awesome-icon icon="fa-solid fa-circle-exclamation" />
           </div>
-          <p class="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p class="text-xs text-slate-300 leading-relaxed">
             {{ error || 'Telegram Mini App ichida oching.' }}
           </p>
         </div>
 
         <template v-else-if="step === 'route'">
-          <label class="block space-y-2">
-            <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">
+          <label class="block space-y-1.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
               Qayerdan — qayerga
             </span>
             <textarea
               :value="routeText"
-              rows="4"
+              rows="3"
               maxlength="500"
               enterkeyhint="next"
-              placeholder="Masalan: Chilonzor → Sergeli, 2 kishi"
-              class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-4 py-3.5 text-[15px] leading-relaxed resize-none focus:outline-none focus:ring-2 focus:ring-amber-400/60"
+              placeholder="Chilonzor → Sergeli, 2 kishi"
+              class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2.5 text-[14px] leading-relaxed resize-none text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500/50"
               @input="onRouteInput"
             />
           </label>
-          <p class="text-[12px] text-slate-400 leading-snug">
-            Manzil, yo'nalish va odamlar sonini yozing.
-          </p>
           <button
             type="button"
-            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all"
-            :class="canSubmitRoute ? 'opacity-100' : 'opacity-45'"
+            class="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm active:scale-[0.98] transition-all disabled:opacity-40"
+            :disabled="!canSubmitRoute"
             @click="goToPhone"
           >
-            Keyingi — telefon
+            Keyingi
           </button>
         </template>
 
         <template v-else-if="step === 'phone'">
-          <div class="rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40 px-4 py-3 text-[13px] text-amber-900 dark:text-amber-100 leading-relaxed">
-            <span class="font-bold">Marshrut:</span>
+          <div class="rounded-xl bg-slate-950/60 border border-white/5 px-3 py-2 text-[12px] text-slate-300 leading-snug line-clamp-3">
+            <span class="text-sky-400 font-semibold">Yo'l:</span>
             {{ routeText }}
           </div>
 
-          <label class="block space-y-2">
-            <span class="text-[11px] font-black uppercase tracking-wider text-slate-400">
-              Telefon raqam
+          <label class="block space-y-1.5">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              Telefon
             </span>
             <input
               :value="phoneInput"
@@ -102,93 +95,89 @@
               autocomplete="tel"
               enterkeyhint="done"
               placeholder="998901234567"
-              class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 px-4 py-3.5 text-[16px] font-semibold tracking-wide focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
+              class="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2.5 text-[15px] font-semibold tracking-wide text-slate-100 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-violet-500/50"
               @input="onPhoneInput"
             />
           </label>
 
-          <div class="flex gap-2 pt-1">
+          <div class="flex gap-2">
             <button
               type="button"
-              class="flex-1 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 font-bold text-sm active:scale-[0.98]"
+              class="flex-1 py-2.5 rounded-xl bg-white/10 text-slate-200 font-semibold text-sm active:scale-[0.98]"
               @click="goBackToRoute"
             >
               Orqaga
             </button>
             <button
               type="button"
-              class="flex-[2] py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98]"
-              :class="busy || !canSubmitPhone ? 'opacity-45' : 'opacity-100'"
+              class="flex-[2] py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-white font-bold text-sm active:scale-[0.98] disabled:opacity-40"
+              :disabled="busy || !canSubmitPhone"
               @click="submitOrder"
             >
-              <font-awesome-icon v-if="busy" icon="fa-solid fa-spinner" class="animate-spin mr-1.5" />
-              Buyurtma berish
+              <font-awesome-icon v-if="busy" icon="fa-solid fa-spinner" class="animate-spin mr-1" />
+              Yuborish
             </button>
           </div>
         </template>
 
         <template v-else-if="step === 'active'">
-          <div class="text-center space-y-2 pb-1">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 text-[11px] font-black uppercase tracking-wider">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              Yetkazildi
-            </div>
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
-              Buyurtmangiz shofyorlarimizga yetib bordi. Sizga tez orada aloqaga chiqishadi.
-            </p>
+          <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/20 w-fit">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span class="text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+              Qabul qilindi
+            </span>
           </div>
 
-          <div class="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/50 p-4 space-y-2 text-[14px]">
-            <p><span class="font-bold text-slate-400">Marshrut:</span> {{ activeOrder?.route || routeText }}</p>
+          <div class="rounded-xl border border-white/5 bg-slate-950/40 px-3 py-2.5 space-y-1 text-[13px] text-slate-300">
+            <p class="line-clamp-3">
+              <span class="text-slate-500 font-semibold">Yo'l:</span>
+              {{ activeOrder?.route || routeText }}
+            </p>
             <p v-if="activeOrder?.phone || phoneInput">
-              <span class="font-bold text-slate-400">Tel:</span>
+              <span class="text-slate-500 font-semibold">Tel:</span>
               +{{ activeOrder?.phone || phoneInput }}
             </p>
           </div>
 
-          <p class="text-[12px] text-slate-400 text-center leading-snug">
-            Shofyor topilgach pastdagi tugmani bosing.
-          </p>
-
           <button
             type="button"
-            class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 text-white font-black text-sm shadow-lg shadow-emerald-500/25 active:scale-[0.98] disabled:opacity-50"
+            class="w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm active:scale-[0.98] disabled:opacity-50"
             :disabled="busy"
             @click="confirmDriverFound"
           >
-            🚗 Shofyor topdim
+            Shofyor topdim
           </button>
           <button
             type="button"
-            class="w-full py-3 rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-300 font-bold text-sm active:scale-[0.98] disabled:opacity-50"
+            class="w-full py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 font-semibold text-xs active:scale-[0.98] disabled:opacity-50"
             :disabled="busy"
             @click="cancelOrder"
           >
-            ❌ Buyurtmani bekor qilish
+            Bekor qilish
           </button>
         </template>
 
         <template v-else-if="step === 'done'">
-          <div class="py-4 text-center space-y-4">
-            <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/15 text-emerald-600 flex items-center justify-center text-2xl">
-              ✅
+          <div class="py-2 text-center space-y-3">
+            <div class="w-11 h-11 mx-auto rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-lg">
+              ✓
             </div>
-            <p class="text-sm font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
+            <p class="text-xs text-slate-300 leading-relaxed">
               {{ doneMessage }}
             </p>
             <button
               type="button"
-              class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-white font-black text-sm shadow-lg shadow-amber-500/25 active:scale-[0.98]"
+              class="w-full py-2.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm active:scale-[0.98]"
               @click="startNewOrder"
             >
-              🚕 Yangi buyurtma berish
+              Yangi buyurtma
             </button>
           </div>
         </template>
 
         <p
           v-if="error && step !== 'unavailable'"
-          class="text-[13px] font-semibold text-red-500 text-center leading-snug"
+          class="text-[11px] font-semibold text-rose-400 text-center leading-snug"
         >
           {{ error }}
         </p>
@@ -235,18 +224,17 @@ const stepIndex = computed(() => {
 })
 
 const headline = computed(() => {
-  if (step.value === 'active') return 'Buyurtma qabul qilindi'
-  if (step.value === 'done') return 'Tayyor!'
+  if (step.value === 'active') return 'Kutish'
+  if (step.value === 'done') return 'Tayyor'
   const name = firstName.value
-  return name ? `Salom, ${name}!` : 'Taksi chaqirish'
+  return name ? `Salom, ${name}` : 'Taxi chaqirish'
 })
 
 const subtitle = computed(() => {
-  if (step.value === 'route') return 'Qayerdan va qayerga yozing.'
-  if (step.value === 'phone') return 'Telefon raqamingiz.'
-  if (step.value === 'active') return 'Tez orada bog\'lanishadi.'
-  if (step.value === 'done') return 'Rahmat!'
-  return 'Tez buyurtma bering.'
+  if (step.value === 'route') return 'Marshrut va odamlar sonini yozing.'
+  if (step.value === 'phone') return 'Aloqa uchun telefon raqam.'
+  if (step.value === 'active') return 'Shofyor tez orada bog\'lanadi.'
+  return ''
 })
 
 function onRouteInput(event: Event) {
