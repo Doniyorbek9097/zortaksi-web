@@ -8,7 +8,7 @@
         v-for="(item, i) in steps"
         :key="item.key"
         type="button"
-        class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all"
+        class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
         :class="cellClass(i)"
         :disabled="!canGoBack(i)"
         :title="canGoBack(i) ? `${item.label} — orqaga` : item.label"
@@ -34,7 +34,7 @@
     </div>
     <div class="mt-2 h-1 rounded-full bg-slate-200 overflow-hidden">
       <div
-        class="h-full rounded-full bg-gradient-to-r from-amber-400 to-sky-500 transition-all duration-400"
+        class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-400"
         :style="{ width: progressWidth }"
       />
     </div>
