@@ -71,6 +71,12 @@ export function readActiveUserId(): string | null {
   return readLsActiveUserId()
 }
 
+/** Warm/connect — tanlangan userbot hisobi (fallback: joriy sessiya userId) */
+export function resolveWarmOwnerId(fallbackUserId?: string | null): string {
+  if (!import.meta.client) return ''
+  return String(readActiveUserId() || fallbackUserId || '')
+}
+
 export function readActiveToken(): string | null {
   if (!import.meta.client) return null
   if (memoryToken) return memoryToken

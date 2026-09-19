@@ -4,6 +4,7 @@ import type { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
 import { orderQuickLinkQuery, buildChatStubFromOrder, buildChatStubFromOrderQuery, mergeOrderChatContext, primeOrderContext } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
+import { resolveWarmOwnerId } from '~/utils/activeAccount'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -65,7 +66,7 @@ export function useOrdersChatActions(options: {
   /** Order chat — darhol UI (navigatsiyadan oldin) */
   const primeOrderOpenUi = (order: IOrder) => {
     primeOrderContext(order)
-    const driverId = String(authStore.user?.userId || '')
+    const driverId = resolveWarmOwnerId(authStore.user?.userId)
     const stub = buildChatStubFromOrder(order, driverId)
     if (!stub) return
     const existing = findChatForOrder(order)

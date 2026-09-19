@@ -3,6 +3,7 @@ import type { IOrder } from '~/types'
 import { orderContentKey, uniqueOrdersByContent } from '~/utils/orderDedupe'
 import { loadOrderFilterKeywords, loadOrderFilterBotGroupId, orderMatchesRegionFilter, orderMatchesListenerFilter, filterOrdersByKeywords, parseBotGroupIds, formatBotGroupIds, buildOrderFilterApiParams, splitStoredFilterPresetIds, ORDERS_PAGE_LIMIT } from '~/utils/orderFilterKeywords'
 import { TAB_LIST_KEEP, MAX_ORDERS_IN_MEMORY, ORDERS_SCROLL_MAX, MAX_SEEN_ORDER_IDS } from '~/utils/memoryBudget'
+import { resolveWarmOwnerId } from '~/utils/activeAccount'
 
 export interface FetchOrdersParams {
     page?: number
@@ -132,7 +133,7 @@ export const useOrderStore = defineStore('order', () => {
     const scheduleWarmOrderPeers = (list: IOrder[]) => {
         if (!import.meta.client) return
         const authStore = useAuthStore()
-        const driverId = String(authStore.user?.userId || '')
+        const driverId = resolveWarmOwnerId(authStore.user?.userId)
         if (!driverId) return
 
         const ids = pickOrdersToWarm(list, driverId)
@@ -147,7 +148,7 @@ export const useOrderStore = defineStore('order', () => {
     const warmOrderPeerAsync = async (orderId: string): Promise<void> => {
         if (!import.meta.client) return
         const authStore = useAuthStore()
-        const driverId = String(authStore.user?.userId || '')
+        const driverId = resolveWarmOwnerId(authStore.user?.userId)
         if (!driverId) return
         const id = String(orderId)
         if (warmedOrderIds.has(id)) return
@@ -210,6 +211,7 @@ export const useOrderStore = defineStore('order', () => {
     /** Tab/filtr o'zgarganda ro'yxat va pagination tozalash */
     const resetListForFilterChange = () => {
         listFetchSeq += 1
+        listPage1Inflight = null
         if (syncLatestTimer) {
             clearTimeout(syncLatestTimer)
             syncLatestTimer = null
@@ -221,6 +223,7 @@ export const useOrderStore = defineStore('order', () => {
         ordersListScrollY.value = 0
         ordersListAnchorOrderId.value = null
         isLoadingMore.value = false
+        isLoading.value = true
         lastFullListFetchAt = 0
         if (import.meta.client) {
             window.scrollTo(0, 0)
@@ -712,15 +715,11 @@ export const useOrderStore = defineStore('order', () => {
     ) => {
         const isFreshLoad = !opts.append && (params.page ?? 1) <= 1
         if (isFreshLoad && listPage1Inflight) {
-            if (!opts.silent) {
-                isLoading.value = true
-                try {
-                    return await listPage1Inflight
-                } finally {
-                    isLoading.value = false
-                }
+            // Faqat bir xil filter uchun fon preload — hudud/tinglovchi o'zgarganda yangi so'rov
+            if (opts.silent && paramsMatchListFilter(params)) {
+                return listPage1Inflight
             }
-            return listPage1Inflight
+            listPage1Inflight = null
         }
         const job = runFetchOrders(params, opts)
         if (isFreshLoad) {

@@ -4,15 +4,25 @@ import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useOrderStore } from '~/stores/order.store'
 import { hasPanelShellAccess, resolveHomePath } from '~/utils/userRole'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
+import { normalizePath } from '~/utils/driverTabRoutes'
+import { preloadOrdersList } from '~/composables/orders/preloadOrdersList'
 
 /**
  * Admin layout — sessiya tekshiruvi, statistika va chat badge.
  */
 export function useAdminLayoutBoot() {
+  const route = useRoute()
   const chatStore = useChatStore()
   const authStore = useAuthStore()
   const dashboardStore = useAdminDashboardStore()
   const orderStore = useOrderStore()
+
+  const preloadOrdersOnTab = () => {
+    if (!import.meta.client) return
+    if (normalizePath(route.path) === '/driver/orders') {
+      preloadOrdersList(orderStore)
+    }
+  }
 
   watch(
     () => [authStore.sessionReady, authStore.user] as const,
@@ -49,6 +59,12 @@ export function useAdminLayoutBoot() {
     },
     { immediate: true },
   )
+
+  watch(() => route.path, preloadOrdersOnTab)
+
+  onMounted(() => {
+    preloadOrdersOnTab()
+  })
 
   onBeforeUnmount(() => {
     orderStore.stopRecentMinuteTicker()

@@ -10,6 +10,7 @@ import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
 import { useOrdersAddToBot } from './useOrdersAddToBot'
 import { useOrdersPreconnect } from './useOrdersPreconnect'
+import { preloadOrdersList } from './preloadOrdersList'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
@@ -18,6 +19,10 @@ export function useDriverOrdersPage() {
   const authStore = useAuthStore()
   const orderStore = useOrderStore()
   const chatStore = useChatStore()
+
+  if (import.meta.client) {
+    preloadOrdersList(orderStore)
+  }
 
   const role = computed(() => authStore.user?.role)
   const active = computed(() => authStore.tariffActive)

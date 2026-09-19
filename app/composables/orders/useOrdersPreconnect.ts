@@ -3,6 +3,7 @@ import type { IOrder } from '~/types'
 import type { useChatStore } from '~/stores/chat.store'
 import { useOrderStore } from '~/stores/order.store'
 import { useAuthStore } from '~/stores/auth.store'
+import { resolveWarmOwnerId } from '~/utils/activeAccount'
 
 const MAX_VISIBLE_WARM = 4
 const WARM_DEBOUNCE_MS = 350
@@ -31,7 +32,7 @@ export function useOrdersPreconnect(_options: {
 
   const warmTopVisible = () => {
     if (!import.meta.client) return
-    const driverId = String(authStore.user?.userId || '')
+    const driverId = resolveWarmOwnerId(authStore.user?.userId)
     if (!driverId) return
 
     for (const order of displayOrders.value.slice(0, MAX_VISIBLE_WARM)) {
