@@ -1,9 +1,11 @@
 import {
   findUserIdByToken,
   readActiveToken,
+  readActiveUserId,
   syncSelectedAccountToCookie,
   writeActiveSession,
 } from '~/utils/activeAccount'
+import { migrateLegacyOrderFilterToUser } from '~/utils/orderFilterKeywords'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 
 /**
@@ -34,10 +36,15 @@ export default defineNuxtPlugin({
         auth.token = selected.token
         auth.user = null
       } catch { /* */ }
+      const activeUid = readActiveUserId()
+      if (activeUid) migrateLegacyOrderFilterToUser(activeUid)
       return
     }
 
     const uid = findUserIdByToken(cookie.value)
     if (uid) writeActiveSession(uid, cookie.value)
+
+    const activeUid = readActiveUserId()
+    if (activeUid) migrateLegacyOrderFilterToUser(activeUid)
   },
 })

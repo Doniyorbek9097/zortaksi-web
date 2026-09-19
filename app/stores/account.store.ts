@@ -11,6 +11,7 @@ import {
   writeAuthCookie,
 } from '~/utils/activeAccount'
 import { normalizeUserRole, resolveHomePath } from '~/utils/userRole'
+import { clearLegacyOrderFilterGlobals } from '~/utils/orderFilterKeywords'
 import { AUTH_API_TIMEOUT_MS, getApiErrorMessage } from '~/utils/apiError'
 
 /**
@@ -342,6 +343,8 @@ export const useAccountStore = defineStore('account', () => {
       activeId.value = uid
       auth.sessionReady = true
       reconnectSocket()
+      // Eski global filtr boshqa hisobga o'tmasin (userbot buyurtmalari bo'sh chiqmasin)
+      clearLegacyOrderFilterGlobals()
 
       // Hard navigation — cookie brauzerga yozilgach toza yuklash (refresh flash yo'q)
       const dest = homeForUser(auth.user)

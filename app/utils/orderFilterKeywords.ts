@@ -1,5 +1,9 @@
-/** Buyurtmalar / E'lon — umumiy kalit so'z filtri (localStorage) */
+/**
+ * Buyurtmalar filtri — har bir hisob uchun alohida localStorage.
+ * Hisob almashtirganda boshqa userbot filtri qo'llanmasligi uchun scoped kalitlar.
+ */
 import { LIST_PAGE_SIZE } from '~/utils/memoryBudget'
+import { readActiveUserId } from '~/utils/activeAccount'
 
 export const ORDER_FILTER_STORAGE_KEY = 'zt_order_filter_keywords'
 export const ORDER_FILTER_BOT_GROUP_KEY = 'zt_order_filter_bot_group_id'
@@ -98,22 +102,74 @@ export function filterOrdersByKeywords<T extends { message?: { text?: string } |
   return orders.filter((o) => orderMatchesRegionFilter(o, raw))
 }
 
-export function loadOrderFilterKeywords(): string {
+/** Joriy hisob uchun localStorage kaliti */
+function scopedStorageKey(base: string, userId?: string | null): string {
+  const uid = String(userId || readActiveUserId() || '').trim()
+  return uid ? `${base}:${uid}` : base
+}
+
+function readScopedItem(base: string): string {
   if (!import.meta.client) return ''
   try {
-    return localStorage.getItem(ORDER_FILTER_STORAGE_KEY) || ''
+    const uid = readActiveUserId()
+    if (uid) {
+      const scoped = localStorage.getItem(`${base}:${uid}`)
+      if (scoped !== null) return scoped
+    }
+    return localStorage.getItem(base) || ''
   } catch {
     return ''
   }
 }
 
-export function saveOrderFilterKeywords(raw: string): void {
+function writeScopedItem(base: string, value: string | null): void {
   if (!import.meta.client) return
   try {
-    const clean = String(raw || '').trim()
-    if (clean) localStorage.setItem(ORDER_FILTER_STORAGE_KEY, clean)
-    else localStorage.removeItem(ORDER_FILTER_STORAGE_KEY)
+    const key = scopedStorageKey(base)
+    if (value) localStorage.setItem(key, value)
+    else localStorage.removeItem(key)
+    // Global (eski) kalit — boshqa hisobga o'tib ketmasin
+    localStorage.removeItem(base)
   } catch { /* private mode */ }
+}
+
+/** Eski global filtrlarni joriy hisobga ko'chirish (bir martalik) */
+export function migrateLegacyOrderFilterToUser(userId: string): void {
+  if (!import.meta.client || !userId) return
+  const uid = String(userId)
+  for (const base of [
+    ORDER_FILTER_STORAGE_KEY,
+    ORDER_FILTER_BOT_GROUP_KEY,
+    ORDER_FILTER_CONFIGURED_KEY,
+  ]) {
+    try {
+      const legacy = localStorage.getItem(base)
+      if (!legacy) continue
+      if (!localStorage.getItem(`${base}:${uid}`)) {
+        localStorage.setItem(`${base}:${uid}`, legacy)
+      }
+      localStorage.removeItem(base)
+    } catch { /* */ }
+  }
+}
+
+/** Hisob almashtirishda global qoldiqlarni tozalash */
+export function clearLegacyOrderFilterGlobals(): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.removeItem(ORDER_FILTER_STORAGE_KEY)
+    localStorage.removeItem(ORDER_FILTER_BOT_GROUP_KEY)
+    localStorage.removeItem(ORDER_FILTER_CONFIGURED_KEY)
+  } catch { /* */ }
+}
+
+export function loadOrderFilterKeywords(): string {
+  return readScopedItem(ORDER_FILTER_STORAGE_KEY)
+}
+
+export function saveOrderFilterKeywords(raw: string): void {
+  const clean = String(raw || '').trim()
+  writeScopedItem(ORDER_FILTER_STORAGE_KEY, clean || null)
 }
 
 export function clearOrderFilterKeywords(): void {
@@ -212,12 +268,7 @@ export function loadActiveListenerUserIds(): string[] {
 }
 
 export function loadOrderFilterBotGroupId(): string {
-  if (!import.meta.client) return ''
-  try {
-    return localStorage.getItem(ORDER_FILTER_BOT_GROUP_KEY) || ''
-  } catch {
-    return ''
-  }
+  return readScopedItem(ORDER_FILTER_BOT_GROUP_KEY)
 }
 
 export function loadOrderFilterBotGroupIds(): string[] {
@@ -225,37 +276,30 @@ export function loadOrderFilterBotGroupIds(): string[] {
 }
 
 export function saveOrderFilterBotGroupId(id: string): void {
-  if (!import.meta.client) return
-  try {
-    const clean = formatBotGroupIds(parseBotGroupIds(id))
-    if (clean) localStorage.setItem(ORDER_FILTER_BOT_GROUP_KEY, clean)
-    else localStorage.removeItem(ORDER_FILTER_BOT_GROUP_KEY)
-  } catch { /* private mode */ }
+  const clean = formatBotGroupIds(parseBotGroupIds(id))
+  writeScopedItem(ORDER_FILTER_BOT_GROUP_KEY, clean || null)
 }
 
 export function clearOrderFilterBotGroupId(): void {
   saveOrderFilterBotGroupId('')
 }
 
-/** Hudud filtri — to'liq tozalash */
+/** Joriy hisob uchun filtrni to'liq tozalash */
 export function clearAllOrderFilterStorage(): void {
   clearOrderFilterKeywords()
   clearOrderFilterBotGroupId()
+  writeScopedItem(ORDER_FILTER_CONFIGURED_KEY, null)
 }
 
 export function markOrderFilterConfigured(): void {
-  if (!import.meta.client) return
-  try {
-    localStorage.setItem(ORDER_FILTER_CONFIGURED_KEY, '1')
-  } catch { /* private mode */ }
+  writeScopedItem(ORDER_FILTER_CONFIGURED_KEY, '1')
 }
 
 /** Foydalanuvchi kamida bir marta yo'nalish tanlaganmi */
 export function isOrderFilterConfigured(): boolean {
   if (!import.meta.client) return true
   try {
-    if (localStorage.getItem(ORDER_FILTER_CONFIGURED_KEY) === '1') return true
-    // Eski foydalanuvchilar — saqlangan filtr bor
+    if (readScopedItem(ORDER_FILTER_CONFIGURED_KEY) === '1') return true
     if (loadOrderFilterKeywords().trim() || loadOrderFilterBotGroupId().trim()) {
       markOrderFilterConfigured()
       return true
