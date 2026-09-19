@@ -259,7 +259,10 @@ export function useChatPageMeta(opts: {
   const canSendTelegram = computed(
     () =>
       hasRealChatId.value &&
-      (isInAppChat.value || hasPeerLink.value || conn.value === 'ready'),
+      (isInAppChat.value ||
+        hasPeerLink.value ||
+        conn.value === 'ready' ||
+        (isAdmin.value && conn.value === 'proxy-required')),
   )
 
   const hideBottomOnConnectFail = computed(

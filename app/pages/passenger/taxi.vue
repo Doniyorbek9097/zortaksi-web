@@ -192,10 +192,12 @@
 <script setup lang="ts">
 import { closeTelegramMiniApp, markTelegramCloseOnBack } from '~/utils/telegramMiniAppBack'
 import { usePassengerTaxi } from '~/composables/passenger/usePassengerTaxi'
+import { usePassengerTaxiFocus } from '~/composables/passenger/usePassengerTaxiFocus'
 
 definePageMeta({ layout: false })
 
 const {
+  bootstrapped,
   step,
   routeText,
   phoneInput,
@@ -222,6 +224,13 @@ const {
 const routeTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const phoneInputRef = ref<HTMLInputElement | null>(null)
 
+usePassengerTaxiFocus({
+  step,
+  bootstrapped,
+  routeTextareaRef,
+  phoneInputRef,
+})
+
 const stepIndex = computed(() => {
   if (step.value === 'route') return 0
   if (step.value === 'phone') return 1
@@ -242,43 +251,6 @@ const subtitle = computed(() => {
   return ''
 })
 
-function focusField(el: HTMLTextAreaElement | HTMLInputElement | null) {
-  if (!el) return
-  try {
-    el.focus({ preventScroll: true })
-  } catch {
-    el.focus()
-  }
-}
-
-function focusRouteTextarea() {
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      focusField(routeTextareaRef.value)
-    })
-  })
-}
-
-function focusPhoneInput() {
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      focusField(phoneInputRef.value)
-    })
-  })
-}
-
-function scheduleRouteFocus() {
-  focusRouteTextarea()
-  for (const delay of [120, 320, 600]) {
-    setTimeout(focusRouteTextarea, delay)
-  }
-}
-
-watch(step, (value) => {
-  if (value === 'route') focusRouteTextarea()
-  if (value === 'phone') focusPhoneInput()
-})
-
 function onRouteInput(event: Event) {
   setRouteText((event.target as HTMLTextAreaElement).value)
 }
@@ -297,20 +269,6 @@ function handleBack() {
 
 onMounted(() => {
   markTelegramCloseOnBack()
-  try {
-    const tg = (window as Window & { Telegram?: { WebApp?: { expand?: () => void } } }).Telegram?.WebApp
-    tg?.expand?.()
-  } catch {
-    /* */
-  }
-  if (step.value === 'route') {
-    scheduleRouteFocus()
-  }
-  window.addEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
 })
 </script>
 

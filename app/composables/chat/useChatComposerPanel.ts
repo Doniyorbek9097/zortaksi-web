@@ -91,7 +91,7 @@ export function useChatComposerPanel(opts: {
         return DRIVER_ORDER_CONNECT_FAIL
       }
       if (conn.value === 'proxy-required') {
-        return 'Ulanmoqda...'
+        return 'Xabar yozing...'
       }
       if (conn.value === 'connecting' || conn.value === 'idle') {
         return 'Ulanmoqda...'

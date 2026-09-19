@@ -127,6 +127,10 @@ export function createMessagingActions(
                     const errText = getSendErrorText(res)
                     messages.value[idx] = markTempFailed(temp, errText)
                 }
+                const failed = res?.data as { proxyRequired?: boolean; error?: string } | undefined
+                if (failed?.proxyRequired) {
+                    onProxyRequired?.(chatId, String(failed.error || ''))
+                }
             }
             return res
         } catch (error: any) {

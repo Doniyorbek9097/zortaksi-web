@@ -326,7 +326,7 @@
     />
 
     <ChatComposer
-      v-if="showComposer && !hideBottomOnConnectFail && (!isAdmin || conn !== 'proxy-required') && !selectionMode"
+      v-if="showComposer && !hideBottomOnConnectFail && !selectionMode"
       v-model="draft"
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
