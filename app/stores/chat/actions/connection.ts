@@ -3,6 +3,7 @@ import type { IChat } from '~/types'
 import type { ChatStoreRefs, ConnStatus } from '../types'
 import { CHAT_PROXY_CONNECT_ENABLED } from '~/utils/chatProxy'
 import { useAuthStore } from '~/stores/auth.store'
+import { isAdminUser } from '~/utils/userRole'
 
 const CONNECT_TIMEOUT_MS = 45000
 /** Order chat — tez javob (haydovchi va admin bir xil) */
@@ -271,7 +272,9 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const chat = findChatById(chatId)
         let next = (data.status || 'unreachable') as ConnStatus
         let reason = data.reason ?? ''
-        if (!CHAT_PROXY_CONNECT_ENABLED && next === 'proxy-required') {
+        const authStore = useAuthStore()
+        const proxyAllowed = CHAT_PROXY_CONNECT_ENABLED && isAdminUser(authStore.user)
+        if (next === 'proxy-required' && !proxyAllowed) {
             next = 'unreachable'
             reason = DRIVER_ORDER_CONNECT_FAIL
         }
@@ -303,9 +306,12 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         chatId: string,
         opts: { silent?: boolean; viaProxy?: boolean } = {},
     ) => {
-        if (opts.viaProxy && !CHAT_PROXY_CONNECT_ENABLED) {
+        const authStore = useAuthStore()
+        const proxyAllowed = CHAT_PROXY_CONNECT_ENABLED && isAdminUser(authStore.user)
+
+        if (opts.viaProxy && !proxyAllowed) {
             connectionStatus.value = 'unreachable'
-            connectionReason.value = "Proksi orqali ulanish vaqtincha o'chirilgan."
+            connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
             return {
                 success: false,
                 message: connectionReason.value,
@@ -314,7 +320,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const chat = findChatById(chatId) ?? currentChat.value
 
-        const authStore = useAuthStore()
         const ownerUid = String(authStore.user?.userId || chat?.ownerId || '')
 
         // Peer link bor — proxy emas yoki allaqachon tinglovchi orqali
@@ -530,7 +535,8 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
         if (!isRelevant) return
-        if (!CHAT_PROXY_CONNECT_ENABLED) {
+        const authStore = useAuthStore()
+        if (!CHAT_PROXY_CONNECT_ENABLED || !isAdminUser(authStore.user)) {
             connectionStatus.value = 'unreachable'
             connectionReason.value = DRIVER_ORDER_CONNECT_FAIL
             return

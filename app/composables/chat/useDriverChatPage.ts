@@ -209,8 +209,9 @@ export function useDriverChatPage() {
     replyTarget.value = null
   })
 
-  /** O'z hisob ishlamaganda — tinglovchi userbot orqali proksi ulanish */
+  /** Admin — tinglovchi userbot orqali proksi ulanish */
   const confirmProxyConnect = async () => {
+    if (!isAdmin.value) return
     const id = meta.resolveActiveChatId()
     if (!id || id === 'open' || proxyConnecting.value) return
     proxyConnecting.value = true

@@ -254,7 +254,13 @@
         </div>
       </div>
 
-    <div v-else-if="needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2">
+    <div v-else-if="isAdmin && needsTelegramConnect && conn === 'proxy-required'" class="mx-auto w-full max-w-2xl px-3 pb-2 space-y-2">
+      <div
+        v-if="connReason"
+        class="py-2.5 px-3 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-300 text-[12px] font-bold text-center"
+      >
+        {{ connReason }}
+      </div>
       <button
         type="button"
         class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-sky-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
@@ -311,7 +317,7 @@
     />
 
     <ChatComposer
-      v-if="showComposer && !hideBottomOnConnectFail && conn !== 'proxy-required' && !selectionMode"
+      v-if="showComposer && !hideBottomOnConnectFail && (!isAdmin || conn !== 'proxy-required') && !selectionMode"
       v-model="draft"
       :disabled="composerDisabled"
       :placeholder="composerPlaceholder"
