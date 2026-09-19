@@ -4,7 +4,6 @@ import { useAdminDashboardStore } from '~/stores/adminDashboard.store'
 import { useOrderStore } from '~/stores/order.store'
 import { hasPanelShellAccess, resolveHomePath } from '~/utils/userRole'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
-import { preloadOrdersList } from '~/composables/orders/preloadOrdersList'
 
 /**
  * Admin layout — sessiya tekshiruvi, statistika va chat badge.
@@ -33,7 +32,6 @@ export function useAdminLayoutBoot() {
     if (!chatStore.chats.length) {
       void chatStore.fetchChats({ page: 1, limit: TAB_LIST_KEEP }, { silent: true })
     }
-    preloadOrdersList(orderStore)
   }
 
   watch(
@@ -48,7 +46,6 @@ export function useAdminLayoutBoot() {
       void dashboardStore.fetchStats({ background: dashboardStore.isReady })
       orderStore.startRecentMinuteTicker()
       void refreshBadges()
-      preloadOrdersList(orderStore)
     },
     { immediate: true },
   )
