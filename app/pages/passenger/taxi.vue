@@ -37,35 +37,12 @@
           </p>
         </div>
 
-        <div v-if="step !== 'unavailable' && step !== 'done'" class="flex items-start justify-center gap-1.5">
-          <template v-for="(label, i) in stepLabels" :key="label">
-            <button
-              type="button"
-              class="flex flex-col items-center gap-1 min-w-[52px] rounded-xl transition-all"
-              :class="canGoBackToStep(i) ? 'cursor-pointer active:scale-95' : 'cursor-default'"
-              :title="canGoBackToStep(i) ? `${label} — orqaga` : label"
-              @click="goToStep(i)"
-            >
-              <span
-                class="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-black transition-all"
-                :class="stepDotClass(i)"
-              >
-                {{ i + 1 }}
-              </span>
-              <span
-                class="text-[9px] font-bold uppercase tracking-wide leading-none"
-                :class="i <= stepIndex ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'"
-              >
-                {{ label }}
-              </span>
-            </button>
-            <span
-              v-if="i < stepLabels.length - 1"
-              class="w-5 h-0.5 rounded-full mt-3.5 shrink-0"
-              :class="i < stepIndex ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'"
-            />
-          </template>
-        </div>
+        <PassengerTaxiStepper
+          v-if="step !== 'unavailable' && step !== 'done'"
+          :current="stepIndex"
+          :can-go-back="canGoBackToStep"
+          @go="goToStep"
+        />
       </div>
 
       <div
@@ -250,25 +227,12 @@ const {
   startNewOrder,
 } = usePassengerTaxi()
 
-const stepLabels = ['Manzil', 'Tel', 'Tayyor']
-
 const stepIndex = computed(() => {
   if (step.value === 'route') return 0
   if (step.value === 'phone') return 1
   if (step.value === 'active') return 2
   return 2
 })
-
-function stepDotClass(i: number) {
-  const active = i <= stepIndex.value
-  const clickable = canGoBackToStep(i)
-  if (clickable) {
-    return 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 ring-2 ring-amber-400/50'
-  }
-  return active
-    ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/30'
-    : 'bg-slate-100 dark:bg-slate-800 text-slate-400'
-}
 
 const headline = computed(() => {
   if (step.value === 'active') return 'Buyurtma qabul qilindi'

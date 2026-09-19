@@ -19,6 +19,7 @@ import { clearTelegramStartParamStorage } from '~/utils/telegramStartParam'
 import { resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { isAdminUser } from '~/utils/userRole'
 import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
+import { useOrderStore } from '~/stores/order.store'
 
 type AuthStore = ReturnType<typeof useAuthStore>
 type ChatStore = ReturnType<typeof useChatStore>
@@ -272,6 +273,12 @@ export function useChatPageLoader(opts: {
     preconnectChatOpen(newId, merged)
     void chatStore.fetchMessages(newId)
     clearTelegramStartParamStorage()
+
+    const openedOrderId = String(merged.orderId || '').trim()
+    if (openedOrderId) {
+      void useOrderStore().markInterest(openedOrderId)
+    }
+
     return true
   }
 
