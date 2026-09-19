@@ -33,9 +33,7 @@ export function useAdminLayoutBoot() {
     if (!chatStore.chats.length) {
       void chatStore.fetchChats({ page: 1, limit: TAB_LIST_KEEP }, { silent: true })
     }
-    if (!orderStore.orders.length) {
-      preloadOrdersList(orderStore)
-    }
+    preloadOrdersList(orderStore)
   }
 
   watch(

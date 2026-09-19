@@ -173,10 +173,15 @@ export const useOrderStore = defineStore('order', () => {
         return true
     }
 
-    /** Joriy filter uchun page-1 yuklanganmi (buyurtma bo'lmasa ham) */
+    /**
+     * Joriy filter uchun page-1 yuklanganmi.
+     * Bo'sh ro'yxat faqat yaqinda yuklangan bo'lsa tayyor — eski preload bo'sh keshi bloklamasin.
+     */
     const isOrdersListReadyForParams = (params: FetchOrdersParams = {}) => {
         if (!lastFullListFetchAt) return false
-        return paramsMatchListFilter(params)
+        if (!paramsMatchListFilter(params)) return false
+        if (orders.value.length > 0) return true
+        return Date.now() - lastFullListFetchAt < ORDERS_LIST_FRESH_MS
     }
 
     /** Preload yoki sahifa — to'liq ro'yxat yaqinda yuklanganmi */

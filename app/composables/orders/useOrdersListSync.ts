@@ -208,14 +208,18 @@ export function useOrdersListSync(options: {
     if (!document.hidden) syncIfVisible()
   }
 
-  /** Chatlar kabi: kesh bo'lsa darhol ko'rsatish, fon da silent yangilash */
+  /**
+   * Ro'yxatni yuklash — kesh bo'lsa darhol ko'rsatish, fon da yangilash.
+   * Bo'sh/eski kesh — driver kabi to'liq fetch (admin preload noto'g'ri bo'sh qolmasin).
+   */
   const bootOrdersList = async (fromTabSwitch = false) => {
     hydrateFilter()
     const q = queryParams()
     const pageParams = { page: 1, ...q }
     const hasCached = orderStore.isOrdersListReadyForParams(pageParams)
+    const hasRows = orderStore.orders.length > 0
 
-    if (hasCached) {
+    if (hasCached && hasRows) {
       void orderStore.fetchOrders(pageParams, { silent: true })
       await nextTick()
       restoreListScroll(fromTabSwitch)

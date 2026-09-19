@@ -3,6 +3,7 @@ import { useOrderStore } from '~/stores/order.store'
 import { useChatStore } from '~/stores/chat.store'
 import { hasPanelShellAccess } from '~/utils/userRole'
 import { TAB_LIST_KEEP } from '~/utils/memoryBudget'
+import { preloadOrdersList } from '~/composables/orders/preloadOrdersList'
 
 /**
  * Haydovchi layout — badge yangilash, ticker va panel redirect.
@@ -20,11 +21,15 @@ export function useDriverLayoutBoot() {
     if (!chatStore.chats.length) {
       void chatStore.fetchChats({ page: 1, limit: TAB_LIST_KEEP }, { silent: true })
     }
+    if (!orderStore.orders.length) {
+      preloadOrdersList(orderStore)
+    }
   }
 
   onMounted(() => {
     orderStore.startRecentMinuteTicker()
     void refreshBadges()
+    preloadOrdersList(orderStore)
     if (import.meta.client && sessionStorage.getItem('zt-show-region-groups')) {
       sessionStorage.removeItem('zt-show-region-groups')
       void showAfterPayment()

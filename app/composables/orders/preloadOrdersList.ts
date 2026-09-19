@@ -8,7 +8,8 @@ import { buildOrdersListBootstrapParams } from '~/utils/orderFilterKeywords'
 export function preloadOrdersList(orderStore: ReturnType<typeof useOrderStore>) {
   if (!import.meta.client) return
   const params = buildOrdersListBootstrapParams()
-  if (orderStore.isOrdersListFresh(params)) return
+  // Bo'sh kesh — sahifada qayta urinish kerak (noto'g'ri filtr / iltimos)
+  if (orderStore.isOrdersListFresh(params) && orderStore.orders.length > 0) return
   orderStore.applyListFilter(params)
   void orderStore.fetchOrders({ page: 1, ...params }, { silent: true })
 }
