@@ -17,7 +17,6 @@ import {
 } from '~/utils/mediaCacheReady'
 import { MAX_MEDIA_BLOB_CACHE } from '~/utils/memoryBudget'
 import { isFlutterWebView } from '~/utils/appEmbed'
-import { agentDebugLog } from '~/utils/agentDebugLog'
 import { api } from '~/config/axios'
 import { getAuthCookieOptions } from '~/utils/authCookie'
 import { resolveAuthToken } from '~/utils/activeAccount'
@@ -279,20 +278,7 @@ async function fetchVoiceArrayBuffer(
         Pragma: 'no-cache',
       },
     })
-  } catch (err: any) {
-    const status = err?.response?.status
-    agentDebugLog({
-      hypothesisId: 'B',
-      location: 'useVoiceMedia.ts:fetchVoiceArrayBuffer',
-      message: 'voice_http_error',
-      data: {
-        messageId,
-        status,
-        hasToken: !!token,
-        mediaUrl: url,
-        err: String(err?.response?.data || err?.message || '').slice(0, 120),
-      },
-    })
+  } catch {
     throw new Error('Ovoz yuklanmadi')
   }
 
@@ -342,20 +328,7 @@ async function fetchPhotoArrayBuffer(
         Pragma: 'no-cache',
       },
     })
-  } catch (err: any) {
-    const status = err?.response?.status
-    agentDebugLog({
-      hypothesisId: 'P',
-      location: 'useVoiceMedia.ts:fetchPhotoArrayBuffer',
-      message: 'photo_http_error',
-      data: {
-        messageId,
-        status,
-        hasToken: !!token,
-        mediaUrl: url,
-        err: String(err?.response?.data || err?.message || '').slice(0, 120),
-      },
-    })
+  } catch {
     throw new Error('Rasm yuklanmadi')
   }
 
@@ -410,16 +383,7 @@ async function resolvePhotoDisplayUrl(
         void idbPutMedia(id, blob, 'photo', 'remote')
       }
       return blobUrl
-    } catch (blobErr) {
-      agentDebugLog({
-        hypothesisId: 'P',
-        location: 'useVoiceMedia.ts:resolvePhotoDisplayUrl',
-        message: 'photo_blob_fail_try_stream',
-        data: {
-          messageId: id,
-          err: String((blobErr as Error)?.message || blobErr),
-        },
-      })
+    } catch {
       const link = await fetchMediaOpenLink(id, {
         urlBuilder,
         disposition: 'inline',
@@ -473,16 +437,7 @@ async function resolveVoiceAudioUrl(
         void idbPutMedia(id, blob, 'voice', 'remote')
       }
       return blobUrl
-    } catch (blobErr) {
-      agentDebugLog({
-        hypothesisId: 'V',
-        location: 'useVoiceMedia.ts:resolveVoiceAudioUrl',
-        message: 'voice_blob_fail_try_stream',
-        data: {
-          messageId: id,
-          err: String((blobErr as Error)?.message || blobErr),
-        },
-      })
+    } catch {
       const link = await fetchMediaOpenLink(id, {
         urlBuilder,
         disposition: 'inline',
@@ -523,25 +478,7 @@ async function fetchMediaBlobFromNetwork(
         Pragma: 'no-cache',
       },
     })
-  } catch (err: any) {
-    const status = err?.response?.status
-    const errBody =
-      err?.response?.data instanceof Blob
-        ? await err.response.data.text().catch(() => '')
-        : String(err?.response?.data || err?.message || '')
-    agentDebugLog({
-      hypothesisId: 'B',
-      location: 'useVoiceMedia.ts:fetchMediaBlobFromNetwork',
-      message: 'media_http_error',
-      data: {
-        messageId,
-        kind,
-        status,
-        hasToken: !!token,
-        mediaUrl: url,
-        errBody: String(errBody).slice(0, 120),
-      },
-    })
+  } catch {
     throw new Error('Media yuklanmadi')
   }
 
@@ -679,10 +616,12 @@ async function blobToObjectUrl(
   return url
 }
 
+/** Eski nom — useChatMedia bilan bir xil */
 export function useVoiceMedia() {
   return useChatMedia()
 }
 
+/** Chat media composable — ovoz, rasm, hujjat URL lari */
 export function useChatMedia() {
   let injectedUrlBuilder: ChatMediaUrlBuilder | null = null
   try {

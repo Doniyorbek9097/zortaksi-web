@@ -1,3 +1,6 @@
+/**
+ * Chat xabarlar ro'yxati yordamchilari — saralash, dublikat, temp → real.
+ */
 import type { IChatMessage } from '~/types'
 
 /** Xabarlarni sana bo'yicha o'sish tartibida saralaydi */

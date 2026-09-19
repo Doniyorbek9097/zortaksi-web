@@ -327,7 +327,10 @@
 </template>
 
 <script setup lang="ts">
-import { agentDebugLog } from '~/utils/agentDebugLog'
+/**
+ * Chat xabar bubble — matn, ovoz, rasm, joylashuv va hujjatlar.
+ * Ovoz/rasm: useChatMedia orqali yuklanadi (kesh → server).
+ */
 import { claimVoicePlay, releaseVoicePlay } from '~/composables/useExclusiveVoicePlay'
 import {
   getChatFileTypeIcon,
@@ -550,7 +553,6 @@ const {
   peekPhotoUrl,
   peekUrl,
   invalidateMedia,
-  mediaCacheEpoch,
 } = useChatMedia()
 
 const audioEl = ref<HTMLAudioElement | null>(null)
@@ -604,21 +606,6 @@ const isRemoteMedia = (path?: string | null) => {
   return !p || p === 'remote'
 }
 
-// #region agent log
-if (import.meta.client && isMediaBubble.value) {
-  agentDebugLog({
-    hypothesisId: 'D',
-    location: 'MessageBubble.vue:setup',
-    message: 'media_bubble_mounted',
-    data: {
-      messageId: props.messageId || null,
-      type: props.type,
-      mediaPath: props.mediaPath || null,
-    },
-  })
-}
-// #endregion
-
 const applySrc = (url: string) => {
   src.value = url || ''
 }
@@ -648,17 +635,6 @@ const ensurePhotoSrc = async (opts: { force?: boolean } = {}) => {
     if (url) applySrc(url)
   } catch (e) {
     console.error('photo load', e)
-    agentDebugLog({
-      hypothesisId: 'P',
-      location: 'MessageBubble.vue:ensurePhotoSrc',
-      message: 'photo_src_fail',
-      data: {
-        messageId: props.messageId,
-        mediaPath: props.mediaPath || null,
-        force: !!opts.force,
-        err: String((e as any)?.message || e),
-      },
-    })
     if (opts.force && props.messageId) invalidateMedia(props.messageId)
     applySrc('')
   } finally {
@@ -694,17 +670,6 @@ const ensureVoiceSrc = async (opts: { force?: boolean } = {}) => {
   } catch (e) {
     console.error('voice load', e)
     voiceError.value = 'Yuklanmadi'
-    agentDebugLog({
-      hypothesisId: 'V',
-      location: 'MessageBubble.vue:ensureVoiceSrc',
-      message: 'voice_src_fail',
-      data: {
-        messageId: props.messageId,
-        mediaPath: props.mediaPath || null,
-        force: !!opts.force,
-        err: String((e as Error)?.message || e),
-      },
-    })
     if (opts.force && props.messageId) invalidateMedia(props.messageId)
     applySrc('')
   } finally {
@@ -824,19 +789,6 @@ const toggle = async () => {
     } catch (e2) {
       console.error('play retry', e2)
       voiceError.value = 'Ijro bo\'lmadi'
-      // #region agent log
-      agentDebugLog({
-        hypothesisId: 'E',
-        location: 'MessageBubble.vue:toggle',
-        message: 'voice_play_fail',
-        data: {
-          messageId: props.messageId,
-          mediaPath: props.mediaPath || null,
-          hasSrc: !!src.value,
-          err: String((e2 as any)?.message || e2),
-        },
-      })
-      // #endregion
       stopLocalVoice()
     }
   }
@@ -964,13 +916,6 @@ watch(
     }
   },
 )
-
-/** Sessiya kesh tozalanganda ovoz/rasm URL saqlanadi */
-watch(mediaCacheEpoch, () => {
-  if (!isMediaBubble.value || props.type === 'voice' || props.type === 'photo') return
-  stopLocalVoice()
-  applySrc('')
-})
 
 onBeforeUnmount(() => {
   stopLocalVoice()

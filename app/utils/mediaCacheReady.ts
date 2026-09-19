@@ -1,3 +1,7 @@
+/**
+ * Media kesh versiyasi — schema o'zgarganda IDB va Workbox tozalanadi.
+ * Auth token va hisoblar localStorage da qoladi.
+ */
 import { idbClearMedia, idbPurgeInvalid } from '~/utils/mediaIdb'
 import { isValidMediaBlob } from '~/utils/mediaBlobValidate'
 

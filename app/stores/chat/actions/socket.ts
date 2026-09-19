@@ -1,3 +1,7 @@
+/**
+ * Chat socket handlerlari — yangi xabar, yangilanish, o'qildi.
+ * Chiquvchi temp xabarlar real ID bilan birlashtiriladi.
+ */
 import type { IChat, IChatMessage } from '~/types'
 import { invalidateChatMediaCaches, useChatMedia } from '~/composables/useVoiceMedia'
 import { inferTextFormat } from '~/utils/telegramHtml'
