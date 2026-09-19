@@ -239,8 +239,8 @@ export function usePassengerTaxi() {
         contactHidden?: boolean
       }>(`/passenger/orders/${id}/driver-found`, { method: 'POST' })
       doneMessage.value = data?.alreadyBooked
-        ? 'Buyurtma allaqachon band qilingan. Haydovchi tez orada siz bilan bog\'lanadi.'
-        : 'Shofyor topildi! Kontakt yashirildi. Tez orada siz bilan bog\'lanishadi.'
+        ? 'Mijoz haydovchi topdi. Bog\'lanish yopildi.'
+        : 'Mijoz haydovchi topdi. Bog\'lanish yopildi.'
       activeOrder.value = null
       step.value = 'done'
       hapticSuccess()
@@ -283,6 +283,9 @@ export function usePassengerTaxi() {
     step.value = 'route'
     clearCache()
     void syncActiveOrderSilent()
+    if (import.meta.client) {
+      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+    }
   }
 
   onMounted(() => {

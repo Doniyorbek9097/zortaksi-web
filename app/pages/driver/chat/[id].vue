@@ -84,6 +84,15 @@
       <div class="mx-auto w-full min-w-0 max-w-2xl px-3 py-4 space-y-2 min-h-full flex flex-col">
         <!-- Order e'lon / haydovchi konteksti -->
         <div
+          v-if="passengerDriverFound"
+          class="rounded-2xl px-3.5 py-3 border bg-amber-50 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-800/50"
+        >
+          <p class="text-[12px] font-black text-amber-800 dark:text-amber-300 text-center">
+            Mijoz haydovchi topdi — telefon va xabar yozish yopildi
+          </p>
+        </div>
+
+        <div
           v-if="showOrderBanner"
           class="rounded-2xl px-3.5 py-3 border"
           :class="isDirect
@@ -408,6 +417,7 @@ const {
   proxyConnecting,
   confirmProxyConnect,
   hideBottomOnConnectFail,
+  passengerDriverFound,
   callPhone,
   callTelHref,
   selectedCount,

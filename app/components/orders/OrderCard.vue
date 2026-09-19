@@ -117,6 +117,14 @@
 
       <!-- Amallar — swipe tugmalarga tegmasin (@pointerdown.stop) -->
       <div v-else class="mt-4 space-y-2" data-no-swipe @pointerdown.stop>
+        <div
+          v-if="passengerDriverFound"
+          class="w-full min-h-[46px] inline-flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-[12px] font-black text-amber-800 bg-amber-50 border border-amber-200"
+        >
+          <font-awesome-icon icon="fa-solid fa-circle-check" class="text-sm shrink-0" />
+          <span>Mijoz haydovchi topdi</span>
+        </div>
+
         <!-- Xabar / Telefon — band bo'lsa faqat band qilgan yoki admin uchun -->
         <div
           v-if="showContactActions"
@@ -300,8 +308,14 @@ const canUnbook = computed(() => {
   if (!isBooked.value) return false
   return isAdmin.value || isBookedByMe.value
 })
-/** Band bo'lganda boshqa haydovchilarga Xabar/Telefon yopiladi */
-const showContactActions = computed(() => !isBooked.value || isBookedByMe.value || isAdmin.value)
+const passengerDriverFound = computed(() => !!props.order.botContactHidden)
+
+/** Band / mijoz haydovchi topdi — kontakt tugmalari yashirin */
+const showContactActions = computed(
+  () =>
+    !passengerDriverFound.value &&
+    (!isBooked.value || isBookedByMe.value || isAdmin.value),
+)
 
 const bookedByName = computed(() => {
   const u = props.order.bookedByUser

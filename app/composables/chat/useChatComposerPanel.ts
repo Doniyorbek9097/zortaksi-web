@@ -28,6 +28,7 @@ export function useChatComposerPanel(opts: {
   conn: ComputedRef<string>
   connReason: ComputedRef<string>
   callPhone: ComputedRef<string>
+  passengerDriverFound: ComputedRef<boolean>
 }) {
   const {
     chatStore,
@@ -51,6 +52,7 @@ export function useChatComposerPanel(opts: {
     conn,
     connReason,
     callPhone,
+    passengerDriverFound,
   } = opts
 
   const composerBusy = computed(
@@ -59,6 +61,7 @@ export function useChatComposerPanel(opts: {
 
   const showComposer = computed(
     () =>
+      !passengerDriverFound.value &&
       !openFailed.value &&
       (isOpening.value ||
         composerBusy.value ||
@@ -73,6 +76,7 @@ export function useChatComposerPanel(opts: {
 
   const composerDisabled = computed(
     () =>
+      passengerDriverFound.value ||
       !hasRealChatId.value ||
       composerBusy.value ||
       (!isInAppChat.value && !canSendTelegram.value),

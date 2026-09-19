@@ -1,38 +1,38 @@
 <template>
   <div class="w-full">
     <div
-      class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm"
+      class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-white border border-slate-200 shadow-sm"
       role="tablist"
     >
       <button
         v-for="(item, i) in steps"
         :key="item.key"
         type="button"
-        class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-xs font-bold uppercase tracking-wide transition-all"
+        class="flex flex-col items-center gap-0.5 py-1.5 px-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all"
         :class="cellClass(i)"
         :disabled="!canGoBack(i)"
         :title="canGoBack(i) ? `${item.label} — orqaga` : item.label"
         @click="onClick(i)"
       >
         <span
-          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          class="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
           :class="iconClass(i)"
         >
           <font-awesome-icon
             v-if="isDone(i)"
             icon="fa-solid fa-check"
-            class="text-sm"
+            class="text-[10px]"
           />
           <font-awesome-icon
             v-else
             :icon="item.icon"
-            class="text-sm"
+            class="text-[10px]"
           />
         </span>
         <span class="truncate w-full text-center leading-none">{{ item.label }}</span>
       </button>
     </div>
-    <div class="mt-2 h-1 rounded-full bg-slate-200 overflow-hidden">
+    <div class="mt-1.5 h-0.5 rounded-full bg-slate-200 overflow-hidden">
       <div
         class="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-400"
         :style="{ width: progressWidth }"

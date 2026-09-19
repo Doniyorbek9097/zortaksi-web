@@ -80,6 +80,8 @@ export interface IOrder {
     botVoiceMediaPath?: string | null;
     /** Server: ovozli buyurtma */
     hasVoice?: boolean;
+    /** Bot buyurtma — yo'lovchi «Shofyor topdim» bosganda */
+    botContactHidden?: boolean;
     createdAt: string | Date;
     updatedAt: string | Date;
 }

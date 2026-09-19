@@ -16,6 +16,7 @@ import {
   revealOrderTextPhones,
 } from '~/utils/phone'
 import { hasTelegramPeerLink } from '~/stores/chat/actions/connection'
+import { useOrderStore } from '~/stores/order.store'
 import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
 
 type ChatStore = ReturnType<typeof useChatStore>
@@ -33,6 +34,7 @@ export function useChatPageMeta(opts: {
   conn: ComputedRef<string>
 }) {
   const { route, chatStore, chatId, isAdmin, openFailed, isOpening, conn } = opts
+  const orderStore = useOrderStore()
 
   /** Haqiqiy chat id — route, currentChat, chats ro'yxati */
   const resolveActiveChatId = (): string => {
@@ -204,7 +206,20 @@ export function useChatPageMeta(opts: {
     return revealOrderTextPhones(raw, String(route.query.phone || ''))
   })
 
+  const linkedOrderId = computed(() =>
+    String(chatStore.currentChat?.orderId || route.query.orderId || '').trim(),
+  )
+
+  const linkedOrder = computed(() => {
+    const id = linkedOrderId.value
+    if (!id) return null
+    return orderStore.orders.find((o) => String(o._id) === id) ?? null
+  })
+
+  const passengerDriverFound = computed(() => !!linkedOrder.value?.botContactHidden)
+
   const callPhone = computed(() => {
+    if (passengerDriverFound.value) return ''
     if (isSupport.value && !isAdmin.value) return ''
     const qPhone = String(route.query.phone || '').trim()
     if (qPhone.replace(/\D/g, '').length >= 7) {
@@ -291,5 +306,6 @@ export function useChatPageMeta(opts: {
     canSendTelegram,
     hideBottomOnConnectFail,
     hasOrderQueryContext,
+    passengerDriverFound,
   }
 }

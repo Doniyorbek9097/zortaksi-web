@@ -99,6 +99,7 @@ export function useDriverChatPage() {
     conn,
     connReason,
     callPhone: meta.callPhone,
+    passengerDriverFound: meta.passengerDriverFound,
   })
 
   const loader = useChatPageLoader({
