@@ -1,40 +1,40 @@
 <template>
   <div class="w-full">
     <div
-      class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-800/50 border border-white/10"
+      class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-white border border-slate-200 shadow-sm"
       role="tablist"
     >
       <button
         v-for="(item, i) in steps"
         :key="item.key"
         type="button"
-        class="flex items-center justify-center gap-1.5 py-2 px-1 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all"
+        class="flex flex-col items-center gap-1 py-2 px-1 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all"
         :class="cellClass(i)"
         :disabled="!canGoBack(i)"
         :title="canGoBack(i) ? `${item.label} — orqaga` : item.label"
         @click="onClick(i)"
       >
         <span
-          class="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+          class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
           :class="iconClass(i)"
         >
           <font-awesome-icon
             v-if="isDone(i)"
             icon="fa-solid fa-check"
-            class="text-[10px]"
+            class="text-sm"
           />
           <font-awesome-icon
             v-else
             :icon="item.icon"
-            class="text-[11px]"
+            class="text-sm"
           />
         </span>
-        <span class="truncate">{{ item.label }}</span>
+        <span class="truncate w-full text-center leading-none">{{ item.label }}</span>
       </button>
     </div>
-    <div class="mt-1.5 h-0.5 rounded-full bg-white/10 overflow-hidden">
+    <div class="mt-2 h-1 rounded-full bg-slate-200 overflow-hidden">
       <div
-        class="h-full rounded-full bg-gradient-to-r from-sky-400 to-violet-400 transition-all duration-400"
+        class="h-full rounded-full bg-gradient-to-r from-amber-400 to-sky-500 transition-all duration-400"
         :style="{ width: progressWidth }"
       />
     </div>
@@ -69,15 +69,15 @@ function onClick(i: number) {
 }
 
 const cellClass = (i: number) => {
-  if (isCurrent(i)) return 'bg-sky-500/20 text-sky-100 ring-1 ring-sky-400/40'
-  if (isDone(i)) return 'text-emerald-300/90'
-  if (props.canGoBack(i)) return 'text-slate-300 hover:bg-white/5 cursor-pointer active:scale-95'
-  return 'text-slate-500 cursor-default'
+  if (isCurrent(i)) return 'bg-amber-50 text-amber-900 ring-1 ring-amber-300'
+  if (isDone(i)) return 'text-emerald-700'
+  if (props.canGoBack(i)) return 'text-slate-600 hover:bg-slate-50 cursor-pointer active:scale-95'
+  return 'text-slate-400 cursor-default'
 }
 
 const iconClass = (i: number) => {
-  if (isCurrent(i)) return 'bg-sky-500 text-white'
-  if (isDone(i)) return 'bg-emerald-500/25 text-emerald-300'
-  return 'bg-white/10 text-slate-400'
+  if (isCurrent(i)) return 'bg-amber-400 text-white shadow-sm'
+  if (isDone(i)) return 'bg-emerald-100 text-emerald-600'
+  return 'bg-slate-100 text-slate-500'
 }
 </script>
