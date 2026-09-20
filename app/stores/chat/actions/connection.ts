@@ -322,17 +322,15 @@ export function createConnectionActions(refs: ChatStoreRefs) {
 
         const ownerUid = String(authStore.user?.userId || chat?.ownerId || '')
 
-        // Peer link bor — proxy emas yoki allaqachon tinglovchi orqali
-        if (hasTelegramPeerLink(chat)) {
+        if (opts.viaProxy) {
+            // Proksi — har safar backend orqali tinglovchi userbot bilan ulanish
             const via = String(chat.peer?.viaUserbotId || '')
-            const isOwnLink = !!via && via === ownerUid
-            if (!opts.viaProxy || (!isOwnLink && via && chat.peer?.accessHash)) {
-                connectionStatus.value = 'ready'
-                connectionReason.value = ''
-                return { success: true, data: { status: 'ready' as ConnStatus } }
-            }
-            // O'z hisob linki yetarli emas — proksi uchun tozalaymiz
-            clearChatPeerLink(chatId)
+            const isOwnLink = !via || via === ownerUid
+            if (isOwnLink) clearChatPeerLink(chatId)
+        } else if (hasTelegramPeerLink(chat)) {
+            connectionStatus.value = 'ready'
+            connectionReason.value = ''
+            return { success: true, data: { status: 'ready' as ConnStatus } }
         }
 
         if (!isInAppChatLike(chat)) {
@@ -531,6 +529,20 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         if (peerTypingChatId.value === chatId) peerTypingChatId.value = null
     }
 
+    /** Admin proksi tugmasi — eski o'z-hisob linkini tozalab, yangi urinish */
+    const prepareProxyConnect = (chatId: string) => {
+        const authStore = useAuthStore()
+        const ownerUid = String(authStore.user?.userId || '')
+        const chat = findChatById(chatId) ?? currentChat.value
+        const via = String(chat.peer?.viaUserbotId || '')
+        if (!via || via === ownerUid) {
+            clearChatPeerLink(chatId)
+        }
+        connectionStatus.value = 'connecting'
+        connectionReason.value = ''
+        activeConnectChatId = chatId
+    }
+
     const offerSendProxy = (chatId: string, reason?: string) => {
         const isRelevant =
             currentChat.value?._id === chatId || activeConnectChatId === chatId
@@ -560,5 +572,6 @@ export function createConnectionActions(refs: ChatStoreRefs) {
         onPeerTyping,
         clearTypingForChat,
         offerSendProxy,
+        prepareProxyConnect,
     }
 }

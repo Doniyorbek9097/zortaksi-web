@@ -272,7 +272,7 @@
       </div>
       <button
         type="button"
-        class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-sky-500 text-white text-[12px] font-black uppercase tracking-wide active:scale-95 transition-all disabled:opacity-60"
+        class="w-full inline-flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-sky-500 text-white text-[13px] font-bold active:scale-95 transition-all disabled:opacity-60"
         :disabled="proxyConnecting"
         @click="confirmProxyConnect"
       >
@@ -280,7 +280,7 @@
           :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
           :class="{ 'animate-spin': proxyConnecting }"
         />
-        Proxy orqali ulanish
+        {{ PROXY_CONNECT_BUTTON_LABEL }}
       </button>
     </div>
 
@@ -367,6 +367,7 @@
 
 <script setup lang="ts">
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
+import { PROXY_CONNECT_BUTTON_LABEL } from '~/utils/chatProxy'
 import { useDriverChatPage } from '~/composables/chat/useDriverChatPage'
 import {
   SUPPORT_CHAT_SHELL,

@@ -217,7 +217,12 @@ export function useDriverChatPage() {
     if (!id || id === 'open' || proxyConnecting.value) return
     proxyConnecting.value = true
     try {
-      await chatStore.connect(id, { viaProxy: true })
+      chatStore.prepareProxyConnect(id)
+      const res = await chatStore.connect(id, { viaProxy: true })
+      const st = chatStore.connectionStatus
+      if ((!res?.success || st !== 'ready') && st !== 'unreachable') {
+        chatStore.connectionStatus = 'proxy-required'
+      }
     } finally {
       proxyConnecting.value = false
     }
