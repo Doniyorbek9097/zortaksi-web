@@ -280,7 +280,7 @@
           :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
           :class="{ 'animate-spin': proxyConnecting }"
         />
-        O'z hisob orqali ulanish
+        Proxy orqali ulanish
       </button>
     </div>
 

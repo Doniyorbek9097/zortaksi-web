@@ -210,14 +210,14 @@ export function useDriverChatPage() {
     replyTarget.value = null
   })
 
-  /** Admin — chat egasi (o'z) userbot orqali ulanish */
+  /** Admin — tinglovchi userbot orqali proksi ulanish */
   const confirmProxyConnect = async () => {
     if (!isAdmin.value) return
     const id = meta.resolveActiveChatId()
     if (!id || id === 'open' || proxyConnecting.value) return
     proxyConnecting.value = true
     try {
-      await chatStore.connect(id, { viaProxy: false })
+      await chatStore.connect(id, { viaProxy: true })
     } finally {
       proxyConnecting.value = false
     }
