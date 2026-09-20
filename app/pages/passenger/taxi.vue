@@ -67,11 +67,9 @@
               rows="3"
               maxlength="500"
               enterkeyhint="next"
-              :readonly="fieldLocked"
               placeholder="Masalan: Chilonzor → Sergeli, 2 kishi"
               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[15px] leading-snug resize-none text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-300"
               @input="onRouteInput"
-              @focus="unlockField"
             />
           </label>
           <button
@@ -100,11 +98,9 @@
               inputmode="tel"
               autocomplete="tel"
               enterkeyhint="done"
-              :readonly="fieldLocked"
               placeholder="998901234567"
               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base font-semibold tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-300"
               @input="onPhoneInput"
-              @focus="unlockField"
             />
           </label>
 
@@ -228,19 +224,12 @@ const {
 
 const routeTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const phoneInputRef = ref<HTMLInputElement | null>(null)
-/** Autofill panelini kamaytirish; fokusdan oldin ochiladi */
-const fieldLocked = ref(true)
-
-function unlockField() {
-  fieldLocked.value = false
-}
 
 usePassengerTaxiFocus({
   step,
   bootstrapped,
   routeTextareaRef,
   phoneInputRef,
-  unlockFields: unlockField,
 })
 
 const stepIndex = computed(() => {
@@ -264,12 +253,10 @@ const subtitle = computed(() => {
 })
 
 function onRouteInput(event: Event) {
-  unlockField()
   setRouteText((event.target as HTMLTextAreaElement).value)
 }
 
 function onPhoneInput(event: Event) {
-  unlockField()
   setPhoneInput((event.target as HTMLInputElement).value)
 }
 

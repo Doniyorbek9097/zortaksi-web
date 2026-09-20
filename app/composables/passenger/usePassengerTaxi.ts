@@ -143,13 +143,6 @@ export function usePassengerTaxi() {
     phoneInput.value = String(value ?? '')
   }
 
-  function dispatchFocusEvent(name: 'zt:passenger-taxi-focus-route' | 'zt:passenger-taxi-focus-phone') {
-    if (!import.meta.client) return
-    nextTick(() => {
-      window.dispatchEvent(new CustomEvent(name))
-    })
-  }
-
   function goToPhone() {
     if (!canSubmitRoute.value) {
       error.value = 'Marshrutni batafsil yozing (kamida 3 belgi).'
@@ -158,13 +151,11 @@ export function usePassengerTaxi() {
     }
     error.value = ''
     step.value = 'phone'
-    dispatchFocusEvent('zt:passenger-taxi-focus-phone')
   }
 
   function goBackToRoute() {
     error.value = ''
     step.value = 'route'
-    dispatchFocusEvent('zt:passenger-taxi-focus-route')
   }
 
   function goBackOneStep() {
@@ -285,7 +276,6 @@ export function usePassengerTaxi() {
     step.value = 'route'
     clearCache()
     void syncActiveOrderSilent()
-    dispatchFocusEvent('zt:passenger-taxi-focus-route')
   }
 
   function restoreClientState() {
@@ -311,20 +301,7 @@ export function usePassengerTaxi() {
     bootstrapped.value = true
 
     if (step.value === 'unavailable') return
-
-    void syncActiveOrderSilent().finally(() => {
-      if (step.value === 'route') {
-        dispatchFocusEvent('zt:passenger-taxi-focus-route')
-      } else if (step.value === 'phone') {
-        dispatchFocusEvent('zt:passenger-taxi-focus-phone')
-      }
-    })
-
-    if (step.value === 'route') {
-      dispatchFocusEvent('zt:passenger-taxi-focus-route')
-    } else if (step.value === 'phone') {
-      dispatchFocusEvent('zt:passenger-taxi-focus-phone')
-    }
+    void syncActiveOrderSilent()
   })
 
   return {

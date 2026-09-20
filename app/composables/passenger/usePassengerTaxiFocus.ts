@@ -16,173 +16,90 @@ function prepareTelegramViewport() {
   }
 }
 
-/** iOS / Telegram WebView klaviaturasini uyg'otish */
-function primeMobileKeyboard() {
-  if (!import.meta.client) return
-  try {
-    const probe = document.createElement('input')
-    probe.type = 'text'
-    probe.setAttribute('inputmode', 'text')
-    probe.setAttribute('autocomplete', 'off')
-    probe.setAttribute('aria-hidden', 'true')
-    probe.tabIndex = -1
-    Object.assign(probe.style, {
-      position: 'fixed',
-      top: '0',
-      left: '0',
-      width: '1px',
-      height: '1px',
-      opacity: '0',
-      border: 'none',
-      padding: '0',
-      margin: '0',
-      pointerEvents: 'none',
-    })
-    document.body.appendChild(probe)
-    probe.focus()
-    probe.blur()
-    probe.remove()
-  } catch {
-    /* */
-  }
+function isVisible(el: Focusable): boolean {
+  return el.offsetParent !== null || el.getClientRects().length > 0
 }
 
-function focusWithKeyboard(el: Focusable | null, unlock?: () => void): boolean {
-  if (!el || el.disabled) return false
-
-  prepareTelegramViewport()
-  unlock?.()
+function focusField(el: Focusable | null): boolean {
+  if (!el || el.disabled || !isVisible(el)) return false
+  if (document.activeElement === el) return true
 
   try {
-    el.readOnly = false
+    el.focus({ preventScroll: true })
+  } catch {
+    try {
+      el.focus()
+    } catch {
+      return false
+    }
+  }
+
+  try {
+    const len = el.value.length
+    el.setSelectionRange(len, len)
   } catch {
     /* */
   }
 
-  primeMobileKeyboard()
-
-  const focusOnce = () => {
-    try {
-      el.scrollIntoView({ block: 'center', behavior: 'instant' })
-    } catch {
-      /* */
-    }
-    try {
-      el.focus({ preventScroll: true })
-    } catch {
-      try {
-        el.focus()
-      } catch {
-        /* */
-      }
-    }
-    try {
-      const len = el.value.length
-      el.setSelectionRange(len, len)
-    } catch {
-      /* */
-    }
-  }
-
-  focusOnce()
   return document.activeElement === el
 }
 
-/** Taxi chaqirish — textarea / telefon maydoniga fokus (Telegram Mini App) */
+/** Taxi chaqirish — qadam o'zgarganda bir marta fokus (klaviatura tebranmasin) */
 export function usePassengerTaxiFocus(opts: {
   step: Ref<string>
   bootstrapped: Ref<boolean>
   routeTextareaRef: Ref<HTMLTextAreaElement | null>
   phoneInputRef: Ref<HTMLInputElement | null>
-  unlockFields: () => void
 }) {
-  const { step, bootstrapped, routeTextareaRef, phoneInputRef, unlockFields } = opts
-  let timers: ReturnType<typeof setTimeout>[] = []
+  const { step, bootstrapped, routeTextareaRef, phoneInputRef } = opts
+  let retryTimer: ReturnType<typeof setTimeout> | null = null
 
-  function clearTimers() {
-    for (const id of timers) clearTimeout(id)
-    timers = []
+  function clearRetry() {
+    if (retryTimer) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
   }
 
-  function scheduleFocus(target: 'route' | 'phone') {
-    clearTimers()
-    const delays = [0, 50, 120, 250, 450, 700, 1000, 1500]
+  function focusForCurrentStep() {
+    if (!bootstrapped.value) return
+    clearRetry()
+
+    const current = step.value
+    if (current !== 'route' && current !== 'phone') return
+
+    const el =
+      current === 'route' ? routeTextareaRef.value : phoneInputRef.value
+    if (!el) return
 
     const attempt = () => {
-      if (target === 'route' && step.value !== 'route') return
-      if (target === 'phone' && step.value !== 'phone') return
-      const el =
-        target === 'route' ? routeTextareaRef.value : phoneInputRef.value
-      focusWithKeyboard(el, unlockFields)
+      if (step.value !== current) return
+      if (focusField(el)) return
+      retryTimer = window.setTimeout(() => {
+        retryTimer = null
+        if (step.value === current) focusField(el)
+      }, 200)
     }
 
     nextTick(() => {
-      requestAnimationFrame(() => {
-        attempt()
-      })
+      requestAnimationFrame(attempt)
     })
-
-    for (const delay of delays) {
-      timers.push(window.setTimeout(attempt, delay))
-    }
   }
 
-  function scheduleRouteFocus() {
-    if (!bootstrapped.value || step.value !== 'route') return
-    scheduleFocus('route')
-  }
-
-  function schedulePhoneFocus() {
-    if (!bootstrapped.value || step.value !== 'phone') return
-    scheduleFocus('phone')
-  }
-
-  watch(
-    () => routeTextareaRef.value,
-    (el) => {
-      if (el && bootstrapped.value && step.value === 'route') {
-        scheduleRouteFocus()
-      }
-    },
-  )
-
-  watch(
-    () => phoneInputRef.value,
-    (el) => {
-      if (el && bootstrapped.value && step.value === 'phone') {
-        schedulePhoneFocus()
-      }
-    },
-  )
-
-  watch(
-    [bootstrapped, step],
-    ([ready, current]) => {
-      if (!ready) return
-      if (current === 'route') scheduleRouteFocus()
-      if (current === 'phone') schedulePhoneFocus()
-    },
-    { flush: 'post', immediate: true },
-  )
+  watch([bootstrapped, step], ([ready]) => {
+    if (!ready) return
+    focusForCurrentStep()
+  }, { flush: 'post' })
 
   onMounted(() => {
     prepareTelegramViewport()
-    window.addEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
-    window.addEventListener('zt:passenger-taxi-focus-phone', schedulePhoneFocus)
-    if (bootstrapped.value) {
-      if (step.value === 'route') scheduleRouteFocus()
-      if (step.value === 'phone') schedulePhoneFocus()
-    }
   })
 
   onBeforeUnmount(() => {
-    clearTimers()
-    window.removeEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
-    window.removeEventListener('zt:passenger-taxi-focus-phone', schedulePhoneFocus)
+    clearRetry()
   })
 
   return {
-    scheduleRouteFocus,
-    schedulePhoneFocus,
+    focusForCurrentStep,
   }
 }
