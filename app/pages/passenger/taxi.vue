@@ -59,21 +59,23 @@
           </p>
         </div>
 
-        <template v-else-if="step === 'route'">
-          <label class="block">
+        <template v-else-if="step === 'route' || step === 'phone'">
+          <label v-show="step === 'route'" class="block">
             <textarea
               ref="routeTextareaRef"
               :value="routeText"
               rows="3"
               maxlength="500"
-              autofocus
               enterkeyhint="next"
+              :readonly="fieldLocked"
               placeholder="Masalan: Chilonzor → Sergeli, 2 kishi"
               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-[15px] leading-snug resize-none text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-300"
               @input="onRouteInput"
+              @focus="unlockField"
             />
           </label>
           <button
+            v-show="step === 'route'"
             type="button"
             class="btn-primary"
             :disabled="!canSubmitRoute"
@@ -81,30 +83,32 @@
           >
             Keyingi
           </button>
-        </template>
 
-        <template v-else-if="step === 'phone'">
-          <div class="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-sm text-slate-600 leading-snug line-clamp-3">
+          <div
+            v-show="step === 'phone'"
+            class="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2 text-sm text-slate-600 leading-snug line-clamp-3"
+          >
             <span class="text-amber-600 font-semibold">Yo'l:</span>
             {{ routeText }}
           </div>
 
-          <label class="block">
+          <label v-show="step === 'phone'" class="block">
             <input
               ref="phoneInputRef"
               :value="phoneInput"
               type="tel"
               inputmode="tel"
               autocomplete="tel"
-              autofocus
               enterkeyhint="done"
+              :readonly="fieldLocked"
               placeholder="998901234567"
               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base font-semibold tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-300"
               @input="onPhoneInput"
+              @focus="unlockField"
             />
           </label>
 
-          <div class="flex gap-2">
+          <div v-show="step === 'phone'" class="flex gap-2">
             <button
               type="button"
               class="btn-outline flex-1"
@@ -224,12 +228,19 @@ const {
 
 const routeTextareaRef = ref<HTMLTextAreaElement | null>(null)
 const phoneInputRef = ref<HTMLInputElement | null>(null)
+/** Autofill panelini kamaytirish; fokusdan oldin ochiladi */
+const fieldLocked = ref(true)
+
+function unlockField() {
+  fieldLocked.value = false
+}
 
 usePassengerTaxiFocus({
   step,
   bootstrapped,
   routeTextareaRef,
   phoneInputRef,
+  unlockFields: unlockField,
 })
 
 const stepIndex = computed(() => {
@@ -253,10 +264,12 @@ const subtitle = computed(() => {
 })
 
 function onRouteInput(event: Event) {
+  unlockField()
   setRouteText((event.target as HTMLTextAreaElement).value)
 }
 
 function onPhoneInput(event: Event) {
+  unlockField()
   setPhoneInput((event.target as HTMLInputElement).value)
 }
 

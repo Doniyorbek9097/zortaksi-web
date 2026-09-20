@@ -66,6 +66,11 @@ export default defineNuxtConfig({
       ssr: true,
       headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
     },
+    /** Telegram Mini App — initData faqat klientda; SSR hydration fokusni buzadi */
+    '/passenger/**': {
+      ssr: false,
+      headers: { 'Cache-Control': 'private, no-store', Vary: 'Cookie' },
+    },
   },
 
   app: {

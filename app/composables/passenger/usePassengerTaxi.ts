@@ -88,24 +88,15 @@ export function usePassengerTaxi() {
 
   const botLaunchGroupId = computed(() => String(route.query.groupId || '').trim())
 
-  const cached = import.meta.client ? readCache(botLaunchGroupId.value) : null
-  const hasInitData = !!getTelegramWebAppInitData()
-
-  const step = ref<Step>(
-    !hasInitData
-      ? 'unavailable'
-      : cached?.step || 'route',
-  )
-  const routeText = ref(cached?.routeText || '')
-  const phoneInput = ref(cached?.phoneInput || '')
-  const activeOrder = ref<PassengerOrderView | null>(cached?.activeOrder || null)
-  const error = ref(
-    !hasInitData ? 'Bu sahifa faqat Telegram ilovasi ichida ishlaydi.' : '',
-  )
+  const step = ref<Step>('route')
+  const routeText = ref('')
+  const phoneInput = ref('')
+  const activeOrder = ref<PassengerOrderView | null>(null)
+  const error = ref('')
   const busy = ref(false)
-  const doneMessage = ref(cached?.doneMessage || '')
-  /** UI va fokus — darhol (API sync fonda) */
-  const bootstrapped = ref(true)
+  const doneMessage = ref('')
+  /** Klient holati tiklangach fokus ishga tushadi */
+  const bootstrapped = ref(false)
 
   const firstName = computed(() => {
     const tg = getTelegramWebAppUser()
@@ -152,6 +143,13 @@ export function usePassengerTaxi() {
     phoneInput.value = String(value ?? '')
   }
 
+  function dispatchFocusEvent(name: 'zt:passenger-taxi-focus-route' | 'zt:passenger-taxi-focus-phone') {
+    if (!import.meta.client) return
+    nextTick(() => {
+      window.dispatchEvent(new CustomEvent(name))
+    })
+  }
+
   function goToPhone() {
     if (!canSubmitRoute.value) {
       error.value = 'Marshrutni batafsil yozing (kamida 3 belgi).'
@@ -160,17 +158,13 @@ export function usePassengerTaxi() {
     }
     error.value = ''
     step.value = 'phone'
-    if (import.meta.client) {
-      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
-    }
+    dispatchFocusEvent('zt:passenger-taxi-focus-phone')
   }
 
   function goBackToRoute() {
     error.value = ''
     step.value = 'route'
-    if (import.meta.client) {
-      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
-    }
+    dispatchFocusEvent('zt:passenger-taxi-focus-route')
   }
 
   function goBackOneStep() {
@@ -182,7 +176,7 @@ export function usePassengerTaxi() {
   }
 
   async function syncActiveOrderSilent() {
-    if (!hasInitData) return
+    if (!getTelegramWebAppInitData()) return
     if (step.value === 'done') return
 
     try {
@@ -291,29 +285,45 @@ export function usePassengerTaxi() {
     step.value = 'route'
     clearCache()
     void syncActiveOrderSilent()
-    if (import.meta.client) {
-      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+    dispatchFocusEvent('zt:passenger-taxi-focus-route')
+  }
+
+  function restoreClientState() {
+    const initData = getTelegramWebAppInitData()
+    if (!initData) {
+      step.value = 'unavailable'
+      error.value = 'Bu sahifa faqat Telegram ilovasi ichida ishlaydi.'
+      return
+    }
+
+    const cached = readCache(botLaunchGroupId.value)
+    if (cached) {
+      step.value = cached.step
+      routeText.value = cached.routeText
+      phoneInput.value = cached.phoneInput
+      activeOrder.value = cached.activeOrder
+      doneMessage.value = cached.doneMessage
     }
   }
 
   onMounted(() => {
-    if (!hasInitData) return
+    restoreClientState()
+    bootstrapped.value = true
+
+    if (step.value === 'unavailable') return
 
     void syncActiveOrderSilent().finally(() => {
-      if (!import.meta.client) return
       if (step.value === 'route') {
-        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+        dispatchFocusEvent('zt:passenger-taxi-focus-route')
       } else if (step.value === 'phone') {
-        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
+        dispatchFocusEvent('zt:passenger-taxi-focus-phone')
       }
     })
 
-    if (import.meta.client) {
-      if (step.value === 'route') {
-        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
-      } else if (step.value === 'phone') {
-        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
-      }
+    if (step.value === 'route') {
+      dispatchFocusEvent('zt:passenger-taxi-focus-route')
+    } else if (step.value === 'phone') {
+      dispatchFocusEvent('zt:passenger-taxi-focus-phone')
     }
   })
 

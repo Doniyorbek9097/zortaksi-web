@@ -16,23 +16,54 @@ function prepareTelegramViewport() {
   }
 }
 
-function focusWithKeyboard(el: Focusable | null): boolean {
+/** iOS / Telegram WebView klaviaturasini uyg'otish */
+function primeMobileKeyboard() {
+  if (!import.meta.client) return
+  try {
+    const probe = document.createElement('input')
+    probe.type = 'text'
+    probe.setAttribute('inputmode', 'text')
+    probe.setAttribute('autocomplete', 'off')
+    probe.setAttribute('aria-hidden', 'true')
+    probe.tabIndex = -1
+    Object.assign(probe.style, {
+      position: 'fixed',
+      top: '0',
+      left: '0',
+      width: '1px',
+      height: '1px',
+      opacity: '0',
+      border: 'none',
+      padding: '0',
+      margin: '0',
+      pointerEvents: 'none',
+    })
+    document.body.appendChild(probe)
+    probe.focus()
+    probe.blur()
+    probe.remove()
+  } catch {
+    /* */
+  }
+}
+
+function focusWithKeyboard(el: Focusable | null, unlock?: () => void): boolean {
   if (!el || el.disabled) return false
 
   prepareTelegramViewport()
+  unlock?.()
 
-  const placeCaret = () => {
-    try {
-      const len = el.value.length
-      el.setSelectionRange(len, len)
-    } catch {
-      /* */
-    }
+  try {
+    el.readOnly = false
+  } catch {
+    /* */
   }
+
+  primeMobileKeyboard()
 
   const focusOnce = () => {
     try {
-      el.click()
+      el.scrollIntoView({ block: 'center', behavior: 'instant' })
     } catch {
       /* */
     }
@@ -45,20 +76,15 @@ function focusWithKeyboard(el: Focusable | null): boolean {
         /* */
       }
     }
-    placeCaret()
+    try {
+      const len = el.value.length
+      el.setSelectionRange(len, len)
+    } catch {
+      /* */
+    }
   }
 
-  try {
-    el.readOnly = true
-    focusOnce()
-    window.setTimeout(() => {
-      el.readOnly = false
-      focusOnce()
-    }, 50)
-  } catch {
-    focusOnce()
-  }
-
+  focusOnce()
   return document.activeElement === el
 }
 
@@ -68,8 +94,9 @@ export function usePassengerTaxiFocus(opts: {
   bootstrapped: Ref<boolean>
   routeTextareaRef: Ref<HTMLTextAreaElement | null>
   phoneInputRef: Ref<HTMLInputElement | null>
+  unlockFields: () => void
 }) {
-  const { step, bootstrapped, routeTextareaRef, phoneInputRef } = opts
+  const { step, bootstrapped, routeTextareaRef, phoneInputRef, unlockFields } = opts
   let timers: ReturnType<typeof setTimeout>[] = []
 
   function clearTimers() {
@@ -79,18 +106,20 @@ export function usePassengerTaxiFocus(opts: {
 
   function scheduleFocus(target: 'route' | 'phone') {
     clearTimers()
-    const delays = [0, 60, 150, 300, 500, 800, 1200, 1800]
+    const delays = [0, 50, 120, 250, 450, 700, 1000, 1500]
 
     const attempt = () => {
       if (target === 'route' && step.value !== 'route') return
       if (target === 'phone' && step.value !== 'phone') return
       const el =
         target === 'route' ? routeTextareaRef.value : phoneInputRef.value
-      focusWithKeyboard(el)
+      focusWithKeyboard(el, unlockFields)
     }
 
     nextTick(() => {
-      requestAnimationFrame(attempt)
+      requestAnimationFrame(() => {
+        attempt()
+      })
     })
 
     for (const delay of delays) {
