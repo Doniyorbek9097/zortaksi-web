@@ -79,6 +79,7 @@ export function useChatComposerPanel(opts: {
       passengerDriverFound.value ||
       !hasRealChatId.value ||
       composerBusy.value ||
+      conn.value === 'proxy-required' ||
       (!isInAppChat.value && !canSendTelegram.value),
   )
 
@@ -91,7 +92,7 @@ export function useChatComposerPanel(opts: {
         return DRIVER_ORDER_CONNECT_FAIL
       }
       if (conn.value === 'proxy-required') {
-        return 'Xabar yozing...'
+        return 'Proxy orqali ulaning...'
       }
       if (conn.value === 'connecting' || conn.value === 'idle') {
         return 'Ulanmoqda...'
@@ -148,6 +149,7 @@ export function useChatComposerPanel(opts: {
   const onSend = async (text: string) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
+    if (conn.value === 'proxy-required') return
     ensureCurrentChatForId(id)
     chatStore.messagesChatId = id
 
@@ -172,6 +174,7 @@ export function useChatComposerPanel(opts: {
   const onVoice = async (blob: Blob, seconds: number) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
+    if (conn.value === 'proxy-required') return
     ensureCurrentChatForId(id)
     if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
     await chatStore.sendVoice(id, blob, seconds)
@@ -181,6 +184,7 @@ export function useChatComposerPanel(opts: {
   const onPhoto = async (file: File) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
+    if (conn.value === 'proxy-required') return
     ensureCurrentChatForId(id)
     if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
     await chatStore.sendPhoto(id, file)
