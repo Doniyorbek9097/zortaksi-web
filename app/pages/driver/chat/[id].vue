@@ -177,15 +177,12 @@
               msg._id,
               msg.text,
               msg.status,
-              msg.error,
-              msg.proxyRequired,
               msg.date,
               msg.mediaPath,
               msg.direction,
               selectionMode,
               isMessageSelected(String(msg._id)),
               focusId === String(msg._id),
-              proxyConnecting,
             ]"
           :id="`msg-${msg._id}`"
           :text="msg.text"
@@ -196,8 +193,6 @@
           :read="msg.status === 'read'"
           :status="msg.status"
             :error="msg.error"
-            :show-proxy-connect="isAdmin && messageNeedsProxyOffer(msg)"
-            :proxy-connecting="proxyConnecting"
           :type="chatMediaType(msg)"
           :message-id="String(msg._id)"
           :media-path="msg.mediaPath"
@@ -215,7 +210,6 @@
             @toggle-select="toggleMessageSelect(String(msg._id))"
             @reply="onMessageReply(msg)"
             @delete="onMessageDeleteRequest(String(msg._id))"
-            @proxy-connect="confirmProxyConnect"
         />
         </template>
         </template>
@@ -286,7 +280,7 @@
           :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
           :class="{ 'animate-spin': proxyConnecting }"
         />
-        Proksi orqali bog'lanib ko'rish
+        O'z hisob orqali ulanish
       </button>
     </div>
 
@@ -373,7 +367,6 @@
 
 <script setup lang="ts">
 import { CHAT_SKELETON_ROWS } from '~/utils/memoryBudget'
-import { messageNeedsProxyOffer } from '~/utils/chatProxyOffer'
 import { useDriverChatPage } from '~/composables/chat/useDriverChatPage'
 import {
   SUPPORT_CHAT_SHELL,
