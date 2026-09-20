@@ -6,8 +6,8 @@ import { useAuthStore } from '~/stores/auth.store'
 import { isAdminUser } from '~/utils/userRole'
 
 const CONNECT_TIMEOUT_MS = 45000
-/** Order chat — telefon/hash probe uchun biroz ko'proq vaqt */
-const ORDER_CONNECT_TIMEOUT_MS = 20000
+/** Order chat — hash/username/phone/peer ketma-ket probe */
+const ORDER_CONNECT_TIMEOUT_MS = 35000
 /** Proksi — guruh tarixidan hash olish uzoq vaqt olishi mumkin */
 const PROXY_CONNECT_TIMEOUT_MS = 60000
 export const DRIVER_ORDER_CONNECT_FAIL =
