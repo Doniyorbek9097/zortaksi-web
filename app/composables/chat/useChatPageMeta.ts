@@ -256,12 +256,14 @@ export function useChatPageMeta(opts: {
 
   const composerLikelyReady = computed(() => hasPeerLink.value)
 
-  const canSendTelegram = computed(
-    () =>
-      hasRealChatId.value &&
-      conn.value !== 'proxy-required' &&
-      (isInAppChat.value || hasPeerLink.value || conn.value === 'ready'),
-  )
+  const canSendTelegram = computed(() => {
+    if (!hasRealChatId.value) return false
+    if (isInAppChat.value) return true
+    if (isOrderSenderChat.value && needsTelegramConnect.value) {
+      return conn.value === 'ready'
+    }
+    return conn.value === 'ready' || hasPeerLink.value
+  })
 
   const hideBottomOnConnectFail = computed(
     () =>

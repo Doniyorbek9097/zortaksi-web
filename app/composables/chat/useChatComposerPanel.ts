@@ -29,6 +29,7 @@ export function useChatComposerPanel(opts: {
   connReason: ComputedRef<string>
   callPhone: ComputedRef<string>
   passengerDriverFound: ComputedRef<boolean>
+  proxyConnecting: ComputedRef<boolean>
 }) {
   const {
     chatStore,
@@ -53,6 +54,7 @@ export function useChatComposerPanel(opts: {
     connReason,
     callPhone,
     passengerDriverFound,
+    proxyConnecting,
   } = opts
 
   const composerBusy = computed(
@@ -74,17 +76,33 @@ export function useChatComposerPanel(opts: {
         conn.value === 'unreachable'),
   )
 
+  const orderTelegramPending = computed(
+    () =>
+      isOrderSenderChat.value &&
+      needsTelegramConnect.value &&
+      conn.value !== 'ready',
+  )
+
   const composerDisabled = computed(
     () =>
       passengerDriverFound.value ||
       !hasRealChatId.value ||
       composerBusy.value ||
+      proxyConnecting.value ||
+      orderTelegramPending.value ||
       conn.value === 'proxy-required' ||
+      conn.value === 'connecting' ||
       (!isInAppChat.value && !canSendTelegram.value),
   )
 
   const composerPlaceholder = computed(() => {
     if (!hasRealChatId.value || composerBusy.value) {
+      return 'Ulanmoqda...'
+    }
+    if (proxyConnecting.value || orderTelegramPending.value) {
+      if (conn.value === 'proxy-required') {
+        return 'Proxy orqali ulaning...'
+      }
       return 'Ulanmoqda...'
     }
     if (isOrderSenderChat.value && needsTelegramConnect.value && !hasPeerLink.value) {
@@ -149,7 +167,9 @@ export function useChatComposerPanel(opts: {
   const onSend = async (text: string) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
-    if (conn.value === 'proxy-required') return
+    if (conn.value === 'proxy-required' || proxyConnecting.value || orderTelegramPending.value) {
+      return
+    }
     ensureCurrentChatForId(id)
     chatStore.messagesChatId = id
 
@@ -174,7 +194,9 @@ export function useChatComposerPanel(opts: {
   const onVoice = async (blob: Blob, seconds: number) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
-    if (conn.value === 'proxy-required') return
+    if (conn.value === 'proxy-required' || proxyConnecting.value || orderTelegramPending.value) {
+      return
+    }
     ensureCurrentChatForId(id)
     if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
     await chatStore.sendVoice(id, blob, seconds)
@@ -184,7 +206,9 @@ export function useChatComposerPanel(opts: {
   const onPhoto = async (file: File) => {
     const id = resolveActiveChatId()
     if (!id || id === 'open') return
-    if (conn.value === 'proxy-required') return
+    if (conn.value === 'proxy-required' || proxyConnecting.value || orderTelegramPending.value) {
+      return
+    }
     ensureCurrentChatForId(id)
     if (needsTelegramConnect.value) void chatStore.ensureTelegramReady(id)
     await chatStore.sendPhoto(id, file)

@@ -479,7 +479,8 @@ export function useChatPageLoader(opts: {
         }
         const connStatus = chatStore.connectionStatus
         const skipRepeatOwnConnect = !!orderChat && connStatus === 'connecting'
-        if (linked) {
+        // Order chat — hash orderdan ko'rinsa ham ready faqat connect() muvaffaqiyatidan keyin
+        if (linked && !orderChat) {
           chatStore.connectionStatus = 'ready'
         } else if (!skipRepeatOwnConnect) {
           void chatStore.connect(id, { silent: wasLinked || !!orderChat })

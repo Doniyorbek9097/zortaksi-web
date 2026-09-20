@@ -242,6 +242,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
     /** Ro'yxat/API dan — faqat haqiqiy peer link bo'lsa ready */
     const primeFromChat = (chat: IChat | null | undefined) => {
         if (!chat) return
+        if (shouldOfferOrderProxyFirst(chat)) return
         if (hasTelegramPeerLink(chat)) {
             connectionStatus.value = 'ready'
             connectionReason.value = ''
@@ -327,7 +328,7 @@ export function createConnectionActions(refs: ChatStoreRefs) {
             const via = String(chat.peer?.viaUserbotId || '')
             const isOwnLink = !via || via === ownerUid
             if (isOwnLink) clearChatPeerLink(chatId)
-        } else if (hasTelegramPeerLink(chat)) {
+        } else if (hasTelegramPeerLink(chat) && !shouldOfferOrderProxyFirst(chat)) {
             connectionStatus.value = 'ready'
             connectionReason.value = ''
             return { success: true, data: { status: 'ready' as ConnStatus } }

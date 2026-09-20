@@ -100,6 +100,7 @@ export function useDriverChatPage() {
     connReason,
     callPhone: meta.callPhone,
     passengerDriverFound: meta.passengerDriverFound,
+    proxyConnecting,
   })
 
   const loader = useChatPageLoader({
