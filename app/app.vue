@@ -5,14 +5,6 @@
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
-
-    <PwaInstallModal
-      v-model:open="open"
-      :ios-hint="iosHint"
-      :manual-hint="manualHint"
-      @install="install"
-      @later="remindLater"
-    />
   </div>
 </template>
 
@@ -21,7 +13,6 @@ import { THEME_CHROME, applyBrowserChrome } from '~/composables/useTheme'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
-const { open, iosHint, manualHint, install, remindLater } = usePwaInstall()
 
 const chromeColor = computed(() =>
   effectiveTheme.value === 'light' ? THEME_CHROME.light : THEME_CHROME.dark,
