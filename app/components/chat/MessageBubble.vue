@@ -268,17 +268,31 @@
       <!-- Xabar yetib bormadi — aniq sabab (SPAM / bloklangan) -->
       <div
         v-if="status === 'failed' && errorText"
-        class="mt-1.5 flex items-start gap-1.5 px-1.5 pb-0.5"
+        class="mt-1.5 px-1.5 pb-0.5"
       >
-        <font-awesome-icon
-          icon="fa-solid fa-circle-exclamation"
-          class="mt-0.5 text-[10px] shrink-0 text-red-500"
-        />
-        <p
-          class="text-[11px] font-semibold leading-snug text-red-500"
+        <div class="flex items-start gap-1.5">
+          <font-awesome-icon
+            icon="fa-solid fa-circle-exclamation"
+            class="mt-0.5 text-[10px] shrink-0 text-red-500"
+          />
+          <p class="text-[11px] font-semibold leading-snug text-red-500">
+            {{ errorText }}
+          </p>
+        </div>
+        <button
+          v-if="showProxyConnect"
+          type="button"
+          data-no-swipe
+          class="mt-2 w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-sky-500 text-white text-[11px] font-black uppercase tracking-wide active:scale-[0.98] transition-transform disabled:opacity-60"
+          :disabled="proxyConnecting"
+          @click.stop="emit('proxy-connect')"
         >
-          {{ errorText }}
-        </p>
+          <font-awesome-icon
+            :icon="proxyConnecting ? 'fa-solid fa-spinner' : 'fa-solid fa-plug'"
+            :class="{ 'animate-spin': proxyConnecting }"
+          />
+          Proksi orqali ulanish
+        </button>
       </div>
 
       <audio
@@ -349,6 +363,9 @@ interface Props {
   status?: 'sending' | 'sent' | 'failed' | 'read'
   /** failed holatida — foydalanuvchiga tushunarli xato sababi (SPAM/blok) */
   error?: string
+  /** Admin — proksi orqali ulanish tugmasi */
+  showProxyConnect?: boolean
+  proxyConnecting?: boolean
   type?: 'text' | 'photo' | 'video' | 'voice' | 'document' | 'sticker' | 'location'
   messageId?: string
   /** Serverda media saqlangan yo'l — fonda yuklanganda player qayta urinadi */
@@ -382,6 +399,8 @@ const props = withDefaults(defineProps<Props>(), {
   read: false,
   status: 'sent',
   error: '',
+  showProxyConnect: false,
+  proxyConnecting: false,
   type: 'text',
   mediaPath: '',
   mimeType: '',
@@ -417,7 +436,13 @@ const errorText = computed(() => {
   return String(props.error || '').trim()
 })
 
-const emit = defineEmits<{ 'long-press': []; 'toggle-select': []; reply: []; delete: [] }>()
+const emit = defineEmits<{
+  'long-press': []
+  'toggle-select': []
+  reply: []
+  delete: []
+  'proxy-connect': []
+}>()
 
 const SWIPE_REVEAL = 56
 
