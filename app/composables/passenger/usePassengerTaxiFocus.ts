@@ -21,25 +21,42 @@ function focusWithKeyboard(el: Focusable | null): boolean {
 
   prepareTelegramViewport()
 
-  try {
-    el.readOnly = true
-    el.focus({ preventScroll: true })
-    window.setTimeout(() => {
-      el.readOnly = false
-      el.focus({ preventScroll: true })
-      try {
-        const len = el.value.length
-        el.setSelectionRange(len, len)
-      } catch {
-        /* */
-      }
-    }, 40)
-  } catch {
+  const placeCaret = () => {
+    try {
+      const len = el.value.length
+      el.setSelectionRange(len, len)
+    } catch {
+      /* */
+    }
+  }
+
+  const focusOnce = () => {
+    try {
+      el.click()
+    } catch {
+      /* */
+    }
     try {
       el.focus({ preventScroll: true })
     } catch {
-      el.focus()
+      try {
+        el.focus()
+      } catch {
+        /* */
+      }
     }
+    placeCaret()
+  }
+
+  try {
+    el.readOnly = true
+    focusOnce()
+    window.setTimeout(() => {
+      el.readOnly = false
+      focusOnce()
+    }, 50)
+  } catch {
+    focusOnce()
   }
 
   return document.activeElement === el
@@ -62,7 +79,7 @@ export function usePassengerTaxiFocus(opts: {
 
   function scheduleFocus(target: 'route' | 'phone') {
     clearTimers()
-    const delays = [0, 80, 200, 450, 800, 1300]
+    const delays = [0, 60, 150, 300, 500, 800, 1200, 1800]
 
     const attempt = () => {
       if (target === 'route' && step.value !== 'route') return
@@ -116,20 +133,23 @@ export function usePassengerTaxiFocus(opts: {
       if (current === 'route') scheduleRouteFocus()
       if (current === 'phone') schedulePhoneFocus()
     },
-    { flush: 'post' },
+    { flush: 'post', immediate: true },
   )
 
   onMounted(() => {
     prepareTelegramViewport()
     window.addEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
-    if (bootstrapped.value && step.value === 'route') {
-      scheduleRouteFocus()
+    window.addEventListener('zt:passenger-taxi-focus-phone', schedulePhoneFocus)
+    if (bootstrapped.value) {
+      if (step.value === 'route') scheduleRouteFocus()
+      if (step.value === 'phone') schedulePhoneFocus()
     }
   })
 
   onBeforeUnmount(() => {
     clearTimers()
     window.removeEventListener('zt:passenger-taxi-focus-route', scheduleRouteFocus)
+    window.removeEventListener('zt:passenger-taxi-focus-phone', schedulePhoneFocus)
   })
 
   return {

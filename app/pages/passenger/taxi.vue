@@ -96,6 +96,7 @@
               type="tel"
               inputmode="tel"
               autocomplete="tel"
+              autofocus
               enterkeyhint="done"
               placeholder="998901234567"
               class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-base font-semibold tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400/60 focus:border-amber-300"

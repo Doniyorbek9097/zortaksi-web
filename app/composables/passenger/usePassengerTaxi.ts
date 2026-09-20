@@ -104,8 +104,8 @@ export function usePassengerTaxi() {
   )
   const busy = ref(false)
   const doneMessage = ref(cached?.doneMessage || '')
-  /** API sync tugagach — fokus va UI tayyor */
-  const bootstrapped = ref(!!cached || !hasInitData)
+  /** UI va fokus — darhol (API sync fonda) */
+  const bootstrapped = ref(true)
 
   const firstName = computed(() => {
     const tg = getTelegramWebAppUser()
@@ -160,11 +160,17 @@ export function usePassengerTaxi() {
     }
     error.value = ''
     step.value = 'phone'
+    if (import.meta.client) {
+      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
+    }
   }
 
   function goBackToRoute() {
     error.value = ''
     step.value = 'route'
+    if (import.meta.client) {
+      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+    }
   }
 
   function goBackOneStep() {
@@ -290,17 +296,24 @@ export function usePassengerTaxi() {
     }
   }
 
-  onMounted(async () => {
-    if (!hasInitData) {
-      bootstrapped.value = true
-      return
-    }
-    if (!cached) {
-      await syncActiveOrderSilent()
-    }
-    bootstrapped.value = true
-    if (step.value === 'route' && import.meta.client) {
-      window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+  onMounted(() => {
+    if (!hasInitData) return
+
+    void syncActiveOrderSilent().finally(() => {
+      if (!import.meta.client) return
+      if (step.value === 'route') {
+        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+      } else if (step.value === 'phone') {
+        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
+      }
+    })
+
+    if (import.meta.client) {
+      if (step.value === 'route') {
+        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-route'))
+      } else if (step.value === 'phone') {
+        window.dispatchEvent(new CustomEvent('zt:passenger-taxi-focus-phone'))
+      }
     }
   })
 
