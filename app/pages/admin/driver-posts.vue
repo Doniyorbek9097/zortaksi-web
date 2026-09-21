@@ -50,8 +50,8 @@
       <CommonTelegramHtmlEditor
         v-model="globalAppendDraft"
         :rows="4"
-        placeholder="Masalan: <b>Zo'r Taksi</b> — <a href=&quot;https://t.me/zortaksi&quot;>bot</a>"
-        hint="Telegram HTML formatida saqlanadi va barcha e'lonlarga qo'shiladi."
+        placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
+        hint="Formatlangan matn barcha e'lonlarga qo'shiladi. Enter — yangi qator."
       />
       <button
         type="button"
