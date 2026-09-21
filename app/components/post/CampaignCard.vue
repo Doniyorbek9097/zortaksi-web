@@ -40,15 +40,14 @@
       </p>
     </div>
 
-    <p
+    <PostBroadcastTextPreview
       v-if="!hideText"
-      class="font-medium text-slate-600 dark:text-slate-300 leading-snug"
+      :text="campaign.broadcastText || campaign.text"
+      :line-clamp="flat ? 2 : 1"
       :class="[
-        flat ? 'text-[14px] line-clamp-2' : compact ? 'text-[11px] line-clamp-1' : 'text-[13px] line-clamp-1',
+        flat ? 'text-[14px]' : compact ? 'text-[11px]' : 'text-[13px]',
       ]"
-    >
-      {{ campaign.broadcastText || campaign.text }}
-    </p>
+    />
     <p
       v-if="campaign.globalAdminAppendText && !hideText"
       class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80 leading-snug"

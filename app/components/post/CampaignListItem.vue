@@ -11,9 +11,11 @@
       </p>
     </div>
 
-    <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-      {{ campaign.text }}
-    </p>
+    <PostBroadcastTextPreview
+      :text="campaign.broadcastText || campaign.text"
+      :line-clamp="1"
+      class="mt-0.5 text-[11px]"
+    />
 
     <p v-if="campaign.lastError" class="text-[10px] font-bold text-rose-500 mt-0.5 line-clamp-1">
       {{ campaign.lastError }}

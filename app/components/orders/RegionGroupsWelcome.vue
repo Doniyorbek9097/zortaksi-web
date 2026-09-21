@@ -38,11 +38,11 @@
 
               <p class="text-[12px] text-slate-600 dark:text-slate-300 leading-relaxed px-0.5">
                 <template v-if="groups.telegramSessionOk === false">
-                  Telegramda ko'k rangdagi havolani bosing va guruhlarga qo'shiling.
+                  Quyidagi havolani Telegramda oching va guruhlarga qo'shiling.
                   Public guruhda e'lon bering, private guruhdan buyurtmalar oling.
                 </template>
                 <template v-else>
-                  Guruhlarga qo'shilish uchun ko'k rangdagi havolani bosing yoki quyidagi tugmalardan foydalaning.
+                  Quyidagi havolalar orqali guruhlarga qo'shiling yoki tugmalardan foydalaning.
                 </template>
               </p>
 
@@ -60,8 +60,11 @@
                     <p class="text-[13px] font-black text-slate-900 dark:text-white mt-0.5 truncate">
                       {{ groups.public.title }}
                     </p>
-                    <p class="text-[11px] font-bold text-sky-700 dark:text-sky-300 mt-1">
-                      Ko'k havolani bosing — {{ groups.public.title }} guruhiga qo'shiling
+                    <p
+                      v-if="groups.public.joinUrl || groups.public.openUrl"
+                      class="text-[11px] font-black text-sky-800 dark:text-sky-200 mt-1 break-all leading-snug"
+                    >
+                      {{ groups.public.joinUrl || groups.public.openUrl }}
                     </p>
                     <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                       {{ groups.public.hint }}
@@ -89,8 +92,11 @@
                 <p class="text-[13px] font-black text-slate-900 dark:text-white mt-0.5 truncate">
                   {{ groups.private.title }}
                 </p>
-                <p class="text-[11px] font-bold text-violet-700 dark:text-violet-300 mt-1">
-                  Ko'k havolani bosing — {{ groups.private.title }} guruhiga qo'shiling
+                <p
+                  v-if="groups.private.joinUrl || groups.private.manualJoinUrl"
+                  class="text-[11px] font-black text-violet-800 dark:text-violet-200 mt-1 break-all leading-snug"
+                >
+                  {{ groups.private.joinUrl || groups.private.manualJoinUrl }}
                 </p>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                   {{ groups.private.hint }}

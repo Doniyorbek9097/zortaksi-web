@@ -47,11 +47,11 @@
           Yangi yaratilgan va mavjud barcha e'lonlarga avtomatik qo'shiladi. Haydovchi tahrir qila olmaydi.
         </p>
       </div>
-      <textarea
+      <CommonTelegramHtmlEditor
         v-model="globalAppendDraft"
-        rows="3"
-        placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
-        class="w-full px-3 py-2.5 rounded-xl text-sm border border-violet-200 dark:border-violet-800 bg-white dark:bg-slate-950 resize-none"
+        :rows="4"
+        placeholder="Masalan: <b>Zo'r Taksi</b> — <a href=&quot;https://t.me/zortaksi&quot;>bot</a>"
+        hint="Telegram HTML formatida saqlanadi va barcha e'lonlarga qo'shiladi."
       />
       <button
         type="button"
@@ -130,9 +130,11 @@
               {{ c.mode === 'mine' ? 'Meniki' : 'Boshqalar' }}
             </span>
           </div>
-          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-snug">
-            {{ c.broadcastText || c.textPreview }}
-          </p>
+          <PostBroadcastTextPreview
+            :text="c.broadcastText || c.textPreview"
+            :line-clamp="2"
+            class="mt-1 text-[11px]"
+          />
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
             {{ c.groupCount }} guruh · har {{ c.intervalMin }} daqiqa
             <span v-if="c.active"> · ~{{ c.sendsPerDay }}/kun</span>
@@ -227,11 +229,11 @@
             placeholder="Nom"
             class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
           >
-          <textarea
+          <CommonTelegramHtmlEditor
             v-model="editForm.text"
-            rows="4"
+            label="E'lon matni"
+            :rows="5"
             placeholder="Haydovchi matni"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 resize-none"
           />
           <input
             v-model.number="editForm.intervalMin"

@@ -43,11 +43,13 @@
               >
             </div>
 
-            <textarea
+            <CommonTelegramHtmlEditor
               v-model="text"
-              rows="5"
+              class="mt-3"
+              label="E'lon matni"
+              :rows="5"
               placeholder="E'lon matnini yozing…"
-              class="mt-3 w-full px-3.5 py-3 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              hint="Qalin, kursiv, havola va kod uchun yuqoridagi tugmalardan foydalaning."
             />
 
             <label class="mt-4 flex items-center gap-2.5 cursor-pointer select-none">

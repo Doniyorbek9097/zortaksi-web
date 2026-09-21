@@ -7,6 +7,7 @@ export type DriverRegionGroupSide = {
   hint: string
   username?: string
   openUrl?: string
+  joinUrl?: string
   isMember: boolean
   canJoinViaApp: boolean
   manualJoinUrl?: string

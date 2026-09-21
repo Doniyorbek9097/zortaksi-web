@@ -28,9 +28,11 @@
         </p>
       </div>
 
-      <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-        {{ campaign.text }}
-      </p>
+      <PostBroadcastTextPreview
+        :text="campaign.broadcastText || campaign.text"
+        :line-clamp="1"
+        class="mt-0.5 text-[11px]"
+      />
 
       <div class="grid grid-cols-3 gap-1 mt-1.5">
         <button

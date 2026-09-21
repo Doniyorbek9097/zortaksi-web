@@ -37,14 +37,12 @@
           >
         </div>
 
-        <div class="space-y-1">
-          <label class="px-1 text-[11px] font-semibold text-slate-500">E'lon matni</label>
-          <textarea
-            v-model="text"
-            rows="6"
-            class="w-full px-3.5 py-3 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
-          />
-        </div>
+        <CommonTelegramHtmlEditor
+          v-model="text"
+          label="E'lon matni"
+          :rows="6"
+          hint="Qalin, kursiv, havola va kod uchun yuqoridagi tugmalardan foydalaning."
+        />
 
         <div
           v-if="globalAdminAppendText"
@@ -53,9 +51,11 @@
           <p class="text-[10px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
             Barcha e'lonlarga qo'shiladigan xabar
           </p>
-          <p class="text-[13px] font-medium text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-snug">
-            {{ globalAdminAppendText }}
-          </p>
+          <PostBroadcastTextPreview
+            :text="globalAdminAppendText"
+            :line-clamp="null"
+            class="text-[13px]"
+          />
           <p class="text-[10px] font-semibold text-slate-400">
             Bu qism faqat admin tomonidan o'zgartiriladi.
           </p>
