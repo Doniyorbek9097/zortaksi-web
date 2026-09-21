@@ -19,7 +19,7 @@ export type AdminDriverPostCampaign = {
   groupIds: string[]
   groupCount: number
   text: string
-  adminAppendText?: string
+  globalAdminAppendText?: string
   broadcastText?: string
   textPreview: string
   intervalSec: number
@@ -69,6 +69,8 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
   const isSaving = ref(false)
+  const isSavingGlobal = ref(false)
+  const globalAdminAppendText = ref('')
   const error = ref('')
 
   const fetchStats = async () => {
@@ -110,6 +112,7 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
           total: number
           page: number
           hasMore: boolean
+          globalAdminAppendText?: string
         }
       }>(`/admin/driver-post-campaigns?${params.toString()}`)
 
@@ -117,6 +120,9 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
         page.value = res.data.page
         total.value = res.data.total
         hasMore.value = res.data.hasMore
+        if (res.data.globalAdminAppendText !== undefined) {
+          globalAdminAppendText.value = res.data.globalAdminAppendText
+        }
         items.value = append ? [...items.value, ...res.data.items] : res.data.items
       }
     } catch (e: any) {
@@ -176,9 +182,39 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     }
   }
 
+  const fetchGlobalAppend = async () => {
+    const res = await useApi<{ success: boolean; data: { adminAppendText?: string } }>(
+      '/admin/driver-post-campaigns/global-append',
+    )
+    if (res?.success && res.data) {
+      globalAdminAppendText.value = String(res.data.adminAppendText || '')
+    }
+    return globalAdminAppendText.value
+  }
+
+  const saveGlobalAppend = async (text: string) => {
+    isSavingGlobal.value = true
+    error.value = ''
+    try {
+      const res = await useApi<{ success: boolean; data: { adminAppendText?: string } }>(
+        '/admin/driver-post-campaigns/global-append',
+        { method: 'PATCH', body: { adminAppendText: text } },
+      )
+      if (res?.success && res.data) {
+        globalAdminAppendText.value = String(res.data.adminAppendText || '')
+      }
+      return globalAdminAppendText.value
+    } catch (e: any) {
+      error.value = e?.message || 'Saqlanmadi'
+      throw e
+    } finally {
+      isSavingGlobal.value = false
+    }
+  }
+
   const updateCampaign = async (
     id: string,
-    payload: { name?: string; text?: string; adminAppendText?: string; intervalMin?: number },
+    payload: { name?: string; text?: string; intervalMin?: number },
   ) => {
     isSaving.value = true
     error.value = ''
@@ -229,8 +265,12 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     isLoading,
     isLoadingMore,
     isSaving,
+    isSavingGlobal,
+    globalAdminAppendText,
     error,
     fetchStats,
+    fetchGlobalAppend,
+    saveGlobalAppend,
     fetchCampaigns,
     stopCampaign,
     startCampaign,

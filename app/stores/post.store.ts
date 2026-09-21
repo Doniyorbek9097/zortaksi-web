@@ -35,7 +35,7 @@ export type PostCampaign = {
   mode: PostTab
   groupIds: string[]
   text: string
-  adminAppendText?: string
+  globalAdminAppendText?: string
   broadcastText?: string
   intervalSec: number
   intervalMin: number

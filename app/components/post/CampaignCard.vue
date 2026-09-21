@@ -50,7 +50,7 @@
       {{ campaign.broadcastText || campaign.text }}
     </p>
     <p
-      v-if="campaign.adminAppendText && !hideText"
+      v-if="campaign.globalAdminAppendText && !hideText"
       class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80 leading-snug"
       :class="flat ? 'px-0.5' : ''"
     >

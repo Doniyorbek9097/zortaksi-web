@@ -38,6 +38,36 @@
       </div>
     </div>
 
+    <section class="rounded-2xl border border-violet-200/80 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 p-3.5 space-y-2">
+      <div>
+        <p class="text-[12px] font-black text-violet-800 dark:text-violet-200">
+          Barcha e'lonlarga qo'shiladigan xabar
+        </p>
+        <p class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80 mt-0.5 leading-snug">
+          Yangi yaratilgan va mavjud barcha e'lonlarga avtomatik qo'shiladi. Haydovchi tahrir qila olmaydi.
+        </p>
+      </div>
+      <textarea
+        v-model="globalAppendDraft"
+        rows="3"
+        placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
+        class="w-full px-3 py-2.5 rounded-xl text-sm border border-violet-200 dark:border-violet-800 bg-white dark:bg-slate-950 resize-none"
+      />
+      <button
+        type="button"
+        class="w-full py-2.5 rounded-xl text-[12px] font-black text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
+        :disabled="store.isSavingGlobal"
+        @click="onSaveGlobalAppend"
+      >
+        <font-awesome-icon
+          v-if="store.isSavingGlobal"
+          icon="fa-solid fa-spinner"
+          class="animate-spin mr-1"
+        />
+        Global xabarni saqlash
+      </button>
+    </section>
+
     <AdminDriversSearchInput v-model="search" placeholder="Haydovchi, nom yoki matn..." />
 
     <div v-if="store.isLoading && !store.items.length" class="space-y-3">
@@ -102,12 +132,6 @@
           </div>
           <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-snug">
             {{ c.broadcastText || c.textPreview }}
-          </p>
-          <p
-            v-if="c.adminAppendText"
-            class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80"
-          >
-            + admin qo'shimcha
           </p>
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
             {{ c.groupCount }} guruh · har {{ c.intervalMin }} daqiqa
@@ -203,26 +227,12 @@
             placeholder="Nom"
             class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
           >
-          <label class="block space-y-1">
-            <span class="text-[11px] font-bold text-slate-500">Haydovchi matni</span>
-            <textarea
-              v-model="editForm.text"
-              rows="4"
-              placeholder="Haydovchi yozgan matn"
-              class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 resize-none"
-            />
-          </label>
-          <label class="block space-y-1">
-            <span class="text-[11px] font-bold text-violet-600 dark:text-violet-400">
-              Admin qo'shimcha xabar
-            </span>
-            <textarea
-              v-model="editForm.adminAppendText"
-              rows="3"
-              placeholder="Tarqatiladigan xabarga qo'shiladi — haydovchi tahrir qila olmaydi"
-              class="w-full px-3 py-2.5 rounded-xl text-sm border border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/30 resize-none"
-            />
-          </label>
+          <textarea
+            v-model="editForm.text"
+            rows="4"
+            placeholder="Haydovchi matni"
+            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 resize-none"
+          />
           <input
             v-model.number="editForm.intervalMin"
             type="number"
@@ -264,10 +274,10 @@ const search = ref('')
 const driverFilter = ref('')
 const editOpen = ref(false)
 const editTarget = ref<AdminDriverPostCampaign | null>(null)
+const globalAppendDraft = ref('')
 const editForm = ref({
   name: '',
   text: '',
-  adminAppendText: '',
   intervalMin: MIN_POST_INTERVAL_MIN,
   groupCount: 0,
 })
@@ -297,10 +307,16 @@ const onAvatarError = (userId: string) => {
   brokenAvatars.value.add(userId)
 }
 
+const onSaveGlobalAppend = async () => {
+  await store.saveGlobalAppend(globalAppendDraft.value.trim())
+  await reload()
+}
+
 const reload = async () => {
   store.resetList()
   await Promise.all([
     store.fetchStats(),
+    store.fetchGlobalAppend(),
     store.fetchCampaigns({
       page: 1,
       active: activeFilter.value,
@@ -333,7 +349,6 @@ const openEdit = (c: AdminDriverPostCampaign) => {
   editForm.value = {
     name: c.name,
     text: c.text || c.textPreview,
-    adminAppendText: c.adminAppendText || '',
     intervalMin: Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin),
     groupCount: c.groupCount,
   }
@@ -345,7 +360,6 @@ const saveEdit = async () => {
   await store.updateCampaign(editTarget.value.id, {
     name: editForm.value.name.trim(),
     text: editForm.value.text.trim(),
-    adminAppendText: editForm.value.adminAppendText.trim(),
     intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(editForm.value.intervalMin)),
   })
   editOpen.value = false
@@ -364,6 +378,14 @@ watch(search, () => {
 watch(filter, () => void reload())
 
 usePullToRefresh(async () => { await reload() })
+
+watch(
+  () => store.globalAdminAppendText,
+  (v) => {
+    globalAppendDraft.value = v || ''
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   const route = useRoute()
