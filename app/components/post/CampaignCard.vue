@@ -47,7 +47,14 @@
         flat ? 'text-[14px] line-clamp-2' : compact ? 'text-[11px] line-clamp-1' : 'text-[13px] line-clamp-1',
       ]"
     >
-      {{ campaign.text }}
+      {{ campaign.broadcastText || campaign.text }}
+    </p>
+    <p
+      v-if="campaign.adminAppendText && !hideText"
+      class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80 leading-snug"
+      :class="flat ? 'px-0.5' : ''"
+    >
+      + admin qo'shimcha xabar
     </p>
 
     <p

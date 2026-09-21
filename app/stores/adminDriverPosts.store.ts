@@ -19,6 +19,8 @@ export type AdminDriverPostCampaign = {
   groupIds: string[]
   groupCount: number
   text: string
+  adminAppendText?: string
+  broadcastText?: string
   textPreview: string
   intervalSec: number
   intervalMin: number
@@ -176,7 +178,7 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
 
   const updateCampaign = async (
     id: string,
-    payload: { name?: string; text?: string; intervalMin?: number },
+    payload: { name?: string; text?: string; adminAppendText?: string; intervalMin?: number },
   ) => {
     isSaving.value = true
     error.value = ''

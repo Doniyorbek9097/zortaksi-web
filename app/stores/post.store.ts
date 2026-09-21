@@ -35,6 +35,8 @@ export type PostCampaign = {
   mode: PostTab
   groupIds: string[]
   text: string
+  adminAppendText?: string
+  broadcastText?: string
   intervalSec: number
   intervalMin: number
   active: boolean

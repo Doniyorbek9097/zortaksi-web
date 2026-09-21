@@ -101,7 +101,13 @@
             </span>
           </div>
           <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1 line-clamp-2 leading-snug">
-            {{ c.textPreview }}
+            {{ c.broadcastText || c.textPreview }}
+          </p>
+          <p
+            v-if="c.adminAppendText"
+            class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80"
+          >
+            + admin qo'shimcha
           </p>
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
             {{ c.groupCount }} guruh · har {{ c.intervalMin }} daqiqa
@@ -197,12 +203,26 @@
             placeholder="Nom"
             class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
           >
-          <textarea
-            v-model="editForm.text"
-            rows="4"
-            placeholder="Matn"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 resize-none"
-          />
+          <label class="block space-y-1">
+            <span class="text-[11px] font-bold text-slate-500">Haydovchi matni</span>
+            <textarea
+              v-model="editForm.text"
+              rows="4"
+              placeholder="Haydovchi yozgan matn"
+              class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 resize-none"
+            />
+          </label>
+          <label class="block space-y-1">
+            <span class="text-[11px] font-bold text-violet-600 dark:text-violet-400">
+              Admin qo'shimcha xabar
+            </span>
+            <textarea
+              v-model="editForm.adminAppendText"
+              rows="3"
+              placeholder="Tarqatiladigan xabarga qo'shiladi — haydovchi tahrir qila olmaydi"
+              class="w-full px-3 py-2.5 rounded-xl text-sm border border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/30 resize-none"
+            />
+          </label>
           <input
             v-model.number="editForm.intervalMin"
             type="number"
@@ -244,7 +264,13 @@ const search = ref('')
 const driverFilter = ref('')
 const editOpen = ref(false)
 const editTarget = ref<AdminDriverPostCampaign | null>(null)
-const editForm = ref({ name: '', text: '', intervalMin: MIN_POST_INTERVAL_MIN, groupCount: 0 })
+const editForm = ref({
+  name: '',
+  text: '',
+  adminAppendText: '',
+  intervalMin: MIN_POST_INTERVAL_MIN,
+  groupCount: 0,
+})
 
 const filterTabs = [
   { label: 'Hammasi', value: 'all' },
@@ -307,6 +333,7 @@ const openEdit = (c: AdminDriverPostCampaign) => {
   editForm.value = {
     name: c.name,
     text: c.text || c.textPreview,
+    adminAppendText: c.adminAppendText || '',
     intervalMin: Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin),
     groupCount: c.groupCount,
   }
@@ -318,6 +345,7 @@ const saveEdit = async () => {
   await store.updateCampaign(editTarget.value.id, {
     name: editForm.value.name.trim(),
     text: editForm.value.text.trim(),
+    adminAppendText: editForm.value.adminAppendText.trim(),
     intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(editForm.value.intervalMin)),
   })
   editOpen.value = false

@@ -46,6 +46,21 @@
           />
         </div>
 
+        <div
+          v-if="adminAppendText"
+          class="rounded-xl border border-violet-200/80 dark:border-violet-900/50 bg-violet-50/60 dark:bg-violet-950/25 p-3 space-y-1"
+        >
+          <p class="text-[10px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
+            Admin qo'shimcha xabar
+          </p>
+          <p class="text-[13px] font-medium text-slate-700 dark:text-slate-200 whitespace-pre-wrap leading-snug">
+            {{ adminAppendText }}
+          </p>
+          <p class="text-[10px] font-semibold text-slate-400">
+            Bu qism faqat admin tomonidan o'zgartiriladi.
+          </p>
+        </div>
+
         <label class="flex items-center gap-2.5 cursor-pointer select-none">
           <input
             v-model="autoRepeat"
@@ -151,6 +166,7 @@ const success = ref('')
 
 const name = ref('')
 const text = ref('')
+const adminAppendText = ref('')
 const autoRepeat = ref(false)
 const intervalMin = ref(MIN_POST_INTERVAL_MIN)
 const groupIds = ref<string[]>([])
@@ -173,6 +189,7 @@ const requireTariff = () => {
 const fillForm = (c: NonNullable<typeof campaign.value>) => {
   name.value = c.name || ''
   text.value = c.text || ''
+  adminAppendText.value = String(c.adminAppendText || '').trim()
   autoRepeat.value = !!c.active
   intervalMin.value = Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin || MIN_POST_INTERVAL_MIN)
   groupIds.value = [...(c.groupIds || [])]
