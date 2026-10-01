@@ -4,28 +4,6 @@
       {{ label }}
     </label>
 
-    <Transition name="tg-fmt-bar">
-      <div
-        v-if="formatMenu.visible"
-        ref="formatMenuRef"
-        class="flex items-center gap-0.5 overflow-x-auto overscroll-x-contain px-1 py-1 mb-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/95"
-        @mousedown.prevent
-        @touchstart.stop
-      >
-        <button
-          v-for="item in formatMenuItems"
-          :key="item.id"
-          type="button"
-          class="shrink-0 min-w-[2.125rem] h-[2.125rem] px-1.5 rounded-lg text-[11px] font-black text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 active:scale-95 transition-transform"
-          :title="item.label"
-          :aria-label="item.label"
-          @click="onFormatMenuAction(item.id)"
-        >
-          {{ item.icon }}
-        </button>
-      </div>
-    </Transition>
-
     <div
       ref="editorRef"
       class="tg-html-editor w-full px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40 leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto"
@@ -50,6 +28,30 @@
       @keyup="scheduleSelectionMenuUpdate"
       @touchend.passive="scheduleSelectionMenuUpdate"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="formatMenu.visible"
+        ref="formatMenuRef"
+        class="tg-format-menu fixed z-[10050] w-[min(220px,calc(100vw-20px))] max-h-[min(42vh,240px)] overflow-y-auto overscroll-y-contain py-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg shadow-black/12"
+        :style="formatMenuStyle"
+        @mousedown.prevent
+        @touchstart.stop
+      >
+        <button
+          v-for="item in formatMenuItems"
+          :key="item.id"
+          type="button"
+          class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+          @click="onFormatMenuAction(item.id)"
+        >
+          <span class="w-4 text-center text-[11px] text-slate-400 shrink-0" aria-hidden="true">
+            {{ item.icon }}
+          </span>
+          <span class="min-w-0 truncate">{{ item.label }}</span>
+        </button>
+      </div>
+    </Teleport>
 
     <p v-if="hint" class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
       {{ hint }}
@@ -100,7 +102,14 @@ const isFocused = ref(false)
 
 const formatMenu = reactive({
   visible: false,
+  top: 0,
+  left: 0,
 })
+
+const formatMenuStyle = computed(() => ({
+  top: `${formatMenu.top}px`,
+  left: `${formatMenu.left}px`,
+}))
 
 const suppressNativeSelectionChrome = ref(false)
 
@@ -153,7 +162,40 @@ const positionFormatMenu = () => {
     hideFormatMenu()
     return
   }
-  formatMenu.visible = !!getSelectedTextInEditor().trim()
+  if (!getSelectedTextInEditor().trim()) {
+    hideFormatMenu()
+    return
+  }
+
+  const rect = range.getBoundingClientRect()
+  const pad = 6
+  const menuW = formatMenuRef.value?.offsetWidth || 200
+  const menuH = formatMenuRef.value?.offsetHeight || 200
+
+  let left = rect.left + rect.width / 2 - menuW / 2
+  let top = rect.top - menuH - pad
+  if (top < pad) top = rect.bottom + pad
+
+  left = Math.max(pad, Math.min(left, window.innerWidth - menuW - pad))
+  top = Math.max(pad, Math.min(top, window.innerHeight - menuH - pad))
+
+  formatMenu.left = left
+  formatMenu.top = top
+  formatMenu.visible = true
+
+  requestAnimationFrame(() => {
+    const el = formatMenuRef.value
+    if (!el || !formatMenu.visible) return
+    const w = el.offsetWidth
+    const h = el.offsetHeight
+    let l = rect.left + rect.width / 2 - w / 2
+    let t = rect.top - h - pad
+    if (t < pad) t = rect.bottom + pad
+    l = Math.max(pad, Math.min(l, window.innerWidth - w - pad))
+    t = Math.max(pad, Math.min(t, window.innerHeight - h - pad))
+    formatMenu.left = l
+    formatMenu.top = t
+  })
 }
 
 const scheduleSelectionMenuUpdate = () => {
@@ -401,15 +443,8 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.tg-fmt-bar-enter-active,
-.tg-fmt-bar-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.tg-fmt-bar-enter-from,
-.tg-fmt-bar-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
+.tg-format-menu {
+  -webkit-overflow-scrolling: touch;
 }
 
 .tg-html-editor--in-app {
