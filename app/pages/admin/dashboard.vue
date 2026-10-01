@@ -61,6 +61,15 @@
       </div>
     </AdminSectionCard>
 
+    <AdminServerResourceStats
+      :stats="serverStats"
+      :loading="serverResourcesLoading"
+      :maintaining="serverMaintaining"
+      :maintenance-message="serverMaintenanceMessage"
+      :error="serverResourcesError"
+      @maintenance="onServerMaintenance"
+    />
+
     <!-- E'lonlar — ixcham -->
     <button
       v-if="driverPosts"
@@ -196,15 +205,6 @@
         </div>
       </div>
     </section>
-
-    <AdminServerResourceStats
-      :stats="serverStats"
-      :loading="serverResourcesLoading"
-      :maintaining="serverMaintaining"
-      :maintenance-message="serverMaintenanceMessage"
-      :error="serverResourcesError"
-      @maintenance="onServerMaintenance"
-    />
 
     <!-- Guruhlar daromadi -->
     <AdminSectionCard

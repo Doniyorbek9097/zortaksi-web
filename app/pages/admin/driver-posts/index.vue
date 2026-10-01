@@ -228,7 +228,6 @@ const driverFilter = ref('')
 const success = ref('')
 const deleteOpen = ref(false)
 const deleteTarget = ref<AdminDriverPostCampaign | null>(null)
-const listBooted = ref(false)
 
 const filterTabs = [
   { label: 'Hammasi', value: 'all' },
@@ -252,10 +251,9 @@ const onAvatarError = (userId: string) => {
   brokenAvatars.value.add(userId)
 }
 
-const reload = async (opts?: { keepItems?: boolean; silent?: boolean }) => {
-  const keepItems = opts?.keepItems === true
+const reload = async (opts?: { silent?: boolean }) => {
   const silent = opts?.silent === true
-  if (!keepItems) store.resetList()
+  store.resetList()
   await Promise.all([
     store.fetchStats(),
     store.fetchGlobalAppend(),
@@ -267,6 +265,32 @@ const reload = async (opts?: { keepItems?: boolean; silent?: boolean }) => {
       silent,
     }),
   ])
+  store.listHydrated = true
+}
+
+const softRefresh = async () => {
+  await Promise.all([
+    store.fetchStats(),
+    store.fetchGlobalAppend(),
+    store.refreshLoadedPages(listQuery()),
+  ])
+}
+
+const persistScroll = () => {
+  if (!import.meta.client) return
+  store.listScrollY = window.scrollY || document.documentElement.scrollTop || 0
+}
+
+const restoreScroll = () => {
+  if (!import.meta.client) return
+  const y = store.listScrollY
+  if (y <= 0) return
+  const apply = () => window.scrollTo({ top: y, left: 0, behavior: 'instant' })
+  apply()
+  requestAnimationFrame(() => {
+    apply()
+    requestAnimationFrame(apply)
+  })
 }
 
 const listQuery = () => ({
@@ -280,7 +304,10 @@ const loadMore = () => store.loadMore(listQuery())
 const sentinel = ref<HTMLElement | null>(null)
 let scrollObserver: IntersectionObserver | null = null
 
-const openDriver = (userId: string) => navigateTo(`/driver/user/${encodeURIComponent(userId)}`)
+const openDriver = (userId: string) => {
+  persistScroll()
+  navigateTo(`/driver/user/${encodeURIComponent(userId)}`)
+}
 
 const onToggle = async (c: AdminDriverPostCampaign) => {
   success.value = ''
@@ -295,6 +322,7 @@ const onToggle = async (c: AdminDriverPostCampaign) => {
 }
 
 const openEdit = (c: AdminDriverPostCampaign) => {
+  persistScroll()
   navigateTo(`/admin/driver-posts/${encodeURIComponent(c.id)}/edit`)
 }
 
@@ -325,17 +353,21 @@ const bootList = async () => {
   const uid = String(route.query.userId || '').trim()
   if (uid) driverFilter.value = uid
 
-  if (listBooted.value && store.items.length) {
-    await reload({ keepItems: true, silent: true })
+  if (store.listHydrated && store.items.length) {
+    await softRefresh()
+    nextTick(() => restoreScroll())
     return
   }
 
   await reload()
-  listBooted.value = true
 }
 
 onMounted(async () => {
-  await bootList()
+  if (store.listHydrated && store.items.length) {
+    nextTick(() => restoreScroll())
+  } else {
+    await bootList()
+  }
 
   scrollObserver = new IntersectionObserver(
     (entries) => {
@@ -347,9 +379,16 @@ onMounted(async () => {
 })
 
 onActivated(() => {
-  if (listBooted.value && store.items.length) {
-    void reload({ keepItems: true, silent: true })
+  if (store.listHydrated && store.items.length) {
+    void softRefresh().then(() => {
+      nextTick(() => restoreScroll())
+      setTimeout(restoreScroll, 50)
+    })
   }
+})
+
+onDeactivated(() => {
+  persistScroll()
 })
 
 watch(sentinel, (el) => {
@@ -357,6 +396,7 @@ watch(sentinel, (el) => {
 })
 
 onBeforeUnmount(() => {
+  persistScroll()
   if (scrollObserver) scrollObserver.disconnect()
 })
 </script>

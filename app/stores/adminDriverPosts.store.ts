@@ -72,6 +72,9 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
   const isSavingGlobal = ref(false)
   const globalAdminAppendText = ref('')
   const error = ref('')
+  /** keepalive ro'yxat — tahrir/orqaga scroll */
+  const listScrollY = ref(0)
+  const listHydrated = ref(false)
 
   const fetchStats = async () => {
     const res = await useApi<{ success: boolean; data: AdminDriverPostStats }>(
@@ -90,6 +93,8 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     userId?: string
     append?: boolean
     silent?: boolean
+    /** Sahifa 1 yangilash — yuklangan sahifalarni kesmasdan ID bo'yicha yangilash */
+    mergeFirstPage?: boolean
   }) => {
     const nextPage = opts?.page ?? 1
     const append = opts?.append === true
@@ -119,13 +124,28 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
       }>(`/admin/driver-post-campaigns?${params.toString()}`)
 
       if (res?.success && res.data) {
-        page.value = res.data.page
-        total.value = res.data.total
-        hasMore.value = res.data.hasMore
+        const loadedPage = page.value
         if (res.data.globalAdminAppendText !== undefined) {
           globalAdminAppendText.value = res.data.globalAdminAppendText
         }
-        items.value = append ? [...items.value, ...res.data.items] : res.data.items
+        if (opts?.mergeFirstPage && !append) {
+          const fresh = res.data.items
+          const freshIds = new Set(fresh.map((c) => String(c.id)))
+          const tail = items.value.filter((c) => !freshIds.has(String(c.id)))
+          const mergedHead = fresh.map((c) => {
+            const prev = items.value.find((x) => String(x.id) === String(c.id))
+            return prev ? { ...prev, ...c } : c
+          })
+          items.value = [...mergedHead, ...tail]
+          total.value = res.data.total
+          page.value = Math.max(loadedPage, res.data.page)
+          if (loadedPage <= 1) hasMore.value = res.data.hasMore
+        } else {
+          page.value = res.data.page
+          total.value = res.data.total
+          hasMore.value = res.data.hasMore
+          items.value = append ? [...items.value, ...res.data.items] : res.data.items
+        }
       }
     } catch (e: any) {
       error.value = e?.message || 'Yuklanmadi'
@@ -290,6 +310,61 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     })
   }
 
+  /** Yuklangan barcha sahifalarni qayta olish (scroll/pagination saqlanadi) */
+  const refreshLoadedPages = async (opts?: {
+    active?: boolean | null
+    q?: string
+    userId?: string
+  }) => {
+    const lastPage = Math.max(1, page.value)
+    if (lastPage === 1) {
+      await fetchCampaigns({
+        page: 1,
+        active: opts?.active,
+        q: opts?.q,
+        userId: opts?.userId,
+        silent: true,
+        mergeFirstPage: true,
+      })
+      return
+    }
+    const acc: AdminDriverPostCampaign[] = []
+    let lastHasMore = false
+    let lastTotal = total.value
+    for (let p = 1; p <= lastPage; p++) {
+      const params = new URLSearchParams()
+      params.set('page', String(p))
+      params.set('limit', String(DRIVER_POSTS_PAGE_SIZE))
+      if (opts?.active === true) params.set('active', 'true')
+      if (opts?.active === false) params.set('active', 'false')
+      if (opts?.q) params.set('q', opts.q)
+      if (opts?.userId) params.set('userId', opts.userId)
+      const res = await useApi<{
+        success: boolean
+        data: {
+          items: AdminDriverPostCampaign[]
+          total: number
+          page: number
+          hasMore: boolean
+          globalAdminAppendText?: string
+        }
+      }>(`/admin/driver-post-campaigns?${params.toString()}`)
+      if (!res?.success || !res.data) break
+      acc.push(...res.data.items)
+      lastHasMore = res.data.hasMore
+      lastTotal = res.data.total
+      if (res.data.globalAdminAppendText !== undefined) {
+        globalAdminAppendText.value = res.data.globalAdminAppendText
+      }
+    }
+    if (acc.length) {
+      items.value = acc
+      page.value = lastPage
+      hasMore.value = lastHasMore
+      total.value = lastTotal
+    }
+  }
+
   return {
     stats,
     items,
@@ -301,6 +376,8 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     isSaving,
     isSavingGlobal,
     globalAdminAppendText,
+    listScrollY,
+    listHydrated,
     error,
     fetchStats,
     fetchGlobalAppend,
@@ -313,5 +390,6 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     deleteCampaign,
     resetList,
     loadMore,
+    refreshLoadedPages,
   }
 })
