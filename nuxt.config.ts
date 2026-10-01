@@ -90,8 +90,9 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+        { rel: 'icon', type: 'image/png', href: '/logo.png' },
         { rel: 'apple-touch-icon', href: '/icons/apple-touch-icon.png' },
-        { rel: 'apple-touch-startup-image', href: '/logo.jpg' },
+        { rel: 'apple-touch-startup-image', href: '/logo.png' },
         // Backup if NuxtPwaManifest is missing from a layout; primary injection is <NuxtPwaManifest />
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
