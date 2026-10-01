@@ -1,6 +1,6 @@
 import { inferTextFormat, sanitizeTelegramHtml } from '~/utils/telegramHtml'
 
-export type TelegramHtmlTag = 'b' | 'i' | 'a' | 'code'
+export type TelegramHtmlTag = 'b' | 'i' | 'a' | 'code' | 'blockquote'
 
 export type WrapSelectionResult = {
   text: string
@@ -93,6 +93,13 @@ function serializeEditorNode(node: Node, parts: string[], isBlockRoot = false): 
     parts.push(`<a href="${href}">`)
     for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
     parts.push('</a>')
+    return
+  }
+
+  if (tag === 'blockquote') {
+    parts.push('<blockquote>')
+    for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
+    parts.push('</blockquote>')
     return
   }
 

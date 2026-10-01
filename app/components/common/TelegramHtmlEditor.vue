@@ -5,25 +5,6 @@
     </label>
 
     <div
-      class="flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
-    >
-      <button
-        v-for="btn in toolbar"
-        :key="btn.tag"
-        type="button"
-        class="min-w-8 h-8 px-2 rounded-lg text-[12px] font-black text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-900 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors"
-        :title="btn.title"
-        @mousedown.prevent
-        @click="onTag(btn.tag)"
-      >
-        <span v-if="btn.tag === 'b'" class="font-black">B</span>
-        <span v-else-if="btn.tag === 'i'" class="italic font-bold">I</span>
-        <span v-else-if="btn.tag === 'a'" class="underline font-bold">A</span>
-        <span v-else class="font-mono text-[10px] font-bold">code</span>
-      </button>
-    </div>
-
-    <div
       ref="editorRef"
       class="tg-html-editor w-full px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40 leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto"
       :style="{ '--editor-min-h': `${Math.max(3, rows) * 1.6}rem` }"
@@ -61,7 +42,8 @@ const props = withDefaults(
   }>(),
   {
     rows: 4,
-    hint: 'Matn formatlangan ko\'rinadi. Enter — yangi qator.',
+    hint:
+      'Matnni belgilang, keyin: b — qalin, i — kursiv, a — havola, c — kod, q — iqtibos. Enter — yangi qator.',
   },
 )
 
@@ -70,12 +52,13 @@ const modelValue = defineModel<string>({ default: '' })
 const editorRef = ref<HTMLDivElement | null>(null)
 const isFocused = ref(false)
 
-const toolbar: Array<{ tag: TelegramHtmlTag; title: string }> = [
-  { tag: 'b', title: 'Qalin' },
-  { tag: 'i', title: 'Kursiv' },
-  { tag: 'a', title: 'Havola' },
-  { tag: 'code', title: 'Kod' },
-]
+const FORMAT_KEY_TO_TAG: Record<string, TelegramHtmlTag> = {
+  b: 'b',
+  i: 'i',
+  a: 'a',
+  c: 'code',
+  q: 'blockquote',
+}
 
 const renderEditorFromModel = (value: string) => {
   const el = editorRef.value
@@ -107,7 +90,24 @@ const onEditorInput = () => {
   syncFromEditor()
 }
 
+const selectionIsNonEmpty = (): boolean => {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0) return false
+  const range = sel.getRangeAt(0)
+  if (!editorRef.value?.contains(range.commonAncestorContainer)) return false
+  return !range.collapsed
+}
+
 const onEditorKeydown = (e: KeyboardEvent) => {
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && selectionIsNonEmpty()) {
+    const tag = FORMAT_KEY_TO_TAG[e.key.toLowerCase()]
+    if (tag) {
+      e.preventDefault()
+      applyFormat(tag)
+      return
+    }
+  }
+
   if (e.key !== 'Enter' || e.shiftKey) return
   e.preventDefault()
   editorRef.value?.focus()
@@ -164,7 +164,7 @@ const wrapSelectionWithTag = (tag: string, attrs?: Record<string, string>) => {
   sel.addRange(range)
 }
 
-const onTag = (tag: TelegramHtmlTag) => {
+const applyFormat = (tag: TelegramHtmlTag) => {
   focusEditor()
 
   if (tag === 'a') {
@@ -179,6 +179,12 @@ const onTag = (tag: TelegramHtmlTag) => {
 
   if (tag === 'code') {
     wrapSelectionWithTag('code')
+    syncFromEditor()
+    return
+  }
+
+  if (tag === 'blockquote') {
+    wrapSelectionWithTag('blockquote')
     syncFromEditor()
     return
   }
@@ -248,5 +254,17 @@ onBeforeUnmount(() => {
 
 :global(.dark) .tg-html-editor :deep(a) {
   color: rgb(125 211 252);
+}
+
+.tg-html-editor :deep(blockquote) {
+  margin: 0.35em 0;
+  padding: 0.35em 0.65em;
+  border-left: 3px solid rgb(148 163 184);
+  color: rgb(71 85 105);
+}
+
+:global(.dark) .tg-html-editor :deep(blockquote) {
+  border-left-color: rgb(100 116 139);
+  color: rgb(203 213 225);
 }
 </style>

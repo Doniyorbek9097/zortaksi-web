@@ -21,8 +21,14 @@ export function sanitizeTelegramHtml(html: string): string {
   s = s.replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
   s = s.replace(/javascript:/gi, '')
   // Telegram formatidagi teglar
-  s = s.replace(/<(\/?)(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br)(\s[^>]*)?>/gi, '<$1$2$3>')
-  s = s.replace(/<(?!\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br)\b)[^>]+>/gi, '')
+  s = s.replace(
+    /<(\/?)(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote)(\s[^>]*)?>/gi,
+    '<$1$2$3>',
+  )
+  s = s.replace(
+    /<(?!\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote)\b)[^>]+>/gi,
+    '',
+  )
   return s
 }
 

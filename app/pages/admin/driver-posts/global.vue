@@ -22,7 +22,7 @@
       v-model="draft"
       :rows="8"
       placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
-      hint="Formatlangan matn barcha e'lonlarga qo'shiladi. Enter — yangi qator."
+      hint="Matnni belgilang: b — qalin, i — kursiv, a — havola, c — kod, q — iqtibos."
     />
 
     <button
