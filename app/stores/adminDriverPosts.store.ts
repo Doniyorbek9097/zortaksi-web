@@ -175,7 +175,7 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
       await fetchStats()
       return res?.data
     } catch (e: any) {
-      error.value = e?.message || 'Boshlab bo\'lmadi'
+      error.value = e?.response?.data?.message || e?.message || 'Boshlab bo\'lmadi'
       throw e
     } finally {
       isSaving.value = false
@@ -256,6 +256,21 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     total.value = 0
   }
 
+  const loadMore = async (opts?: {
+    active?: boolean | null
+    q?: string
+    userId?: string
+  }) => {
+    if (isLoading.value || isLoadingMore.value || !hasMore.value) return
+    await fetchCampaigns({
+      page: page.value + 1,
+      active: opts?.active,
+      q: opts?.q,
+      userId: opts?.userId,
+      append: true,
+    })
+  }
+
   return {
     stats,
     items,
@@ -277,5 +292,6 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     updateCampaign,
     deleteCampaign,
     resetList,
+    loadMore,
   }
 })

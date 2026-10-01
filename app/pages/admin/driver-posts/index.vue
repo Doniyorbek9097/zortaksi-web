@@ -41,7 +41,7 @@
     <button
       type="button"
       class="w-full flex items-center gap-3 rounded-2xl border border-violet-200/80 dark:border-violet-900/50 bg-white dark:bg-slate-900 px-3.5 py-3 text-left active:scale-[0.99] transition-transform"
-      @click="openGlobalDialog"
+      @click="navigateTo('/admin/driver-posts/global')"
     >
       <span
         class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-violet-100 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300"
@@ -156,6 +156,15 @@
           </button>
           <button
             type="button"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-violet-600 border border-violet-200 dark:border-violet-900/50 bg-violet-500/5"
+            :disabled="store.isSaving"
+            @click="openTariff(c)"
+          >
+            <font-awesome-icon icon="fa-solid fa-key" class="text-[9px]" />
+            Tarif
+          </button>
+          <button
+            type="button"
             class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5"
             :disabled="store.isSaving"
             @click="openEdit(c)"
@@ -175,124 +184,34 @@
         </div>
       </article>
 
-      <div
-        v-if="store.total > DRIVER_POSTS_PAGE_SIZE"
-        class="flex items-center justify-between gap-2 pt-1"
-      >
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 disabled:opacity-40 active:scale-95 transition-transform"
-          :disabled="store.page <= 1 || store.isLoading"
-          @click="goPage(store.page - 1)"
-        >
-          <font-awesome-icon icon="fa-solid fa-chevron-left" class="text-[9px]" />
-          Oldingi
-        </button>
-        <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
-          {{ store.page }} / {{ totalPages }}
-        </span>
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-[11px] font-black text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 disabled:opacity-40 active:scale-95 transition-transform"
-          :disabled="!store.hasMore || store.isLoading"
-          @click="goPage(store.page + 1)"
-        >
-          Keyingi
-          <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[9px]" />
-        </button>
+      <div ref="sentinel" class="h-1" />
+
+      <div v-if="store.isLoadingMore" class="space-y-3 pt-1">
+        <div
+          v-for="n in 2"
+          :key="n"
+          class="h-28 rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+        />
       </div>
+
+      <p
+        v-else-if="!store.hasMore && store.items.length"
+        class="py-3 text-center text-[12px] font-bold text-slate-400 dark:text-slate-500"
+      >
+        — Hammasi yuklandi —
+      </p>
     </div>
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">{{ store.error }}</p>
+    <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500">{{ success }}</p>
 
-    <Teleport to="body">
-      <div
-        v-if="globalDialogOpen"
-        class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
-        @click.self="globalDialogOpen = false"
-      >
-        <div
-          class="w-full md:max-w-md max-h-[min(90vh,640px)] overflow-y-auto bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl border border-violet-200/80 dark:border-violet-900/50 p-5 space-y-3"
-        >
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <h3 class="text-lg font-black text-violet-800 dark:text-violet-200">
-                Barcha e'lonlarga qo'shiladigan xabar
-              </h3>
-              <p class="text-[11px] font-semibold text-violet-600/80 dark:text-violet-400/80 mt-1 leading-snug">
-                Yangi yaratilgan va mavjud barcha e'lonlarga avtomatik qo'shiladi. Haydovchi tahrir qila olmaydi.
-              </p>
-            </div>
-            <button
-              type="button"
-              class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Yopish"
-              @click="globalDialogOpen = false"
-            >
-              <font-awesome-icon icon="fa-solid fa-times" />
-            </button>
-          </div>
-          <CommonTelegramHtmlEditor
-            v-model="globalAppendDraft"
-            :rows="6"
-            placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
-            hint="Formatlangan matn barcha e'lonlarga qo'shiladi. Enter — yangi qator."
-          />
-          <button
-            type="button"
-            class="w-full py-3 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
-            :disabled="store.isSavingGlobal"
-            @click="onSaveGlobalAppendAndClose"
-          >
-            <font-awesome-icon
-              v-if="store.isSavingGlobal"
-              icon="fa-solid fa-spinner"
-              class="animate-spin mr-1"
-            />
-            Global xabarni saqlash
-          </button>
-        </div>
-      </div>
-
-      <div
-        v-if="editOpen"
-        class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
-        @click.self="editOpen = false"
-      >
-        <div class="w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
-          <h3 class="text-lg font-black text-slate-900 dark:text-white">E'lonni tahrirlash</h3>
-          <input
-            v-model="editForm.name"
-            type="text"
-            maxlength="80"
-            placeholder="Nom"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
-          >
-          <CommonTelegramHtmlEditor
-            v-model="editForm.text"
-            label="E'lon matni"
-            :rows="5"
-            placeholder="Haydovchi matni"
-          />
-          <input
-            v-model.number="editForm.intervalMin"
-            type="number"
-            min="10"
-            max="1440"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
-          >
-          <p class="text-[10px] text-slate-400">Minimal interval: 10 daqiqa · Guruhlar: {{ editForm.groupCount }}</p>
-          <button
-            type="button"
-            class="w-full py-3 rounded-xl text-sm font-black text-white bg-sky-500 disabled:opacity-50"
-            :disabled="store.isSaving"
-            @click="saveEdit"
-          >
-            Saqlash
-          </button>
-        </div>
-      </div>
-    </Teleport>
+    <AdminDriversTariffDialog
+      v-model="tariffOpen"
+      :balance="tariffTarget?.owner.balance ?? 0"
+      :tariffs="tariffStore.tariffs"
+      :loading="driverStore.isSaving"
+      @confirm="saveTariff"
+    />
   </div>
 </template>
 
@@ -301,28 +220,23 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
-import { DRIVER_POSTS_PAGE_SIZE } from '~/utils/memoryBudget'
+import { useDriverStore } from '~/stores/driver.store'
+import { useTariffStore } from '~/stores/tariff.store'
 
 definePageMeta({ layout: 'admin' })
 
 const store = useAdminDriverPostsStore()
+const driverStore = useDriverStore()
+const tariffStore = useTariffStore()
 const { avatarUrl } = useMediaUrl()
 const brokenAvatars = ref<Set<string>>(new Set())
 
 const filter = ref<'all' | 'active' | 'paused'>('all')
 const search = ref('')
 const driverFilter = ref('')
-const globalDialogOpen = ref(false)
-const editOpen = ref(false)
-const editTarget = ref<AdminDriverPostCampaign | null>(null)
-const globalAppendDraft = ref('')
-const editForm = ref({
-  name: '',
-  text: '',
-  intervalMin: MIN_POST_INTERVAL_MIN,
-  groupCount: 0,
-})
+const success = ref('')
+const tariffOpen = ref(false)
+const tariffTarget = ref<AdminDriverPostCampaign | null>(null)
 
 const filterTabs = [
   { label: 'Hammasi', value: 'all' },
@@ -331,9 +245,6 @@ const filterTabs = [
 ]
 
 const stats = computed(() => store.stats)
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(store.total / DRIVER_POSTS_PAGE_SIZE)),
-)
 const activeFilter = computed(() => {
   if (filter.value === 'active') return true
   if (filter.value === 'paused') return false
@@ -349,19 +260,38 @@ const onAvatarError = (userId: string) => {
   brokenAvatars.value.add(userId)
 }
 
-const openGlobalDialog = () => {
-  globalAppendDraft.value = store.globalAdminAppendText || ''
-  globalDialogOpen.value = true
+const isTariffRequiredError = (e: unknown) => {
+  const err = e as { response?: { data?: { code?: string; message?: string } }; message?: string }
+  const code = err?.response?.data?.code
+  const msg = String(err?.response?.data?.message || err?.message || '')
+  return code === 'TARIFF_REQUIRED' || /faol tarif/i.test(msg)
 }
 
-const onSaveGlobalAppend = async () => {
-  await store.saveGlobalAppend(globalAppendDraft.value.trim())
-  await reload()
+const openTariff = async (c: AdminDriverPostCampaign) => {
+  tariffTarget.value = c
+  tariffOpen.value = true
+  if (!tariffStore.tariffs.length) {
+    try {
+      await tariffStore.fetchTariffs()
+    } catch { /* */ }
+  }
 }
 
-const onSaveGlobalAppendAndClose = async () => {
-  await onSaveGlobalAppend()
-  globalDialogOpen.value = false
+const saveTariff = async (payload: { tariffId: string; deductFromBalance: boolean }) => {
+  if (!tariffTarget.value) return
+  store.error = ''
+  success.value = ''
+  try {
+    await driverStore.assignTariff(tariffTarget.value.userId, payload.tariffId, {
+      deductFromBalance: payload.deductFromBalance,
+    })
+    tariffOpen.value = false
+    tariffTarget.value = null
+    success.value = 'Tarif yangilandi'
+    await reload()
+  } catch (e: any) {
+    store.error = e?.response?.data?.message || 'Tarif biriktirilmadi'
+  }
 }
 
 const reload = async () => {
@@ -378,43 +308,38 @@ const reload = async () => {
   ])
 }
 
-const goPage = async (nextPage: number) => {
-  if (nextPage < 1 || store.isLoading) return
-  if (nextPage > store.page && !store.hasMore) return
-  await store.fetchCampaigns({
-    page: nextPage,
-    active: activeFilter.value,
-    q: search.value.trim() || undefined,
-    userId: driverFilter.value || undefined,
-  })
-}
+const listQuery = () => ({
+  active: activeFilter.value,
+  q: search.value.trim() || undefined,
+  userId: driverFilter.value || undefined,
+})
+
+const loadMore = () => store.loadMore(listQuery())
+
+const sentinel = ref<HTMLElement | null>(null)
+let scrollObserver: IntersectionObserver | null = null
 
 const openDriver = (userId: string) => navigateTo(`/driver/user/${encodeURIComponent(userId)}`)
 
 const onToggle = async (c: AdminDriverPostCampaign) => {
-  if (c.active) await store.stopCampaign(c.id)
-  else await store.startCampaign(c.id)
+  success.value = ''
+  if (c.active) {
+    await store.stopCampaign(c.id)
+    return
+  }
+  try {
+    await store.startCampaign(c.id)
+    success.value = `«${c.name}» boshlandi`
+  } catch (e) {
+    if (isTariffRequiredError(e)) {
+      store.error = ''
+      await openTariff(c)
+    }
+  }
 }
 
 const openEdit = (c: AdminDriverPostCampaign) => {
-  editTarget.value = c
-  editForm.value = {
-    name: c.name,
-    text: c.text || c.textPreview,
-    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin),
-    groupCount: c.groupCount,
-  }
-  editOpen.value = true
-}
-
-const saveEdit = async () => {
-  if (!editTarget.value) return
-  await store.updateCampaign(editTarget.value.id, {
-    name: editForm.value.name.trim(),
-    text: editForm.value.text.trim(),
-    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(editForm.value.intervalMin)),
-  })
-  editOpen.value = false
+  navigateTo(`/admin/driver-posts/${encodeURIComponent(c.id)}/edit`)
 }
 
 const onDelete = async (c: AdminDriverPostCampaign) => {
@@ -431,18 +356,27 @@ watch(filter, () => void reload())
 
 usePullToRefresh(async () => { await reload() })
 
-watch(
-  () => store.globalAdminAppendText,
-  (v) => {
-    globalAppendDraft.value = v || ''
-  },
-  { immediate: true },
-)
-
 onMounted(async () => {
   const route = useRoute()
   const uid = String(route.query.userId || '').trim()
   if (uid) driverFilter.value = uid
+  tariffStore.fetchTariffs().catch(() => {})
   await reload()
+
+  scrollObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) loadMore()
+    },
+    { rootMargin: '200px' },
+  )
+  if (sentinel.value) scrollObserver.observe(sentinel.value)
+})
+
+watch(sentinel, (el) => {
+  if (scrollObserver && el) scrollObserver.observe(el)
+})
+
+onBeforeUnmount(() => {
+  if (scrollObserver) scrollObserver.disconnect()
 })
 </script>
