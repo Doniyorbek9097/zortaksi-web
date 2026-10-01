@@ -267,6 +267,10 @@ export const usePostStore = defineStore('post', () => {
 
   const handlePostActionError = (e: any, fallback: string) => {
     if (isPostTariffError(e)) {
+      if (isAdmin.value) {
+        error.value = e?.response?.data?.message || fallback
+        return
+      }
       error.value = ''
       redirectToPostTariffPayment()
       return

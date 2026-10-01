@@ -38,35 +38,26 @@
       </div>
     </div>
 
-    <section class="rounded-2xl border border-violet-200/80 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 p-3.5 space-y-2">
-      <div>
-        <p class="text-[12px] font-black text-violet-800 dark:text-violet-200">
-          Barcha e'lonlarga qo'shiladigan xabar
-        </p>
-        <p class="text-[10px] font-semibold text-violet-600/80 dark:text-violet-400/80 mt-0.5 leading-snug">
-          Yangi yaratilgan va mavjud barcha e'lonlarga avtomatik qo'shiladi. Haydovchi tahrir qila olmaydi.
-        </p>
-      </div>
-      <CommonTelegramHtmlEditor
-        v-model="globalAppendDraft"
-        :rows="4"
-        placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
-        hint="Formatlangan matn barcha e'lonlarga qo'shiladi. Enter — yangi qator."
-      />
-      <button
-        type="button"
-        class="w-full py-2.5 rounded-xl text-[12px] font-black text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
-        :disabled="store.isSavingGlobal"
-        @click="onSaveGlobalAppend"
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 rounded-2xl border border-violet-200/80 dark:border-violet-900/50 bg-white dark:bg-slate-900 px-3.5 py-3 text-left active:scale-[0.99] transition-transform"
+      @click="openGlobalDialog"
+    >
+      <span
+        class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center bg-violet-100 dark:bg-violet-950/50 text-violet-600 dark:text-violet-300"
       >
-        <font-awesome-icon
-          v-if="store.isSavingGlobal"
-          icon="fa-solid fa-spinner"
-          class="animate-spin mr-1"
-        />
-        Global xabarni saqlash
-      </button>
-    </section>
+        <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-sm" />
+      </span>
+      <span class="min-w-0 flex-1">
+        <span class="block text-[12px] font-black text-slate-900 dark:text-white">
+          Global xabar
+        </span>
+        <span class="block text-[10px] font-semibold text-slate-400 truncate mt-0.5">
+          Barcha e'lonlarga qo'shiladigan matn
+        </span>
+      </span>
+      <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[10px] text-slate-400 shrink-0" />
+    </button>
 
     <AdminDriversSearchInput v-model="search" placeholder="Haydovchi, nom yoki matn..." />
 
@@ -216,6 +207,54 @@
 
     <Teleport to="body">
       <div
+        v-if="globalDialogOpen"
+        class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
+        @click.self="globalDialogOpen = false"
+      >
+        <div
+          class="w-full md:max-w-md max-h-[min(90vh,640px)] overflow-y-auto bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl border border-violet-200/80 dark:border-violet-900/50 p-5 space-y-3"
+        >
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h3 class="text-lg font-black text-violet-800 dark:text-violet-200">
+                Barcha e'lonlarga qo'shiladigan xabar
+              </h3>
+              <p class="text-[11px] font-semibold text-violet-600/80 dark:text-violet-400/80 mt-1 leading-snug">
+                Yangi yaratilgan va mavjud barcha e'lonlarga avtomatik qo'shiladi. Haydovchi tahrir qila olmaydi.
+              </p>
+            </div>
+            <button
+              type="button"
+              class="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Yopish"
+              @click="globalDialogOpen = false"
+            >
+              <font-awesome-icon icon="fa-solid fa-times" />
+            </button>
+          </div>
+          <CommonTelegramHtmlEditor
+            v-model="globalAppendDraft"
+            :rows="6"
+            placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
+            hint="Formatlangan matn barcha e'lonlarga qo'shiladi. Enter — yangi qator."
+          />
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl text-sm font-black text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-50"
+            :disabled="store.isSavingGlobal"
+            @click="onSaveGlobalAppendAndClose"
+          >
+            <font-awesome-icon
+              v-if="store.isSavingGlobal"
+              icon="fa-solid fa-spinner"
+              class="animate-spin mr-1"
+            />
+            Global xabarni saqlash
+          </button>
+        </div>
+      </div>
+
+      <div
         v-if="editOpen"
         class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
         @click.self="editOpen = false"
@@ -274,6 +313,7 @@ const brokenAvatars = ref<Set<string>>(new Set())
 const filter = ref<'all' | 'active' | 'paused'>('all')
 const search = ref('')
 const driverFilter = ref('')
+const globalDialogOpen = ref(false)
 const editOpen = ref(false)
 const editTarget = ref<AdminDriverPostCampaign | null>(null)
 const globalAppendDraft = ref('')
@@ -309,9 +349,19 @@ const onAvatarError = (userId: string) => {
   brokenAvatars.value.add(userId)
 }
 
+const openGlobalDialog = () => {
+  globalAppendDraft.value = store.globalAdminAppendText || ''
+  globalDialogOpen.value = true
+}
+
 const onSaveGlobalAppend = async () => {
   await store.saveGlobalAppend(globalAppendDraft.value.trim())
   await reload()
+}
+
+const onSaveGlobalAppendAndClose = async () => {
+  await onSaveGlobalAppend()
+  globalDialogOpen.value = false
 }
 
 const reload = async () => {

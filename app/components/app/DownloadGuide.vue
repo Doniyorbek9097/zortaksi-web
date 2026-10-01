@@ -14,7 +14,7 @@
       <div class="leading-none flex-1 min-w-0">
         <h1 class="text-lg font-black text-slate-900 dark:text-white">Ilovani yuklab olish</h1>
         <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-          Android uchun rasmiy APK
+          Android uchun rasmiy ilova
         </p>
       </div>
     </header>
@@ -43,7 +43,7 @@
         @click="startDownload"
       >
         <font-awesome-icon :icon="downloading ? 'fa-solid fa-spinner' : 'fa-solid fa-download'" :class="downloading ? 'animate-spin' : ''" />
-        {{ downloading ? 'Yuklanmoqda…' : 'Ilovani yuklab olish (APK)' }}
+        {{ downloading ? 'Yuklanmoqda…' : 'Ilovani yuklab olish' }}
       </button>
 
       <p class="text-sm font-medium text-slate-400 dark:text-slate-500">
@@ -172,12 +172,12 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null
 const officialSites = ['zortaxi.uz', 'zortaksi.uz']
 
 const fraudTips = [
-  'Telegramdagi yoki ishonchsiz havolalardan APK yuklamang.',
+  'Telegramdagi yoki ishonchsiz havolalardan ilova yuklamang.',
   'Soxta ilovalar orqali akkaunt yoki pulingizni yo\'qotishingiz mumkin.',
 ]
 
 const steps = [
-  '«Ilovani yuklab olish» tugmasini bosing — APK fayl yuklanadi.',
+  '«Ilovani yuklab olish» tugmasini bosing — fayl yuklanadi.',
   'Yuklangan faylni oching; kerak bo\'lsa «noma\'lum manbalar»ga ruxsat bering.',
   'O\'rnatib, ilovani oching va Telegram orqali kiring.',
 ]
