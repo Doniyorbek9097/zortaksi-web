@@ -268,7 +268,7 @@ export const usePostStore = defineStore('post', () => {
   const handlePostActionError = (e: any, fallback: string) => {
     if (isPostTariffError(e)) {
       if (isAdmin.value) {
-        error.value = e?.response?.data?.message || fallback
+        error.value = ''
         return
       }
       error.value = ''
@@ -502,9 +502,10 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true
     try {
-      isCampaignsLoading.value = true
+      if (!silent) isCampaignsLoading.value = true
       const res = await useApi('/groups/broadcast/campaigns')
       if (res.success) {
         campaigns.value = (res.data?.campaigns ?? []) as PostCampaign[]
@@ -522,9 +523,10 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
-  const fetchCampaignStats = async () => {
+  const fetchCampaignStats = async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true
     try {
-      isCampaignStatsLoading.value = true
+      if (!silent) isCampaignStatsLoading.value = true
       const res = await useApi('/groups/broadcast/campaigns/stats')
       if (res.success) {
         campaignSummary.value = res.data as PostCampaignSummary
@@ -549,7 +551,8 @@ export const usePostStore = defineStore('post', () => {
     }
   }
 
-  const refreshCampaignData = async () => {
+  const refreshCampaignData = async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent === true
     const canFetch =
       !!authStore.user?.userId ||
       authStore.isAuthenticated ||
@@ -559,8 +562,8 @@ export const usePostStore = defineStore('post', () => {
     hydrateActiveCampaignCache()
 
     const [campaignsRes, statsRes] = await Promise.all([
-      fetchCampaigns(),
-      fetchCampaignStats(),
+      fetchCampaigns({ silent }),
+      fetchCampaignStats({ silent }),
     ])
 
     const fetchedOk = Boolean(campaignsRes?.success || statsRes?.success)

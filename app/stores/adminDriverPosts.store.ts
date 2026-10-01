@@ -89,11 +89,13 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     q?: string
     userId?: string
     append?: boolean
+    silent?: boolean
   }) => {
     const nextPage = opts?.page ?? 1
     const append = opts?.append === true
+    const silent = opts?.silent === true
     if (append) isLoadingMore.value = true
-    else isLoading.value = true
+    else if (!silent) isLoading.value = true
     error.value = ''
 
     try {

@@ -101,12 +101,16 @@ const requireTariffForPost = (): boolean => {
   return false
 }
 
-const loadData = async () => {
+const listBooted = ref(false)
+
+const loadData = async (opts?: { silent?: boolean }) => {
   if (!authStore.user || !authStore.sessionReady) {
     try { await authStore.getMe() } catch { /* */ }
   }
   store.hydrateActiveCampaignCache()
-  await store.refreshCampaignData()
+  const silent = opts?.silent === true && listBooted.value && store.campaigns.length > 0
+  await store.refreshCampaignData({ silent })
+  listBooted.value = true
 }
 
 const onStart = async (c: PostCampaign) => {
@@ -171,7 +175,7 @@ onMounted(() => {
 })
 
 onActivated(() => {
-  void loadData()
+  void loadData({ silent: true })
 })
 
 onBeforeUnmount(() => {

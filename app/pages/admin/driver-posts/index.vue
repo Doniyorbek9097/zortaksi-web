@@ -156,15 +156,6 @@
           </button>
           <button
             type="button"
-            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-violet-600 border border-violet-200 dark:border-violet-900/50 bg-violet-500/5"
-            :disabled="store.isSaving"
-            @click="openTariff(c)"
-          >
-            <font-awesome-icon icon="fa-solid fa-key" class="text-[9px]" />
-            Tarif
-          </button>
-          <button
-            type="button"
             class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-sky-600 border border-sky-200 dark:border-sky-900/50 bg-sky-500/5"
             :disabled="store.isSaving"
             @click="openEdit(c)"
@@ -205,13 +196,58 @@
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">{{ store.error }}</p>
     <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500">{{ success }}</p>
 
-    <AdminDriversTariffDialog
-      v-model="tariffOpen"
-      :balance="tariffTarget?.owner.balance ?? 0"
-      :tariffs="tariffStore.tariffs"
-      :loading="driverStore.isSaving"
-      @confirm="saveTariff"
+    <BaseConfirmDialog
+      v-model="deleteOpen"
+      title="E'lonni o'chirish"
+      :message="deleteTarget ? `«${deleteTarget.name}» o'chirilsinmi?` : ''"
+      confirm-text="O'chirish"
+      cancel-text="Bekor"
+      variant="danger"
+      :loading="store.isSaving"
+      @confirm="onConfirmDelete"
+      @cancel="deleteOpen = false"
     />
+
+    <Teleport to="body">
+      <div
+        v-if="editOpen"
+        class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
+        @click.self="editOpen = false"
+      >
+        <div class="w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+          <h3 class="text-lg font-black text-slate-900 dark:text-white">E'lonni tahrirlash</h3>
+          <input
+            v-model="editForm.name"
+            type="text"
+            maxlength="80"
+            placeholder="Nom"
+            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
+          >
+          <CommonTelegramHtmlEditor
+            v-model="editForm.text"
+            label="E'lon matni"
+            :rows="5"
+            placeholder="Haydovchi matni"
+          />
+          <input
+            v-model.number="editForm.intervalMin"
+            type="number"
+            min="10"
+            max="1440"
+            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
+          >
+          <p class="text-[10px] text-slate-400">Minimal interval: 10 daqiqa · Guruhlar: {{ editForm.groupCount }}</p>
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl text-sm font-black text-white bg-sky-500 disabled:opacity-50"
+            :disabled="store.isSaving"
+            @click="saveEdit"
+          >
+            Saqlash
+          </button>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -220,14 +256,11 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import { useDriverStore } from '~/stores/driver.store'
-import { useTariffStore } from '~/stores/tariff.store'
+import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
 
-definePageMeta({ layout: 'admin' })
+definePageMeta({ layout: 'admin', keepalive: true })
 
 const store = useAdminDriverPostsStore()
-const driverStore = useDriverStore()
-const tariffStore = useTariffStore()
 const { avatarUrl } = useMediaUrl()
 const brokenAvatars = ref<Set<string>>(new Set())
 
@@ -235,8 +268,17 @@ const filter = ref<'all' | 'active' | 'paused'>('all')
 const search = ref('')
 const driverFilter = ref('')
 const success = ref('')
-const tariffOpen = ref(false)
-const tariffTarget = ref<AdminDriverPostCampaign | null>(null)
+const editOpen = ref(false)
+const editTarget = ref<AdminDriverPostCampaign | null>(null)
+const deleteOpen = ref(false)
+const deleteTarget = ref<AdminDriverPostCampaign | null>(null)
+const editForm = ref({
+  name: '',
+  text: '',
+  intervalMin: MIN_POST_INTERVAL_MIN,
+  groupCount: 0,
+})
+const listBooted = ref(false)
 
 const filterTabs = [
   { label: 'Hammasi', value: 'all' },
@@ -260,42 +302,10 @@ const onAvatarError = (userId: string) => {
   brokenAvatars.value.add(userId)
 }
 
-const isTariffRequiredError = (e: unknown) => {
-  const err = e as { response?: { data?: { code?: string; message?: string } }; message?: string }
-  const code = err?.response?.data?.code
-  const msg = String(err?.response?.data?.message || err?.message || '')
-  return code === 'TARIFF_REQUIRED' || /faol tarif/i.test(msg)
-}
-
-const openTariff = async (c: AdminDriverPostCampaign) => {
-  tariffTarget.value = c
-  tariffOpen.value = true
-  if (!tariffStore.tariffs.length) {
-    try {
-      await tariffStore.fetchTariffs()
-    } catch { /* */ }
-  }
-}
-
-const saveTariff = async (payload: { tariffId: string; deductFromBalance: boolean }) => {
-  if (!tariffTarget.value) return
-  store.error = ''
-  success.value = ''
-  try {
-    await driverStore.assignTariff(tariffTarget.value.userId, payload.tariffId, {
-      deductFromBalance: payload.deductFromBalance,
-    })
-    tariffOpen.value = false
-    tariffTarget.value = null
-    success.value = 'Tarif yangilandi'
-    await reload()
-  } catch (e: any) {
-    store.error = e?.response?.data?.message || 'Tarif biriktirilmadi'
-  }
-}
-
-const reload = async () => {
-  store.resetList()
+const reload = async (opts?: { keepItems?: boolean; silent?: boolean }) => {
+  const keepItems = opts?.keepItems === true
+  const silent = opts?.silent === true
+  if (!keepItems) store.resetList()
   await Promise.all([
     store.fetchStats(),
     store.fetchGlobalAppend(),
@@ -304,6 +314,7 @@ const reload = async () => {
       active: activeFilter.value,
       q: search.value.trim() || undefined,
       userId: driverFilter.value || undefined,
+      silent,
     }),
   ])
 }
@@ -330,21 +341,41 @@ const onToggle = async (c: AdminDriverPostCampaign) => {
   try {
     await store.startCampaign(c.id)
     success.value = `«${c.name}» boshlandi`
-  } catch (e) {
-    if (isTariffRequiredError(e)) {
-      store.error = ''
-      await openTariff(c)
-    }
-  }
+  } catch { /* store.error */ }
 }
 
 const openEdit = (c: AdminDriverPostCampaign) => {
-  navigateTo(`/admin/driver-posts/${encodeURIComponent(c.id)}/edit`)
+  editTarget.value = c
+  editForm.value = {
+    name: c.name,
+    text: c.text || c.textPreview,
+    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin),
+    groupCount: c.groupCount,
+  }
+  editOpen.value = true
 }
 
-const onDelete = async (c: AdminDriverPostCampaign) => {
-  if (!confirm(`"${c.name}" o'chirilsinmi?`)) return
+const saveEdit = async () => {
+  if (!editTarget.value) return
+  await store.updateCampaign(editTarget.value.id, {
+    name: editForm.value.name.trim(),
+    text: editForm.value.text.trim(),
+    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(editForm.value.intervalMin)),
+  })
+  editOpen.value = false
+}
+
+const onDelete = (c: AdminDriverPostCampaign) => {
+  deleteTarget.value = c
+  deleteOpen.value = true
+}
+
+const onConfirmDelete = async () => {
+  const c = deleteTarget.value
+  if (!c) return
   await store.deleteCampaign(c.id)
+  deleteOpen.value = false
+  deleteTarget.value = null
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -356,12 +387,22 @@ watch(filter, () => void reload())
 
 usePullToRefresh(async () => { await reload() })
 
-onMounted(async () => {
+const bootList = async () => {
   const route = useRoute()
   const uid = String(route.query.userId || '').trim()
   if (uid) driverFilter.value = uid
-  tariffStore.fetchTariffs().catch(() => {})
+
+  if (listBooted.value && store.items.length) {
+    await reload({ keepItems: true, silent: true })
+    return
+  }
+
   await reload()
+  listBooted.value = true
+}
+
+onMounted(async () => {
+  await bootList()
 
   scrollObserver = new IntersectionObserver(
     (entries) => {
@@ -370,6 +411,12 @@ onMounted(async () => {
     { rootMargin: '200px' },
   )
   if (sentinel.value) scrollObserver.observe(sentinel.value)
+})
+
+onActivated(() => {
+  if (listBooted.value && store.items.length) {
+    void reload({ keepItems: true, silent: true })
+  }
 })
 
 watch(sentinel, (el) => {
