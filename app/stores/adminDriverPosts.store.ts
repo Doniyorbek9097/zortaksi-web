@@ -141,6 +141,17 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     if (idx >= 0) items.value[idx] = data
   }
 
+  const fetchCampaignById = async (id: string) => {
+    const res = await useApi<{ success: boolean; data: AdminDriverPostCampaign }>(
+      `/admin/driver-post-campaigns/${encodeURIComponent(id)}`,
+    )
+    if (res?.success && res.data) {
+      patchItem(res.data)
+      return res.data
+    }
+    throw new Error('E\'lon topilmadi')
+  }
+
   const removeItem = (id: string) => {
     items.value = items.value.filter((c) => c.id !== id)
     total.value = Math.max(0, total.value - 1)
@@ -289,6 +300,7 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
     fetchGlobalAppend,
     saveGlobalAppend,
     fetchCampaigns,
+    fetchCampaignById,
     stopCampaign,
     startCampaign,
     updateCampaign,

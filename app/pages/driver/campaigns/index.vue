@@ -116,10 +116,11 @@ const loadData = async (opts?: { silent?: boolean }) => {
 const onStart = async (c: PostCampaign) => {
   if (!requireTariffForPost()) return
   success.value = ''
+  store.error = ''
   try {
     await store.startCampaign(c.id)
     success.value = `«${c.name}» boshlandi`
-  } catch { /* */ }
+  } catch { /* store.error */ }
 }
 
 const onStop = async (c: PostCampaign) => {

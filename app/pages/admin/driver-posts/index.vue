@@ -208,46 +208,6 @@
       @cancel="deleteOpen = false"
     />
 
-    <Teleport to="body">
-      <div
-        v-if="editOpen"
-        class="fixed inset-0 z-[9999] flex items-end justify-center md:items-center bg-black/40 backdrop-blur-sm"
-        @click.self="editOpen = false"
-      >
-        <div class="w-full md:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl md:rounded-3xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
-          <h3 class="text-lg font-black text-slate-900 dark:text-white">E'lonni tahrirlash</h3>
-          <input
-            v-model="editForm.name"
-            type="text"
-            maxlength="80"
-            placeholder="Nom"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
-          >
-          <CommonTelegramHtmlEditor
-            v-model="editForm.text"
-            label="E'lon matni"
-            :rows="5"
-            placeholder="Haydovchi matni"
-          />
-          <input
-            v-model.number="editForm.intervalMin"
-            type="number"
-            min="10"
-            max="1440"
-            class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950"
-          >
-          <p class="text-[10px] text-slate-400">Minimal interval: 10 daqiqa · Guruhlar: {{ editForm.groupCount }}</p>
-          <button
-            type="button"
-            class="w-full py-3 rounded-xl text-sm font-black text-white bg-sky-500 disabled:opacity-50"
-            :disabled="store.isSaving"
-            @click="saveEdit"
-          >
-            Saqlash
-          </button>
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
 
@@ -256,8 +216,6 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
-
 definePageMeta({ layout: 'admin', keepalive: true })
 
 const store = useAdminDriverPostsStore()
@@ -268,16 +226,8 @@ const filter = ref<'all' | 'active' | 'paused'>('all')
 const search = ref('')
 const driverFilter = ref('')
 const success = ref('')
-const editOpen = ref(false)
-const editTarget = ref<AdminDriverPostCampaign | null>(null)
 const deleteOpen = ref(false)
 const deleteTarget = ref<AdminDriverPostCampaign | null>(null)
-const editForm = ref({
-  name: '',
-  text: '',
-  intervalMin: MIN_POST_INTERVAL_MIN,
-  groupCount: 0,
-})
 const listBooted = ref(false)
 
 const filterTabs = [
@@ -339,30 +289,13 @@ const onToggle = async (c: AdminDriverPostCampaign) => {
     return
   }
   try {
-    await store.startCampaign(c.id)
-    success.value = `«${c.name}» boshlandi`
+    const updated = await store.startCampaign(c.id)
+    if (updated?.active) success.value = `«${c.name}» boshlandi`
   } catch { /* store.error */ }
 }
 
 const openEdit = (c: AdminDriverPostCampaign) => {
-  editTarget.value = c
-  editForm.value = {
-    name: c.name,
-    text: c.text || c.textPreview,
-    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin),
-    groupCount: c.groupCount,
-  }
-  editOpen.value = true
-}
-
-const saveEdit = async () => {
-  if (!editTarget.value) return
-  await store.updateCampaign(editTarget.value.id, {
-    name: editForm.value.name.trim(),
-    text: editForm.value.text.trim(),
-    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(editForm.value.intervalMin)),
-  })
-  editOpen.value = false
+  navigateTo(`/admin/driver-posts/${encodeURIComponent(c.id)}/edit`)
 }
 
 const onDelete = (c: AdminDriverPostCampaign) => {
