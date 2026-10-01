@@ -1,4 +1,5 @@
 import type { IChatMessage } from '~/types'
+import { inferTextFormat } from '~/utils/telegramHtml'
 
 /** Optimistic UI uchun vaqtinchalik xabar ID */
 export function createTempId(): string {
@@ -16,6 +17,7 @@ export function createTempTextMessage(
         chatId,
         direction: 'out',
         text,
+        textFormat: inferTextFormat(text),
         type: 'text',
         status: 'sending',
         date: new Date().toISOString(),

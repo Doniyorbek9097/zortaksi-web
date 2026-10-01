@@ -51,6 +51,19 @@ const safeHtml = computed(() => sanitizeTelegramHtml(props.html || ''))
   background: rgb(148 163 184 / 0.45);
 }
 
+.chat-html :deep(blockquote) {
+  margin: 0.35em 0;
+  padding: 0.2em 0.55em;
+  border-left: 3px solid rgb(148 163 184);
+  color: inherit;
+  opacity: 0.95;
+}
+
+.chat-html :deep(i),
+.chat-html :deep(em) {
+  font-style: italic;
+}
+
 .chat-html :deep(code) {
   font-family: ui-monospace, monospace;
   font-size: 0.92em;
