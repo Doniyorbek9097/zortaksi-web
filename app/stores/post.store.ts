@@ -679,7 +679,14 @@ export const usePostStore = defineStore('post', () => {
       const res = await useApi(`/groups/broadcast/campaigns/${encodeURIComponent(id)}/start`, {
         method: 'POST',
       })
-      if (res.success) await refreshCampaignData()
+      if (res.success) {
+        const cid = String(id)
+        const idx = campaigns.value.findIndex((c) => String(c.id) === cid)
+        if (res.data && idx >= 0) {
+          campaigns.value[idx] = { ...campaigns.value[idx], ...res.data }
+        }
+        await refreshCampaignData({ silent: true })
+      }
       return res
     } catch (e: any) {
       handlePostActionError(e, 'Boshlanmadi')

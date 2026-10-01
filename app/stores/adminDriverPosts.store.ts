@@ -137,8 +137,9 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
   }
 
   const patchItem = (data: AdminDriverPostCampaign) => {
-    const idx = items.value.findIndex((c) => c.id === data.id)
-    if (idx >= 0) items.value[idx] = data
+    const id = String(data.id)
+    const idx = items.value.findIndex((c) => String(c.id) === id)
+    if (idx >= 0) items.value[idx] = { ...items.value[idx], ...data }
   }
 
   const fetchCampaignById = async (id: string) => {
@@ -184,7 +185,12 @@ export const useAdminDriverPostsStore = defineStore('adminDriverPosts', () => {
         `/admin/driver-post-campaigns/${id}/start`,
         { method: 'POST' },
       )
-      if (res?.success && res.data) patchItem(res.data)
+      if (res?.success && res.data) {
+        patchItem(res.data)
+        try {
+          await fetchCampaignById(id)
+        } catch { /* */ }
+      }
       await fetchStats()
       return res?.data
     } catch (e: any) {

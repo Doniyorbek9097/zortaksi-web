@@ -289,8 +289,8 @@ const onToggle = async (c: AdminDriverPostCampaign) => {
     return
   }
   try {
-    const updated = await store.startCampaign(c.id)
-    if (updated?.active) success.value = `«${c.name}» boshlandi`
+    await store.startCampaign(c.id)
+    success.value = `«${c.name}» boshlandi`
   } catch { /* store.error */ }
 }
 
