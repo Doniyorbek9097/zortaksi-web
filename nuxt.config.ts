@@ -86,7 +86,7 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'ZorTaksi' },
-        { name: 'description', content: "ZorTaksi — Telegram buyurtmalari va haydovchi paneli" },
+        { name: 'description', content: "ZorTaksi — Telegram buyurtmalarini bir joydan olish imkonini ochib beradi va E'loningizni guruhlarga tarqatishni autommatlashtirib beradi" },
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
