@@ -20,13 +20,14 @@ export function sanitizeTelegramHtml(html: string): string {
   s = s.replace(/<style[\s>][\s\S]*?<\/style>/gi, '')
   s = s.replace(/on\w+\s*=\s*(['"]).*?\1/gi, '')
   s = s.replace(/javascript:/gi, '')
-  // Telegram formatidagi teglar
+  s = s.replace(/<span class="tg-spoiler">([\s\S]*?)<\/span>/gi, '<tg-spoiler>$1</tg-spoiler>')
+
   s = s.replace(
-    /<(\/?)(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote)(\s[^>]*)?>/gi,
+    /<(\/?)(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote|tg-spoiler)(\s[^>]*)?>/gi,
     '<$1$2$3>',
   )
   s = s.replace(
-    /<(?!\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote)\b)[^>]+>/gi,
+    /<(?!\/?(b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote|tg-spoiler)\b)[^>]+>/gi,
     '',
   )
   return s

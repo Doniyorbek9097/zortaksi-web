@@ -1,6 +1,14 @@
 import { inferTextFormat, sanitizeTelegramHtml } from '~/utils/telegramHtml'
 
-export type TelegramHtmlTag = 'b' | 'i' | 'a' | 'code' | 'blockquote'
+export type TelegramHtmlTag =
+  | 'b'
+  | 'i'
+  | 'a'
+  | 'code'
+  | 'blockquote'
+  | 'u'
+  | 's'
+  | 'tg-spoiler'
 
 export type WrapSelectionResult = {
   text: string
@@ -81,6 +89,27 @@ function serializeEditorNode(node: Node, parts: string[], isBlockRoot = false): 
     parts.push('<code>')
     for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
     parts.push('</code>')
+    return
+  }
+
+  if (tag === 'u' || tag === 'ins') {
+    parts.push('<u>')
+    for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
+    parts.push('</u>')
+    return
+  }
+
+  if (tag === 's' || tag === 'strike' || tag === 'del') {
+    parts.push('<s>')
+    for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
+    parts.push('</s>')
+    return
+  }
+
+  if (tag === 'tg-spoiler') {
+    parts.push('<tg-spoiler>')
+    for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
+    parts.push('</tg-spoiler>')
     return
   }
 

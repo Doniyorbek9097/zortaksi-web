@@ -49,7 +49,7 @@
               label="E'lon matni"
               :rows="5"
               placeholder="E'lon matnini yozing…"
-              hint="Matnni belgilang: b — qalin, i — kursiv, a — havola, c — kod, q — iqtibos."
+              hint="Matnni belgilang — formatlash menyusi ochiladi."
             />
 
             <label class="mt-4 flex items-center gap-2.5 cursor-pointer select-none">

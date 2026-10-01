@@ -33,6 +33,24 @@ const safeHtml = computed(() => sanitizeTelegramHtml(props.html || ''))
   font-weight: 800;
 }
 
+.chat-html :deep(u),
+.chat-html :deep(ins) {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-html :deep(s),
+.chat-html :deep(strike),
+.chat-html :deep(del) {
+  text-decoration: line-through;
+}
+
+.chat-html :deep(tg-spoiler) {
+  border-radius: 0.2rem;
+  padding: 0 0.15em;
+  background: rgb(148 163 184 / 0.45);
+}
+
 .chat-html :deep(code) {
   font-family: ui-monospace, monospace;
   font-size: 0.92em;
