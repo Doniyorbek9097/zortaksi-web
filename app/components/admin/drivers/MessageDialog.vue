@@ -30,11 +30,12 @@
               </button>
             </div>
 
-            <textarea
+            <CommonTelegramHtmlEditor
               v-model="text"
-              rows="5"
+              class="mt-4"
+              :rows="5"
+              hide-hint
               placeholder="Xabar matnini yozing…"
-              class="mt-4 w-full px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
             />
 
             <div class="mt-5 flex items-center gap-3">
@@ -47,7 +48,7 @@
               </button>
               <button
                 type="button"
-                :disabled="loading || !text.trim()"
+                :disabled="loading || !stripTelegramHtml(text).trim()"
                 class="flex-[1.4] inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
                 @click="onConfirm"
               >
@@ -66,6 +67,8 @@
 </template>
 
 <script setup lang="ts">
+import { stripTelegramHtml } from '~/utils/telegramHtml'
+
 const props = defineProps<{
   modelValue: boolean
   count: number
@@ -89,8 +92,9 @@ watch(
 const close = () => emit('update:modelValue', false)
 
 const onConfirm = () => {
-  if (!text.value.trim()) return
-  emit('confirm', text.value.trim())
+  const raw = text.value.trim()
+  if (!stripTelegramHtml(raw).trim()) return
+  emit('confirm', raw)
 }
 
 useHistoryBackClose(() => props.modelValue, close, { key: 'ztAdminMessage' })

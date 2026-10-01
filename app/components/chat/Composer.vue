@@ -143,38 +143,26 @@
             /
           </button>
 
-          <textarea
+          <CommonTelegramHtmlEditor
             ref="textInput"
             v-model="text"
-            name="zortaksi-chat-message"
-            rows="1"
-            enterkeyhint="enter"
-            autocomplete="off"
-            autocorrect="on"
-            autocapitalize="sentences"
-            spellcheck="true"
-            data-lpignore="true"
-            data-1p-ignore="true"
-            data-form-type="other"
-            data-bwignore="true"
+            compact
+            hide-hint
+            :rows="1"
+            :max-height-px="TEXTAREA_MAX_PX"
             :readonly="draftLocked"
             :disabled="disabled"
             :placeholder="inputPlaceholder"
-            class="chat-composer-textarea flex-1 min-w-0 py-2.5 pr-3 pl-1 bg-transparent text-[15px] leading-snug resize-none overflow-x-hidden overflow-y-hidden focus:outline-none disabled:cursor-not-allowed placeholder:whitespace-nowrap"
-            :class="[
+            :editor-class="[
               support
-                ? 'text-violet-900 dark:text-violet-50 placeholder:text-violet-600/80 dark:placeholder:text-violet-300/50'
-                : 'text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-500',
-              hasSlashCommands ? 'pl-3' : 'pl-4',
-            ]"
-            @touchstart.passive="unlockDraft"
+                ? 'text-violet-900 dark:text-violet-50'
+                : 'text-slate-900 dark:text-white',
+              hasSlashCommands ? 'pl-1 pr-3' : 'pl-2 pr-3',
+            ].join(' ')"
+            class="flex-1 min-w-0"
             @mousedown="unlockDraft"
-            @keydown.enter.exact="onEnterKey"
-            @keydown.down.prevent="onSlashDown"
-            @keydown.up.prevent="onSlashUp"
-            @keydown.esc.prevent="closeSlashMenu"
-            @input="onTextInput"
-            @compositionend="onCompositionEnd"
+            @touchstart.passive="unlockDraft"
+            @keydown="onComposerKeydown"
             @focus="onInputFocus"
             @blur="onInputBlur"
           />
@@ -224,6 +212,7 @@ import {
 import { VOICE_WAVE_BARS } from '~/utils/memoryBudget'
 import { useMobileKeyboardOpen } from '~/composables/useMobileKeyboardOpen'
 import { supportComposerFooterClass, supportComposerInputClass, supportComposerSendClass } from '~/utils/supportChatTheme'
+import { stripTelegramHtml } from '~/utils/telegramHtml'
 
 const text = defineModel<string>({ default: '' })
 
@@ -259,18 +248,19 @@ const inputPlaceholder = computed(() => {
   return 'Xabar yozing...'
 })
 
-const TEXTAREA_MIN_PX = 40
 const TEXTAREA_MAX_PX = 128
 
 /** v-model kechikishi bo'lmasin — birinchi belgida jo'natish tugmasi */
 const hasText = ref(false)
 
+const draftPlain = (value: string) => stripTelegramHtml(String(value || '')).trim()
+
 const syncHasText = (value: string) => {
-  hasText.value = value.length > 0
+  hasText.value = draftPlain(value).length > 0
 }
 
 const fileInput = ref<HTMLInputElement | null>(null)
-const textInput = ref<HTMLTextAreaElement | null>(null)
+const textInput = ref<{ focus?: () => void; blur?: () => void } | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
 const { keyboardOpen, scheduleMeasure } = useMobileKeyboardOpen()
@@ -288,7 +278,7 @@ const filteredSlashCommands = computed(() => {
   const list = props.slashCommands ?? []
   if (!list.length || !slashMenuOpen.value) return []
 
-  const raw = text.value
+  const raw = draftPlain(text.value)
   const q = raw.trim().toLowerCase()
   const limit = slashCommandLimit.value
 
@@ -312,7 +302,7 @@ const showSlashMenu = computed(
     !props.disabled &&
     hasSlashCommands.value &&
     slashMenuOpen.value &&
-    text.value.startsWith('/'),
+    draftPlain(text.value).startsWith('/'),
 )
 
 watch(filteredSlashCommands, (list) => {
@@ -328,13 +318,14 @@ const closeSlashMenu = () => {
 
 const toggleSlashMenu = () => {
   if (props.disabled || !hasSlashCommands.value) return
-  if (slashMenuOpen.value && text.value === '/') {
+  if (slashMenuOpen.value && draftPlain(text.value) === '/') {
     closeSlashMenu()
     text.value = ''
     return
   }
-  if (!text.value.startsWith('/')) {
-    text.value = '/' + text.value.replace(/^\/+/, '')
+  const plain = draftPlain(text.value)
+  if (!plain.startsWith('/')) {
+    text.value = '/' + plain.replace(/^\/+/, '')
   }
   slashPickerMode.value = true
   slashMenuOpen.value = true
@@ -347,31 +338,31 @@ const toggleSlashMenu = () => {
   })
 }
 
-const resizeTextarea = () => {
-  const el = textInput.value
-  if (!el) return
-  el.style.height = 'auto'
-  const next = Math.min(Math.max(el.scrollHeight, TEXTAREA_MIN_PX), TEXTAREA_MAX_PX)
-  el.style.height = `${next}px`
-  el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? 'auto' : 'hidden'
-}
-
-const onTextInput = (e: Event) => {
-  unlockDraft()
-  const value = (e.target as HTMLTextAreaElement).value
+const onDraftChange = (value: string) => {
   syncHasText(value)
-  resizeTextarea()
   if (!hasSlashCommands.value) return
-  if (value.startsWith('/')) {
+  const plain = draftPlain(value)
+  if (plain.startsWith('/')) {
     slashMenuOpen.value = true
-    if (value.length > 1) slashPickerMode.value = false
+    if (plain.length > 1) slashPickerMode.value = false
   } else {
     closeSlashMenu()
   }
 }
 
-const onCompositionEnd = (e: CompositionEvent) => {
-  syncHasText((e.target as HTMLTextAreaElement).value)
+const onComposerKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter' && !e.shiftKey) onEnterKey(e)
+  if (!showSlashMenu.value) return
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    onSlashDown()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    onSlashUp()
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    closeSlashMenu()
+  }
 }
 
 const sendSlashCommand = (cmd: string) => {
@@ -444,21 +435,15 @@ const onFileChange = async (e: Event) => {
 const send = () => {
   if (props.disabled) return
   const value = text.value.trim()
-  if (!value) return
+  if (!draftPlain(value)) return
   closeSlashMenu()
   emit('send', value)
   text.value = ''
   syncHasText('')
-  nextTick(resizeTextarea)
 }
 
 watch(text, (value) => {
-  syncHasText(value)
-  nextTick(resizeTextarea)
-})
-
-onMounted(() => {
-  nextTick(resizeTextarea)
+  onDraftChange(value)
 })
 
 const recording = ref(false)

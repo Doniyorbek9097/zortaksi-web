@@ -1,16 +1,23 @@
 <template>
-  <div ref="rootRef" class="space-y-1.5">
+  <div ref="rootRef" :class="compact ? 'min-w-0' : 'space-y-1.5'">
     <label v-if="label" class="px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
       {{ label }}
     </label>
 
     <div
       ref="editorRef"
-      class="tg-html-editor w-full px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40 leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto"
-      :class="{ 'tg-html-editor--in-app': suppressNativeSelectionChrome }"
-      :style="{ '--editor-min-h': `${Math.max(3, rows) * 1.6}rem` }"
+      class="tg-html-editor w-full leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto focus:outline-none"
+      :class="[
+        compact
+          ? 'px-1 py-2.5 text-[15px] bg-transparent border-0 rounded-none'
+          : 'px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500/40',
+        { 'tg-html-editor--in-app': suppressNativeSelectionChrome },
+        { 'opacity-60 pointer-events-none': disabled },
+        editorClass,
+      ]"
+      :style="editorStyle"
       :data-placeholder="placeholder || ''"
-      contenteditable="true"
+      :contenteditable="!disabled && !readonly"
       spellcheck="false"
       autocapitalize="off"
       autocomplete="off"
@@ -63,7 +70,7 @@
       </div>
     </Teleport>
 
-    <p v-if="hint" class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
+    <p v-if="hint && !hideHint" class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
       {{ hint }}
     </p>
   </div>
@@ -108,14 +115,38 @@ const props = withDefaults(
     rows?: number
     maxlength?: number
     hint?: string
+    hideHint?: boolean
+    compact?: boolean
+    disabled?: boolean
+    readonly?: boolean
+    maxHeightPx?: number
+    editorClass?: string
   }>(),
   {
     rows: 4,
     hint: 'Matnni belgilang — formatlash menyusi ochiladi. Klaviatura: b, i, a, c, q.',
+    hideHint: false,
+    compact: false,
+    disabled: false,
+    readonly: false,
+    editorClass: '',
   },
 )
 
+const emit = defineEmits<{
+  keydown: [KeyboardEvent]
+  focus: []
+  blur: []
+}>()
+
 const modelValue = defineModel<string>({ default: '' })
+
+const editorStyle = computed(() => {
+  const minH = `${Math.max(props.compact ? 1.5 : 3, props.rows) * (props.compact ? 1.55 : 1.6)}rem`
+  const style: Record<string, string> = { '--editor-min-h': minH }
+  if (props.maxHeightPx) style.maxHeight = `${props.maxHeightPx}px`
+  return style
+})
 
 const rootRef = ref<HTMLDivElement | null>(null)
 const editorRef = ref<HTMLDivElement | null>(null)
@@ -346,6 +377,7 @@ const onEditorCut = (e: ClipboardEvent) => {
 }
 
 const onEditorFocus = () => {
+  emit('focus')
   isFocused.value = true
   if (hideMenuTimer) {
     clearTimeout(hideMenuTimer)
@@ -354,6 +386,7 @@ const onEditorFocus = () => {
 }
 
 const onEditorBlur = () => {
+  emit('blur')
   isFocused.value = false
   syncFromEditor()
   hideMenuTimer = setTimeout(hideFormatMenu, 150)
@@ -634,6 +667,8 @@ const onBeforeInput = (e: InputEvent) => {
 }
 
 const onEditorKeydown = (e: KeyboardEvent) => {
+  emit('keydown', e)
+  if (props.disabled || props.readonly) return
   if (e.isComposing) return
 
   const key = e.key.length === 1 ? e.key.toLowerCase() : ''
@@ -700,6 +735,11 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(selectionMenuRaf)
   syncFromEditor()
   hideFormatMenu()
+})
+
+defineExpose({
+  focus: focusEditor,
+  blur: () => editorRef.value?.blur(),
 })
 </script>
 
