@@ -4,45 +4,52 @@
       {{ label }}
     </label>
 
+    <Transition name="tg-fmt-bar">
+      <div
+        v-if="formatMenu.visible"
+        ref="formatMenuRef"
+        class="flex items-center gap-0.5 overflow-x-auto overscroll-x-contain px-1 py-1 mb-1.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/95"
+        @mousedown.prevent
+        @touchstart.stop
+      >
+        <button
+          v-for="item in formatMenuItems"
+          :key="item.id"
+          type="button"
+          class="shrink-0 min-w-[2.125rem] h-[2.125rem] px-1.5 rounded-lg text-[11px] font-black text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-800 active:scale-95 transition-transform"
+          :title="item.label"
+          :aria-label="item.label"
+          @click="onFormatMenuAction(item.id)"
+        >
+          {{ item.icon }}
+        </button>
+      </div>
+    </Transition>
+
     <div
       ref="editorRef"
       class="tg-html-editor w-full px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40 leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto"
+      :class="{ 'tg-html-editor--in-app': suppressNativeSelectionChrome }"
       :style="{ '--editor-min-h': `${Math.max(3, rows) * 1.6}rem` }"
       :data-placeholder="placeholder || ''"
       contenteditable="true"
       spellcheck="false"
+      autocapitalize="off"
+      autocomplete="off"
+      autocorrect="off"
       @focus="onEditorFocus"
       @input="onEditorInput"
       @keydown="onEditorKeydown"
       @beforeinput="onBeforeInput"
       @paste="onPaste"
       @blur="onEditorBlur"
+      @contextmenu="onEditorContextMenu"
+      @copy="onEditorCopy"
+      @cut="onEditorCut"
       @mouseup="scheduleSelectionMenuUpdate"
       @keyup="scheduleSelectionMenuUpdate"
+      @touchend.passive="scheduleSelectionMenuUpdate"
     />
-
-    <Teleport to="body">
-      <div
-        v-if="formatMenu.visible"
-        ref="formatMenuRef"
-        class="tg-format-menu fixed z-[10050] min-w-[200px] max-w-[min(280px,calc(100vw-16px))] py-1 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl shadow-black/15"
-        :style="formatMenuStyle"
-        @mousedown.prevent
-      >
-        <button
-          v-for="item in formatMenuItems"
-          :key="item.id"
-          type="button"
-          class="w-full px-3.5 py-2.5 text-left text-[13px] font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-          @click="onFormatMenuAction(item.id)"
-        >
-          <span class="w-5 text-center text-[12px] text-slate-400 shrink-0" aria-hidden="true">
-            {{ item.icon }}
-          </span>
-          <span>{{ item.label }}</span>
-        </button>
-      </div>
-    </Teleport>
 
     <p v-if="hint" class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
       {{ hint }}
@@ -57,6 +64,7 @@ import {
   telegramHtmlToEditorHtml,
   type TelegramHtmlTag,
 } from '~/utils/telegramHtmlEditor'
+import { getTelegramWebApp } from '~/utils/telegramWebApp'
 
 type FormatMenuActionId =
   | 'copy'
@@ -92,9 +100,9 @@ const isFocused = ref(false)
 
 const formatMenu = reactive({
   visible: false,
-  top: 0,
-  left: 0,
 })
+
+const suppressNativeSelectionChrome = ref(false)
 
 const formatMenuItems: Array<{ id: FormatMenuActionId; label: string; icon: string }> = [
   { id: 'copy', label: 'Nusxa olish', icon: '⎘' },
@@ -102,7 +110,7 @@ const formatMenuItems: Array<{ id: FormatMenuActionId; label: string; icon: stri
   { id: 'blockquote', label: 'Iqtibos', icon: '❝' },
   { id: 'b', label: 'Qalin', icon: 'B' },
   { id: 'i', label: 'Qiya', icon: 'I' },
-  { id: 'a', label: 'Havola', icon: '🔗' },
+  { id: 'a', label: 'Havola', icon: 'A' },
   { id: 'code', label: "Mono bo'shliq", icon: 'M' },
   { id: 's', label: "O'rtasi chizilgan", icon: 'S' },
   { id: 'u', label: "Tagiga chizilgan", icon: 'U' },
@@ -117,11 +125,6 @@ const FORMAT_KEY_TO_TAG: Record<string, TelegramHtmlTag> = {
 }
 
 const FORMAT_KEYS = new Set(Object.keys(FORMAT_KEY_TO_TAG))
-
-const formatMenuStyle = computed(() => ({
-  top: `${formatMenu.top}px`,
-  left: `${formatMenu.left}px`,
-}))
 
 let selectionMenuRaf = 0
 let hideMenuTimer: ReturnType<typeof setTimeout> | null = null
@@ -150,38 +153,7 @@ const positionFormatMenu = () => {
     hideFormatMenu()
     return
   }
-  if (!getSelectedTextInEditor().trim()) {
-    hideFormatMenu()
-    return
-  }
-
-  const rect = range.getBoundingClientRect()
-  const menuW = formatMenuRef.value?.offsetWidth || 220
-  const menuH = formatMenuRef.value?.offsetHeight || 320
-  const pad = 8
-  let left = rect.left + rect.width / 2 - menuW / 2
-  let top = rect.top - menuH - pad
-  if (top < pad) top = rect.bottom + pad
-  left = Math.max(pad, Math.min(left, window.innerWidth - menuW - pad))
-  top = Math.max(pad, Math.min(top, window.innerHeight - menuH - pad))
-
-  formatMenu.left = left
-  formatMenu.top = top
-  formatMenu.visible = true
-
-  requestAnimationFrame(() => {
-    const el = formatMenuRef.value
-    if (!el || !formatMenu.visible) return
-    const w = el.offsetWidth
-    const h = el.offsetHeight
-    let l = rect.left + rect.width / 2 - w / 2
-    let t = rect.top - h - pad
-    if (t < pad) t = rect.bottom + pad
-    l = Math.max(pad, Math.min(l, window.innerWidth - w - pad))
-    t = Math.max(pad, Math.min(t, window.innerHeight - h - pad))
-    formatMenu.left = l
-    formatMenu.top = t
-  })
+  formatMenu.visible = !!getSelectedTextInEditor().trim()
 }
 
 const scheduleSelectionMenuUpdate = () => {
@@ -216,6 +188,21 @@ const syncFromEditor = () => {
   if (next !== modelValue.value) {
     modelValue.value = next
   }
+}
+
+const onEditorContextMenu = (e: Event) => {
+  if (!suppressNativeSelectionChrome.value) return
+  e.preventDefault()
+}
+
+const onEditorCopy = (e: ClipboardEvent) => {
+  if (!suppressNativeSelectionChrome.value) return
+  e.preventDefault()
+}
+
+const onEditorCut = (e: ClipboardEvent) => {
+  if (!suppressNativeSelectionChrome.value) return
+  e.preventDefault()
 }
 
 const onEditorFocus = () => {
@@ -387,7 +374,17 @@ watch(
   },
 )
 
+const detectInAppShell = () => {
+  if (!import.meta.client) return false
+  const tg = getTelegramWebApp()
+  if (tg?.initData) return true
+  if (document.documentElement.dataset.ztEmbed === 'webview') return true
+  const p = String(tg?.platform || '')
+  return !!p && p !== 'unknown'
+}
+
 onMounted(() => {
+  suppressNativeSelectionChrome.value = detectInAppShell()
   renderEditorFromModel(modelValue.value)
   document.addEventListener('selectionchange', onDocumentSelectionChange)
   document.addEventListener('mousedown', onDocumentPointerDown)
@@ -404,6 +401,24 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.tg-fmt-bar-enter-active,
+.tg-fmt-bar-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.tg-fmt-bar-enter-from,
+.tg-fmt-bar-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.tg-html-editor--in-app {
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}
+
 .tg-html-editor:empty::before {
   content: attr(data-placeholder);
   color: rgb(148 163 184);
