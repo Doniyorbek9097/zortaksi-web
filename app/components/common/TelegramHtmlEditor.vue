@@ -24,9 +24,13 @@
       @contextmenu="onEditorContextMenu"
       @copy="onEditorCopy"
       @cut="onEditorCut"
-      @mouseup="scheduleSelectionMenuUpdate"
+      @mousedown="onEditorMouseDown"
+      @mouseup="onEditorMouseUp"
       @keyup="scheduleSelectionMenuUpdate"
-      @touchend.passive="scheduleSelectionMenuUpdate"
+      @touchstart.passive="onEditorTouchStart"
+      @touchmove.passive="clearLongPressTimer"
+      @touchend.passive="onEditorTouchEnd"
+      @touchcancel.passive="clearLongPressTimer"
     />
 
     <Teleport to="body">
@@ -39,16 +43,22 @@
         @touchstart.stop
       >
         <button
-          v-for="item in formatMenuItems"
+          v-for="item in visibleFormatMenuItems"
           :key="item.id"
           type="button"
           class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
           @click="onFormatMenuAction(item.id)"
         >
-          <span class="w-4 text-center text-[11px] text-slate-400 shrink-0" aria-hidden="true">
+          <span
+            v-if="item.icon"
+            class="w-4 text-center text-[11px] text-slate-400 shrink-0"
+            aria-hidden="true"
+          >
             {{ item.icon }}
           </span>
-          <span class="min-w-0 truncate">{{ item.label }}</span>
+          <span class="min-w-0 truncate" :class="item.fontPreview ? 'text-[13px] tracking-tight' : ''">
+            {{ item.label }}
+          </span>
         </button>
       </div>
     </Teleport>
@@ -67,9 +77,18 @@ import {
   type TelegramHtmlTag,
 } from '~/utils/telegramHtmlEditor'
 import { getTelegramWebApp } from '~/utils/telegramWebApp'
+import {
+  applyUnicodeFontStyle,
+  isUnicodeFontId,
+  UNICODE_FONT_MENU,
+  type UnicodeFontId,
+} from '~/utils/unicodeTextFonts'
 
 type FormatMenuActionId =
+  | 'selectAll'
   | 'copy'
+  | 'cut'
+  | 'paste'
   | 'tg-spoiler'
   | 'blockquote'
   | 'b'
@@ -78,6 +97,9 @@ type FormatMenuActionId =
   | 'code'
   | 's'
   | 'u'
+  | UnicodeFontId
+
+type FormatMenuItem = { id: FormatMenuActionId; label: string; icon: string; fontPreview?: boolean }
 
 const props = withDefaults(
   defineProps<{
@@ -106,15 +128,9 @@ const formatMenu = reactive({
   left: 0,
 })
 
-const formatMenuStyle = computed(() => ({
-  top: `${formatMenu.top}px`,
-  left: `${formatMenu.left}px`,
-}))
+const formatMenuMode = ref<'selection' | 'hold'>('selection')
 
-const suppressNativeSelectionChrome = ref(false)
-
-const formatMenuItems: Array<{ id: FormatMenuActionId; label: string; icon: string }> = [
-  { id: 'copy', label: 'Nusxa olish', icon: '⎘' },
+const FORMAT_ACTION_ITEMS: FormatMenuItem[] = [
   { id: 'tg-spoiler', label: 'Yashirin', icon: '▦' },
   { id: 'blockquote', label: 'Iqtibos', icon: '❝' },
   { id: 'b', label: 'Qalin', icon: 'B' },
@@ -124,6 +140,47 @@ const formatMenuItems: Array<{ id: FormatMenuActionId; label: string; icon: stri
   { id: 's', label: "O'rtasi chizilgan", icon: 'S' },
   { id: 'u', label: "Tagiga chizilgan", icon: 'U' },
 ]
+
+const UNICODE_FONT_MENU_ITEMS: FormatMenuItem[] = UNICODE_FONT_MENU.map((font) => ({
+  id: font.id,
+  label: font.label,
+  icon: '',
+  fontPreview: true,
+}))
+
+const visibleFormatMenuItems = computed((): FormatMenuItem[] => {
+  if (formatMenuMode.value === 'hold') {
+    return [
+      { id: 'paste', label: "Qo'shish", icon: '+' },
+      { id: 'selectAll', label: 'Hammasi tanlash', icon: '☰' },
+    ]
+  }
+  return [
+    { id: 'selectAll', label: 'Hammasi tanlash', icon: '☰' },
+    { id: 'copy', label: 'Nusxa olish', icon: '⎘' },
+    { id: 'cut', label: 'Kesib olish', icon: '✂' },
+    ...FORMAT_ACTION_ITEMS,
+    ...UNICODE_FONT_MENU_ITEMS,
+  ]
+})
+
+const formatMenuStyle = computed(() => ({
+  top: `${formatMenu.top}px`,
+  left: `${formatMenu.left}px`,
+}))
+
+const suppressNativeSelectionChrome = ref(false)
+
+const FORMAT_MENU_ACTION_IDS = new Set<FormatMenuActionId>([
+  'tg-spoiler',
+  'blockquote',
+  'b',
+  'i',
+  'a',
+  'code',
+  's',
+  'u',
+])
 
 const FORMAT_KEY_TO_TAG: Record<string, TelegramHtmlTag> = {
   b: 'b',
@@ -137,6 +194,47 @@ const FORMAT_KEYS = new Set(Object.keys(FORMAT_KEY_TO_TAG))
 
 let selectionMenuRaf = 0
 let hideMenuTimer: ReturnType<typeof setTimeout> | null = null
+let longPressTimer: ReturnType<typeof setTimeout> | null = null
+const LONG_PRESS_MS = 480
+
+const ZWSP = '\u200B'
+
+const hasTextSelectionInEditor = (): boolean => !!getSelectedTextInEditor().trim()
+
+const clearLongPressTimer = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
+}
+
+const clampMenuPosition = (left: number, top: number) => {
+  const pad = 6
+  const menuW = formatMenuRef.value?.offsetWidth || 200
+  const menuH = formatMenuRef.value?.offsetHeight || 200
+  return {
+    left: Math.max(pad, Math.min(left, window.innerWidth - menuW - pad)),
+    top: Math.max(pad, Math.min(top, window.innerHeight - menuH - pad)),
+  }
+}
+
+const showFormatMenuAt = (clientX: number, clientY: number, mode: 'selection' | 'hold') => {
+  formatMenuMode.value = mode
+  const pad = 6
+  let left = clientX - 100
+  let top = clientY - (mode === 'hold' ? 72 : 120)
+  const clamped = clampMenuPosition(left, top)
+  formatMenu.left = clamped.left
+  formatMenu.top = clamped.top
+  formatMenu.visible = true
+
+  requestAnimationFrame(() => {
+    if (!formatMenu.visible) return
+    const c = clampMenuPosition(left, top)
+    formatMenu.left = c.left
+    formatMenu.top = c.top
+  })
+}
 
 const getSelectedTextInEditor = (): string => {
   const sel = window.getSelection()
@@ -149,9 +247,18 @@ const getSelectedTextInEditor = (): string => {
 
 const hideFormatMenu = () => {
   formatMenu.visible = false
+  formatMenuMode.value = 'selection'
 }
 
 const positionFormatMenu = () => {
+  if (!hasTextSelectionInEditor()) {
+    if (formatMenuMode.value === 'hold' && formatMenu.visible) return
+    hideFormatMenu()
+    return
+  }
+
+  formatMenuMode.value = 'selection'
+
   const sel = window.getSelection()
   if (!sel || sel.rangeCount === 0) {
     hideFormatMenu()
@@ -162,11 +269,6 @@ const positionFormatMenu = () => {
     hideFormatMenu()
     return
   }
-  if (!getSelectedTextInEditor().trim()) {
-    hideFormatMenu()
-    return
-  }
-
   const rect = range.getBoundingClientRect()
   const pad = 6
   const menuW = formatMenuRef.value?.offsetWidth || 200
@@ -176,25 +278,16 @@ const positionFormatMenu = () => {
   let top = rect.top - menuH - pad
   if (top < pad) top = rect.bottom + pad
 
-  left = Math.max(pad, Math.min(left, window.innerWidth - menuW - pad))
-  top = Math.max(pad, Math.min(top, window.innerHeight - menuH - pad))
-
-  formatMenu.left = left
-  formatMenu.top = top
+  const clamped = clampMenuPosition(left, top)
+  formatMenu.left = clamped.left
+  formatMenu.top = clamped.top
   formatMenu.visible = true
 
   requestAnimationFrame(() => {
-    const el = formatMenuRef.value
-    if (!el || !formatMenu.visible) return
-    const w = el.offsetWidth
-    const h = el.offsetHeight
-    let l = rect.left + rect.width / 2 - w / 2
-    let t = rect.top - h - pad
-    if (t < pad) t = rect.bottom + pad
-    l = Math.max(pad, Math.min(l, window.innerWidth - w - pad))
-    t = Math.max(pad, Math.min(t, window.innerHeight - h - pad))
-    formatMenu.left = l
-    formatMenu.top = t
+    if (!formatMenu.visible) return
+    const c = clampMenuPosition(left, top)
+    formatMenu.left = c.left
+    formatMenu.top = c.top
   })
 }
 
@@ -221,7 +314,7 @@ const syncFromEditor = () => {
   const el = editorRef.value
   if (!el) return
 
-  let next = editorHtmlToTelegramHtml(el.innerHTML)
+  let next = editorHtmlToTelegramHtml(el.innerHTML).replaceAll(ZWSP, '')
   if (props.maxlength && next.length > props.maxlength) {
     next = next.slice(0, props.maxlength)
     renderEditorFromModel(next)
@@ -233,6 +326,11 @@ const syncFromEditor = () => {
 }
 
 const onEditorContextMenu = (e: Event) => {
+  if (e instanceof MouseEvent && !hasTextSelectionInEditor()) {
+    e.preventDefault()
+    showFormatMenuAt(e.clientX, e.clientY, 'hold')
+    return
+  }
   if (!suppressNativeSelectionChrome.value) return
   e.preventDefault()
 }
@@ -278,27 +376,41 @@ const focusEditor = () => {
   editorRef.value?.focus()
 }
 
-const wrapSelectionWithTag = (tag: string, attrs?: Record<string, string>) => {
+const placeCaretAfterFormattedElement = (el: HTMLElement) => {
   const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0) return
+  if (!sel) return
+  const parent = el.parentNode
+  if (!parent) return
+
+  let tail = el.nextSibling
+  if (!tail || tail.nodeType !== Node.TEXT_NODE) {
+    tail = document.createTextNode(ZWSP)
+    parent.insertBefore(tail, el.nextSibling)
+  } else if (!(tail.textContent || '').includes(ZWSP)) {
+    tail.textContent = `${tail.textContent || ''}${ZWSP}`
+  }
+
+  const range = document.createRange()
+  const len = tail.textContent?.length || 0
+  range.setStart(tail, len)
+  range.collapse(true)
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
+const wrapSelectionWithTag = (tag: string, attrs?: Record<string, string>): boolean => {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0) return false
 
   const range = sel.getRangeAt(0)
-  if (!editorRef.value?.contains(range.commonAncestorContainer)) return
+  if (!editorRef.value?.contains(range.commonAncestorContainer)) return false
+  if (range.collapsed) return false
 
   const el = document.createElement(tag)
   if (attrs) {
     for (const [key, value] of Object.entries(attrs)) {
       el.setAttribute(key, value)
     }
-  }
-
-  if (range.collapsed) {
-    el.appendChild(document.createTextNode('matn'))
-    range.insertNode(el)
-    range.selectNodeContents(el)
-    sel.removeAllRanges()
-    sel.addRange(range)
-    return
   }
 
   try {
@@ -309,30 +421,98 @@ const wrapSelectionWithTag = (tag: string, attrs?: Record<string, string>) => {
     range.insertNode(el)
   }
 
-  range.setStartAfter(el)
+  placeCaretAfterFormattedElement(el)
+  return true
+}
+
+const placeCaretAfterNode = (node: Node) => {
+  const sel = window.getSelection()
+  if (!sel) return
+  const parent = node.parentNode
+  if (!parent) return
+
+  let tail = node.nextSibling
+  if (!tail || tail.nodeType !== Node.TEXT_NODE) {
+    tail = document.createTextNode(ZWSP)
+    parent.insertBefore(tail, node.nextSibling)
+  }
+
+  const range = document.createRange()
+  const len = tail.textContent?.length || 0
+  range.setStart(tail, len)
   range.collapse(true)
   sel.removeAllRanges()
   sel.addRange(range)
 }
 
+const replaceSelectionWithPlainText = (text: string): boolean => {
+  const sel = window.getSelection()
+  if (!sel || sel.rangeCount === 0) return false
+
+  const range = sel.getRangeAt(0)
+  if (!editorRef.value?.contains(range.commonAncestorContainer)) return false
+  if (range.collapsed) return false
+
+  range.deleteContents()
+
+  const lines = text.split('\n')
+  const frag = document.createDocumentFragment()
+  let lastNode: Node = frag
+  lines.forEach((line, index) => {
+    const tn = document.createTextNode(line)
+    frag.appendChild(tn)
+    lastNode = tn
+    if (index < lines.length - 1) {
+      const br = document.createElement('br')
+      frag.appendChild(br)
+      lastNode = br
+    }
+  })
+
+  range.insertNode(frag)
+  placeCaretAfterNode(lastNode)
+  return true
+}
+
+const applyUnicodeFont = (fontId: UnicodeFontId) => {
+  focusEditor()
+  if (!hasTextSelectionInEditor()) return
+  const selected = getSelectedTextInEditor()
+  const converted = applyUnicodeFontStyle(selected, fontId)
+  if (replaceSelectionWithPlainText(converted)) syncFromEditor()
+}
+
 const applyFormat = (tag: TelegramHtmlTag) => {
   focusEditor()
+  if (!hasTextSelectionInEditor()) return
 
   if (tag === 'a') {
     const url = window.prompt('Havola manzili', 'https://')
     if (!url) return
     const href = sanitizeTelegramLinkUrl(url)
     if (!href) return
-    wrapSelectionWithTag('a', { href, target: '_blank', rel: 'noopener noreferrer' })
-    syncFromEditor()
+    if (wrapSelectionWithTag('a', { href, target: '_blank', rel: 'noopener noreferrer' })) {
+      syncFromEditor()
+    }
     return
   }
 
   const wrapTags: TelegramHtmlTag[] = ['code', 'blockquote', 'b', 'i', 'u', 's', 'tg-spoiler']
   if (wrapTags.includes(tag)) {
-    wrapSelectionWithTag(tag)
-    syncFromEditor()
+    if (wrapSelectionWithTag(tag)) syncFromEditor()
   }
+}
+
+const selectAllInEditor = () => {
+  const el = editorRef.value
+  const sel = window.getSelection()
+  if (!el || !sel) return
+  const range = document.createRange()
+  range.selectNodeContents(el)
+  sel.removeAllRanges()
+  sel.addRange(range)
+  formatMenuMode.value = 'selection'
+  scheduleSelectionMenuUpdate()
 }
 
 const copySelection = async () => {
@@ -345,14 +525,94 @@ const copySelection = async () => {
   }
 }
 
+const cutSelection = async () => {
+  const text = getSelectedTextInEditor()
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    document.execCommand('copy')
+  }
+  document.execCommand('delete')
+  syncFromEditor()
+}
+
+const pasteFromClipboard = async () => {
+  focusEditor()
+  let text = ''
+  try {
+    text = await navigator.clipboard.readText()
+  } catch {
+    hideFormatMenu()
+    return
+  }
+  if (!text) {
+    hideFormatMenu()
+    return
+  }
+  document.execCommand('insertText', false, text.replace(/\r\n/g, '\n'))
+  syncFromEditor()
+}
+
 const onFormatMenuAction = async (id: FormatMenuActionId) => {
+  if (id === 'selectAll') {
+    selectAllInEditor()
+    return
+  }
   if (id === 'copy') {
     await copySelection()
     hideFormatMenu()
     return
   }
-  applyFormat(id)
+  if (id === 'cut') {
+    await cutSelection()
+    hideFormatMenu()
+    return
+  }
+  if (id === 'paste') {
+    await pasteFromClipboard()
+    hideFormatMenu()
+    return
+  }
+  if (isUnicodeFontId(id)) {
+    applyUnicodeFont(id)
+    hideFormatMenu()
+    return
+  }
+  if (!FORMAT_MENU_ACTION_IDS.has(id as FormatMenuActionId)) return
+  applyFormat(id as TelegramHtmlTag)
   hideFormatMenu()
+}
+
+const startLongPressMenu = (clientX: number, clientY: number) => {
+  if (hasTextSelectionInEditor()) return
+  showFormatMenuAt(clientX, clientY, 'hold')
+}
+
+const onEditorTouchStart = (e: TouchEvent) => {
+  if (hasTextSelectionInEditor()) return
+  const touch = e.touches[0]
+  if (!touch) return
+  clearLongPressTimer()
+  const { clientX, clientY } = touch
+  longPressTimer = setTimeout(() => startLongPressMenu(clientX, clientY), LONG_PRESS_MS)
+}
+
+const onEditorTouchEnd = () => {
+  clearLongPressTimer()
+  scheduleSelectionMenuUpdate()
+}
+
+const onEditorMouseDown = (e: MouseEvent) => {
+  if (e.button !== 0 || hasTextSelectionInEditor()) return
+  clearLongPressTimer()
+  const { clientX, clientY } = e
+  longPressTimer = setTimeout(() => startLongPressMenu(clientX, clientY), LONG_PRESS_MS)
+}
+
+const onEditorMouseUp = () => {
+  clearLongPressTimer()
+  scheduleSelectionMenuUpdate()
 }
 
 const tryApplyFormatShortcut = (e: { key?: string; data?: string | null; isComposing?: boolean }) => {
@@ -435,6 +695,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('selectionchange', onDocumentSelectionChange)
   document.removeEventListener('mousedown', onDocumentPointerDown)
+  clearLongPressTimer()
   if (hideMenuTimer) clearTimeout(hideMenuTimer)
   cancelAnimationFrame(selectionMenuRaf)
   syncFromEditor()
