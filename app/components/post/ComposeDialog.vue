@@ -47,9 +47,10 @@
               v-model="text"
               class="mt-3"
               label="E'lon matni"
+              toolbar="static"
               :rows="5"
+              hide-hint
               placeholder="E'lon matnini yozing…"
-              hint="Matnni belgilang — formatlash menyusi ochiladi."
             />
 
             <label class="mt-4 flex items-center gap-2.5 cursor-pointer select-none">

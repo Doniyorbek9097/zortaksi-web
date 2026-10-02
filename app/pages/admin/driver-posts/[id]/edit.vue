@@ -38,7 +38,9 @@
       <CommonTelegramHtmlEditor
         v-model="text"
         label="E'lon matni"
+        toolbar="static"
         :rows="6"
+        hide-hint
         placeholder="Haydovchi matni"
       />
       <input

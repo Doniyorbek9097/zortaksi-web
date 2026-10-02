@@ -40,8 +40,9 @@
         <CommonTelegramHtmlEditor
           v-model="text"
           label="E'lon matni"
+          toolbar="static"
           :rows="6"
-          hint="Qalin, kursiv, havola va kod uchun yuqoridagi tugmalardan foydalaning."
+          hide-hint
         />
 
         <div

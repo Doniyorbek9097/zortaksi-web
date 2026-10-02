@@ -33,6 +33,7 @@
             <CommonTelegramHtmlEditor
               v-model="text"
               class="mt-4"
+              toolbar="static"
               :rows="5"
               hide-hint
               placeholder="Xabar matnini yozing…"

@@ -4,9 +4,58 @@
       {{ label }}
     </label>
 
-    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div
+      class="flex min-h-0 min-w-0 flex-1 flex-col"
+      :class="isStaticToolbar ? 'rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-950 focus-within:ring-2 focus-within:ring-sky-500/40' : ''"
+    >
       <div
-        v-if="formatMenu.visible"
+        v-if="isStaticToolbar"
+        class="tg-static-toolbar shrink-0 flex flex-wrap items-center gap-0.5 px-2 py-1.5 border-b border-slate-200/90 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/80"
+        @mousedown.prevent
+      >
+        <button
+          v-for="item in FORMAT_ACTION_ITEMS"
+          :key="item.id"
+          type="button"
+          class="tg-toolbar-btn"
+          :title="item.label"
+          :aria-label="item.label"
+          @click="onStaticToolbarAction(item.id)"
+        >
+          <span class="text-[11px] font-black leading-none">{{ item.icon }}</span>
+        </button>
+        <div ref="fontDropdownRef" class="relative ml-0.5">
+          <button
+            type="button"
+            class="tg-toolbar-btn tg-toolbar-btn--wide gap-1 px-2"
+            aria-haspopup="listbox"
+            :aria-expanded="fontDropdownOpen"
+            @click="toggleFontDropdown"
+          >
+            <span class="text-[11px] font-bold">Shrift</span>
+            <span class="text-[9px] opacity-60" aria-hidden="true">▼</span>
+          </button>
+          <div
+            v-if="fontDropdownOpen"
+            class="absolute left-0 top-full z-50 mt-1 min-w-[9.5rem] max-h-52 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-lg py-0.5"
+            role="listbox"
+          >
+            <button
+              v-for="font in UNICODE_FONT_MENU"
+              :key="font.id"
+              type="button"
+              class="w-full px-2.5 py-1.5 text-left text-[13px] font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800"
+              role="option"
+              @click="onStaticFontPick(font.id)"
+            >
+              {{ font.label }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        v-if="!isStaticToolbar && formatMenu.visible"
         ref="formatMenuRef"
         class="tg-format-menu shrink-0 max-h-[min(34vh,176px)] overflow-y-auto overscroll-y-contain py-0.5 border-b border-slate-200/80 dark:border-slate-600/80 bg-slate-50/95 dark:bg-slate-900/95"
         @mousedown.prevent
@@ -38,8 +87,10 @@
         :class="[
           compact
             ? 'px-1 py-2.5 text-[15px] bg-transparent border-0 rounded-none'
-            : 'px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500/40',
-          { 'tg-html-editor--in-app': suppressNativeSelectionChrome },
+            : isStaticToolbar
+              ? 'px-3.5 py-3 text-sm bg-transparent border-0 rounded-none'
+              : 'px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500/40',
+          { 'tg-html-editor--in-app': suppressNativeSelectionChrome && !isStaticToolbar },
           { 'opacity-60 pointer-events-none': disabled },
           editorClass,
         ]"
@@ -120,6 +171,8 @@ const props = withDefaults(
     readonly?: boolean
     maxHeightPx?: number
     editorClass?: string
+    /** Chat: tanlov menyusi; formlar: doimiy toolbar */
+    toolbar?: 'selection' | 'static'
   }>(),
   {
     rows: 4,
@@ -129,6 +182,7 @@ const props = withDefaults(
     disabled: false,
     readonly: false,
     editorClass: '',
+    toolbar: undefined,
   },
 )
 
@@ -147,9 +201,15 @@ const editorStyle = computed(() => {
   return style
 })
 
+const isStaticToolbar = computed(
+  () => props.toolbar === 'static' || (props.toolbar !== 'selection' && !props.compact),
+)
+
 const rootRef = ref<HTMLDivElement | null>(null)
 const editorRef = ref<HTMLDivElement | null>(null)
 const formatMenuRef = ref<HTMLDivElement | null>(null)
+const fontDropdownRef = ref<HTMLDivElement | null>(null)
+const fontDropdownOpen = ref(false)
 const isFocused = ref(false)
 
 const formatMenu = reactive({
@@ -251,6 +311,7 @@ const hideFormatMenu = () => {
 }
 
 const positionFormatMenu = () => {
+  if (isStaticToolbar.value) return
   if (!hasTextSelectionInEditor()) {
     if (formatMenuMode.value === 'hold' && formatMenu.visible) return
     hideFormatMenu()
@@ -262,6 +323,7 @@ const positionFormatMenu = () => {
 }
 
 const scheduleSelectionMenuUpdate = () => {
+  if (isStaticToolbar.value) return
   cancelAnimationFrame(selectionMenuRaf)
   selectionMenuRaf = requestAnimationFrame(() => {
     if (!isFocused.value) return
@@ -270,8 +332,29 @@ const scheduleSelectionMenuUpdate = () => {
 }
 
 const onDocumentSelectionChange = () => {
+  if (isStaticToolbar.value) return
   if (!isFocused.value) return
   scheduleSelectionMenuUpdate()
+}
+
+const closeFontDropdown = () => {
+  fontDropdownOpen.value = false
+}
+
+const toggleFontDropdown = () => {
+  fontDropdownOpen.value = !fontDropdownOpen.value
+}
+
+const onStaticToolbarAction = (id: FormatMenuActionId) => {
+  if (!FORMAT_MENU_ACTION_IDS.has(id)) return
+  focusEditor()
+  applyFormat(id as TelegramHtmlTag)
+}
+
+const onStaticFontPick = (id: UnicodeFontId) => {
+  focusEditor()
+  applyUnicodeFont(id)
+  closeFontDropdown()
 }
 
 const renderEditorFromModel = (value: string) => {
@@ -602,6 +685,7 @@ const onFormatMenuAction = async (id: FormatMenuActionId) => {
 }
 
 const startLongPressMenu = (clientX: number, clientY: number) => {
+  if (isStaticToolbar.value) return
   if (hasTextSelectionInEditor()) return
   showFormatMenuAt(clientX, clientY, 'hold')
 }
@@ -679,8 +763,10 @@ const onEditorKeydown = (e: KeyboardEvent) => {
 const onDocumentPointerDown = (e: MouseEvent) => {
   const target = e.target as Node
   if (formatMenuRef.value?.contains(target)) return
+  if (fontDropdownRef.value?.contains(target)) return
   if (editorRef.value?.contains(target)) return
   hideFormatMenu()
+  closeFontDropdown()
 }
 
 watch(
@@ -735,6 +821,44 @@ defineExpose({
 </script>
 
 <style scoped>
+.tg-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  color: rgb(51 65 85);
+  background: rgb(255 255 255 / 0.9);
+  border: 1px solid rgb(226 232 240);
+  transition: background-color 0.15s;
+}
+
+.tg-toolbar-btn:active {
+  transform: scale(0.96);
+}
+
+.tg-toolbar-btn--wide {
+  min-width: auto;
+  height: 1.75rem;
+}
+
+:global(.dark) .tg-toolbar-btn {
+  color: rgb(226 232 240);
+  background: rgb(30 41 59);
+  border-color: rgb(51 65 85);
+}
+
+:global(.dark) .tg-toolbar-btn:hover {
+  background: rgb(51 65 85);
+}
+
+.tg-toolbar-btn:hover {
+  background: rgb(241 245 249);
+}
+
 .tg-format-menu {
   -webkit-overflow-scrolling: touch;
 }

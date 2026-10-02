@@ -20,9 +20,10 @@
 
     <CommonTelegramHtmlEditor
       v-model="draft"
+      toolbar="static"
       :rows="8"
+      hide-hint
       placeholder="Masalan: Zo'r Taksi — ishonchli haydovchilar platformasi"
-      hint="Matnni belgilang — formatlash menyusi ochiladi."
     />
 
     <button
