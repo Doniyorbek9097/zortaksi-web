@@ -737,9 +737,16 @@ onBeforeUnmount(() => {
   hideFormatMenu()
 })
 
+/** Yuborishdan oldin contenteditable → Telegram HTML */
+const flushModel = (): string => {
+  syncFromEditor()
+  return String(modelValue.value || '')
+}
+
 defineExpose({
   focus: focusEditor,
   blur: () => editorRef.value?.blur(),
+  flushModel,
 })
 </script>
 

@@ -260,7 +260,7 @@ const syncHasText = (value: string) => {
 }
 
 const fileInput = ref<HTMLInputElement | null>(null)
-const textInput = ref<{ focus?: () => void; blur?: () => void } | null>(null)
+const textInput = ref<{ focus?: () => void; blur?: () => void; flushModel?: () => string } | null>(null)
 /** Autofill (password/card/address) panelini kamaytirish — fokusdan oldin readonly */
 const draftLocked = ref(true)
 const { keyboardOpen, scheduleMeasure } = useMobileKeyboardOpen()
@@ -434,7 +434,7 @@ const onFileChange = async (e: Event) => {
 
 const send = () => {
   if (props.disabled) return
-  const value = text.value.trim()
+  const value = (textInput.value?.flushModel?.() ?? text.value).trim()
   if (!draftPlain(value)) return
   closeSlashMenu()
   emit('send', value)
