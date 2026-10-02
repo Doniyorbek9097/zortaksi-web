@@ -33,6 +33,9 @@ export function sanitizeTelegramHtml(html: string): string {
   return s
 }
 
+const TELEGRAM_HTML_TAG_RE =
+  /<\/?(?:b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote|tg-spoiler)(?:\s[^>]*)?>/i
+
 /** Matndan HTML formatini aniqlash */
 export function inferTextFormat(
   text: string,
@@ -40,6 +43,18 @@ export function inferTextFormat(
 ): 'plain' | 'html' {
   if (explicit === 'html') return 'html'
   const t = String(text || '').trim()
-  if (/<[a-z][\s>\/]/i.test(t)) return 'html'
+  if (TELEGRAM_HTML_TAG_RE.test(t)) return 'html'
+  if (/&lt;\/?(?:b|strong|i|em|u|ins|s|strike|del|code|pre|a|br|blockquote|tg-spoiler)\b/i.test(t)) {
+    return 'html'
+  }
   return 'plain'
+}
+
+/** Chat bubble uchun: matnda teg bo'lsa doim html */
+export function resolveChatTextFormat(
+  text: string,
+  stored?: 'plain' | 'html' | null,
+): 'plain' | 'html' {
+  if (inferTextFormat(text) === 'html') return 'html'
+  return stored === 'html' ? 'html' : 'plain'
 }

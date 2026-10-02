@@ -72,6 +72,17 @@ const safeHtml = computed(() => sanitizeTelegramHtml(props.html || ''))
   background: rgb(241 245 249);
 }
 
+.chat-html :deep(tg-spoiler) {
+  border-radius: 0.2rem;
+  padding: 0 0.15em;
+  background: rgb(148 163 184 / 0.45);
+  cursor: pointer;
+}
+
+.chat-html :deep(tg-spoiler:hover) {
+  background: rgb(148 163 184 / 0.28);
+}
+
 :global(.dark) .chat-html :deep(code) {
   background: rgb(51 65 85);
   color: rgb(241 245 249);

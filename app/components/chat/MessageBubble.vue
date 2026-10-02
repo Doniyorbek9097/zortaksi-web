@@ -170,7 +170,7 @@
           v-if="text"
           class="px-2 text-[15px] leading-relaxed select-text"
         >
-          <ChatHtmlText v-if="textFormat === 'html'" :html="text" :out="out" />
+          <ChatHtmlText v-if="effectiveTextFormat === 'html'" :html="text" :out="out" />
           <ChatLinkifiedText v-else :text="text" :out="out" :mask-phones="maskPhones" />
         </p>
       </div>
@@ -226,7 +226,7 @@
 
       <!-- Matn (link / telefon bosiladi) -->
       <div
-        v-else-if="textFormat === 'html' && text"
+        v-else-if="effectiveTextFormat === 'html' && text"
         class="text-[15px] leading-relaxed select-text"
       >
         <ChatHtmlText :html="text" :out="out" />
@@ -336,6 +336,7 @@ import {
   isChatFileBadgeType,
 } from '~/utils/chatFileTypeLabel'
 import { supportBubbleInClass, supportBubbleOutClass } from '~/utils/supportChatTheme'
+import { resolveChatTextFormat } from '~/utils/telegramHtml'
 
 interface Props {
   text?: string
@@ -394,6 +395,10 @@ const props = withDefaults(defineProps<Props>(), {
   replyTo: null,
   support: false,
 })
+
+const effectiveTextFormat = computed(() =>
+  resolveChatTextFormat(props.text || '', props.textFormat),
+)
 
 const bubbleSurfaceClass = computed(() => {
   if (props.support) {
