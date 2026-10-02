@@ -1,49 +1,48 @@
 <template>
-  <div ref="rootRef" :class="compact ? 'relative min-w-0' : 'relative space-y-1.5'">
+  <div ref="rootRef" :class="compact ? 'flex min-h-0 min-w-0 flex-1 flex-col' : 'space-y-1.5'">
     <label v-if="label" class="px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
       {{ label }}
     </label>
 
-    <div class="relative min-w-0">
-    <div
-      v-if="formatMenu.visible"
-      ref="formatMenuRef"
-      class="tg-format-menu absolute left-0 right-0 top-0 z-50 max-h-[min(38vh,200px)] overflow-y-auto overscroll-y-contain py-0.5 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-white/98 dark:bg-slate-900/98 shadow-md backdrop-blur-sm"
-      @mousedown.prevent
-      @touchstart.stop
-    >
-      <button
-        v-for="item in visibleFormatMenuItems"
-        :key="item.id"
-        type="button"
-        class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-        @click="onFormatMenuAction(item.id)"
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div
+        v-if="formatMenu.visible"
+        ref="formatMenuRef"
+        class="tg-format-menu shrink-0 max-h-[min(34vh,176px)] overflow-y-auto overscroll-y-contain py-0.5 border-b border-slate-200/80 dark:border-slate-600/80 bg-slate-50/95 dark:bg-slate-900/95"
+        @mousedown.prevent
+        @touchstart.stop
       >
-        <span
-          v-if="item.icon"
-          class="w-4 text-center text-[11px] text-slate-400 shrink-0"
-          aria-hidden="true"
+        <button
+          v-for="item in visibleFormatMenuItems"
+          :key="item.id"
+          type="button"
+          class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+          @click="onFormatMenuAction(item.id)"
         >
-          {{ item.icon }}
-        </span>
-        <span class="min-w-0 truncate" :class="item.fontPreview ? 'text-[13px] tracking-tight' : ''">
-          {{ item.label }}
-        </span>
-      </button>
-    </div>
+          <span
+            v-if="item.icon"
+            class="w-4 text-center text-[11px] text-slate-400 shrink-0"
+            aria-hidden="true"
+          >
+            {{ item.icon }}
+          </span>
+          <span class="min-w-0 truncate" :class="item.fontPreview ? 'text-[13px] tracking-tight' : ''">
+            {{ item.label }}
+          </span>
+        </button>
+      </div>
 
-    <div
-      ref="editorRef"
-      class="tg-html-editor w-full leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto focus:outline-none"
-      :class="formatMenu.visible ? 'pt-[min(38vh,200px)]' : ''"
-      :class="[
-        compact
-          ? 'px-1 py-2.5 text-[15px] bg-transparent border-0 rounded-none'
-          : 'px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500/40',
-        { 'tg-html-editor--in-app': suppressNativeSelectionChrome },
-        { 'opacity-60 pointer-events-none': disabled },
-        editorClass,
-      ]"
+      <div
+        ref="editorRef"
+        class="tg-html-editor w-full min-h-0 flex-1 leading-relaxed overflow-y-auto focus:outline-none [min-height:var(--editor-min-h)]"
+        :class="[
+          compact
+            ? 'px-1 py-2.5 text-[15px] bg-transparent border-0 rounded-none'
+            : 'px-3.5 py-3 rounded-xl text-sm bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-sky-500/40',
+          { 'tg-html-editor--in-app': suppressNativeSelectionChrome },
+          { 'opacity-60 pointer-events-none': disabled },
+          editorClass,
+        ]"
       :style="editorStyle"
       :data-placeholder="placeholder || ''"
       :contenteditable="!disabled && !readonly"
