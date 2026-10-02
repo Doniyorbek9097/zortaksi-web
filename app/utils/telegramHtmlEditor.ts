@@ -30,6 +30,12 @@ function escapeTelegramText(value: string): string {
     .replace(/>/g, '&gt;')
 }
 
+function escapeHtmlAttr(value: string): string {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+}
+
 /** Telegram HTML → contenteditable ko'rinishi (teglar o'qiladi, \n → br) */
 export function telegramHtmlToEditorHtml(raw: string): string {
   const text = String(raw || '')
@@ -119,7 +125,7 @@ function serializeEditorNode(node: Node, parts: string[], isBlockRoot = false): 
       for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
       return
     }
-    parts.push(`<a href="${href}">`)
+    parts.push(`<a href="${escapeHtmlAttr(href)}">`)
     for (const child of Array.from(el.childNodes)) serializeEditorNode(child, parts)
     parts.push('</a>')
     return

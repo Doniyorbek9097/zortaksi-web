@@ -1,12 +1,41 @@
 <template>
-  <div ref="rootRef" :class="compact ? 'min-w-0' : 'space-y-1.5'">
+  <div ref="rootRef" :class="compact ? 'relative min-w-0' : 'relative space-y-1.5'">
     <label v-if="label" class="px-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
       {{ label }}
     </label>
 
+    <div class="relative min-w-0">
+    <div
+      v-if="formatMenu.visible"
+      ref="formatMenuRef"
+      class="tg-format-menu absolute left-0 right-0 top-0 z-50 max-h-[min(38vh,200px)] overflow-y-auto overscroll-y-contain py-0.5 rounded-lg border border-slate-200/90 dark:border-slate-700 bg-white/98 dark:bg-slate-900/98 shadow-md backdrop-blur-sm"
+      @mousedown.prevent
+      @touchstart.stop
+    >
+      <button
+        v-for="item in visibleFormatMenuItems"
+        :key="item.id"
+        type="button"
+        class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
+        @click="onFormatMenuAction(item.id)"
+      >
+        <span
+          v-if="item.icon"
+          class="w-4 text-center text-[11px] text-slate-400 shrink-0"
+          aria-hidden="true"
+        >
+          {{ item.icon }}
+        </span>
+        <span class="min-w-0 truncate" :class="item.fontPreview ? 'text-[13px] tracking-tight' : ''">
+          {{ item.label }}
+        </span>
+      </button>
+    </div>
+
     <div
       ref="editorRef"
       class="tg-html-editor w-full leading-relaxed min-h-[var(--editor-min-h)] overflow-y-auto focus:outline-none"
+      :class="formatMenu.visible ? 'pt-[min(38vh,200px)]' : ''"
       :class="[
         compact
           ? 'px-1 py-2.5 text-[15px] bg-transparent border-0 rounded-none'
@@ -39,36 +68,7 @@
       @touchend.passive="onEditorTouchEnd"
       @touchcancel.passive="clearLongPressTimer"
     />
-
-    <Teleport to="body">
-      <div
-        v-if="formatMenu.visible"
-        ref="formatMenuRef"
-        class="tg-format-menu fixed z-[10050] w-[min(220px,calc(100vw-20px))] max-h-[min(42vh,240px)] overflow-y-auto overscroll-y-contain py-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg shadow-black/12"
-        :style="formatMenuStyle"
-        @mousedown.prevent
-        @touchstart.stop
-      >
-        <button
-          v-for="item in visibleFormatMenuItems"
-          :key="item.id"
-          type="button"
-          class="w-full px-2.5 py-1.5 text-left text-[12px] leading-tight font-semibold text-slate-800 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-          @click="onFormatMenuAction(item.id)"
-        >
-          <span
-            v-if="item.icon"
-            class="w-4 text-center text-[11px] text-slate-400 shrink-0"
-            aria-hidden="true"
-          >
-            {{ item.icon }}
-          </span>
-          <span class="min-w-0 truncate" :class="item.fontPreview ? 'text-[13px] tracking-tight' : ''">
-            {{ item.label }}
-          </span>
-        </button>
-      </div>
-    </Teleport>
+    </div>
 
     <p v-if="hint && !hideHint" class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
       {{ hint }}
@@ -155,8 +155,6 @@ const isFocused = ref(false)
 
 const formatMenu = reactive({
   visible: false,
-  top: 0,
-  left: 0,
 })
 
 const formatMenuMode = ref<'selection' | 'hold'>('selection')
@@ -194,11 +192,6 @@ const visibleFormatMenuItems = computed((): FormatMenuItem[] => {
     ...UNICODE_FONT_MENU_ITEMS,
   ]
 })
-
-const formatMenuStyle = computed(() => ({
-  top: `${formatMenu.top}px`,
-  left: `${formatMenu.left}px`,
-}))
 
 const suppressNativeSelectionChrome = ref(false)
 
@@ -239,32 +232,9 @@ const clearLongPressTimer = () => {
   }
 }
 
-const clampMenuPosition = (left: number, top: number) => {
-  const pad = 6
-  const menuW = formatMenuRef.value?.offsetWidth || 200
-  const menuH = formatMenuRef.value?.offsetHeight || 200
-  return {
-    left: Math.max(pad, Math.min(left, window.innerWidth - menuW - pad)),
-    top: Math.max(pad, Math.min(top, window.innerHeight - menuH - pad)),
-  }
-}
-
-const showFormatMenuAt = (clientX: number, clientY: number, mode: 'selection' | 'hold') => {
+const showFormatMenuAt = (_clientX: number, _clientY: number, mode: 'selection' | 'hold') => {
   formatMenuMode.value = mode
-  const pad = 6
-  let left = clientX - 100
-  let top = clientY - (mode === 'hold' ? 72 : 120)
-  const clamped = clampMenuPosition(left, top)
-  formatMenu.left = clamped.left
-  formatMenu.top = clamped.top
   formatMenu.visible = true
-
-  requestAnimationFrame(() => {
-    if (!formatMenu.visible) return
-    const c = clampMenuPosition(left, top)
-    formatMenu.left = c.left
-    formatMenu.top = c.top
-  })
 }
 
 const getSelectedTextInEditor = (): string => {
@@ -289,37 +259,7 @@ const positionFormatMenu = () => {
   }
 
   formatMenuMode.value = 'selection'
-
-  const sel = window.getSelection()
-  if (!sel || sel.rangeCount === 0) {
-    hideFormatMenu()
-    return
-  }
-  const range = sel.getRangeAt(0)
-  if (!editorRef.value?.contains(range.commonAncestorContainer) || range.collapsed) {
-    hideFormatMenu()
-    return
-  }
-  const rect = range.getBoundingClientRect()
-  const pad = 6
-  const menuW = formatMenuRef.value?.offsetWidth || 200
-  const menuH = formatMenuRef.value?.offsetHeight || 200
-
-  let left = rect.left + rect.width / 2 - menuW / 2
-  let top = rect.top - menuH - pad
-  if (top < pad) top = rect.bottom + pad
-
-  const clamped = clampMenuPosition(left, top)
-  formatMenu.left = clamped.left
-  formatMenu.top = clamped.top
   formatMenu.visible = true
-
-  requestAnimationFrame(() => {
-    if (!formatMenu.visible) return
-    const c = clampMenuPosition(left, top)
-    formatMenu.left = c.left
-    formatMenu.top = c.top
-  })
 }
 
 const scheduleSelectionMenuUpdate = () => {
@@ -570,21 +510,66 @@ const cutSelection = async () => {
   syncFromEditor()
 }
 
+const ensureCaretInEditor = () => {
+  const el = editorRef.value
+  const sel = window.getSelection()
+  if (!el || !sel) return
+
+  if (sel.rangeCount === 0 || !el.contains(sel.anchorNode)) {
+    const range = document.createRange()
+    range.selectNodeContents(el)
+    range.collapse(false)
+    sel.removeAllRanges()
+    sel.addRange(range)
+  }
+}
+
+const insertPlainTextAtCaret = (raw: string) => {
+  const text = String(raw || '').replace(/\r\n/g, '\n')
+  if (!text) return
+
+  focusEditor()
+  ensureCaretInEditor()
+
+  const el = editorRef.value
+  const sel = window.getSelection()
+  if (!el || !sel || sel.rangeCount === 0) return
+
+  const range = sel.getRangeAt(0)
+  if (!el.contains(range.commonAncestorContainer)) return
+
+  range.deleteContents()
+  const tn = document.createTextNode(text)
+  range.insertNode(tn)
+  range.setStartAfter(tn)
+  range.collapse(true)
+  sel.removeAllRanges()
+  sel.addRange(range)
+  syncFromEditor()
+}
+
 const pasteFromClipboard = async () => {
   focusEditor()
-  let text = ''
+  ensureCaretInEditor()
+
   try {
-    text = await navigator.clipboard.readText()
+    if (document.execCommand('paste')) {
+      syncFromEditor()
+      return
+    }
   } catch {
-    hideFormatMenu()
-    return
+    /* WebView / brauzer */
   }
-  if (!text) {
-    hideFormatMenu()
-    return
+
+  try {
+    const text = await navigator.clipboard.readText()
+    if (text) {
+      insertPlainTextAtCaret(text)
+      return
+    }
+  } catch {
+    /* ruxsat yo'q */
   }
-  document.execCommand('insertText', false, text.replace(/\r\n/g, '\n'))
-  syncFromEditor()
 }
 
 const onFormatMenuAction = async (id: FormatMenuActionId) => {
