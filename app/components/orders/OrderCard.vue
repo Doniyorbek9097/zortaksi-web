@@ -242,7 +242,7 @@
 <script setup lang="ts">
 import type { IOrder } from '~/types'
 import OrdersOrderVoicePlayer from '~/components/orders/OrderVoicePlayer.vue'
-import { hidePhoneNumbers, normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
+import { normalizeTelHref, resolveOrderPhone } from '~/utils/phone'
 import { buildGroupViewUrl } from '~/utils/telegramLinks'
 
 const ZORTAKSI_BOT_GROUP_ID = 'zortaksi-bot'
@@ -353,7 +353,7 @@ const hasBotVoice = computed(() => {
 
 /** Matnda telefonlar yashirilgan; ovozli qator alohida pleerda */
 const orderMessageText = computed(() => {
-  let text = hidePhoneNumbers(props.order.message?.text)
+  let text = String(props.order.message?.text || '')
   if (!hasBotVoice.value) return text
   return text
     .replace(/Yo'lovchi:\s*🎤[^\n]*/gi, '')

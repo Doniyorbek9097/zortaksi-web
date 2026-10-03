@@ -1,6 +1,9 @@
-/** Matndan telefon raqamini topadi (nuqta, ikki nuqta, tire va h.k.) */
-const PHONE_CANDIDATE = /\+?\d(?:[ \t().\-·•:]*\d){6,14}|\b\d{7,15}\b/g
-const FRAGMENT_SEP = /\n+|\/|,|;|\||(?:\s+va\s+)/i
+/** Matndan telefon raqamini topadi (nuqta, vergul, tire, : va h.k.) */
+const PHONE_CANDIDATE = new RegExp(
+  String.raw`\+?\d(?:[ \t().,\-·•:]*\d){6,14}|\b\d(?:[ \t().,\-·•:]*\d){6,14}\b|\b\d{7,15}\b`,
+  'g',
+)
+const FRAGMENT_SEP = /\n+|\/|;|\||(?:\s+va\s+)/i
 const MIN_DIGITS = 7
 
 export const PHONE_MASK = '■■■'
@@ -61,6 +64,34 @@ function looksLikeDate(raw: string, digits: string): boolean {
   return false
 }
 
+function isValidClockToken(token: string): boolean {
+  const parts = token.split(':').map((p) => Number(p))
+  if (parts.length < 2 || parts.some((n) => Number.isNaN(n))) return false
+  const [hh, mm, ss] = parts
+  if (hh > 23 || mm > 59) return false
+  if (parts.length > 2 && ss > 59) return false
+  return true
+}
+
+/** 03:00, 21:00 — telefon emas */
+function looksLikeTime(raw: string, digits: string): boolean {
+  const trimmed = raw.trim()
+  if (!trimmed.includes(':')) return false
+  if (/^\d{1,2}:\d{2}(?::\d{2})?\s*[-–—~]\s*\d{1,2}:\d{2}(?::\d{2})?$/.test(trimmed)) {
+    return trimmed.split(/\s*[-–—~]\s*/).every(isValidClockToken)
+  }
+  if (/^\d{1,2}:\d{2}(?::\d{2})?$/.test(trimmed)) {
+    return isValidClockToken(trimmed)
+  }
+  if (/^(?:\d{1,2}:\d{2}(?::\d{2})?(?:\s*[,/]\s*)?)+$/.test(trimmed)) {
+    const tokens = trimmed.match(/\d{1,2}:\d{2}(?::\d{2})?/g) || []
+    if (!tokens.length) return false
+    const tokenDigits = tokens.join('').replace(/\D/g, '')
+    return tokens.every(isValidClockToken) && tokenDigits === digits
+  }
+  return false
+}
+
 /** Matndagi telefon maskasini haydovchi chatida ochiq raqamga almashtiradi */
 export function revealOrderTextPhones(
   text: string | null | undefined,
@@ -89,6 +120,7 @@ export function hidePhoneNumbers(
     const digits = (match.match(/\d/g) || []).join('')
     if (digits.length < MIN_DIGITS || digits.length > 15) return match
     if (looksLikeDate(match, digits)) return match
+    if (looksLikeTime(match, digits)) return match
 
     const leading = match.match(/^\s*/)?.[0] ?? ''
     const trailing = match.match(/\s*$/)?.[0] ?? ''
@@ -164,6 +196,7 @@ function normalizeCandidate(raw: string): string | null {
   const digits = (raw.match(/\d/g) || []).join('')
   if (digits.length < MIN_DIGITS || digits.length > 15) return null
   if (looksLikeDate(raw, digits)) return null
+  if (looksLikeTime(raw, digits)) return null
   return normalizeTo998(digits)
 }
 
@@ -177,13 +210,14 @@ export function extractPhonesInOrder(text?: string | null): string[] {
     const re = new RegExp(PHONE_CANDIDATE.source, 'g')
     for (const m of chunk.matchAll(re)) {
       const normalized = normalizeCandidate(m[0])
-      if (normalized) out.push(normalized)
+      if (normalized && out[out.length - 1] !== normalized) out.push(normalized)
     }
   }
 
   for (const line of text.split(/\n+/)) {
     const trimmedLine = line.trim()
     if (!trimmedLine) continue
+    scan(trimmedLine)
     for (const part of trimmedLine.split(FRAGMENT_SEP)) {
       scan(part.trim())
     }
