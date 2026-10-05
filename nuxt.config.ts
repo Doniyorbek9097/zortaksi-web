@@ -86,7 +86,22 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'ZorTaksi' },
-        { name: 'description', content: "ZorTaksi — Telegram buyurtmalarini bir joydan olish imkonini ochib beradi va E'loningizni guruhlarga tarqatishni autommatlashtirib beradi" },
+        { name: 'description', content: `🚕 ZorTaksi — haydovchining ishini osonlashtiradi!
+
+📢 Siz e’lonni bir marta yuborasiz — ZorTaksi uni kerakli Telegram guruhlariga avtomatik tarqatadi.
+Endi har bir guruhga alohida kirib, e’lon joylashtirishga vaqt ketmaydi.
+
+📥 Siz buyurtmalarni qidirib o‘tirmaysiz — ZorTaksi ularni bir joyga jamlaydi.
+Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
+
+⏱ Natija: kamroq vaqtni Telegram guruhlariga sarflaysiz, ko‘proq vaqtni yo‘lovchi olishga ajratasiz.
+
+💰 Ko‘proq buyurtma olish uchun ko‘proq harakat qilish shart emas — to‘g‘ri vositadan foydalanish kerak.
+
+🔥 ZorTaksi’ni yoqing va buyurtma olishni bugunoq osonlashtiring!
+
+👉 Hoziroq qo‘shiling va foydalanishni boshlang.` },
+
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },

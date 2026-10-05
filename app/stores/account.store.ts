@@ -155,7 +155,10 @@ export const useAccountStore = defineStore('account', () => {
 
   const authOpts = { timeout: AUTH_API_TIMEOUT_MS }
 
-  const sendCode = async (phone: string, opts?: { forceSms?: boolean }) => {
+  const sendCode = async (
+    phone: string,
+    opts?: { forceSms?: boolean; forceNew?: boolean },
+  ) => {
     load()
     if (isAtAccountLimit() && !hasAccount({ phone })) {
       return { success: false, message: accountLimitMessage() }
@@ -169,7 +172,11 @@ export const useAccountStore = defineStore('account', () => {
     try {
       return await useApi('/send-code', {
         method: 'POST',
-        body: { phone, forceSms: opts?.forceSms || undefined },
+        body: {
+          phone,
+          forceSms: opts?.forceSms || undefined,
+          forceNew: opts?.forceNew || undefined,
+        },
         ...authOpts,
       })
     } catch (error) {

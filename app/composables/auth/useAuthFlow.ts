@@ -132,7 +132,7 @@ export function useAuthFlow() {
     }
   }
 
-  const handleSendCode = async (opts?: { forceSms?: boolean }) => {
+  const handleSendCode = async (opts?: { forceSms?: boolean; forceNew?: boolean }) => {
     if (authStore.isLoading) return
     form.error = ''
 
@@ -154,7 +154,8 @@ export function useAuthFlow() {
       if (response.success) {
         deliveryHint.value =
           response.data?.message || `Kod Telegramga yuborildi (+${parsed})`
-        canResendSms.value = !!response.data?.canResendSms
+        canResendSms.value =
+          !!response.data?.canResendSms || response.data?.deliveryType === 'app'
         if (!opts?.forceSms) currentStep.value = 'verify'
       } else {
         form.error = response.message || 'Xatolik yuz berdi'
@@ -166,6 +167,7 @@ export function useAuthFlow() {
   }
 
   const handleResendSms = () => handleSendCode({ forceSms: true })
+  const handleResendNewCode = () => handleSendCode({ forceNew: true })
 
   const handleVerifyCode = async () => {
     if (authStore.isLoading) return
@@ -240,6 +242,7 @@ export function useAuthFlow() {
     formattedPhoneDisplay,
     handleSendCode,
     handleResendSms,
+    handleResendNewCode,
     handleVerifyCode,
     handleVerifyPassword,
     handleBack,

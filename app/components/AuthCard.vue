@@ -139,15 +139,25 @@
             @submit="handleVerifyCode"
           />
 
-          <button
-            v-if="canResendSms"
-            type="button"
-            :disabled="authStore.isLoading"
-            class="w-full py-2.5 text-sm font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
-            @click="handleResendSms"
-          >
-            SMS orqali olish
-          </button>
+          <div class="flex flex-col gap-1">
+            <button
+              v-if="canResendSms"
+              type="button"
+              :disabled="authStore.isLoading"
+              class="w-full py-2.5 text-sm font-black text-sky-500 hover:text-sky-600 disabled:opacity-45"
+              @click="handleResendSms"
+            >
+              Kod kelmadimi? SMS orqali olish
+            </button>
+            <button
+              type="button"
+              :disabled="authStore.isLoading"
+              class="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 disabled:opacity-45"
+              @click="handleResendNewCode"
+            >
+              Yangi kod so‘rash
+            </button>
+          </div>
         </template>
 
         <template v-else-if="currentStep === 'password'">
@@ -199,6 +209,7 @@ const {
   formattedPhoneDisplay,
   handleSendCode,
   handleResendSms,
+  handleResendNewCode,
   handleVerifyCode,
   handleVerifyPassword,
   handleBack,
