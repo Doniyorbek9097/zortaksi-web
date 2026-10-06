@@ -36,6 +36,8 @@
       :click-payments="monthIncome.clickPayments ?? 0"
       :card-amount="monthIncome.cardAmount ?? 0"
       :card-payments="monthIncome.cardPayments ?? 0"
+      :click-reset-at="monthIncome.clickResetAt"
+      :card-reset-at="monthIncome.cardResetAt"
       :resetting-channel="store.resettingChannel"
       @reset-channel="onPaymentChannelResetRequest"
     />
