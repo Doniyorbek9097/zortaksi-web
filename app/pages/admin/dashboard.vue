@@ -32,10 +32,14 @@
       :today-payments="todayIncome.payments"
       :week-amount="weekIncome.amount"
       :week-payments="weekIncome.payments"
-      :click-amount="monthIncome.clickAmount"
-      :click-payments="monthIncome.clickPayments"
-      :card-amount="monthIncome.cardAmount"
-      :card-payments="monthIncome.cardPayments"
+      :click-amount="monthIncome.clickAmount ?? 0"
+      :click-payments="monthIncome.clickPayments ?? 0"
+      :card-amount="monthIncome.cardAmount ?? 0"
+      :card-payments="monthIncome.cardPayments ?? 0"
+      :click-reset-at="monthIncome.clickResetAt"
+      :card-reset-at="monthIncome.cardResetAt"
+      :resetting-channel="store.resettingChannel"
+      @reset-channel="onPaymentChannelReset"
     />
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
@@ -343,6 +347,14 @@ const {
 } = useGroupInviteLeaderboard({
   cacheKey: 'zt:admin-group-invite-lb',
 })
+
+const onPaymentChannelReset = async (channel: 'click' | 'card') => {
+  try {
+    await store.resetPaymentChannel(channel)
+  } catch {
+    /* */
+  }
+}
 
 const onDownloadApp = () => navigateTo('/admin/download-app')
 const onBonus = () => navigateTo('/admin/bonus')

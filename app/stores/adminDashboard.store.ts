@@ -10,6 +10,8 @@ export interface IncomeBlock {
   clickPayments?: number
   cardAmount?: number
   cardPayments?: number
+  clickResetAt?: string | null
+  cardResetAt?: string | null
 }
 
 export interface DataRow {
@@ -165,6 +167,31 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     }
   }
 
+  const resettingChannel = ref<'click' | 'card' | null>(null)
+
+  const resetPaymentChannel = async (channel: 'click' | 'card') => {
+    resettingChannel.value = channel
+    try {
+      const res = await useApi('/admin/dashboard/payment-channel-reset', {
+        method: 'POST',
+        body: { channel },
+      })
+      if (res.success && res.data?.monthIncome && data.value) {
+        data.value = {
+          ...data.value,
+          monthIncome: {
+            ...data.value.monthIncome,
+            ...res.data.monthIncome,
+          },
+        }
+        saveCached()
+      }
+      return res
+    } finally {
+      resettingChannel.value = null
+    }
+  }
+
   const fetchStats = async (opts?: { background?: boolean }) => {
     const background = opts?.background ?? hydrated.value
     if (!background) isLoading.value = true
@@ -197,7 +224,9 @@ export const useAdminDashboardStore = defineStore('adminDashboard', () => {
     hydrated,
     isReady,
     monthIncome,
+    resettingChannel,
     loadCached,
     fetchStats,
+    resetPaymentChannel,
   }
 })

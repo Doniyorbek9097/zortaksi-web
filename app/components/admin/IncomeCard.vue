@@ -106,47 +106,88 @@
       </div>
     </div>
 
-    <!-- To'lov turlari (shu oy) -->
-    <div class="mx-3 mb-2 grid grid-cols-2 gap-1.5">
+    <!-- Click / Card — restart dan hisob (jami daromadga ta'sir qilmaydi) -->
+    <div class="mx-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
       <div
-        class="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-sky-200/70 dark:border-sky-800/50 bg-sky-500/[0.06] dark:bg-sky-950/30"
+        class="rounded-xl px-3 py-3 min-h-[108px] flex flex-col border border-sky-200/80 dark:border-sky-800/60 bg-sky-500/[0.07] dark:bg-sky-950/35"
       >
-        <div
-          class="w-6 h-6 rounded-md bg-sky-500 flex items-center justify-center text-white text-[9px] shrink-0"
-        >
-          <font-awesome-icon icon="fa-solid fa-bolt" />
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div
+              class="w-9 h-9 rounded-lg bg-sky-500 flex items-center justify-center text-white text-sm shrink-0 shadow-sm"
+            >
+              <font-awesome-icon icon="fa-solid fa-bolt" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400">
+                Click to'lov
+              </p>
+              <p class="text-[18px] font-black tabular-nums text-sky-800 dark:text-sky-100 leading-tight">
+                {{ formattedClick }}
+              </p>
+              <p class="text-[10px] font-bold text-sky-600/80 dark:text-sky-400/80 tabular-nums">
+                {{ clickPayments }} to'lov
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white/90 dark:bg-slate-900 border border-sky-200 dark:border-sky-700 text-sky-700 dark:text-sky-300 disabled:opacity-45"
+            :disabled="resettingChannel === 'click'"
+            @click="emit('reset-channel', 'click')"
+          >
+            <font-awesome-icon
+              v-if="resettingChannel === 'click'"
+              icon="fa-solid fa-spinner"
+              class="animate-spin"
+            />
+            <span v-else>Restart</span>
+          </button>
         </div>
-        <div class="min-w-0 flex-1 leading-none">
-          <p class="text-[8px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400">
-            Click
-          </p>
-          <p class="text-[12px] font-black tabular-nums text-sky-800 dark:text-sky-200 truncate">
-            {{ formattedClick }}
-          </p>
-        </div>
-        <span class="text-[8px] font-bold text-sky-500/80 shrink-0 tabular-nums">
-          {{ clickPayments }}
-        </span>
+        <p class="mt-2 text-[9px] font-semibold text-sky-700/75 dark:text-sky-300/70 leading-snug">
+          {{ clickResetLabel }}
+        </p>
       </div>
+
       <div
-        class="flex items-center gap-2 rounded-lg px-2 py-1.5 border border-violet-200/70 dark:border-violet-800/50 bg-violet-500/[0.06] dark:bg-violet-950/30"
+        class="rounded-xl px-3 py-3 min-h-[108px] flex flex-col border border-violet-200/80 dark:border-violet-800/60 bg-violet-500/[0.07] dark:bg-violet-950/35"
       >
-        <div
-          class="w-6 h-6 rounded-md bg-violet-500 flex items-center justify-center text-white text-[9px] shrink-0"
-        >
-          <font-awesome-icon icon="fa-solid fa-credit-card" />
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div
+              class="w-9 h-9 rounded-lg bg-violet-500 flex items-center justify-center text-white text-sm shrink-0 shadow-sm"
+            >
+              <font-awesome-icon icon="fa-solid fa-credit-card" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
+                Card to'lov
+              </p>
+              <p class="text-[18px] font-black tabular-nums text-violet-800 dark:text-violet-100 leading-tight">
+                {{ formattedCard }}
+              </p>
+              <p class="text-[10px] font-bold text-violet-600/80 dark:text-violet-400/80 tabular-nums">
+                {{ cardPayments }} to'lov
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="shrink-0 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wide bg-white/90 dark:bg-slate-900 border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 disabled:opacity-45"
+            :disabled="resettingChannel === 'card'"
+            @click="emit('reset-channel', 'card')"
+          >
+            <font-awesome-icon
+              v-if="resettingChannel === 'card'"
+              icon="fa-solid fa-spinner"
+              class="animate-spin"
+            />
+            <span v-else>Restart</span>
+          </button>
         </div>
-        <div class="min-w-0 flex-1 leading-none">
-          <p class="text-[8px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
-            Card
-          </p>
-          <p class="text-[12px] font-black tabular-nums text-violet-800 dark:text-violet-200 truncate">
-            {{ formattedCard }}
-          </p>
-        </div>
-        <span class="text-[8px] font-bold text-violet-500/80 shrink-0 tabular-nums">
-          {{ cardPayments }}
-        </span>
+        <p class="mt-2 text-[9px] font-semibold text-violet-700/75 dark:text-violet-300/70 leading-snug">
+          {{ cardResetLabel }}
+        </p>
       </div>
     </div>
 
@@ -195,6 +236,9 @@ interface Props {
   clickPayments?: number
   cardAmount?: number
   cardPayments?: number
+  clickResetAt?: string | null
+  cardResetAt?: string | null
+  resettingChannel?: 'click' | 'card' | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -210,7 +254,14 @@ const props = withDefaults(defineProps<Props>(), {
   clickPayments: 0,
   cardAmount: 0,
   cardPayments: 0,
+  clickResetAt: null,
+  cardResetAt: null,
+  resettingChannel: null,
 })
+
+const emit = defineEmits<{
+  'reset-channel': [channel: 'click' | 'card']
+}>()
 
 const fmt = (n: number) => n.toLocaleString('ru-RU')
 const formattedAmount = computed(() => fmt(props.amount))
@@ -219,4 +270,25 @@ const formattedToday = computed(() => fmt(props.todayAmount))
 const formattedWeek = computed(() => fmt(props.weekAmount))
 const formattedClick = computed(() => fmt(props.clickAmount))
 const formattedCard = computed(() => fmt(props.cardAmount))
+
+function formatResetLabel(iso: string | null | undefined): string {
+  if (!iso) {
+    return "Hisob: barcha vaqt (Restart bosilsa 0 dan boshlanadi, oy avto yangilanmaydi)"
+  }
+  try {
+    const d = new Date(iso)
+    const date = d.toLocaleDateString('uz-UZ', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    const time = d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
+    return `Restart: ${date}, ${time} — shu vaqtdan keyingi to'lovlar`
+  } catch {
+    return 'Restart qilingan'
+  }
+}
+
+const clickResetLabel = computed(() => formatResetLabel(props.clickResetAt))
+const cardResetLabel = computed(() => formatResetLabel(props.cardResetAt))
 </script>
