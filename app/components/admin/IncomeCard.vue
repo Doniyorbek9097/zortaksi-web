@@ -109,84 +109,92 @@
     <!-- Click / Card -->
     <div class="mx-3 mb-2 grid grid-cols-2 gap-1.5">
       <div
-        class="rounded-lg px-2 py-1.5 border border-sky-200/70 dark:border-sky-800/50 bg-sky-500/[0.06] dark:bg-sky-950/30"
+        class="rounded-lg px-2 py-2 border border-sky-200/70 dark:border-sky-800/50 bg-sky-500/[0.06] dark:bg-sky-950/30 min-w-0"
       >
-        <div class="flex items-center gap-1.5">
-          <div
-            class="w-6 h-6 rounded-md bg-sky-500 flex items-center justify-center text-white text-[9px] shrink-0"
-          >
-            <font-awesome-icon icon="fa-solid fa-bolt" />
-          </div>
-          <div class="min-w-0 flex-1 leading-none">
+        <div class="flex items-center justify-between gap-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <div
+              class="w-6 h-6 rounded-md bg-sky-500 flex items-center justify-center text-white text-[9px] shrink-0"
+            >
+              <font-awesome-icon icon="fa-solid fa-bolt" />
+            </div>
             <p class="text-[8px] font-black uppercase tracking-wide text-sky-600 dark:text-sky-400">
               Click
             </p>
-            <p class="text-[12px] font-black tabular-nums text-sky-800 dark:text-sky-200 truncate">
-              {{ formattedClick }}
-            </p>
           </div>
-          <span class="text-[8px] font-bold text-sky-500/90 tabular-nums shrink-0">
-            {{ clickPayments }}
-          </span>
-          <button
-            type="button"
-            class="shrink-0 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase bg-white/90 dark:bg-slate-900 border border-sky-200/80 dark:border-sky-700 text-sky-700 dark:text-sky-300 disabled:opacity-45"
-            :disabled="resettingChannel === 'click'"
-            @click="emit('reset-channel', 'click')"
-          >
-            <font-awesome-icon
-              v-if="resettingChannel === 'click'"
-              icon="fa-solid fa-spinner"
-              class="animate-spin text-[9px]"
-            />
-            <span v-else class="text-[7px]">Restart</span>
-          </button>
+          <div class="flex items-center shrink-0">
+            <button
+              type="button"
+              class="px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase bg-white/90 dark:bg-slate-900 border border-sky-200/80 dark:border-sky-700 text-sky-700 dark:text-sky-300 disabled:opacity-45"
+              :disabled="resettingChannel === 'click'"
+              @click="emit('reset-channel', 'click')"
+            >
+              <font-awesome-icon
+                v-if="resettingChannel === 'click'"
+                icon="fa-solid fa-spinner"
+                class="animate-spin text-[9px]"
+              />
+              <span v-else class="text-[7px]">Restart</span>
+            </button>
+          </div>
         </div>
         <p
+          class="mt-1.5 text-[12px] sm:text-[13px] font-black tabular-nums leading-snug text-sky-800 dark:text-sky-200 break-all"
+        >
+          {{ formattedClick }}
+        </p>
+        <p class="mt-0.5 text-[8px] font-bold text-sky-600/70 dark:text-sky-400/70">
+          {{ clickPayments }} to'lov
+        </p>
+        <p
           v-if="clickResetLabel"
-          class="mt-1 pl-[1.625rem] text-[8px] font-semibold tabular-nums text-sky-600/80 dark:text-sky-400/75 truncate"
+          class="mt-1 text-[8px] font-semibold tabular-nums text-sky-600/80 dark:text-sky-400/75 break-words"
         >
           {{ clickResetLabel }}
         </p>
       </div>
 
       <div
-        class="rounded-lg px-2 py-1.5 border border-violet-200/70 dark:border-violet-800/50 bg-violet-500/[0.06] dark:bg-violet-950/30"
+        class="rounded-lg px-2 py-2 border border-violet-200/70 dark:border-violet-800/50 bg-violet-500/[0.06] dark:bg-violet-950/30 min-w-0"
       >
-        <div class="flex items-center gap-1.5">
-          <div
-            class="w-6 h-6 rounded-md bg-violet-500 flex items-center justify-center text-white text-[9px] shrink-0"
-          >
-            <font-awesome-icon icon="fa-solid fa-credit-card" />
-          </div>
-          <div class="min-w-0 flex-1 leading-none">
+        <div class="flex items-center justify-between gap-1">
+          <div class="flex items-center gap-1.5 min-w-0">
+            <div
+              class="w-6 h-6 rounded-md bg-violet-500 flex items-center justify-center text-white text-[9px] shrink-0"
+            >
+              <font-awesome-icon icon="fa-solid fa-credit-card" />
+            </div>
             <p class="text-[8px] font-black uppercase tracking-wide text-violet-600 dark:text-violet-400">
               Card
             </p>
-            <p class="text-[12px] font-black tabular-nums text-violet-800 dark:text-violet-200 truncate">
-              {{ formattedCard }}
-            </p>
           </div>
-          <span class="text-[8px] font-bold text-violet-500/90 tabular-nums shrink-0">
-            {{ cardPayments }}
-          </span>
-          <button
-            type="button"
-            class="shrink-0 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase bg-white/90 dark:bg-slate-900 border border-violet-200/80 dark:border-violet-700 text-violet-700 dark:text-violet-300 disabled:opacity-45"
-            :disabled="resettingChannel === 'card'"
-            @click="emit('reset-channel', 'card')"
-          >
-            <font-awesome-icon
-              v-if="resettingChannel === 'card'"
-              icon="fa-solid fa-spinner"
-              class="animate-spin text-[9px]"
-            />
-            <span v-else class="text-[7px]">Restart</span>
-          </button>
+          <div class="flex items-center shrink-0">
+            <button
+              type="button"
+              class="px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase bg-white/90 dark:bg-slate-900 border border-violet-200/80 dark:border-violet-700 text-violet-700 dark:text-violet-300 disabled:opacity-45"
+              :disabled="resettingChannel === 'card'"
+              @click="emit('reset-channel', 'card')"
+            >
+              <font-awesome-icon
+                v-if="resettingChannel === 'card'"
+                icon="fa-solid fa-spinner"
+                class="animate-spin text-[9px]"
+              />
+              <span v-else class="text-[7px]">Restart</span>
+            </button>
+          </div>
         </div>
         <p
+          class="mt-1.5 text-[12px] sm:text-[13px] font-black tabular-nums leading-snug text-violet-800 dark:text-violet-200 break-all"
+        >
+          {{ formattedCard }}
+        </p>
+        <p class="mt-0.5 text-[8px] font-bold text-violet-600/70 dark:text-violet-400/70">
+          {{ cardPayments }} to'lov
+        </p>
+        <p
           v-if="cardResetLabel"
-          class="mt-1 pl-[1.625rem] text-[8px] font-semibold tabular-nums text-violet-600/80 dark:text-violet-400/75 truncate"
+          class="mt-1 text-[8px] font-semibold tabular-nums text-violet-600/80 dark:text-violet-400/75 break-words"
         >
           {{ cardResetLabel }}
         </p>
