@@ -36,10 +36,21 @@
       :click-payments="monthIncome.clickPayments ?? 0"
       :card-amount="monthIncome.cardAmount ?? 0"
       :card-payments="monthIncome.cardPayments ?? 0"
-      :click-reset-at="monthIncome.clickResetAt"
-      :card-reset-at="monthIncome.cardResetAt"
       :resetting-channel="store.resettingChannel"
-      @reset-channel="onPaymentChannelReset"
+      @reset-channel="onPaymentChannelResetRequest"
+    />
+
+    <BaseConfirmDialog
+      v-model="paymentResetDialogOpen"
+      title="Hisobni qayta boshlash"
+      :message="paymentResetDialogMessage"
+      confirm-text="Restart"
+      cancel-text="Bekor"
+      variant="warning"
+      :loading="!!store.resettingChannel"
+      :close-on-confirm="false"
+      @confirm="onPaymentChannelResetConfirm"
+      @cancel="onPaymentChannelResetCancel"
     />
 
     <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
@@ -348,9 +359,42 @@ const {
   cacheKey: 'zt:admin-group-invite-lb',
 })
 
-const onPaymentChannelReset = async (channel: 'click' | 'card') => {
+const paymentResetDialogOpen = ref(false)
+const paymentResetPending = ref<'click' | 'card' | null>(null)
+
+const paymentResetDialogMessage = computed(() => {
+  if (paymentResetPending.value === 'click') {
+    return (
+      "Click to'lov hisobi 0 ga tushadi va yangi sanadan hisoblanadi.\n" +
+      "Jami daromad o'zgarmaydi. Davom etasizmi?"
+    )
+  }
+  if (paymentResetPending.value === 'card') {
+    return (
+      "Card to'lov hisobi 0 ga tushadi va yangi sanadan hisoblanadi.\n" +
+      "Jami daromad o'zgarmaydi. Davom etasizmi?"
+    )
+  }
+  return ''
+})
+
+const onPaymentChannelResetRequest = (channel: 'click' | 'card') => {
+  paymentResetPending.value = channel
+  paymentResetDialogOpen.value = true
+}
+
+const onPaymentChannelResetCancel = () => {
+  paymentResetDialogOpen.value = false
+  paymentResetPending.value = null
+}
+
+const onPaymentChannelResetConfirm = async () => {
+  const channel = paymentResetPending.value
+  if (!channel) return
   try {
     await store.resetPaymentChannel(channel)
+    paymentResetDialogOpen.value = false
+    paymentResetPending.value = null
   } catch {
     /* */
   }

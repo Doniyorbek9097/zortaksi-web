@@ -109,7 +109,7 @@
     <!-- Click / Card — restart dan hisob (jami daromadga ta'sir qilmaydi) -->
     <div class="mx-3 mb-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
       <div
-        class="rounded-xl px-3 py-3 min-h-[108px] flex flex-col border border-sky-200/80 dark:border-sky-800/60 bg-sky-500/[0.07] dark:bg-sky-950/35"
+        class="rounded-xl px-3 py-3 flex flex-col border border-sky-200/80 dark:border-sky-800/60 bg-sky-500/[0.07] dark:bg-sky-950/35"
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -144,13 +144,10 @@
             <span v-else>Restart</span>
           </button>
         </div>
-        <p class="mt-2 text-[9px] font-semibold text-sky-700/75 dark:text-sky-300/70 leading-snug">
-          {{ clickResetLabel }}
-        </p>
       </div>
 
       <div
-        class="rounded-xl px-3 py-3 min-h-[108px] flex flex-col border border-violet-200/80 dark:border-violet-800/60 bg-violet-500/[0.07] dark:bg-violet-950/35"
+        class="rounded-xl px-3 py-3 flex flex-col border border-violet-200/80 dark:border-violet-800/60 bg-violet-500/[0.07] dark:bg-violet-950/35"
       >
         <div class="flex items-start justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
@@ -185,9 +182,6 @@
             <span v-else>Restart</span>
           </button>
         </div>
-        <p class="mt-2 text-[9px] font-semibold text-violet-700/75 dark:text-violet-300/70 leading-snug">
-          {{ cardResetLabel }}
-        </p>
       </div>
     </div>
 
@@ -236,8 +230,6 @@ interface Props {
   clickPayments?: number
   cardAmount?: number
   cardPayments?: number
-  clickResetAt?: string | null
-  cardResetAt?: string | null
   resettingChannel?: 'click' | 'card' | null
 }
 
@@ -254,8 +246,6 @@ const props = withDefaults(defineProps<Props>(), {
   clickPayments: 0,
   cardAmount: 0,
   cardPayments: 0,
-  clickResetAt: null,
-  cardResetAt: null,
   resettingChannel: null,
 })
 
@@ -270,25 +260,4 @@ const formattedToday = computed(() => fmt(props.todayAmount))
 const formattedWeek = computed(() => fmt(props.weekAmount))
 const formattedClick = computed(() => fmt(props.clickAmount))
 const formattedCard = computed(() => fmt(props.cardAmount))
-
-function formatResetLabel(iso: string | null | undefined): string {
-  if (!iso) {
-    return "Hisob: barcha vaqt (Restart bosilsa 0 dan boshlanadi, oy avto yangilanmaydi)"
-  }
-  try {
-    const d = new Date(iso)
-    const date = d.toLocaleDateString('uz-UZ', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    })
-    const time = d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
-    return `Restart: ${date}, ${time} — shu vaqtdan keyingi to'lovlar`
-  } catch {
-    return 'Restart qilingan'
-  }
-}
-
-const clickResetLabel = computed(() => formatResetLabel(props.clickResetAt))
-const cardResetLabel = computed(() => formatResetLabel(props.cardResetAt))
 </script>
