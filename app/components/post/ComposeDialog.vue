@@ -66,17 +66,17 @@
 
             <div v-if="autoRepeat" class="mt-2 space-y-1">
               <label class="px-1 text-[11px] font-semibold text-slate-500">
-                Har necha daqiqada bir marta
+                Boshqalar nechta e'lon tashlagach qayta yuborilsin
               </label>
               <input
                 v-model.number="intervalMin"
                 type="number"
-                min="10"
-                max="1440"
+                :min="MIN_POSTS_AFTER"
+                :max="MAX_POSTS_AFTER"
                 class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
               <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-                Avto-yuborish 12 soat ishlaydi, keyin avtomatik to'xtaydi. Reja, yuborilgan va qolgan xabarlar statistikada ko'rinadi.
+                Birinchi yuborish darhol. Keyin faqat boshqalar shuncha e'lon tashlaganda qayta yuboriladi; hech kim e'lon qo'ymasa sizning e'loningiz qoladi. 12 soatdan keyin avtomatik to'xtaydi.
               </p>
             </div>
 
@@ -97,7 +97,7 @@
 
               <button
                 type="button"
-                :disabled="loading || !text.trim() || !name.trim() || (autoRepeat && intervalMin < 10)"
+                :disabled="loading || !text.trim() || !name.trim() || (autoRepeat && intervalMin < MIN_POSTS_AFTER)"
                 class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50"
                 :class="autoRepeat
                   ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
@@ -120,7 +120,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { DEFAULT_POSTS_AFTER, MAX_POSTS_AFTER, MIN_POSTS_AFTER, MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
 
 const props = defineProps<{
   modelValue: boolean
@@ -139,7 +139,7 @@ const emit = defineEmits<{
 const name = ref('')
 const text = ref('')
 const autoRepeat = ref(false)
-const intervalMin = ref(MIN_POST_INTERVAL_MIN)
+const intervalMin = ref(DEFAULT_POSTS_AFTER)
 
 const isEdit = computed(() => !!props.editCampaign?.id)
 
@@ -151,12 +151,15 @@ watch(
       name.value = edit.name || ''
       text.value = edit.text || ''
       autoRepeat.value = !!edit.active
-      intervalMin.value = Math.max(MIN_POST_INTERVAL_MIN, edit.intervalMin || MIN_POST_INTERVAL_MIN)
+      intervalMin.value = Math.max(
+        MIN_POSTS_AFTER,
+        edit.postsAfterThreshold || edit.intervalMin || DEFAULT_POSTS_AFTER,
+      )
     } else {
       name.value = ''
       text.value = ''
       autoRepeat.value = false
-      intervalMin.value = MIN_POST_INTERVAL_MIN
+      intervalMin.value = DEFAULT_POSTS_AFTER
     }
   }
 )
@@ -170,12 +173,17 @@ const onOnce = () => {
 
 const onSave = (start: boolean) => {
   if (!text.value.trim() || !name.value.trim()) return
-  if (start && intervalMin.value < MIN_POST_INTERVAL_MIN) return
+  if (start && intervalMin.value < MIN_POSTS_AFTER) return
+  const postsAfter = Math.max(
+    MIN_POSTS_AFTER,
+    Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
+  )
   emit('save', {
     name: name.value.trim(),
     text: text.value.trim(),
     autoRepeat: start,
-    intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(intervalMin.value || MIN_POST_INTERVAL_MIN)),
+    intervalMin: postsAfter,
+    postsAfterThreshold: postsAfter,
   })
 }
 

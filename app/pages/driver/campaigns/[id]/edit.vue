@@ -75,17 +75,17 @@
 
         <div v-if="autoRepeat" class="space-y-1">
           <label class="px-1 text-[11px] font-semibold text-slate-500">
-            Har necha daqiqada bir marta
+            Boshqalar nechta e'lon tashlagach qayta yuborilsin
           </label>
           <input
             v-model.number="intervalMin"
             type="number"
-            min="10"
-            max="1440"
+            :min="MIN_POSTS_AFTER"
+            :max="MAX_POSTS_AFTER"
             class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
           <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-            Avto-yuborish 12 soat ishlaydi, keyin avtomatik to'xtaydi.
+            Hech kim e'lon qo'ymasa sizning e'loningiz qoladi. 12 soatdan keyin avtomatik to'xtaydi.
           </p>
         </div>
       </section>
@@ -151,7 +151,12 @@
 </template>
 
 <script setup lang="ts">
-import { usePostStore, MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
+import {
+  usePostStore,
+  DEFAULT_POSTS_AFTER,
+  MAX_POSTS_AFTER,
+  MIN_POSTS_AFTER,
+} from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 
 definePageMeta({ layout: 'driver' })
@@ -169,7 +174,7 @@ const name = ref('')
 const text = ref('')
 const globalAdminAppendText = ref('')
 const autoRepeat = ref(false)
-const intervalMin = ref(MIN_POST_INTERVAL_MIN)
+const intervalMin = ref(DEFAULT_POSTS_AFTER)
 const groupIds = ref<string[]>([])
 
 const campaign = computed(() => store.campaigns.find((c) => c.id === campaignId.value) || null)
@@ -178,7 +183,7 @@ const groupCount = computed(() => groupIds.value.length)
 const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=' + encodeURIComponent(route.fullPath)
 
 const canSave = computed(
-  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value >= MIN_POST_INTERVAL_MIN),
+  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value >= MIN_POSTS_AFTER),
 )
 
 const requireTariff = () => {
@@ -192,7 +197,10 @@ const fillForm = (c: NonNullable<typeof campaign.value>) => {
   text.value = c.text || ''
   globalAdminAppendText.value = String(c.globalAdminAppendText || '').trim()
   autoRepeat.value = !!c.active
-  intervalMin.value = Math.max(MIN_POST_INTERVAL_MIN, c.intervalMin || MIN_POST_INTERVAL_MIN)
+  intervalMin.value = Math.max(
+    MIN_POSTS_AFTER,
+    c.postsAfterThreshold || c.intervalMin || DEFAULT_POSTS_AFTER,
+  )
   groupIds.value = [...(c.groupIds || [])]
 }
 
@@ -227,7 +235,10 @@ const onSave = async () => {
     await store.updateCampaign(campaign.value.id, {
       name: name.value.trim(),
       text: text.value.trim(),
-      intervalMin: Math.max(MIN_POST_INTERVAL_MIN, Math.round(intervalMin.value || MIN_POST_INTERVAL_MIN)),
+      intervalMin: Math.max(
+        MIN_POSTS_AFTER,
+        Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
+      ),
       groupIds: groupIds.value,
     })
     if (autoRepeat.value && !campaign.value.active) {

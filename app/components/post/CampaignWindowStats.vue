@@ -74,8 +74,8 @@
       class="font-semibold text-slate-500 dark:text-slate-400 leading-tight"
       :class="flat ? 'text-[12px]' : compact ? 'text-[9px]' : 'text-[12px]'"
     >
-      Keyingi: <span class="font-black text-slate-700 dark:text-slate-200">{{ nextRunLabel }}</span>
-      · {{ campaign.intervalMin }} daq
+      Kutish: <span class="font-black text-slate-700 dark:text-slate-200">{{ waitLabel }}</span>
+      · har {{ postsAfter }} ta e'lon
       <template v-if="campaign.windowEndsAt">
         · to'xtash {{ formatCampaignDateTime(campaign.windowEndsAt) }}
       </template>
@@ -111,14 +111,16 @@ const countdownLabel = computed(() => {
   return formatCampaignCountdown(props.campaign.windowEndsAt)
 })
 
-const nextRunLabel = computed(() => {
+const postsAfter = computed(
+  () => props.campaign.postsAfterThreshold || props.campaign.intervalMin || 10,
+)
+
+const waitLabel = computed(() => {
   if (!props.campaign.active) return '—'
-  const next = props.campaign.nextRunAt
-  if (!next) return '—'
-  const ms = new Date(next).getTime() - now.value
-  if (ms <= 0) return 'hozir'
-  const min = Math.ceil(ms / 60_000)
-  if (min < 60) return `${min} daq`
-  return formatCampaignDateTime(next)
+  const th = postsAfter.value
+  const others = Number(props.campaign.othersSinceLastPost ?? 0)
+  const left = Number(props.campaign.postsUntilNext ?? Math.max(0, th - others))
+  if (left <= 0) return 'yuborish kutilmoqda'
+  return `${others}/${th} (yana ${left})`
 })
 </script>

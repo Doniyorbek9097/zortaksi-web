@@ -45,7 +45,7 @@
                 ? 'text-emerald-600/80 dark:text-emerald-400/80'
                 : 'text-slate-500 dark:text-slate-400'"
             >
-              {{ campaign.groupIds.length }} guruh · {{ campaign.intervalMin }} daqiqa
+              {{ campaign.groupIds.length }} guruh · {{ campaign.postsAfterThreshold || campaign.intervalMin }} e'lon
             </p>
           </div>
         </div>

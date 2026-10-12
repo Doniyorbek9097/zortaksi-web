@@ -24,7 +24,7 @@
           </h3>
         </div>
         <p class="shrink-0 text-[9px] font-black text-slate-500 tabular-nums whitespace-nowrap">
-          {{ campaign.intervalMin }} daq · {{ campaign.groupIds.length }} guruh
+          {{ campaign.postsAfterThreshold || campaign.intervalMin }} e'lon · {{ campaign.groupIds.length }} guruh
         </p>
       </div>
 

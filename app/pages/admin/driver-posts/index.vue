@@ -127,7 +127,7 @@
             class="mt-1 text-[11px]"
           />
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
-            {{ c.groupCount }} guruh · har {{ c.intervalMin }} daqiqa
+            {{ c.groupCount }} guruh · har {{ c.postsAfterThreshold || c.intervalMin }} ta e'lon
             <span v-if="c.active"> · ~{{ c.sendsPerDay }}/kun</span>
           </p>
           <p v-if="c.lastError" class="text-[10px] font-bold text-rose-500 mt-1">{{ c.lastError }}</p>

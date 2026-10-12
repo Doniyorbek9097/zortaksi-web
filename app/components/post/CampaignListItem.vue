@@ -7,7 +7,7 @@
         {{ campaign.name }}
       </h3>
       <p class="shrink-0 text-[9px] font-black text-slate-400 tabular-nums whitespace-nowrap">
-        {{ campaign.intervalMin }}d · {{ campaign.groupIds.length }}g
+        {{ campaign.postsAfterThreshold || campaign.intervalMin }}e · {{ campaign.groupIds.length }}g
       </p>
     </div>
 

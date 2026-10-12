@@ -25,7 +25,12 @@ export interface PostGroup {
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
 export const MAX_POST_GROUPS = 20
-export const MIN_POST_INTERVAL_MIN = 10
+/** Boshqalar nechta e'lon tashlagach qayta yuboriladi */
+export const MIN_POSTS_AFTER = 5
+export const MAX_POSTS_AFTER = 50
+export const DEFAULT_POSTS_AFTER = 10
+/** @deprecated — postsAfterThreshold ishlating */
+export const MIN_POST_INTERVAL_MIN = MIN_POSTS_AFTER
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
@@ -39,6 +44,9 @@ export type PostCampaign = {
   broadcastText?: string
   intervalSec: number
   intervalMin: number
+  postsAfterThreshold: number
+  othersSinceLastPost?: number
+  postsUntilNext?: number
   active: boolean
   nextRunAt?: string
   lastRunAt?: string
@@ -69,6 +77,7 @@ export type PostCampaignSummary = {
     nextRunAt: string | null
     windowEndsAt: string | null
     intervalMin: number | null
+    postsAfterThreshold: number | null
   }
 }
 
@@ -587,6 +596,7 @@ export const usePostStore = defineStore('post', () => {
       name: string
       text: string
       intervalMin: number
+      postsAfterThreshold?: number
       start: boolean
     }
   ) => {
@@ -600,7 +610,7 @@ export const usePostStore = defineStore('post', () => {
           mode: tab.value,
           groupIds: [...selected.value],
           text: payload.text,
-          intervalMin: payload.intervalMin,
+          postsAfterThreshold: payload.postsAfterThreshold ?? payload.intervalMin,
           start: payload.start,
         },
       })
@@ -624,6 +634,7 @@ export const usePostStore = defineStore('post', () => {
       name: string
       text: string
       intervalMin: number
+      postsAfterThreshold?: number
       groupIds?: string[]
     }
   ) => {
@@ -635,7 +646,7 @@ export const usePostStore = defineStore('post', () => {
         body: {
           name: payload.name,
           text: payload.text,
-          intervalMin: payload.intervalMin,
+          postsAfterThreshold: payload.postsAfterThreshold ?? payload.intervalMin,
           mode: tab.value,
           ...(payload.groupIds ? { groupIds: payload.groupIds } : {}),
         },

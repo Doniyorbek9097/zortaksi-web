@@ -24,6 +24,7 @@ export type AdminDriverPostCampaign = {
   textPreview: string
   intervalSec: number
   intervalMin: number
+  postsAfterThreshold?: number
   active: boolean
   sendsPerDay: number
   activeSince?: string
