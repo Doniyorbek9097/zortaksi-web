@@ -24,21 +24,35 @@
       />
     </div>
 
-    <BaseEmptyState
+    <div
       v-else-if="!sortedCampaigns.length"
-      icon="fa-solid fa-bullhorn"
-      title="Reklamangizni Zor Taksi bilan avtomatlashtiring"
-      subtitle="Bir marta e'lon yozing, guruhlarni tanlang — qolganini tizim o'zi boshqaradi. Ishingizni osonlashtiring va hoziroq birinchi e'loningizni joylashtiring."
-      tone="amber"
+      class="flex flex-col items-center justify-center text-center min-h-[55vh] px-4"
     >
+      <div
+        class="w-16 h-16 rounded-2xl flex items-center justify-center bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/35 mb-4"
+      >
+        <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-2xl" />
+      </div>
+      <p class="text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 mb-2">
+        Zo'r Taksi
+      </p>
+      <h2 class="text-base font-black text-slate-900 dark:text-white max-w-sm leading-snug">
+        Reklamangizni guruhlarga tarqatishni Zo'r Taksi orqali avtomatlashtirib qo'ying
+      </h2>
+      <p class="mt-3 text-[13px] font-semibold text-slate-600 dark:text-slate-300 max-w-sm leading-relaxed">
+        Vaqt va kuchingizni tejang — bir marta sozlasangiz, e'lonlar tanlangan guruhlarga o'zi ketadi.
+      </p>
+      <p class="mt-2 text-[12px] font-bold text-amber-700/90 dark:text-amber-300/90 max-w-xs">
+        Buning uchun e'loningizni joylashtiring
+      </p>
       <NuxtLink
         to="/driver/post"
-        class="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-transform"
+        class="mt-6 inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-transform"
       >
         <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-sm" />
-        Hoziroq e'lon joylash
+        E'loningizni joylashtiring
       </NuxtLink>
-    </BaseEmptyState>
+    </div>
 
     <div v-else class="space-y-4">
       <PostCampaignBoardCard
