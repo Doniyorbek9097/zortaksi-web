@@ -17,7 +17,7 @@
               {{ pickGroupsMode ? 'Guruhlarni tanlash' : "E'lon joylash" }}
             </h1>
             <p class="text-[10px] font-semibold text-slate-400 mt-0.5 truncate">
-              {{ pickGroupsMode ? 'Tanlangan guruhlar saqlanadi' : 'Meniki guruhlar' }}
+              {{ pickGroupsMode ? 'Tanlangan guruhlar saqlanadi' : 'Guruh tanlang → e\'lon yozing' }}
             </p>
           </div>
         </div>
@@ -99,6 +99,19 @@
     >
       Admin guruhlarda ko'z belgisini bosing — ochilganlari haydovchilarga ko'rinadi.
     </p>
+
+    <div
+      v-if="!pickGroupsMode"
+      class="rounded-2xl border border-amber-200/80 dark:border-amber-900/50 bg-gradient-to-br from-amber-50/90 to-orange-50/50 dark:from-amber-950/40 dark:to-slate-900/40 px-3.5 py-3"
+    >
+      <p class="text-[12px] font-black text-amber-900 dark:text-amber-100 leading-snug">
+        Zor Taksi bilan e'lonni avtomatlashtiring
+      </p>
+      <p class="text-[11px] font-semibold text-amber-800/90 dark:text-amber-200/80 mt-1.5 leading-relaxed">
+        Guruhlarni tanlang, e'lon matnini yozing — bir marta yuborish yoki avtomatik tarqatishni yoqing.
+        Avtoda birinchi xabar darhol chiqadi; keyingilari boshqalar e'lon qo'ygach, siz belgilagan sonchada.
+      </p>
+    </div>
 
     <!-- Guruh qidiruvi -->
     <div class="relative">

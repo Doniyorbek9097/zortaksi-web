@@ -8,7 +8,7 @@
       class="text-3xl mb-3 opacity-50"
     />
     <p class="text-sm font-bold max-w-xs">{{ title }}</p>
-    <p v-if="subtitle" class="text-[12px] font-medium mt-1.5 max-w-xs opacity-80">
+    <p v-if="subtitle" class="text-[12px] font-medium mt-1.5 max-w-sm opacity-80 leading-relaxed">
       {{ subtitle }}
     </p>
     <slot />
@@ -20,7 +20,7 @@ interface Props {
   icon?: string
   title: string
   subtitle?: string
-  tone?: 'muted' | 'slate'
+  tone?: 'muted' | 'slate' | 'amber'
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,9 +28,9 @@ const props = withDefaults(defineProps<Props>(), {
   tone: 'muted',
 })
 
-const toneClass = computed(() =>
-  props.tone === 'slate'
-    ? 'text-slate-500'
-    : 'text-slate-400 dark:text-slate-500'
-)
+const toneClass = computed(() => {
+  if (props.tone === 'slate') return 'text-slate-500'
+  if (props.tone === 'amber') return 'text-amber-700/90 dark:text-amber-400/90'
+  return 'text-slate-400 dark:text-slate-500'
+})
 </script>

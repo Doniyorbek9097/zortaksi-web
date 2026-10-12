@@ -4,7 +4,7 @@
       <div class="min-w-0">
         <h1 class="text-lg font-black text-slate-900 dark:text-white">E'lonlar</h1>
         <p class="text-[10px] font-semibold text-slate-400 mt-0.5">
-          Saqlangan xabarlar va avto-yuborish
+          Zor Taksi — guruhlarga avtomatik tarqatish
         </p>
       </div>
       <NuxtLink
@@ -27,10 +27,18 @@
     <BaseEmptyState
       v-else-if="!sortedCampaigns.length"
       icon="fa-solid fa-bullhorn"
-      title="Saqlangan e'lon yo'q"
-      subtitle="Yangi e'lon yaratish uchun «E'lon joylash» tugmasini bosing"
+      title="Reklamangizni Zor Taksi bilan avtomatlashtiring"
+      subtitle="Bir marta e'lon yozing, guruhlarni tanlang — qolganini tizim o'zi boshqaradi. Ishingizni osonlashtiring va hoziroq birinchi e'loningizni joylashtiring."
       tone="amber"
-    />
+    >
+      <NuxtLink
+        to="/driver/post"
+        class="mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-transform"
+      >
+        <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-sm" />
+        Hoziroq e'lon joylash
+      </NuxtLink>
+    </BaseEmptyState>
 
     <div v-else class="space-y-4">
       <PostCampaignBoardCard
