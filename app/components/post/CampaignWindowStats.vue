@@ -16,58 +16,27 @@
       </span>
     </div>
 
-    <div class="grid grid-cols-3 gap-2">
-      <div
-        class="rounded-xl text-center border"
-        :class="[
-          flat
-            ? 'px-2 py-3 bg-orange-50 dark:bg-orange-950/30 border-orange-100 dark:border-orange-900/50'
-            : 'rounded-md bg-white dark:bg-slate-900 border-slate-200/70 dark:border-slate-800',
-          !flat && (compact ? 'px-1 py-1' : 'px-2 py-1.5'),
-        ]"
+    <div
+      class="rounded-xl text-center border"
+      :class="[
+        flat
+          ? 'px-3 py-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50'
+          : 'rounded-md bg-white dark:bg-slate-900 border-slate-200/70 dark:border-slate-800',
+        !flat && (compact ? 'px-2 py-2' : 'px-3 py-2.5'),
+      ]"
+    >
+      <p
+        class="font-black tabular-nums text-emerald-600 dark:text-emerald-400"
+        :class="flat ? 'text-[26px]' : compact ? 'text-[18px]' : 'text-[22px]'"
       >
-        <p
-          class="font-black tabular-nums text-slate-900 dark:text-white"
-          :class="flat ? 'text-[22px]' : compact ? 'text-[13px]' : 'text-[16px]'"
-        >
-          {{ campaign.windowTotalPlanned ?? 0 }}
-        </p>
-        <p class="font-bold text-slate-500" :class="flat ? 'text-[10px] mt-1' : compact ? 'text-[8px]' : 'text-[11px]'">Reja</p>
-      </div>
-      <div
-        class="rounded-xl text-center border"
-        :class="[
-          flat
-            ? 'px-2 py-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50'
-            : 'rounded-md bg-white dark:bg-slate-900 border-slate-200/70 dark:border-slate-800',
-          !flat && (compact ? 'px-1 py-1' : 'px-2 py-1.5'),
-        ]"
+        {{ campaign.windowSent ?? 0 }}
+      </p>
+      <p
+        class="font-bold text-slate-500"
+        :class="flat ? 'text-[11px] mt-1' : compact ? 'text-[9px]' : 'text-[11px]'"
       >
-        <p
-          class="font-black tabular-nums text-emerald-600 dark:text-emerald-400"
-          :class="flat ? 'text-[22px]' : compact ? 'text-[13px]' : 'text-[16px]'"
-        >
-          {{ campaign.windowSent ?? 0 }}
-        </p>
-        <p class="font-bold text-slate-500" :class="flat ? 'text-[10px] mt-1' : compact ? 'text-[8px]' : 'text-[11px]'">Yuborildi</p>
-      </div>
-      <div
-        class="rounded-xl text-center border"
-        :class="[
-          flat
-            ? 'px-2 py-3 bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/50'
-            : 'rounded-md bg-white dark:bg-slate-900 border-slate-200/70 dark:border-slate-800',
-          !flat && (compact ? 'px-1 py-1' : 'px-2 py-1.5'),
-        ]"
-      >
-        <p
-          class="font-black tabular-nums text-amber-600 dark:text-amber-400"
-          :class="flat ? 'text-[22px]' : compact ? 'text-[13px]' : 'text-[16px]'"
-        >
-          {{ campaign.windowRemaining ?? 0 }}
-        </p>
-        <p class="font-bold text-slate-500" :class="flat ? 'text-[10px] mt-1' : compact ? 'text-[8px]' : 'text-[11px]'">Qoldi</p>
-      </div>
+        Yuborilgan xabar (12 soat)
+      </p>
     </div>
 
     <p

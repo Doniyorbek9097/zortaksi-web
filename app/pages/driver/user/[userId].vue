@@ -30,6 +30,12 @@
           >
             Tinglovchi
           </span>
+          <span
+            v-if="driver.driverPostAutoMine"
+            class="inline-flex px-2 py-0.5 rounded-full text-[10px] font-black border bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-800/50"
+          >
+            E'lon avto
+          </span>
           <p v-if="isAdmin" class="ml-auto text-lg font-black text-sky-500">
             {{ formatMoney(driver.balance) }} so'm
           </p>
@@ -157,6 +163,20 @@
               <font-awesome-icon icon="fa-solid fa-headset" />
               {{ driver.listenGroups ? "Guruh tinglashni o'chirish" : 'Guruh tinglashni yoqish' }}
             </button>
+            <button
+              type="button"
+              class="col-span-2 inline-flex items-center justify-center gap-1.5 py-3 rounded-xl text-[12px] font-black active:scale-95 transition-all border disabled:opacity-50"
+              :class="driver.driverPostAutoMine
+                ? 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/25'
+                : 'bg-slate-500/10 text-slate-600 dark:text-slate-300 border-slate-500/20'"
+              :disabled="store.isSaving"
+              @click="toggleDriverPostAutoMine"
+            >
+              <font-awesome-icon icon="fa-solid fa-bullhorn" />
+              {{ driver.driverPostAutoMine
+                ? "Meniki guruhlarga avto e'lonni o'chirish"
+                : "Meniki guruhlarga avto e'lonni yoqish" }}
+            </button>
           </section>
 
           <DriverPaymentHistoryList
@@ -268,6 +288,7 @@ const {
   saveListenerDisplayName,
   confirmBlock,
   toggleListenGroups,
+  toggleDriverPostAutoMine,
   confirmDelete,
 } = useDriverProfilePage()
 </script>

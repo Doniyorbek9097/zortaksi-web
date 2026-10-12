@@ -28,10 +28,5 @@ export function formatCampaignDateTime(value?: string | null): string {
 }
 
 export function campaignHasWindowStats(campaign: PostCampaign) {
-  return (
-    campaign.active &&
-    (campaign.windowTotalPlanned != null ||
-      campaign.windowSent != null ||
-      campaign.windowRemaining != null)
-  )
+  return campaign.active && campaign.windowSent != null
 }
