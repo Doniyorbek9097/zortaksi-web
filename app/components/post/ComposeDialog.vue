@@ -53,18 +53,7 @@
               placeholder="E'lon matnini yozing…"
             />
 
-            <label class="mt-4 flex items-center gap-2.5 cursor-pointer select-none">
-              <input
-                v-model="autoRepeat"
-                type="checkbox"
-                class="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-500"
-              >
-              <span class="text-[12px] font-bold text-slate-700 dark:text-slate-200">
-                Avtomatik yuborish (Boshlash/To'xtatish)
-              </span>
-            </label>
-
-            <div v-if="autoRepeat" class="mt-2 space-y-1">
+            <div class="mt-4 space-y-1">
               <label class="px-1 text-[11px] font-semibold text-slate-500">
                 Boshqalar nechta e'lon tashlagach qayta yuborilsin
               </label>
@@ -80,35 +69,18 @@
               </p>
             </div>
 
-            <div class="mt-4 flex flex-col gap-2">
-              <button
-                v-if="!isEdit"
-                type="button"
-                :disabled="loading || !text.trim()"
-                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all disabled:opacity-50"
-                @click="onOnce"
-              >
-                <font-awesome-icon
-                  :icon="loading ? 'fa-solid fa-spinner' : 'fa-solid fa-paper-plane'"
-                  :class="loading ? 'animate-spin' : ''"
-                />
-                Bir marta yuborish
-              </button>
-
+            <div class="mt-4">
               <button
                 type="button"
-                :disabled="loading || !text.trim() || !name.trim() || (autoRepeat && intervalMin < MIN_POSTS_AFTER)"
-                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50"
-                :class="autoRepeat
-                  ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
-                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'"
-                @click="onSave(autoRepeat)"
+                :disabled="loading || !text.trim() || !name.trim() || intervalMin < MIN_POSTS_AFTER"
+                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50 bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                @click="onSave"
               >
                 <font-awesome-icon
-                  :icon="loading ? 'fa-solid fa-spinner' : (autoRepeat ? 'fa-solid fa-play' : 'fa-solid fa-floppy-disk')"
+                  :icon="loading ? 'fa-solid fa-spinner' : 'fa-solid fa-play'"
                   :class="loading ? 'animate-spin' : ''"
                 />
-                {{ autoRepeat ? 'Saqlash va boshlash' : 'Saqlash' }}
+                {{ isEdit ? 'Saqlash' : 'Saqlash va boshlash' }}
               </button>
             </div>
           </div>
@@ -120,7 +92,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { DEFAULT_POSTS_AFTER, MAX_POSTS_AFTER, MIN_POSTS_AFTER, MIN_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { DEFAULT_POSTS_AFTER, MAX_POSTS_AFTER, MIN_POSTS_AFTER } from '~/stores/post.store'
 
 const props = defineProps<{
   modelValue: boolean
@@ -132,13 +104,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [boolean]
-  once: [text: string]
   save: [payload: { name: string; text: string; autoRepeat: boolean; intervalMin: number }]
 }>()
 
 const name = ref('')
 const text = ref('')
-const autoRepeat = ref(false)
 const intervalMin = ref(DEFAULT_POSTS_AFTER)
 
 const isEdit = computed(() => !!props.editCampaign?.id)
@@ -150,7 +120,6 @@ watch(
     if (edit) {
       name.value = edit.name || ''
       text.value = edit.text || ''
-      autoRepeat.value = !!edit.active
       intervalMin.value = Math.max(
         MIN_POSTS_AFTER,
         edit.postsAfterThreshold || edit.intervalMin || DEFAULT_POSTS_AFTER,
@@ -158,7 +127,6 @@ watch(
     } else {
       name.value = ''
       text.value = ''
-      autoRepeat.value = false
       intervalMin.value = DEFAULT_POSTS_AFTER
     }
   }
@@ -166,14 +134,9 @@ watch(
 
 const close = () => emit('update:modelValue', false)
 
-const onOnce = () => {
-  if (!text.value.trim()) return
-  emit('once', text.value.trim())
-}
-
-const onSave = (start: boolean) => {
+const onSave = () => {
   if (!text.value.trim() || !name.value.trim()) return
-  if (start && intervalMin.value < MIN_POSTS_AFTER) return
+  if (intervalMin.value < MIN_POSTS_AFTER) return
   const postsAfter = Math.max(
     MIN_POSTS_AFTER,
     Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
@@ -181,7 +144,7 @@ const onSave = (start: boolean) => {
   emit('save', {
     name: name.value.trim(),
     text: text.value.trim(),
-    autoRepeat: start,
+    autoRepeat: true,
     intervalMin: postsAfter,
     postsAfterThreshold: postsAfter,
   })

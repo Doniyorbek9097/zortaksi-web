@@ -108,7 +108,7 @@
         Zor Taksi bilan e'lonni avtomatlashtiring
       </p>
       <p class="text-[11px] font-semibold text-amber-800/90 dark:text-amber-200/80 mt-1.5 leading-relaxed">
-        Guruhlarni tanlang, e'lon matnini yozing — bir marta yuborish yoki avtomatik tarqatishni yoqing.
+        Guruhlarni tanlang, e'lon matnini yozing — avtomatik tarqatish darhol boshlanadi.
         Avtoda birinchi xabar darhol chiqadi; keyingilari boshqalar e'lon qo'ygach, siz belgilagan sonchada.
       </p>
     </div>
@@ -202,7 +202,6 @@
       :count="selectedCount"
       :cost="0"
       :loading="store.isSending"
-      @once="onSendOnce"
       @save="onSaveCampaign"
     />
 
@@ -323,40 +322,24 @@ const toggleSelectAll = () => {
   else store.selectAllVisible(filtered.value)
 }
 
-const onSendOnce = async (text: string) => {
-  if (!requireTariffForPost()) return
-  success.value = ''
-  try {
-    const res = await store.broadcast(text)
-    composeOpen.value = false
-    const sent = res.data?.sent ?? 0
-    const failed = res.data?.failed ?? 0
-    success.value = failed
-      ? `${sent} ta guruhga tushdi, ${failed} tasiga tushmadi`
-      : `${sent} ta guruhga tushdi`
-  } catch { /* */ }
-}
-
 const onSaveCampaign = async (payload: {
   name: string
   text: string
   autoRepeat: boolean
   intervalMin: number
 }) => {
-  if (payload.autoRepeat && !requireTariffForPost()) return
+  if (!requireTariffForPost()) return
   success.value = ''
   try {
     await store.createCampaign({
       name: payload.name,
       text: payload.text,
       intervalMin: payload.intervalMin,
-      start: payload.autoRepeat,
+      start: true,
     })
     composeOpen.value = false
     store.clearSelection()
-    success.value = payload.autoRepeat
-      ? `«${payload.name}» saqlandi va boshlandi`
-      : `«${payload.name}» saqlandi`
+    success.value = `«${payload.name}» saqlandi va boshlandi`
     setTimeout(() => navigateTo('/driver/campaigns'), 800)
   } catch { /* */ }
 }

@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
+import { DEFAULT_POSTS_AFTER } from '~/stores/post.store'
 import { formatCampaignCountdown, formatCampaignDateTime } from '~/utils/postCampaign'
 
 const props = defineProps<{
@@ -81,7 +82,7 @@ const countdownLabel = computed(() => {
 })
 
 const postsAfter = computed(
-  () => props.campaign.postsAfterThreshold || props.campaign.intervalMin || 10,
+  () => props.campaign.postsAfterThreshold || props.campaign.intervalMin || DEFAULT_POSTS_AFTER,
 )
 
 const waitLabel = computed(() => {
