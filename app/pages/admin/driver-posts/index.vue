@@ -102,13 +102,6 @@
           <div class="min-w-0 flex-1">
             <p class="text-[12px] font-black text-slate-900 dark:text-white truncate">{{ c.owner.name }}</p>
             <p v-if="c.owner.phone" class="text-[10px] font-semibold text-slate-400 truncate">{{ c.owner.phone }}</p>
-            <p
-              v-if="c.mode === 'mine'"
-              class="text-[9px] font-black mt-0.5"
-              :class="c.owner.driverPostAutoMine ? 'text-violet-600' : 'text-slate-400'"
-            >
-              Avto Meniki: {{ c.owner.driverPostAutoMine ? 'yoqilgan' : 'o\'chiq' }}
-            </p>
           </div>
           <span
             class="shrink-0 text-[9px] font-black uppercase px-1.5 py-0.5 rounded-full"
@@ -160,19 +153,6 @@
           >
             <font-awesome-icon icon="fa-solid fa-play" class="text-[9px]" />
             Play
-          </button>
-          <button
-            v-if="c.mode === 'mine'"
-            type="button"
-            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black border disabled:opacity-50"
-            :class="c.owner.driverPostAutoMine
-              ? 'text-violet-700 bg-violet-500/10 border-violet-200 dark:border-violet-900/50'
-              : 'text-slate-600 bg-slate-500/5 border-slate-200 dark:border-slate-800'"
-            :disabled="driverStore.isSaving"
-            @click="onToggleAutoMine(c)"
-          >
-            <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-[9px]" />
-            {{ c.owner.driverPostAutoMine ? 'Avto o\'chirish' : 'Avto yoqish' }}
           </button>
           <button
             type="button"
@@ -236,11 +216,9 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import { useDriverStore } from '~/stores/driver.store'
 definePageMeta({ layout: 'admin', keepalive: true })
 
 const store = useAdminDriverPostsStore()
-const driverStore = useDriverStore()
 const { avatarUrl } = useMediaUrl()
 const brokenAvatars = ref<Set<string>>(new Set())
 
@@ -329,23 +307,6 @@ let scrollObserver: IntersectionObserver | null = null
 const openDriver = (userId: string) => {
   persistScroll()
   navigateTo(`/driver/user/${encodeURIComponent(userId)}`)
-}
-
-const onToggleAutoMine = async (c: AdminDriverPostCampaign) => {
-  success.value = ''
-  const next = !c.owner.driverPostAutoMine
-  try {
-    await driverStore.setDriverPostAutoMine(c.userId, next)
-    for (const row of store.items) {
-      if (row.userId === c.userId) {
-        row.owner = { ...row.owner, driverPostAutoMine: next }
-      }
-    }
-    success.value = next
-      ? `«${c.owner.name}» — Meniki guruhlarga avto e'lon yoqildi`
-      : `«${c.owner.name}» — avto e'lon o'chirildi`
-    await softRefresh()
-  } catch { /* */ }
 }
 
 const onToggle = async (c: AdminDriverPostCampaign) => {

@@ -22,7 +22,6 @@ export interface DriverRow {
   avatar?: string
   active: boolean
   listenGroups?: boolean
-  driverPostAutoMine?: boolean
   listenerDisplayName?: string
   balance: number
   tariffName?: string
@@ -161,23 +160,6 @@ export const useDriverStore = defineStore('driver', () => {
       return response
     } catch (error) {
       console.error('SetListenGroups error:', error)
-      throw error
-    } finally {
-      isSaving.value = false
-    }
-  }
-
-  const setDriverPostAutoMine = async (userId: string, enabled: boolean) => {
-    try {
-      isSaving.value = true
-      const response = await useApi(`/drivers/${userId}/driver-post-auto-mine`, {
-        method: 'PATCH',
-        body: { enabled },
-      })
-      if (response.success) patchLocal(response.data)
-      return response
-    } catch (error) {
-      console.error('SetDriverPostAutoMine error:', error)
       throw error
     } finally {
       isSaving.value = false
@@ -349,7 +331,6 @@ export const useDriverStore = defineStore('driver', () => {
     loadMore,
     setActive,
     setListenGroups,
-    setDriverPostAutoMine,
     setListenerDisplayName,
     setBalance,
     adjustBalance,

@@ -8,7 +8,6 @@ export type AdminDriverPostOwner = {
   username?: string
   balance?: number
   avatar?: string
-  driverPostAutoMine?: boolean
 }
 
 export type AdminDriverPostCampaign = {

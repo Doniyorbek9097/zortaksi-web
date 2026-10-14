@@ -313,23 +313,6 @@ export function useDriverProfilePage() {
     }
   }
 
-  const toggleDriverPostAutoMine = async () => {
-    if (!driver.value || !isAdmin.value) return
-    driverError.value = ''
-    success.value = ''
-    const next = !driver.value.driverPostAutoMine
-    try {
-      await store.setDriverPostAutoMine(driver.value.id, next)
-      success.value = next
-        ? "Meniki guruhlarga avtomatik e'lon yoqildi"
-        : "Avtomatik e'lon o'chirildi"
-      await loadDriver()
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { message?: string } } }
-      driverError.value = err?.response?.data?.message || 'Sozlama saqlanmadi'
-    }
-  }
-
   const confirmDelete = async () => {
     if (!driver.value || !isAdmin.value) return
     driverError.value = ''
@@ -386,7 +369,6 @@ export function useDriverProfilePage() {
     saveListenerDisplayName,
     confirmBlock,
     toggleListenGroups,
-    toggleDriverPostAutoMine,
     confirmDelete,
     reload,
   }
