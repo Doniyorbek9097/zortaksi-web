@@ -1,4 +1,18 @@
 import type { PostCampaign } from '~/stores/post.store'
+import { DEFAULT_POSTS_AFTER } from '~/stores/post.store'
+
+export function campaignPostsAfter(campaign: PostCampaign): number {
+  const n = campaign.postsAfterThreshold ?? campaign.intervalMin
+  return Number.isFinite(n) && n > 0 ? Math.round(n) : DEFAULT_POSTS_AFTER
+}
+
+/** Kartochka sarlavhasi: guruhlar + qayta yuborish sharti */
+export function campaignGroupsMetaLabel(campaign: PostCampaign, compact = false): string {
+  const g = campaign.groupIds?.length ?? 0
+  const n = campaignPostsAfter(campaign)
+  if (compact) return `${g}g · ${n}x`
+  return `${g} guruh · ${n} xabar`
+}
 
 export function campaignEditPath(campaignId: string) {
   const id = String(campaignId || '').trim()
@@ -28,5 +42,5 @@ export function formatCampaignDateTime(value?: string | null): string {
 }
 
 export function campaignHasWindowStats(campaign: PostCampaign) {
-  return campaign.active && campaign.windowSent != null
+  return !!campaign.active
 }

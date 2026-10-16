@@ -19,7 +19,7 @@
       <AdminSegmentTabs v-model="filter" :tabs="filterTabs" />
     </header>
 
-    <div v-if="stats" class="grid grid-cols-4 gap-1.5">
+    <div v-if="stats" class="grid grid-cols-3 gap-1.5">
       <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 text-center">
         <p class="text-[15px] font-black text-slate-900 dark:text-white tabular-nums">{{ stats.totalCampaigns }}</p>
         <p class="text-[9px] font-bold text-slate-400 uppercase">Jami</p>
@@ -27,10 +27,6 @@
       <div class="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-900/40 p-2 text-center">
         <p class="text-[15px] font-black text-emerald-600 tabular-nums">{{ stats.activeCampaigns }}</p>
         <p class="text-[9px] font-bold text-emerald-600/70 uppercase">Play</p>
-      </div>
-      <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 text-center">
-        <p class="text-[15px] font-black text-violet-600 tabular-nums">{{ stats.estimatedSendsPerDay }}</p>
-        <p class="text-[9px] font-bold text-slate-400 uppercase">Kunlik</p>
       </div>
       <div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 text-center">
         <p class="text-[15px] font-black text-amber-600 tabular-nums">{{ stats.uniqueDrivers }}</p>
@@ -127,8 +123,7 @@
             class="mt-1 text-[11px]"
           />
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
-            {{ c.groupCount }} guruh · har {{ c.postsAfterThreshold || c.intervalMin }} ta e'lon
-            <span v-if="c.active"> · ~{{ c.sendsPerDay }}/kun</span>
+            {{ c.groupCount }} guruh · {{ c.postsAfterThreshold || c.intervalMin }} xabar
           </p>
           <p v-if="c.lastError" class="text-[10px] font-bold text-rose-500 mt-1">{{ c.lastError }}</p>
         </div>

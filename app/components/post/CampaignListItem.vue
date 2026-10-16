@@ -7,7 +7,7 @@
         {{ campaign.name }}
       </h3>
       <p class="shrink-0 text-[9px] font-black text-slate-400 tabular-nums whitespace-nowrap">
-        {{ campaign.postsAfterThreshold || campaign.intervalMin }}e · {{ campaign.groupIds.length }}g
+        {{ campaignGroupsMetaLabel(campaign, true) }}
       </p>
     </div>
 
@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
+import { campaignGroupsMetaLabel } from '~/utils/postCampaign'
 
 defineProps<{
   campaign: PostCampaign

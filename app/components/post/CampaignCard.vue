@@ -27,16 +27,11 @@
         </h3>
       </div>
       <p
-        v-if="compact && !flat"
-        class="shrink-0 font-bold text-slate-400 tabular-nums whitespace-nowrap text-[9px]"
+        v-if="(compact && !flat) || (flat && !hideHeader)"
+        class="shrink-0 font-bold text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap"
+        :class="compact && !flat ? 'text-[9px]' : 'text-[12px]'"
       >
-        {{ campaign.groupIds.length }}g · {{ campaign.postsAfterThreshold || campaign.intervalMin }}e
-      </p>
-      <p
-        v-else-if="flat && !hideHeader"
-        class="shrink-0 font-bold text-slate-500 dark:text-slate-400 tabular-nums whitespace-nowrap text-[12px]"
-      >
-        {{ campaign.groupIds.length }} guruh · {{ campaign.postsAfterThreshold || campaign.intervalMin }} e'lon
+        {{ campaignGroupsMetaLabel(campaign, compact && !flat) }}
       </p>
     </div>
 
@@ -54,14 +49,6 @@
       :class="flat ? 'px-0.5' : ''"
     >
       + admin qo'shimcha xabar
-    </p>
-
-    <p
-      v-if="!compact && !flat"
-      class="text-[12px] font-semibold text-slate-400"
-    >
-      {{ campaign.groupIds.length }} guruh · har {{ campaign.postsAfterThreshold || campaign.intervalMin }} ta e'lon
-      <span v-if="campaign.lastSent"> · oxirgi: {{ campaign.lastSent }} ta</span>
     </p>
 
     <p
@@ -126,7 +113,11 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { campaignEditPath, campaignHasWindowStats } from '~/utils/postCampaign'
+import {
+  campaignEditPath,
+  campaignGroupsMetaLabel,
+  campaignHasWindowStats,
+} from '~/utils/postCampaign'
 
 const props = defineProps<{
   campaign: PostCampaign

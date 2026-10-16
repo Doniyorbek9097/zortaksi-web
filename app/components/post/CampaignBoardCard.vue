@@ -45,7 +45,7 @@
                 ? 'text-emerald-600/80 dark:text-emerald-400/80'
                 : 'text-slate-500 dark:text-slate-400'"
             >
-              {{ campaign.groupIds.length }} guruh · {{ campaign.postsAfterThreshold || campaign.intervalMin }} e'lon
+              {{ campaignGroupsMetaLabel(campaign) }}
             </p>
           </div>
         </div>
@@ -70,7 +70,7 @@
 <script setup lang="ts">
 import PostCampaignCard from '~/components/post/CampaignCard.vue'
 import type { PostCampaign } from '~/stores/post.store'
-import { campaignEditPath } from '~/utils/postCampaign'
+import { campaignEditPath, campaignGroupsMetaLabel } from '~/utils/postCampaign'
 
 defineProps<{
   campaign: PostCampaign

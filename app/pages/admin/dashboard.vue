@@ -101,16 +101,12 @@
           </span>
           <div>
             <p class="text-[12px] font-black text-slate-900 dark:text-white">Saqlangan e'lonlar</p>
-            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami · 10 tadan</p>
+            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami</p>
           </div>
         </div>
         <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[10px] text-slate-300" />
       </div>
-      <div class="grid grid-cols-3 gap-1.5">
-        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
-          <p class="text-[13px] font-black text-violet-600 tabular-nums">{{ driverPosts.estimatedSendsPerDay }}</p>
-          <p class="text-[8px] font-bold text-slate-400 uppercase">Kunlik</p>
-        </div>
+      <div class="grid grid-cols-2 gap-1.5">
         <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
           <p class="text-[13px] font-black text-emerald-600 tabular-nums">{{ driverPosts.activeCampaigns }}</p>
           <p class="text-[8px] font-bold text-slate-400 uppercase">Play</p>
@@ -141,7 +137,7 @@
             {{ row.owner.name.charAt(0) || '?' }}
           </span>
           <span class="font-bold text-slate-700 dark:text-slate-200 truncate flex-1">{{ row.owner.name }}</span>
-          <span class="font-black text-rose-500 tabular-nums shrink-0">{{ row.sendsPerDay }}/kun</span>
+          <span class="font-black text-sky-600 tabular-nums shrink-0">{{ row.totalLastSent }} yub.</span>
         </div>
       </div>
     </button>

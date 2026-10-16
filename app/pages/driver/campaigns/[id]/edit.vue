@@ -75,7 +75,7 @@
 
         <div v-if="autoRepeat" class="space-y-1">
           <label class="px-1 text-[11px] font-semibold text-slate-500">
-            Boshqalar nechta e'lon tashlagach qayta yuborilsin
+            Boshqalar nechta xabar yozgach qayta yuborilsin
           </label>
           <input
             v-model.number="intervalMin"
@@ -85,7 +85,7 @@
             class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
           <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-            Hech kim e'lon qo'ymasa sizning e'loningiz qoladi. 12 soatdan keyin avtomatik to'xtaydi.
+            Sizning xabarlaringiz sanalmaydi. 12 soatdan keyin avtomatik to'xtaydi.
           </p>
         </div>
       </section>

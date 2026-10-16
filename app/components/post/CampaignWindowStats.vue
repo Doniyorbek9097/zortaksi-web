@@ -43,8 +43,8 @@
       class="font-semibold text-slate-500 dark:text-slate-400 leading-tight"
       :class="flat ? 'text-[12px]' : compact ? 'text-[9px]' : 'text-[12px]'"
     >
-      Kutish: <span class="font-black text-slate-700 dark:text-slate-200">{{ waitLabel }}</span>
-      · har {{ postsAfter }} ta e'lon
+      Boshqalar xabari: <span class="font-black text-slate-700 dark:text-slate-200">{{ waitLabel }}</span>
+      · har {{ postsAfter }} ta
       <template v-if="campaign.windowEndsAt">
         · to'xtash {{ formatCampaignDateTime(campaign.windowEndsAt) }}
       </template>
@@ -54,8 +54,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { DEFAULT_POSTS_AFTER } from '~/stores/post.store'
-import { formatCampaignCountdown, formatCampaignDateTime } from '~/utils/postCampaign'
+import { formatCampaignCountdown, formatCampaignDateTime, campaignPostsAfter } from '~/utils/postCampaign'
 
 const props = defineProps<{
   campaign: PostCampaign
@@ -81,9 +80,7 @@ const countdownLabel = computed(() => {
   return formatCampaignCountdown(props.campaign.windowEndsAt)
 })
 
-const postsAfter = computed(
-  () => props.campaign.postsAfterThreshold || props.campaign.intervalMin || DEFAULT_POSTS_AFTER,
-)
+const postsAfter = computed(() => campaignPostsAfter(props.campaign))
 
 const waitLabel = computed(() => {
   if (!props.campaign.active) return '—'
