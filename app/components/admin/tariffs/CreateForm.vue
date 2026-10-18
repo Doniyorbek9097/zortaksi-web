@@ -1,41 +1,47 @@
 <template>
-  <section
-    class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3"
+  <component
+    :is="embedded ? 'div' : 'section'"
+    :class="embedded
+      ? 'space-y-3'
+      : 'rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3'"
   >
-    <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+    <p
+      v-if="!embedded"
+      class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500"
+    >
       Yangi tarif yaratish
     </p>
 
     <BaseInput
-      :model-value="modelValue.name"
+      :model-value="model.name"
       label="Nomi"
       placeholder="Oylik tarif"
       @update:model-value="patch('name', $event)"
     />
 
     <BaseInput
-      :model-value="modelValue.slug"
+      :model-value="model.slug"
       label="Slug (komanda)"
       placeholder="oylik"
       @update:model-value="patch('slug', $event)"
     />
     <p class="px-1 text-[10px] text-slate-400 leading-snug">
-      Admin komanda: <code class="font-mono">/{{ modelValue.slug || 'oylik' }}</code>
+      Admin komanda: <code class="font-mono">/{{ model.slug || 'oylik' }}</code>
     </p>
 
     <BaseInput
-      :model-value="modelValue.info"
+      :model-value="model.info"
       label="Tavsif"
       placeholder="30 kunlik buyurtmalar"
       @update:model-value="patch('info', $event)"
     />
 
-    <div class="space-y-1">
+    <div v-if="showKindSelect" class="space-y-1">
       <label class="px-1 text-[11px] font-semibold text-slate-500">Tur</label>
       <select
-        :value="modelValue.kind || 'driver'"
+        :value="model.kind"
         class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700"
-        @change="patch('kind', ($event.target as HTMLSelectElement).value)"
+        @change="patch('kind', ($event.target as HTMLSelectElement).value as TariffKind)"
       >
         <option value="driver">Haydovchi (buyurtma)</option>
         <option value="driver_post">E'lon tarqatish (avto)</option>
@@ -44,7 +50,7 @@
 
     <div class="grid grid-cols-2 gap-3">
       <BaseInput
-        :model-value="modelValue.price"
+        :model-value="model.price"
         label="Narxi (so'm)"
         placeholder="0"
         type="number"
@@ -52,7 +58,7 @@
         @update:model-value="patch('price', $event)"
       />
       <BaseInput
-        :model-value="modelValue.expireDays"
+        :model-value="model.expireDays"
         label="Muddat (kun)"
         placeholder="30"
         type="number"
@@ -74,44 +80,56 @@
       v-if="editing"
       type="button"
       class="w-full py-2.5 rounded-xl text-[12px] font-bold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-      @click="$emit('cancel')"
+      @click="emit('cancel')"
     >
       Bekor qilish
     </button>
-  </section>
+  </component>
 </template>
 
 <script setup lang="ts">
+import type { TariffKind } from '~/stores/tariff.store'
+
 export interface TariffFormModel {
   name: string
   slug: string
   info: string
   price: number | null
   expireDays: number | null
-  kind?: 'driver' | 'driver_post'
+  kind: TariffKind
 }
 
-const props = defineProps<{
-  modelValue: TariffFormModel
-  editing?: boolean
-}>()
+const model = defineModel<TariffFormModel>({ required: true })
+
+withDefaults(
+  defineProps<{
+    editing?: boolean
+    embedded?: boolean
+    showKindSelect?: boolean
+  }>(),
+  {
+    editing: false,
+    embedded: false,
+    showKindSelect: true,
+  }
+)
 
 const emit = defineEmits<{
-  'update:modelValue': [value: TariffFormModel]
   submit: []
   cancel: []
 }>()
 
 const patch = <K extends keyof TariffFormModel>(key: K, value: TariffFormModel[K]) => {
-  emit('update:modelValue', { ...props.modelValue, [key]: value })
+  model.value = { ...model.value, [key]: value }
 }
 
 const onSubmit = () => {
-  const { name, slug, price, expireDays } = props.modelValue
+  const { name, slug, price, expireDays, kind } = model.value
   if (!name.trim()) return
   if (!slug.trim()) return
   if (price == null || price < 0) return
   if (expireDays == null || expireDays < 1) return
+  if (kind !== 'driver' && kind !== 'driver_post') return
   emit('submit')
 }
 </script>

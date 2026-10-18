@@ -2,12 +2,17 @@
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-28 space-y-4">
     <AdminTariffsPageHeader />
 
-    <AdminTariffsCreateForm
-      v-model="form"
-      :editing="editingId != null"
-      @submit="onSubmit"
-      @cancel="resetForm"
-    />
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <AdminSegmentTabs v-model="listTab" :tabs="kindTabs" />
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] shadow-md shadow-sky-500/20"
+        @click="openCreate"
+      >
+        <font-awesome-icon icon="fa-solid fa-plus" class="text-[10px]" />
+        Yangi tarif
+      </button>
+    </div>
 
     <div v-if="store.isLoading" class="space-y-3">
       <div
@@ -18,15 +23,16 @@
     </div>
 
     <BaseEmptyState
-      v-else-if="!store.tariffs.length"
+      v-else-if="!tariffsInTab.length"
       icon="fa-solid fa-tags"
-      title="Hali tarif yo'q"
+      :title="listTab === 'driver_post' ? 'E\'lon tarifi yo\'q' : 'Buyurtma tarifi yo\'q'"
+      :subtitle="'Yangi tarif tugmasini bosing'"
       tone="slate"
     />
 
     <div v-else class="space-y-3">
       <AdminTariffsTariffItem
-        v-for="t in store.tariffs"
+        v-for="t in tariffsInTab"
         :key="t.id"
         :name="t.name"
         :slug="t.slug"
@@ -40,6 +46,16 @@
     </div>
 
     <p v-if="error" class="text-center text-[12px] font-bold text-red-500">{{ error }}</p>
+
+    <AdminTariffsTariffFormDialog
+      v-model="formOpen"
+      :form="form"
+      :editing="editingId != null"
+      :lock-kind="editingId ? null : listTab"
+      @update:form="form = $event"
+      @submit="onSubmit"
+      @cancel="onFormCancel"
+    />
 
     <BaseConfirmDialog
       v-model="deleteOpen"
@@ -56,42 +72,64 @@
 
 <script setup lang="ts">
 import type { TariffFormModel } from '~/components/admin/tariffs/CreateForm.vue'
-import type { TariffRow } from '~/stores/tariff.store'
+import type { TariffKind, TariffRow } from '~/stores/tariff.store'
 import { useTariffStore } from '~/stores/tariff.store'
 
 definePageMeta({ layout: 'admin' })
 
 const store = useTariffStore()
 
-const emptyForm = (): TariffFormModel => ({
+const listTab = ref<TariffKind>('driver')
+const kindTabs = [
+  { label: 'Buyurtma', value: 'driver' },
+  { label: "E'lon avto", value: 'driver_post' },
+]
+
+const emptyForm = (kind: TariffKind = 'driver'): TariffFormModel => ({
   name: '',
   slug: '',
   info: '',
   price: 0,
   expireDays: 30,
-  kind: 'driver',
+  kind,
 })
 
 const form = ref<TariffFormModel>(emptyForm())
+const formOpen = ref(false)
 const editingId = ref<string | null>(null)
 const deleteOpen = ref(false)
 const deleteTarget = ref<TariffRow | null>(null)
 const error = ref('')
 
+const tariffsInTab = computed(() =>
+  store.tariffs.filter((t) => (t.kind || 'driver') === listTab.value)
+)
+
 const resetForm = () => {
-  form.value = emptyForm()
+  form.value = emptyForm(listTab.value)
   editingId.value = null
+}
+
+const openCreate = () => {
+  editingId.value = null
+  form.value = emptyForm(listTab.value)
+  formOpen.value = true
+}
+
+const onFormCancel = () => {
+  if (!editingId.value) resetForm()
 }
 
 const onSubmit = async () => {
   error.value = ''
+  const kind = editingId.value ? form.value.kind : listTab.value
   const payload = {
     name: form.value.name.trim(),
     slug: form.value.slug.trim(),
     info: form.value.info.trim() || undefined,
     price: form.value.price ?? 0,
     expireDays: form.value.expireDays ?? 30,
-    kind: form.value.kind || 'driver',
+    kind,
   }
 
   try {
@@ -100,7 +138,9 @@ const onSubmit = async () => {
     } else {
       await store.createTariff(payload)
     }
+    formOpen.value = false
     resetForm()
+    await store.fetchTariffs()
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.message || 'Xatolik yuz berdi'
   }
@@ -108,15 +148,16 @@ const onSubmit = async () => {
 
 const startEdit = (t: TariffRow) => {
   editingId.value = t.id
+  listTab.value = (t.kind || 'driver') as TariffKind
   form.value = {
     name: t.name,
     slug: t.slug,
     info: t.info ?? '',
     price: t.price,
     expireDays: t.expireDays,
-    kind: t.kind || 'driver',
+    kind: (t.kind || 'driver') as TariffKind,
   }
-  if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
+  formOpen.value = true
 }
 
 const askDelete = (t: TariffRow) => {
@@ -129,24 +170,29 @@ const confirmDelete = async () => {
   error.value = ''
   try {
     await store.deleteTariff(deleteTarget.value.id)
-    if (editingId.value === deleteTarget.value.id) resetForm()
+    if (editingId.value === deleteTarget.value.id) {
+      formOpen.value = false
+      resetForm()
+    }
     deleteTarget.value = null
   } catch (e: any) {
     error.value = e?.response?.data?.message || e?.message || 'O‘chirib bo‘lmadi'
   }
 }
 
-onMounted(() => {
+const loadAll = () => {
   store.fetchTariffs().catch((e: any) => {
     error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
   })
-})
+}
 
-usePullToRefresh(async () => {
-  try {
-    await store.fetchTariffs()
-  } catch (e: any) {
-    error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
+watch(listTab, (tab) => {
+  if (formOpen.value && !editingId.value) {
+    form.value = { ...form.value, kind: tab }
   }
 })
+
+onMounted(loadAll)
+
+usePullToRefresh(loadAll)
 </script>

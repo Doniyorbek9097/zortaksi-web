@@ -66,7 +66,11 @@ export const useTariffStore = defineStore('tariff', () => {
   const createTariff = async (payload: TariffPayload) => {
     try {
       isSaving.value = true
-      const response = await useApi('/tariffs', { method: 'POST', body: payload })
+      const body = {
+        ...payload,
+        kind: payload.kind || 'driver',
+      }
+      const response = await useApi('/tariffs', { method: 'POST', body })
       if (response.success) {
         tariffs.value.unshift(toRow(response.data))
       }
@@ -82,7 +86,11 @@ export const useTariffStore = defineStore('tariff', () => {
   const updateTariff = async (id: string, payload: TariffPayload) => {
     try {
       isSaving.value = true
-      const response = await useApi(`/tariffs/${id}`, { method: 'PUT', body: payload })
+      const body = {
+        ...payload,
+        kind: payload.kind || 'driver',
+      }
+      const response = await useApi(`/tariffs/${id}`, { method: 'PUT', body })
       if (response.success) {
         const row = toRow(response.data)
         const idx = tariffs.value.findIndex(t => t.id === id)
