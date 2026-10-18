@@ -242,12 +242,12 @@ const route = useRoute()
 const store = usePostStore()
 const authStore = useAuthStore()
 
-const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/post'
+const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=post-tariff&next=/driver/post'
 
 const pickGroupsMode = computed(() => route.query.pickGroups === '1')
 const pickCampaignId = computed(() => String(route.query.campaignId || ''))
 
-const canPostWithTariff = computed(() => store.isAdmin || authStore.tariffActive)
+const canPostWithTariff = computed(() => store.isAdmin || authStore.postTariffActive)
 
 const requireTariffForPost = (): boolean => {
   if (store.isAdmin) return true

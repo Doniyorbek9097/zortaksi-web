@@ -43,16 +43,16 @@
         hide-hint
         placeholder="Haydovchi matni"
       />
-      <label class="text-[11px] font-semibold text-slate-500">Boshqalar nechta e'lon tashlagach</label>
+      <label class="text-[11px] font-semibold text-slate-500">Har necha daqiqada (avto)</label>
       <input
         v-model.number="intervalMin"
         type="number"
-        :min="MIN_POSTS_AFTER"
-        :max="MAX_POSTS_AFTER"
+        :min="MIN_POST_INTERVAL_MIN"
+        :max="MAX_POST_INTERVAL_MIN"
         class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
       >
       <p class="text-[10px] text-slate-400">
-        {{ MIN_POSTS_AFTER }}–{{ MAX_POSTS_AFTER }} · Guruhlar: {{ campaign.groupCount }}
+        {{ MIN_POST_INTERVAL_MIN }}–{{ MAX_POST_INTERVAL_MIN }} daq · Guruhlar: {{ campaign.groupCount }}
       </p>
       <button
         type="button"
@@ -73,7 +73,11 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import { DEFAULT_POSTS_AFTER, MAX_POSTS_AFTER, MIN_POSTS_AFTER } from '~/stores/post.store'
+import {
+  DEFAULT_POST_INTERVAL_MIN,
+  MAX_POST_INTERVAL_MIN,
+  MIN_POST_INTERVAL_MIN,
+} from '~/stores/post.store'
 
 definePageMeta({ layout: 'admin' })
 
@@ -85,12 +89,15 @@ const loading = ref(true)
 const campaign = ref<AdminDriverPostCampaign | null>(null)
 const name = ref('')
 const text = ref('')
-const intervalMin = ref(DEFAULT_POSTS_AFTER)
+const intervalMin = ref(DEFAULT_POST_INTERVAL_MIN)
 
 const hydrateForm = (c: AdminDriverPostCampaign) => {
   name.value = c.name
   text.value = c.text || c.textPreview
-  intervalMin.value = Math.max(MIN_POSTS_AFTER, c.postsAfterThreshold || c.intervalMin || DEFAULT_POSTS_AFTER)
+  intervalMin.value = Math.max(
+    MIN_POST_INTERVAL_MIN,
+    c.intervalMin || c.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
+  )
 }
 
 const onSave = async () => {
@@ -99,8 +106,8 @@ const onSave = async () => {
     name: name.value.trim(),
     text: text.value.trim(),
     intervalMin: Math.max(
-      MIN_POSTS_AFTER,
-      Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
+      MIN_POST_INTERVAL_MIN,
+      Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
     ),
   })
   navigateTo('/admin/driver-posts')

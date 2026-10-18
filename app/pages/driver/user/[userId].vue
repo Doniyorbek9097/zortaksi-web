@@ -113,7 +113,15 @@
               @click="openTariff"
             >
               <font-awesome-icon icon="fa-solid fa-key" />
-              Tarifni yangilash
+              Buyurtma tarifi
+            </button>
+            <button
+              type="button"
+              class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all"
+              @click="openPostTariff"
+            >
+              <font-awesome-icon icon="fa-solid fa-bullhorn" />
+              E'lon tarifi
             </button>
             <button
               type="button"
@@ -190,6 +198,15 @@
       @confirm="saveTariff"
     />
 
+    <AdminDriversTariffDialog
+      v-if="isAdmin"
+      v-model="postTariffOpen"
+      :balance="driver?.balance ?? 0"
+      :tariffs="tariffStore.tariffs"
+      :loading="store.isSaving"
+      @confirm="savePostTariff"
+    />
+
     <AdminDriversLimitDialog
       v-if="isAdmin && driver"
       v-model="limitOpen"
@@ -250,6 +267,7 @@ const {
   tariffCard,
   balanceOpen,
   tariffOpen,
+  postTariffOpen,
   limitOpen,
   listenerDisplayName,
   blockOpen,
@@ -263,6 +281,8 @@ const {
   saveBalance,
   onPaymentPage,
   openTariff,
+  openPostTariff,
+  savePostTariff,
   saveTariff,
   saveLimit,
   saveListenerDisplayName,

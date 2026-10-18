@@ -16,6 +16,9 @@ export interface IUser {
     referrerId?: string;
     tariff?: ITariff | null;
     tariffExpireAt?: string | Date;
+    postTariff?: ITariff | null;
+    postTariffExpireAt?: string | Date;
+    postStartedAt?: string | Date;
     role: 'admin' | 'driver' | 'customer';
     regionSlug?: string | null;
     createdAt?: string | Date;

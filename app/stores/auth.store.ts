@@ -9,6 +9,7 @@ import {
     writeAuthCookie,
 } from '~/utils/activeAccount'
 import { isTariffActive } from '~/utils/tariffActive'
+import { isPostTariffActive } from '~/utils/postTariffActive'
 import { normalizeUserRole } from '~/utils/userRole'
 import { AUTH_API_TIMEOUT_MS, getApiErrorMessage } from '~/utils/apiError'
 
@@ -43,6 +44,13 @@ export const useAuthStore = defineStore('auth', () => {
         const u = user.value
         if (!u) return false
         return isTariffActive(u)
+    })
+
+    const postTariffActive = computed(() => {
+        liveNowMs.value
+        const u = user.value
+        if (!u) return false
+        return isPostTariffActive(u)
     })
 
     let expireTimer: ReturnType<typeof setTimeout> | null = null
@@ -311,6 +319,7 @@ export const useAuthStore = defineStore('auth', () => {
         isAuthenticated,
         isLoading,
         tariffActive,
+        postTariffActive,
         markTariffExpired,
         getMe,
         sendCode,

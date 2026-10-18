@@ -55,24 +55,24 @@
 
             <div class="mt-4 space-y-1">
               <label class="px-1 text-[11px] font-semibold text-slate-500">
-                Boshqalar nechta xabar yozgach qayta yuborilsin
+                Har necha daqiqada qayta yuborilsin
               </label>
               <input
                 v-model.number="intervalMin"
                 type="number"
-                :min="MIN_POSTS_AFTER"
-                :max="MAX_POSTS_AFTER"
+                :min="MIN_POST_INTERVAL_MIN"
+                :max="MAX_POST_INTERVAL_MIN"
                 class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
               >
               <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-                Birinchi yuborish darhol. Keyin guruhda boshqalar shuncha xabar yozganda qayta yuboriladi (sizning xabarlaringiz sanalmaydi). 12 soatdan keyin avtomatik to'xtaydi.
+                Birinchi yuborish darhol. Keyin har {{ intervalMin }} daqiqada barcha tanlangan guruhlarga yuboriladi. 12 soatdan keyin avtomatik to'xtaydi.
               </p>
             </div>
 
             <div class="mt-4">
               <button
                 type="button"
-                :disabled="loading || !text.trim() || !name.trim() || intervalMin < MIN_POSTS_AFTER"
+                :disabled="loading || !text.trim() || !name.trim() || intervalMin < MIN_POST_INTERVAL_MIN"
                 class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50 bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
                 @click="onSave"
               >
@@ -92,7 +92,11 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { DEFAULT_POSTS_AFTER, MAX_POSTS_AFTER, MIN_POSTS_AFTER } from '~/stores/post.store'
+import {
+  DEFAULT_POST_INTERVAL_MIN,
+  MAX_POST_INTERVAL_MIN,
+  MIN_POST_INTERVAL_MIN,
+} from '~/stores/post.store'
 
 const props = defineProps<{
   modelValue: boolean
@@ -109,7 +113,7 @@ const emit = defineEmits<{
 
 const name = ref('')
 const text = ref('')
-const intervalMin = ref(DEFAULT_POSTS_AFTER)
+const intervalMin = ref(DEFAULT_POST_INTERVAL_MIN)
 
 const isEdit = computed(() => !!props.editCampaign?.id)
 
@@ -121,13 +125,13 @@ watch(
       name.value = edit.name || ''
       text.value = edit.text || ''
       intervalMin.value = Math.max(
-        MIN_POSTS_AFTER,
-        edit.postsAfterThreshold || edit.intervalMin || DEFAULT_POSTS_AFTER,
+        MIN_POST_INTERVAL_MIN,
+        edit.intervalMin || edit.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
       )
     } else {
       name.value = ''
       text.value = ''
-      intervalMin.value = DEFAULT_POSTS_AFTER
+      intervalMin.value = DEFAULT_POST_INTERVAL_MIN
     }
   }
 )
@@ -136,17 +140,16 @@ const close = () => emit('update:modelValue', false)
 
 const onSave = () => {
   if (!text.value.trim() || !name.value.trim()) return
-  if (intervalMin.value < MIN_POSTS_AFTER) return
-  const postsAfter = Math.max(
-    MIN_POSTS_AFTER,
-    Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
+  if (intervalMin.value < MIN_POST_INTERVAL_MIN) return
+  const mins = Math.max(
+    MIN_POST_INTERVAL_MIN,
+    Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
   )
   emit('save', {
     name: name.value.trim(),
     text: text.value.trim(),
     autoRepeat: true,
-    intervalMin: postsAfter,
-    postsAfterThreshold: postsAfter,
+    intervalMin: mins,
   })
 }
 

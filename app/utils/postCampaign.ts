@@ -1,17 +1,20 @@
 import type { PostCampaign } from '~/stores/post.store'
-import { DEFAULT_POSTS_AFTER } from '~/stores/post.store'
+import { DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
 
-export function campaignPostsAfter(campaign: PostCampaign): number {
-  const n = campaign.postsAfterThreshold ?? campaign.intervalMin
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : DEFAULT_POSTS_AFTER
+export function campaignIntervalMin(campaign: PostCampaign): number {
+  const fromMin = campaign.intervalMin ?? campaign.postsAfterThreshold
+  if (Number.isFinite(fromMin) && fromMin > 0) return Math.round(fromMin)
+  const sec = Number(campaign.intervalSec)
+  if (Number.isFinite(sec) && sec >= 60) return Math.round(sec / 60)
+  return DEFAULT_POST_INTERVAL_MIN
 }
 
-/** Kartochka sarlavhasi: guruhlar + qayta yuborish sharti */
+/** Kartochka sarlavhasi: guruhlar + interval */
 export function campaignGroupsMetaLabel(campaign: PostCampaign, compact = false): string {
   const g = campaign.groupIds?.length ?? 0
-  const n = campaignPostsAfter(campaign)
-  if (compact) return `${g}g · ${n}x`
-  return `${g} guruh · ${n} xabar`
+  const n = campaignIntervalMin(campaign)
+  if (compact) return `${g}g · ${n}d`
+  return `${g} guruh · ${n} daq`
 }
 
 export function campaignEditPath(campaignId: string) {

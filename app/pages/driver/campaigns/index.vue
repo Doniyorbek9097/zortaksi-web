@@ -115,10 +115,10 @@ const sortedCampaigns = computed(() => {
   return list
 })
 
-const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=/driver/campaigns'
+const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=post-tariff&next=/driver/campaigns'
 
 const requireTariffForPost = (): boolean => {
-  if (store.isAdmin || authStore.tariffActive) return true
+  if (store.isAdmin || authStore.postTariffActive) return true
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
 }

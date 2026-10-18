@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 
+export type TariffKind = 'driver' | 'driver_post'
+
 export interface TariffRow {
   id: string
   name: string
@@ -9,6 +11,7 @@ export interface TariffRow {
   badge?: string
   price: number
   expireDays: number
+  kind?: TariffKind
 }
 
 export type TariffPayload = {
@@ -19,6 +22,7 @@ export type TariffPayload = {
   expireDays: number
   icon?: string
   badge?: string
+  kind?: TariffKind
 }
 
 const toRow = (t: any): TariffRow => ({
@@ -30,6 +34,7 @@ const toRow = (t: any): TariffRow => ({
   badge: t.badge,
   price: Number(t.price),
   expireDays: Number(t.expireDays),
+  kind: (t.kind as TariffKind) || 'driver',
 })
 
 export const useTariffStore = defineStore('tariff', () => {
@@ -37,10 +42,11 @@ export const useTariffStore = defineStore('tariff', () => {
   const isLoading = ref(false)
   const isSaving = ref(false)
 
-  const fetchTariffs = async () => {
+  const fetchTariffs = async (kind?: TariffKind) => {
     try {
       isLoading.value = true
-      const response = await useApi('/tariffs')
+      const query = kind ? `?kind=${encodeURIComponent(kind)}` : ''
+      const response = await useApi(`/tariffs${query}`)
       if (response.success) {
         tariffs.value = (response.data.tariffs ?? []).map(toRow)
       }

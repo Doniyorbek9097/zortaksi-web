@@ -25,12 +25,10 @@ export interface PostGroup {
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
 export const MAX_POST_GROUPS = 20
-/** Boshqalar nechta e'lon tashlagach qayta yuboriladi */
-export const MIN_POSTS_AFTER = 5
-export const MAX_POSTS_AFTER = 50
-export const DEFAULT_POSTS_AFTER = 10
-/** @deprecated — postsAfterThreshold ishlating */
-export const MIN_POST_INTERVAL_MIN = MIN_POSTS_AFTER
+/** Avto e'lon oralig‘i (daqiqa) */
+export const MIN_POST_INTERVAL_MIN = 10
+export const MAX_POST_INTERVAL_MIN = 1440
+export const DEFAULT_POST_INTERVAL_MIN = 10
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
 
@@ -267,7 +265,12 @@ export const usePostStore = defineStore('post', () => {
   const isPostTariffError = (e: any) => {
     const code = e?.response?.data?.code
     const msg = String(e?.response?.data?.message || '')
-    return code === 'TARIFF_REQUIRED' || /faol tarif/i.test(msg)
+    return (
+      code === 'POST_TARIFF_REQUIRED' ||
+      code === 'TARIFF_REQUIRED' ||
+      /e'lon tarif/i.test(msg) ||
+      /faol tarif/i.test(msg)
+    )
   }
 
   const redirectToPostTariffPayment = () => {
@@ -610,7 +613,7 @@ export const usePostStore = defineStore('post', () => {
           mode: tab.value,
           groupIds: [...selected.value],
           text: payload.text,
-          postsAfterThreshold: payload.postsAfterThreshold ?? payload.intervalMin,
+          intervalMin: payload.intervalMin,
           start: payload.start,
         },
       })
@@ -646,7 +649,7 @@ export const usePostStore = defineStore('post', () => {
         body: {
           name: payload.name,
           text: payload.text,
-          postsAfterThreshold: payload.postsAfterThreshold ?? payload.intervalMin,
+          intervalMin: payload.intervalMin,
           mode: tab.value,
           ...(payload.groupIds ? { groupIds: payload.groupIds } : {}),
         },

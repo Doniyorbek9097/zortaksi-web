@@ -43,8 +43,8 @@
       class="font-semibold text-slate-500 dark:text-slate-400 leading-tight"
       :class="flat ? 'text-[12px]' : compact ? 'text-[9px]' : 'text-[12px]'"
     >
-      Boshqalar xabari: <span class="font-black text-slate-700 dark:text-slate-200">{{ waitLabel }}</span>
-      · har {{ postsAfter }} ta
+      Keyingi yuborish: <span class="font-black text-slate-700 dark:text-slate-200">{{ nextRunLabel }}</span>
+      · har {{ intervalMin }} daqiqa
       <template v-if="campaign.windowEndsAt">
         · to'xtash {{ formatCampaignDateTime(campaign.windowEndsAt) }}
       </template>
@@ -54,7 +54,11 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import { formatCampaignCountdown, formatCampaignDateTime, campaignPostsAfter } from '~/utils/postCampaign'
+import {
+  formatCampaignCountdown,
+  formatCampaignDateTime,
+  campaignIntervalMin,
+} from '~/utils/postCampaign'
 
 const props = defineProps<{
   campaign: PostCampaign
@@ -68,7 +72,7 @@ let timer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   timer = setInterval(() => {
     now.value = Date.now()
-  }, 30_000)
+  }, 15_000)
 })
 
 onBeforeUnmount(() => {
@@ -80,14 +84,19 @@ const countdownLabel = computed(() => {
   return formatCampaignCountdown(props.campaign.windowEndsAt)
 })
 
-const postsAfter = computed(() => campaignPostsAfter(props.campaign))
+const intervalMin = computed(() => campaignIntervalMin(props.campaign))
 
-const waitLabel = computed(() => {
+const nextRunLabel = computed(() => {
+  void now.value
   if (!props.campaign.active) return '—'
-  const th = postsAfter.value
-  const others = Number(props.campaign.othersSinceLastPost ?? 0)
-  const left = Number(props.campaign.postsUntilNext ?? Math.max(0, th - others))
-  if (left <= 0) return 'yuborish kutilmoqda'
-  return `${others}/${th} (yana ${left})`
+  const at = props.campaign.nextRunAt
+  if (!at) return '—'
+  const ms = new Date(at).getTime() - Date.now()
+  if (ms <= 0) return 'hozir'
+  const m = Math.ceil(ms / 60_000)
+  if (m < 60) return `${m} daq`
+  const h = Math.floor(m / 60)
+  const rm = m % 60
+  return rm > 0 ? `${h}s ${rm}d` : `${h}s`
 })
 </script>

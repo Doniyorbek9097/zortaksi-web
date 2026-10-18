@@ -37,6 +37,7 @@ export function useDriverProfilePage() {
   const success = ref('')
   const balanceOpen = ref(false)
   const tariffOpen = ref(false)
+  const postTariffOpen = ref(false)
   const limitOpen = ref(false)
   const blockOpen = ref(false)
   const deleteOpen = ref(false)
@@ -226,12 +227,20 @@ export function useDriverProfilePage() {
   const openTariff = async () => {
     if (!isAdmin.value) return
     tariffOpen.value = true
-    if (!tariffStore.tariffs.length) {
-      try {
-        await tariffStore.fetchTariffs()
-      } catch {
-        /* */
-      }
+    try {
+      await tariffStore.fetchTariffs('driver')
+    } catch {
+      /* */
+    }
+  }
+
+  const openPostTariff = async () => {
+    if (!isAdmin.value) return
+    postTariffOpen.value = true
+    try {
+      await tariffStore.fetchTariffs('driver_post')
+    } catch {
+      /* */
     }
   }
 
@@ -249,6 +258,23 @@ export function useDriverProfilePage() {
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } }
       driverError.value = err?.response?.data?.message || 'Tarif biriktirilmadi'
+    }
+  }
+
+  const savePostTariff = async (payload: { tariffId: string; deductFromBalance: boolean }) => {
+    if (!driver.value || !isAdmin.value) return
+    driverError.value = ''
+    success.value = ''
+    try {
+      await store.assignPostTariff(driver.value.id, payload.tariffId, {
+        deductFromBalance: payload.deductFromBalance,
+      })
+      postTariffOpen.value = false
+      success.value = "E'lon tarifi yangilandi"
+      await loadDriver()
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } }
+      driverError.value = err?.response?.data?.message || "E'lon tarifi biriktirilmadi"
     }
   }
 
@@ -351,6 +377,7 @@ export function useDriverProfilePage() {
     tariffCard,
     balanceOpen,
     tariffOpen,
+    postTariffOpen,
     limitOpen,
     listenerDisplayName,
     blockOpen,
@@ -364,7 +391,9 @@ export function useDriverProfilePage() {
     saveBalance,
     onPaymentPage,
     openTariff,
+    openPostTariff,
     saveTariff,
+    savePostTariff,
     saveLimit,
     saveListenerDisplayName,
     confirmBlock,

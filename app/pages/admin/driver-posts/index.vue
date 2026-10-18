@@ -123,7 +123,7 @@
             class="mt-1 text-[11px]"
           />
           <p class="text-[10px] font-semibold text-slate-400 mt-1.5">
-            {{ c.groupCount }} guruh · {{ c.postsAfterThreshold || c.intervalMin }} xabar
+            {{ c.groupCount }} guruh · {{ c.intervalMin || c.postsAfterThreshold }} daq
           </p>
           <p v-if="c.lastError" class="text-[10px] font-bold text-rose-500 mt-1">{{ c.lastError }}</p>
         </div>

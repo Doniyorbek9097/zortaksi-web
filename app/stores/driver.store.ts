@@ -241,6 +241,30 @@ export const useDriverStore = defineStore('driver', () => {
     }
   }
 
+  const assignPostTariff = async (
+    userId: string,
+    tariffId: string,
+    opts: { deductFromBalance?: boolean } = {}
+  ) => {
+    try {
+      isSaving.value = true
+      const response = await useApi(`/drivers/${userId}/post-tariff`, {
+        method: 'POST',
+        body: {
+          tariffId,
+          deductFromBalance: Boolean(opts.deductFromBalance),
+        },
+      })
+      if (response.success) patchLocal(response.data)
+      return response
+    } catch (error) {
+      console.error('AssignDriverPostTariff error:', error)
+      throw error
+    } finally {
+      isSaving.value = false
+    }
+  }
+
   const applyCustomLimit = async (
     userId: string,
     opts: { days: number; hours: number }
@@ -335,6 +359,7 @@ export const useDriverStore = defineStore('driver', () => {
     setBalance,
     adjustBalance,
     assignTariff,
+    assignPostTariff,
     applyCustomLimit,
     sendMessage,
     bulkAction,

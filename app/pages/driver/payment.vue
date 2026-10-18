@@ -27,26 +27,36 @@
     </section>
 
     <!-- Rejim tanlash -->
-    <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+    <div class="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
       <button
         type="button"
-        class="py-2.5 rounded-lg text-[11px] font-black transition-all"
+        class="py-2.5 rounded-lg text-[10px] font-black transition-all"
         :class="mode === 'tariff'
           ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-sm'
           : 'text-slate-500 dark:text-slate-400'"
-        @click="mode = 'tariff'"
+        @click="setMode('tariff')"
       >
-        Tarif tanlash
+        Buyurtma
       </button>
       <button
         type="button"
-        class="py-2.5 rounded-lg text-[11px] font-black transition-all"
+        class="py-2.5 rounded-lg text-[10px] font-black transition-all"
+        :class="mode === 'post-tariff'
+          ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm'
+          : 'text-slate-500 dark:text-slate-400'"
+        @click="setMode('post-tariff')"
+      >
+        E'lon avto
+      </button>
+      <button
+        type="button"
+        class="py-2.5 rounded-lg text-[10px] font-black transition-all"
         :class="mode === 'topup'
           ? 'bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 shadow-sm'
           : 'text-slate-500 dark:text-slate-400'"
-        @click="mode = 'topup'"
+        @click="setMode('topup')"
       >
-        Balans to'ldirish
+        Balans
       </button>
     </div>
 
@@ -72,10 +82,12 @@
     </section>
 
     <!-- TARIF -->
-    <template v-if="mode === 'tariff'">
+    <template v-if="mode === 'tariff' || mode === 'post-tariff'">
       <section class="space-y-3">
         <div class="px-0.5">
-          <h2 class="text-sm font-black text-slate-900 dark:text-white">Tarifni tanlang</h2>
+          <h2 class="text-sm font-black text-slate-900 dark:text-white">
+            {{ mode === 'post-tariff' ? "E'lon tarqatish tarifi" : 'Buyurtma tarifi' }}
+          </h2>
           <p class="text-[12px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
             Balans yetarli bo'lsa darhol ulanadi, yetmasa Admin Telegram orqali to'lov
           </p>
@@ -260,7 +272,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 const tariffStore = useTariffStore()
 
-type PayMode = 'tariff' | 'topup'
+type PayMode = 'tariff' | 'post-tariff' | 'topup'
 const mode = ref<PayMode>('tariff')
 
 const selectedId = ref<string | null>(null)
@@ -274,6 +286,20 @@ const methods = ref<{ click: boolean; payme: boolean }>({ click: false, payme: f
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
+const postTariffActive = computed(() => authStore.postTariffActive)
+
+const loadTariffsForMode = async () => {
+  const kind = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
+  if (mode.value === 'topup') return
+  await tariffStore.fetchTariffs(kind)
+  const list = tariffStore.tariffs
+  selectedId.value = list[0]?.id ?? null
+}
+
+const setMode = async (m: PayMode) => {
+  mode.value = m
+  if (m !== 'topup') await loadTariffsForMode()
+}
 
 const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
 
@@ -426,14 +452,20 @@ const buyTariff = async () => {
   savingBuy.value = true
   error.value = ''
   try {
-    const res = await useApi('/me/tariff/buy', {
+    const buyPath =
+      mode.value === 'post-tariff' ? '/me/post-tariff/buy' : '/me/tariff/buy'
+    const res = await useApi(buyPath, {
       method: 'POST',
       body: { tariffId: selected.value.id },
     })
     if (res.success) {
       await authStore.getMe()
-      queueRegionGroupsModal()
-      if (returnPath.value && authStore.tariffActive) {
+      if (mode.value === 'tariff') queueRegionGroupsModal()
+      const ok =
+        mode.value === 'post-tariff'
+          ? authStore.postTariffActive
+          : authStore.tariffActive
+      if (returnPath.value && ok) {
         await navigateTo(returnPath.value)
       } else {
         await navigateTo('/driver/dashboard')
@@ -463,7 +495,8 @@ onMounted(async () => {
 
   const tab = String(route.query.tab || '')
   if (tab === 'topup') mode.value = 'topup'
-  if (tab === 'tariff') mode.value = 'tariff'
+  else if (tab === 'post-tariff') mode.value = 'post-tariff'
+  else if (tab === 'tariff') mode.value = 'tariff'
 
   const paid = String(route.query.paid || '')
   if (paid === '1') {
@@ -484,7 +517,7 @@ onMounted(async () => {
   }
 
   try {
-    await Promise.all([tariffStore.fetchTariffs(), fetchPaymentMethods()])
+    await Promise.all([loadTariffsForMode(), fetchPaymentMethods()])
     const qTariffId = String(route.query.tariffId || '').trim()
     if (qTariffId && tariffStore.tariffs.some(t => t.id === qTariffId)) {
       selectedId.value = qTariffId
@@ -498,6 +531,6 @@ onMounted(async () => {
 
 usePullToRefresh(async () => {
   await authStore.getMe().catch(() => {})
-  await tariffStore.fetchTariffs().catch(() => {})
+  await loadTariffsForMode().catch(() => {})
 })
 </script>

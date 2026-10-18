@@ -33,6 +33,7 @@
         :info="t.info"
         :price="t.price"
         :expire-days="t.expireDays"
+        :kind="t.kind"
         @edit="startEdit(t)"
         @delete="askDelete(t)"
       />
@@ -68,6 +69,7 @@ const emptyForm = (): TariffFormModel => ({
   info: '',
   price: 0,
   expireDays: 30,
+  kind: 'driver',
 })
 
 const form = ref<TariffFormModel>(emptyForm())
@@ -89,6 +91,7 @@ const onSubmit = async () => {
     info: form.value.info.trim() || undefined,
     price: form.value.price ?? 0,
     expireDays: form.value.expireDays ?? 30,
+    kind: form.value.kind || 'driver',
   }
 
   try {
@@ -111,6 +114,7 @@ const startEdit = (t: TariffRow) => {
     info: t.info ?? '',
     price: t.price,
     expireDays: t.expireDays,
+    kind: t.kind || 'driver',
   }
   if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
 }

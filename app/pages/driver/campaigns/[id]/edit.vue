@@ -75,17 +75,17 @@
 
         <div v-if="autoRepeat" class="space-y-1">
           <label class="px-1 text-[11px] font-semibold text-slate-500">
-            Boshqalar nechta xabar yozgach qayta yuborilsin
+            Har necha daqiqada qayta yuborilsin
           </label>
           <input
             v-model.number="intervalMin"
             type="number"
-            :min="MIN_POSTS_AFTER"
-            :max="MAX_POSTS_AFTER"
+            :min="MIN_POST_INTERVAL_MIN"
+            :max="MAX_POST_INTERVAL_MIN"
             class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
           <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-            Sizning xabarlaringiz sanalmaydi. 12 soatdan keyin avtomatik to'xtaydi.
+            Vaqt bo'yicha avto-yuborish. 12 soatdan keyin avtomatik to'xtaydi.
           </p>
         </div>
       </section>
@@ -153,9 +153,9 @@
 <script setup lang="ts">
 import {
   usePostStore,
-  DEFAULT_POSTS_AFTER,
-  MAX_POSTS_AFTER,
-  MIN_POSTS_AFTER,
+  DEFAULT_POST_INTERVAL_MIN,
+  MAX_POST_INTERVAL_MIN,
+  MIN_POST_INTERVAL_MIN,
 } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 
@@ -174,20 +174,21 @@ const name = ref('')
 const text = ref('')
 const globalAdminAppendText = ref('')
 const autoRepeat = ref(false)
-const intervalMin = ref(DEFAULT_POSTS_AFTER)
+const intervalMin = ref(DEFAULT_POST_INTERVAL_MIN)
 const groupIds = ref<string[]>([])
 
 const campaign = computed(() => store.campaigns.find((c) => c.id === campaignId.value) || null)
 const groupCount = computed(() => groupIds.value.length)
 
-const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=tariff&next=' + encodeURIComponent(route.fullPath)
+const POST_TARIFF_PAYMENT_PATH =
+  '/driver/payment?tab=post-tariff&next=' + encodeURIComponent(route.fullPath)
 
 const canSave = computed(
-  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value >= MIN_POSTS_AFTER),
+  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value >= MIN_POST_INTERVAL_MIN),
 )
 
 const requireTariff = () => {
-  if (store.isAdmin || authStore.tariffActive) return true
+  if (store.isAdmin || authStore.postTariffActive) return true
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
 }
@@ -198,8 +199,8 @@ const fillForm = (c: NonNullable<typeof campaign.value>) => {
   globalAdminAppendText.value = String(c.globalAdminAppendText || '').trim()
   autoRepeat.value = !!c.active
   intervalMin.value = Math.max(
-    MIN_POSTS_AFTER,
-    c.postsAfterThreshold || c.intervalMin || DEFAULT_POSTS_AFTER,
+    MIN_POST_INTERVAL_MIN,
+    c.intervalMin || c.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
   )
   groupIds.value = [...(c.groupIds || [])]
 }
@@ -236,8 +237,8 @@ const onSave = async () => {
       name: name.value.trim(),
       text: text.value.trim(),
       intervalMin: Math.max(
-        MIN_POSTS_AFTER,
-        Math.min(MAX_POSTS_AFTER, Math.round(intervalMin.value || DEFAULT_POSTS_AFTER)),
+        MIN_POST_INTERVAL_MIN,
+        Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
       ),
       groupIds: groupIds.value,
     })

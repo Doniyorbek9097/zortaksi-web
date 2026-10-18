@@ -30,6 +30,18 @@
       @update:model-value="patch('info', $event)"
     />
 
+    <div class="space-y-1">
+      <label class="px-1 text-[11px] font-semibold text-slate-500">Tur</label>
+      <select
+        :value="modelValue.kind || 'driver'"
+        class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700"
+        @change="patch('kind', ($event.target as HTMLSelectElement).value)"
+      >
+        <option value="driver">Haydovchi (buyurtma)</option>
+        <option value="driver_post">E'lon tarqatish (avto)</option>
+      </select>
+    </div>
+
     <div class="grid grid-cols-2 gap-3">
       <BaseInput
         :model-value="modelValue.price"
@@ -76,6 +88,7 @@ export interface TariffFormModel {
   info: string
   price: number | null
   expireDays: number | null
+  kind?: 'driver' | 'driver_post'
 }
 
 const props = defineProps<{
