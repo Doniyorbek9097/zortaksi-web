@@ -36,12 +36,12 @@
       @update:model-value="patch('info', $event)"
     />
 
-    <div v-if="showKindSelect" class="space-y-1">
+    <div class="space-y-1">
       <label class="px-1 text-[11px] font-semibold text-slate-500">Tur</label>
       <select
         :value="model.kind"
         class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700"
-        @change="patch('kind', ($event.target as HTMLSelectElement).value as TariffKind)"
+        @change="patch('kind', normalizeTariffKind(($event.target as HTMLSelectElement).value))"
       >
         <option value="driver">Haydovchi (buyurtma)</option>
         <option value="driver_post">E'lon tarqatish (avto)</option>
@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import type { TariffKind } from '~/stores/tariff.store'
+import { normalizeTariffKind } from '~/utils/tariffKind'
 
 export interface TariffFormModel {
   name: string
@@ -105,12 +106,10 @@ withDefaults(
   defineProps<{
     editing?: boolean
     embedded?: boolean
-    showKindSelect?: boolean
   }>(),
   {
     editing: false,
     embedded: false,
-    showKindSelect: true,
   }
 )
 

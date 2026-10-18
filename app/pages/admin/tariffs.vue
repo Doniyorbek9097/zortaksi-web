@@ -49,10 +49,8 @@
 
     <AdminTariffsTariffFormDialog
       v-model="formOpen"
-      :form="form"
+      v-model:form="form"
       :editing="editingId != null"
-      :lock-kind="editingId ? null : listTab"
-      @update:form="form = $event"
       @submit="onSubmit"
       @cancel="onFormCancel"
     />
@@ -74,6 +72,7 @@
 import type { TariffFormModel } from '~/components/admin/tariffs/CreateForm.vue'
 import type { TariffKind, TariffRow } from '~/stores/tariff.store'
 import { useTariffStore } from '~/stores/tariff.store'
+import { normalizeTariffKind } from '~/utils/tariffKind'
 
 definePageMeta({ layout: 'admin' })
 
@@ -102,7 +101,7 @@ const deleteTarget = ref<TariffRow | null>(null)
 const error = ref('')
 
 const tariffsInTab = computed(() =>
-  store.tariffs.filter((t) => (t.kind || 'driver') === listTab.value)
+  store.tariffs.filter((t) => normalizeTariffKind(t.kind) === listTab.value)
 )
 
 const resetForm = () => {
@@ -122,13 +121,13 @@ const onFormCancel = () => {
 
 const onSubmit = async () => {
   error.value = ''
-  const kind = editingId.value ? form.value.kind : listTab.value
+  const kind = normalizeTariffKind(form.value.kind)
   const payload = {
     name: form.value.name.trim(),
     slug: form.value.slug.trim(),
     info: form.value.info.trim() || undefined,
-    price: form.value.price ?? 0,
-    expireDays: form.value.expireDays ?? 30,
+    price: Number(form.value.price ?? 0),
+    expireDays: Number(form.value.expireDays ?? 30),
     kind,
   }
 
@@ -138,6 +137,7 @@ const onSubmit = async () => {
     } else {
       await store.createTariff(payload)
     }
+    listTab.value = kind
     formOpen.value = false
     resetForm()
     await store.fetchTariffs()
@@ -188,9 +188,19 @@ const loadAll = () => {
 
 watch(listTab, (tab) => {
   if (formOpen.value && !editingId.value) {
-    form.value = { ...form.value, kind: tab }
+    form.value = { ...form.value, kind: tab as TariffKind }
   }
 })
+
+watch(
+  () => form.value.kind,
+  (kind) => {
+    if (formOpen.value && !editingId.value) {
+      const k = normalizeTariffKind(kind)
+      if (k !== listTab.value) listTab.value = k
+    }
+  }
+)
 
 onMounted(loadAll)
 

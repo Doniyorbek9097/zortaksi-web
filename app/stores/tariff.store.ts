@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { normalizeTariffKind } from '~/utils/tariffKind'
 
 export type TariffKind = 'driver' | 'driver_post'
 
@@ -34,7 +35,7 @@ const toRow = (t: any): TariffRow => ({
   badge: t.badge,
   price: Number(t.price),
   expireDays: Number(t.expireDays),
-  kind: (t.kind as TariffKind) || 'driver',
+  kind: normalizeTariffKind(t.kind),
 })
 
 export const useTariffStore = defineStore('tariff', () => {
@@ -68,7 +69,7 @@ export const useTariffStore = defineStore('tariff', () => {
       isSaving.value = true
       const body = {
         ...payload,
-        kind: payload.kind || 'driver',
+        kind: normalizeTariffKind(payload.kind),
       }
       const response = await useApi('/tariffs', { method: 'POST', body })
       if (response.success) {
@@ -88,7 +89,7 @@ export const useTariffStore = defineStore('tariff', () => {
       isSaving.value = true
       const body = {
         ...payload,
-        kind: payload.kind || 'driver',
+        kind: normalizeTariffKind(payload.kind),
       }
       const response = await useApi(`/tariffs/${id}`, { method: 'PUT', body })
       if (response.success) {
