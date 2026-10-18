@@ -57,22 +57,16 @@
               <label class="px-1 text-[11px] font-semibold text-slate-500">
                 Har necha daqiqada qayta yuborilsin
               </label>
-              <input
-                v-model.number="intervalMin"
-                type="number"
-                :min="MIN_POST_INTERVAL_MIN"
-                :max="MAX_POST_INTERVAL_MIN"
-                class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              >
+              <PostIntervalPicker v-model="intervalMin" />
               <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-                Birinchi yuborish darhol. Keyin har {{ intervalMin }} daqiqada barcha tanlangan guruhlarga yuboriladi. 12 soatdan keyin avtomatik to'xtaydi.
+                Birinchi yuborish darhol. Keyin har {{ intervalMin }} daqiqada barcha tanlangan guruhlarga yuboriladi. To'xtatish tugmasigacha ishlaydi.
               </p>
             </div>
 
             <div class="mt-4">
               <button
                 type="button"
-                :disabled="loading || !text.trim() || !name.trim() || intervalMin < MIN_POST_INTERVAL_MIN"
+                :disabled="loading || !text.trim() || !name.trim()"
                 class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black border active:scale-[0.98] transition-all disabled:opacity-50 bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
                 @click="onSave"
               >
@@ -92,11 +86,8 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import {
-  DEFAULT_POST_INTERVAL_MIN,
-  MAX_POST_INTERVAL_MIN,
-  MIN_POST_INTERVAL_MIN,
-} from '~/stores/post.store'
+import { DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { snapPostIntervalMin } from '~/utils/postCampaign'
 
 const props = defineProps<{
   modelValue: boolean
@@ -124,8 +115,7 @@ watch(
     if (edit) {
       name.value = edit.name || ''
       text.value = edit.text || ''
-      intervalMin.value = Math.max(
-        MIN_POST_INTERVAL_MIN,
+      intervalMin.value = snapPostIntervalMin(
         edit.intervalMin || edit.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
       )
     } else {
@@ -140,11 +130,7 @@ const close = () => emit('update:modelValue', false)
 
 const onSave = () => {
   if (!text.value.trim() || !name.value.trim()) return
-  if (intervalMin.value < MIN_POST_INTERVAL_MIN) return
-  const mins = Math.max(
-    MIN_POST_INTERVAL_MIN,
-    Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
-  )
+  const mins = snapPostIntervalMin(intervalMin.value)
   emit('save', {
     name: name.value.trim(),
     text: text.value.trim(),

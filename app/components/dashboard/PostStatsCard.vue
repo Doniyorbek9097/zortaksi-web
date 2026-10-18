@@ -17,7 +17,7 @@
               Faol e'lon
             </p>
             <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-              12 soat avto-yuborish statistikasi
+              Avto-yuborish statistikasi
             </p>
           </div>
         </div>

@@ -77,15 +77,9 @@
           <label class="px-1 text-[11px] font-semibold text-slate-500">
             Har necha daqiqada qayta yuborilsin
           </label>
-          <input
-            v-model.number="intervalMin"
-            type="number"
-            :min="MIN_POST_INTERVAL_MIN"
-            :max="MAX_POST_INTERVAL_MIN"
-            class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
-          >
+          <PostIntervalPicker v-model="intervalMin" />
           <p class="px-1 text-[10px] font-semibold text-slate-400 leading-snug">
-            Vaqt bo'yicha avto-yuborish. 12 soatdan keyin avtomatik to'xtaydi.
+            Vaqt bo'yicha avto-yuborish. To'xtatish tugmasigacha ishlaydi.
           </p>
         </div>
       </section>
@@ -151,12 +145,8 @@
 </template>
 
 <script setup lang="ts">
-import {
-  usePostStore,
-  DEFAULT_POST_INTERVAL_MIN,
-  MAX_POST_INTERVAL_MIN,
-  MIN_POST_INTERVAL_MIN,
-} from '~/stores/post.store'
+import { usePostStore, DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { snapPostIntervalMin } from '~/utils/postCampaign'
 import { useAuthStore } from '~/stores/auth.store'
 
 definePageMeta({ layout: 'driver' })
@@ -184,7 +174,7 @@ const POST_TARIFF_PAYMENT_PATH =
   '/driver/payment?tab=post-tariff&next=' + encodeURIComponent(route.fullPath)
 
 const canSave = computed(
-  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value >= MIN_POST_INTERVAL_MIN),
+  () => name.value.trim() && text.value.trim() && (!autoRepeat.value || intervalMin.value > 0),
 )
 
 const requireTariff = () => {
@@ -198,8 +188,7 @@ const fillForm = (c: NonNullable<typeof campaign.value>) => {
   text.value = c.text || ''
   globalAdminAppendText.value = String(c.globalAdminAppendText || '').trim()
   autoRepeat.value = !!c.active
-  intervalMin.value = Math.max(
-    MIN_POST_INTERVAL_MIN,
+  intervalMin.value = snapPostIntervalMin(
     c.intervalMin || c.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
   )
   groupIds.value = [...(c.groupIds || [])]
@@ -236,10 +225,7 @@ const onSave = async () => {
     await store.updateCampaign(campaign.value.id, {
       name: name.value.trim(),
       text: text.value.trim(),
-      intervalMin: Math.max(
-        MIN_POST_INTERVAL_MIN,
-        Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
-      ),
+      intervalMin: snapPostIntervalMin(intervalMin.value),
       groupIds: groupIds.value,
     })
     if (autoRepeat.value && !campaign.value.active) {

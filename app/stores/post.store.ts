@@ -25,9 +25,10 @@ export interface PostGroup {
 export const AD_PRICE = 2000
 export const ADS_BROADCAST_PRICE = 500
 export const MAX_POST_GROUPS = 20
-/** Avto e'lon oralig‘i (daqiqa) */
-export const MIN_POST_INTERVAL_MIN = 10
-export const MAX_POST_INTERVAL_MIN = 1440
+/** Avto e'lon oralig‘i (daqiqa) — faqat preset tugmalar */
+export const POST_INTERVAL_PRESET_MINUTES = [5, 10, 15, 20, 30, 60] as const
+export const MIN_POST_INTERVAL_MIN = POST_INTERVAL_PRESET_MINUTES[0]
+export const MAX_POST_INTERVAL_MIN = POST_INTERVAL_PRESET_MINUTES[POST_INTERVAL_PRESET_MINUTES.length - 1]
 export const DEFAULT_POST_INTERVAL_MIN = 10
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE

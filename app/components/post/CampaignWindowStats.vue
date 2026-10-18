@@ -5,14 +5,14 @@
         class="font-black uppercase tracking-wide text-slate-500 dark:text-slate-400"
         :class="flat ? 'text-[11px]' : compact ? 'text-[9px]' : 'text-[12px]'"
       >
-        12 soat avto-yuborish
+        Avto-yuborish
       </p>
       <span
         v-if="campaign.active"
         class="font-black rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 whitespace-nowrap"
         :class="flat ? 'text-[11px] px-2.5 py-1' : compact ? 'text-[9px] px-1.5 py-0.5' : 'text-[11px] px-2 py-0.5'"
       >
-        {{ countdownLabel }}
+        Faol
       </span>
     </div>
 
@@ -35,7 +35,7 @@
         class="font-bold text-slate-500"
         :class="flat ? 'text-[11px] mt-1' : compact ? 'text-[9px]' : 'text-[11px]'"
       >
-        Yuborilgan xabar (12 soat)
+        Yuborilgan xabar
       </p>
     </div>
 
@@ -45,8 +45,8 @@
     >
       Keyingi yuborish: <span class="font-black text-slate-700 dark:text-slate-200">{{ nextRunLabel }}</span>
       · har {{ intervalMin }} daqiqa
-      <template v-if="campaign.windowEndsAt">
-        · to'xtash {{ formatCampaignDateTime(campaign.windowEndsAt) }}
+      <template v-if="campaign.active">
+        · to'xtatishguncha ishlaydi
       </template>
     </p>
   </div>
@@ -54,11 +54,7 @@
 
 <script setup lang="ts">
 import type { PostCampaign } from '~/stores/post.store'
-import {
-  formatCampaignCountdown,
-  formatCampaignDateTime,
-  campaignIntervalMin,
-} from '~/utils/postCampaign'
+import { campaignIntervalMin } from '~/utils/postCampaign'
 
 const props = defineProps<{
   campaign: PostCampaign
@@ -77,11 +73,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
-})
-
-const countdownLabel = computed(() => {
-  void now.value
-  return formatCampaignCountdown(props.campaign.windowEndsAt)
 })
 
 const intervalMin = computed(() => campaignIntervalMin(props.campaign))

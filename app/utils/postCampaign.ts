@@ -1,5 +1,25 @@
 import type { PostCampaign } from '~/stores/post.store'
-import { DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
+import {
+  DEFAULT_POST_INTERVAL_MIN,
+  POST_INTERVAL_PRESET_MINUTES,
+} from '~/stores/post.store'
+
+/** Tanlangan yoki eng yaqin preset daqiqa */
+export function snapPostIntervalMin(raw: unknown): number {
+  const m = Math.round(Number(raw) || 0)
+  const presets = POST_INTERVAL_PRESET_MINUTES as readonly number[]
+  if (presets.includes(m)) return m
+  let best = DEFAULT_POST_INTERVAL_MIN
+  let diff = Infinity
+  for (const p of presets) {
+    const d = Math.abs(p - m)
+    if (d < diff) {
+      diff = d
+      best = p
+    }
+  }
+  return best
+}
 
 export function campaignIntervalMin(campaign: PostCampaign): number {
   const fromMin = campaign.intervalMin ?? campaign.postsAfterThreshold

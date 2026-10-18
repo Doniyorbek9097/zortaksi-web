@@ -44,15 +44,9 @@
         placeholder="Haydovchi matni"
       />
       <label class="text-[11px] font-semibold text-slate-500">Har necha daqiqada (avto)</label>
-      <input
-        v-model.number="intervalMin"
-        type="number"
-        :min="MIN_POST_INTERVAL_MIN"
-        :max="MAX_POST_INTERVAL_MIN"
-        class="w-full px-3 py-2.5 rounded-xl text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-      >
+      <PostIntervalPicker v-model="intervalMin" />
       <p class="text-[10px] text-slate-400">
-        {{ MIN_POST_INTERVAL_MIN }}–{{ MAX_POST_INTERVAL_MIN }} daq · Guruhlar: {{ campaign.groupCount }}
+        Guruhlar: {{ campaign.groupCount }}
       </p>
       <button
         type="button"
@@ -73,11 +67,8 @@ import {
   useAdminDriverPostsStore,
   type AdminDriverPostCampaign,
 } from '~/stores/adminDriverPosts.store'
-import {
-  DEFAULT_POST_INTERVAL_MIN,
-  MAX_POST_INTERVAL_MIN,
-  MIN_POST_INTERVAL_MIN,
-} from '~/stores/post.store'
+import { DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
+import { snapPostIntervalMin } from '~/utils/postCampaign'
 
 definePageMeta({ layout: 'admin' })
 
@@ -94,8 +85,7 @@ const intervalMin = ref(DEFAULT_POST_INTERVAL_MIN)
 const hydrateForm = (c: AdminDriverPostCampaign) => {
   name.value = c.name
   text.value = c.text || c.textPreview
-  intervalMin.value = Math.max(
-    MIN_POST_INTERVAL_MIN,
+  intervalMin.value = snapPostIntervalMin(
     c.intervalMin || c.postsAfterThreshold || DEFAULT_POST_INTERVAL_MIN,
   )
 }
@@ -105,10 +95,7 @@ const onSave = async () => {
   await store.updateCampaign(campaignId.value, {
     name: name.value.trim(),
     text: text.value.trim(),
-    intervalMin: Math.max(
-      MIN_POST_INTERVAL_MIN,
-      Math.min(MAX_POST_INTERVAL_MIN, Math.round(intervalMin.value || DEFAULT_POST_INTERVAL_MIN)),
-    ),
+    intervalMin: snapPostIntervalMin(intervalMin.value),
   })
   navigateTo('/admin/driver-posts')
 }

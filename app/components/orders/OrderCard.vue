@@ -48,24 +48,24 @@
         @pointerup="onPointerUp"
         @pointercancel="onPointerUp"
       >
-      <!-- Sender — avatar va ism profilga -->
+      <!-- Sender — faqat ism profilga; avatar bosilmaydi -->
       <div class="flex items-center gap-3">
+        <ProfileAvatar
+          class="shrink-0 pointer-events-none"
+          :name="senderName"
+          :src="order.sender?.avatar"
+          :user-id="order.sender?.userId"
+          size="sm"
+          :previewable="false"
+        />
         <button
           type="button"
-          class="flex items-center gap-3 min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
+          class="min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
           data-no-swipe
           @click.stop="openSenderProfile"
         >
-          <ProfileAvatar
-            :name="senderName"
-            :src="order.sender?.avatar"
-            :user-id="order.sender?.userId"
-            size="sm"
-          />
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
-            <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
-          </div>
+          <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
+          <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
         </button>
         <button
           v-if="interestCount > 0"
