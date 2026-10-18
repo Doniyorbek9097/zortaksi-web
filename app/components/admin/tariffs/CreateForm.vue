@@ -114,7 +114,7 @@ withDefaults(
 )
 
 const emit = defineEmits<{
-  submit: []
+  submit: [value: TariffFormModel]
   cancel: []
 }>()
 
@@ -129,6 +129,13 @@ const onSubmit = () => {
   if (price == null || price < 0) return
   if (expireDays == null || expireDays < 1) return
   if (kind !== 'driver' && kind !== 'driver_post') return
-  emit('submit')
+  emit('submit', {
+    ...model.value,
+    name: name.trim(),
+    slug: slug.trim(),
+    kind: normalizeTariffKind(kind),
+    price: Number(price),
+    expireDays: Number(expireDays),
+  })
 }
 </script>

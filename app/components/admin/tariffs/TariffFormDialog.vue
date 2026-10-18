@@ -30,13 +30,7 @@
               </button>
             </div>
 
-            <AdminTariffsCreateForm
-              v-model="form"
-              embedded
-              :editing="editing"
-              @submit="$emit('submit')"
-              @cancel="close"
-            />
+            <slot />
           </div>
         </Transition>
       </div>
@@ -45,23 +39,22 @@
 </template>
 
 <script setup lang="ts">
-import type { TariffFormModel } from '~/components/admin/tariffs/CreateForm.vue'
+import type { TariffKind } from '~/stores/tariff.store'
 import { normalizeTariffKind } from '~/utils/tariffKind'
 
-defineProps<{
+const props = defineProps<{
   editing?: boolean
+  formKind?: TariffKind
 }>()
 
 const open = defineModel<boolean>({ required: true })
-const form = defineModel<TariffFormModel>('form', { required: true })
 
 const emit = defineEmits<{
-  submit: []
   cancel: []
 }>()
 
 const kindLabel = computed(() => {
-  const k = normalizeTariffKind(form.value.kind)
+  const k = normalizeTariffKind(props.formKind)
   return k === 'driver_post' ? "E'lon tarqatish (avto)" : 'Haydovchi (buyurtma)'
 })
 

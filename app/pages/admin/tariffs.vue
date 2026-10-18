@@ -49,11 +49,18 @@
 
     <AdminTariffsTariffFormDialog
       v-model="formOpen"
-      v-model:form="form"
       :editing="editingId != null"
-      @submit="onSubmit"
+      :form-kind="form.kind"
       @cancel="onFormCancel"
-    />
+    >
+      <AdminTariffsCreateForm
+        v-model="form"
+        embedded
+        :editing="editingId != null"
+        @submit="onSubmit"
+        @cancel="closeFormDialog"
+      />
+    </AdminTariffsTariffFormDialog>
 
     <BaseConfirmDialog
       v-model="deleteOpen"
@@ -115,19 +122,25 @@ const openCreate = () => {
   formOpen.value = true
 }
 
+const closeFormDialog = () => {
+  formOpen.value = false
+  onFormCancel()
+}
+
 const onFormCancel = () => {
   if (!editingId.value) resetForm()
 }
 
-const onSubmit = async () => {
+const onSubmit = async (draft: TariffFormModel) => {
   error.value = ''
-  const kind = normalizeTariffKind(form.value.kind)
+  form.value = { ...draft }
+  const kind = normalizeTariffKind(draft.kind)
   const payload = {
-    name: form.value.name.trim(),
-    slug: form.value.slug.trim(),
-    info: form.value.info.trim() || undefined,
-    price: Number(form.value.price ?? 0),
-    expireDays: Number(form.value.expireDays ?? 30),
+    name: draft.name.trim(),
+    slug: draft.slug.trim(),
+    info: String(draft.info || '').trim() || undefined,
+    price: Number(draft.price ?? 0),
+    expireDays: Number(draft.expireDays ?? 30),
     kind,
   }
 
@@ -195,10 +208,9 @@ watch(listTab, (tab) => {
 watch(
   () => form.value.kind,
   (kind) => {
-    if (formOpen.value && !editingId.value) {
-      const k = normalizeTariffKind(kind)
-      if (k !== listTab.value) listTab.value = k
-    }
+    if (!formOpen.value) return
+    const k = normalizeTariffKind(kind)
+    if (k !== listTab.value) listTab.value = k
   }
 )
 
