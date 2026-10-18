@@ -45,10 +45,14 @@ export const useTariffStore = defineStore('tariff', () => {
   const fetchTariffs = async (kind?: TariffKind) => {
     try {
       isLoading.value = true
-      const query = kind ? `?kind=${encodeURIComponent(kind)}` : ''
-      const response = await useApi(`/tariffs${query}`)
+      const response = await useApi('/tariffs', {
+        params: kind ? { kind } : undefined,
+      })
       if (response.success) {
-        tariffs.value = (response.data.tariffs ?? []).map(toRow)
+        const rows = (response.data.tariffs ?? []).map(toRow)
+        tariffs.value = kind
+          ? rows.filter((t) => (t.kind || 'driver') === kind)
+          : rows
       }
       return response
     } catch (error) {

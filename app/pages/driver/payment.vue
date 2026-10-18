@@ -99,7 +99,7 @@
 
         <div v-else class="space-y-2">
           <button
-            v-for="t in tariffStore.tariffs"
+            v-for="t in tariffsForMode"
             :key="t.id"
             type="button"
             class="w-full flex items-center gap-3 px-3.5 py-3.5 rounded-2xl border text-left transition-all"
@@ -288,11 +288,17 @@ const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
 const postTariffActive = computed(() => authStore.postTariffActive)
 
+const tariffsForMode = computed(() => {
+  if (mode.value === 'topup') return []
+  const want = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
+  return tariffStore.tariffs.filter((t) => (t.kind || 'driver') === want)
+})
+
 const loadTariffsForMode = async () => {
-  const kind = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
   if (mode.value === 'topup') return
+  const kind = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
   await tariffStore.fetchTariffs(kind)
-  const list = tariffStore.tariffs
+  const list = tariffsForMode.value
   selectedId.value = list[0]?.id ?? null
 }
 
@@ -304,7 +310,7 @@ const setMode = async (m: PayMode) => {
 const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
 
 const selected = computed(() =>
-  tariffStore.tariffs.find(t => t.id === selectedId.value) || null
+  tariffsForMode.value.find(t => t.id === selectedId.value) || null
 )
 
 const shortage = computed(() => {
@@ -513,16 +519,16 @@ onMounted(async () => {
   const qAmount = route.query.amount != null ? Number(route.query.amount) : NaN
   if (Number.isFinite(qAmount) && qAmount > 0) {
     topupText.value = formatMoney(qAmount)
-    if (tab !== 'tariff') mode.value = 'topup'
+    if (tab === 'topup' || !tab) mode.value = 'topup'
   }
 
   try {
     await Promise.all([loadTariffsForMode(), fetchPaymentMethods()])
     const qTariffId = String(route.query.tariffId || '').trim()
-    if (qTariffId && tariffStore.tariffs.some(t => t.id === qTariffId)) {
+    if (qTariffId && tariffsForMode.value.some(t => t.id === qTariffId)) {
       selectedId.value = qTariffId
-    } else if (!selectedId.value && tariffStore.tariffs.length) {
-      selectedId.value = tariffStore.tariffs[0]!.id
+    } else if (!selectedId.value && tariffsForMode.value.length) {
+      selectedId.value = tariffsForMode.value[0]!.id
     }
   } catch (e: any) {
     error.value = e?.response?.data?.message || 'Tariflar yuklanmadi'
