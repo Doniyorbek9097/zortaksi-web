@@ -22,7 +22,7 @@
       class="rounded-2xl px-4 py-3 border border-amber-200/80 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/30"
     >
       <p class="text-[12px] font-bold text-amber-800 dark:text-amber-200 leading-snug">
-        Mijozni olish uchun avval tarifga ulaning. To'lovdan keyin avtomatik qaytasiz.
+        {{ returnBannerText }}
       </p>
     </section>
 
@@ -309,6 +309,13 @@ const setMode = async (m: PayMode) => {
 
 const returnPath = computed(() => resolveSafeNextPath(route.query.next, authStore.user))
 
+const returnBannerText = computed(() => {
+  if (mode.value === 'post-tariff') {
+    return "Auto e'lon tarqatishni yoqish uchun tarif sotib oling. To'lovdan keyin avtomatik qaytasiz."
+  }
+  return "Mijozni olish uchun avval tarifga ulaning. To'lovdan keyin avtomatik qaytasiz."
+})
+
 const selected = computed(() =>
   tariffsForMode.value.find(t => t.id === selectedId.value) || null
 )
@@ -353,7 +360,11 @@ const sendTariffRequest = async () => {
   savingRequest.value = true
   error.value = ''
   try {
-    const msg = formatAdminTariffPaymentMessage(selected.value.name, amount)
+    const msg = formatAdminTariffPaymentMessage(
+      selected.value.name,
+      amount,
+      mode.value === 'post-tariff' ? 'driver_post' : 'driver',
+    )
     if (!openAdminTelegramPayment(msg)) return
   } finally {
     savingRequest.value = false

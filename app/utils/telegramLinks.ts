@@ -22,10 +22,19 @@ export function buildTelegramContactUrl(input: {
   return ''
 }
 
-export function formatAdminTariffPaymentMessage(tariffName: string, amount: number): string {
+export type AdminTariffPaymentKind = 'driver' | 'driver_post'
+
+export function formatAdminTariffPaymentMessage(
+  tariffName: string,
+  amount: number,
+  kind: AdminTariffPaymentKind = 'driver',
+): string {
   const name = String(tariffName || 'Tarif').trim() || 'Tarif'
   const sum = `${Math.round(Number(amount) || 0).toLocaleString('ru-RU')} so'm`
-  return `${name} ${sum} tarifni sotib olmoqchiman`
+  if (kind === 'driver_post') {
+    return `${name} ${sum} auto e'lon tarqatish uchun tarifni sotib olmoqchiman`
+  }
+  return `${name} ${sum} buyurtma olish uchun tarifni sotib olmoqchiman`
 }
 
 export function formatAdminTopupPaymentMessage(amount: number): string {
