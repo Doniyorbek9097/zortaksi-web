@@ -48,7 +48,7 @@
         @pointerup="onPointerUp"
         @pointercancel="onPointerUp"
       >
-      <!-- Sender — faqat ism profilga; avatar bosilmaydi -->
+      <!-- Sender — profil ochilmaydi -->
       <div class="flex items-center gap-3">
         <ProfileAvatar
           class="shrink-0 pointer-events-none"
@@ -58,15 +58,10 @@
           size="sm"
           :previewable="false"
         />
-        <button
-          type="button"
-          class="min-w-0 flex-1 text-left active:opacity-80 transition-opacity"
-          data-no-swipe
-          @click.stop="openSenderProfile"
-        >
+        <div class="min-w-0 flex-1">
           <p class="text-sm font-black text-indigo-600 dark:text-indigo-400 truncate">{{ senderName }}</p>
           <p class="text-[12px] font-bold text-emerald-500">{{ time }}</p>
-        </button>
+        </div>
         <button
           v-if="interestCount > 0"
           type="button"
@@ -371,19 +366,6 @@ const senderName = computed(() => {
   const full = [s?.firstName, s?.lastName].filter(Boolean).join(' ').trim()
   return full || s?.username || 'Nomsiz foydalanuvchi'
 })
-
-const openSenderProfile = () => {
-  const uid = String(props.order.sender?.userId || '').trim()
-  if (!uid) return
-  openUserProfile({
-    userId: uid,
-    name: senderName.value,
-    avatar: props.order.sender?.avatar,
-    orderId: props.order._id,
-    phone: callPhone.value,
-    username: props.order.sender?.username,
-  })
-}
 
 const time = computed(() => {
   const value = props.order.message?.date

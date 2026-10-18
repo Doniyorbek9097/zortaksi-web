@@ -10,6 +10,11 @@ export interface IncomeBlock {
   clickPayments?: number
   cardAmount?: number
   cardPayments?: number
+  /** Restart dan keyingi davr (asosiy summa — jami) */
+  clickPeriodAmount?: number
+  clickPeriodPayments?: number
+  cardPeriodAmount?: number
+  cardPeriodPayments?: number
   clickResetAt?: string | null
   cardResetAt?: string | null
 }

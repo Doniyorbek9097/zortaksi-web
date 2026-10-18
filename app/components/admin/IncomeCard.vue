@@ -144,13 +144,16 @@
           {{ formattedClick }}
         </p>
         <p class="mt-0.5 text-[8px] font-bold text-sky-600/70 dark:text-sky-400/70">
-          {{ clickPayments }} to'lov
+          Jami · {{ clickPayments }} to'lov
         </p>
         <p
           v-if="clickResetLabel"
           class="mt-1 text-[8px] font-semibold tabular-nums text-sky-600/80 dark:text-sky-400/75 break-words"
         >
           {{ clickResetLabel }}
+          <template v-if="clickPeriodAmount != null && clickResetAt">
+            · {{ fmt(clickPeriodAmount) }} ({{ clickPeriodPayments }} ta)
+          </template>
         </p>
       </div>
 
@@ -190,13 +193,16 @@
           {{ formattedCard }}
         </p>
         <p class="mt-0.5 text-[8px] font-bold text-violet-600/70 dark:text-violet-400/70">
-          {{ cardPayments }} to'lov
+          Jami · {{ cardPayments }} to'lov
         </p>
         <p
           v-if="cardResetLabel"
           class="mt-1 text-[8px] font-semibold tabular-nums text-violet-600/80 dark:text-violet-400/75 break-words"
         >
           {{ cardResetLabel }}
+          <template v-if="cardPeriodAmount != null && cardResetAt">
+            · {{ fmt(cardPeriodAmount) }} ({{ cardPeriodPayments }} ta)
+          </template>
         </p>
       </div>
     </div>
@@ -244,8 +250,12 @@ interface Props {
   weekPayments?: number
   clickAmount?: number
   clickPayments?: number
+  clickPeriodAmount?: number
+  clickPeriodPayments?: number
   cardAmount?: number
   cardPayments?: number
+  cardPeriodAmount?: number
+  cardPeriodPayments?: number
   clickResetAt?: string | null
   cardResetAt?: string | null
   resettingChannel?: 'click' | 'card' | null
@@ -262,8 +272,12 @@ const props = withDefaults(defineProps<Props>(), {
   weekPayments: 0,
   clickAmount: 0,
   clickPayments: 0,
+  clickPeriodAmount: 0,
+  clickPeriodPayments: 0,
   cardAmount: 0,
   cardPayments: 0,
+  cardPeriodAmount: 0,
+  cardPeriodPayments: 0,
   clickResetAt: null,
   cardResetAt: null,
   resettingChannel: null,

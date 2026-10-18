@@ -34,8 +34,12 @@
       :week-payments="weekIncome.payments"
       :click-amount="monthIncome.clickAmount ?? 0"
       :click-payments="monthIncome.clickPayments ?? 0"
+      :click-period-amount="monthIncome.clickPeriodAmount ?? 0"
+      :click-period-payments="monthIncome.clickPeriodPayments ?? 0"
       :card-amount="monthIncome.cardAmount ?? 0"
       :card-payments="monthIncome.cardPayments ?? 0"
+      :card-period-amount="monthIncome.cardPeriodAmount ?? 0"
+      :card-period-payments="monthIncome.cardPeriodPayments ?? 0"
       :click-reset-at="monthIncome.clickResetAt"
       :card-reset-at="monthIncome.cardResetAt"
       :resetting-channel="store.resettingChannel"
@@ -363,14 +367,14 @@ const paymentResetPending = ref<'click' | 'card' | null>(null)
 const paymentResetDialogMessage = computed(() => {
   if (paymentResetPending.value === 'click') {
     return (
-      "Click to'lov hisobi 0 ga tushadi va yangi sanadan hisoblanadi.\n" +
-      "Jami daromad o'zgarmaydi. Davom etasizmi?"
+      "Click uchun «Restart dan» hisobi 0 dan boshlanadi.\n" +
+      "Umumiy jami summa o'zgarmaydi. Davom etasizmi?"
     )
   }
   if (paymentResetPending.value === 'card') {
     return (
-      "Card to'lov hisobi 0 ga tushadi va yangi sanadan hisoblanadi.\n" +
-      "Jami daromad o'zgarmaydi. Davom etasizmi?"
+      "Card uchun «Restart dan» hisobi 0 dan boshlanadi.\n" +
+      "Umumiy jami summa o'zgarmaydi. Davom etasizmi?"
     )
   }
   return ''
