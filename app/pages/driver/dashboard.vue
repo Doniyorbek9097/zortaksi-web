@@ -32,31 +32,13 @@
       @buy="onBuyTariff"
     />
 
-    <DashboardTariffCard
-      :name="tariff.name"
-      :info="tariff.info"
-      :price="tariff.price"
-      :expire-days="tariff.expireDays"
-      :start-date="tariff.startDate"
-      :end-date="tariff.endDate"
-      :started-at="tariff.startedAt"
-      :expire-at="tariff.expireAt"
-      :active="tariffActive"
-      @buy="onBuyTariff"
-    />
-
-    <DashboardTariffCard
-      variant="post"
-      :name="postTariff.name"
-      :info="postTariff.info"
-      :price="postTariff.price"
-      :expire-days="postTariff.expireDays"
-      :start-date="postTariff.startDate"
-      :end-date="postTariff.endDate"
-      :started-at="postTariff.startedAt"
-      :expire-at="postTariff.expireAt"
-      :active="postTariffActive"
-      @buy="onBuyPostTariff"
+    <DashboardTariffLimitsCard
+      :order="tariff"
+      :post="postTariff"
+      :order-active="tariffActive"
+      :post-active="postTariffActive"
+      @buy-order="onBuyTariff"
+      @buy-post="onBuyPostTariff"
     />
 
     <DashboardPostStatsCard
