@@ -45,6 +45,20 @@
       @buy="onBuyTariff"
     />
 
+    <DashboardTariffCard
+      variant="post"
+      :name="postTariff.name"
+      :info="postTariff.info"
+      :price="postTariff.price"
+      :expire-days="postTariff.expireDays"
+      :start-date="postTariff.startDate"
+      :end-date="postTariff.endDate"
+      :started-at="postTariff.startedAt"
+      :expire-at="postTariff.expireAt"
+      :active="postTariffActive"
+      @buy="onBuyPostTariff"
+    />
+
     <DashboardPostStatsCard
       v-if="showPostCampaignCard"
       :campaign="activePostCampaign"
@@ -74,6 +88,7 @@
  */
 import DashboardPostStatsCard from '~/components/dashboard/PostStatsCard.vue'
 import { useDriverTariffCard } from '~/composables/dashboard/useDriverTariffCard'
+import { useDriverPostTariffCard } from '~/composables/dashboard/useDriverPostTariffCard'
 import { usePlatformStats } from '~/composables/dashboard/usePlatformStats'
 import { usePromoBanners } from '~/composables/dashboard/usePromoBanners'
 import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
@@ -87,6 +102,7 @@ const authStore = useAuthStore()
 
 const { liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 const { tariff, tariffActive, balance, firstName } = useDriverTariffCard()
+const { postTariff, postTariffActive } = useDriverPostTariffCard()
 
 const { banners: promoBanners, hydrateFromCache: hydrateBanners, fetchBanners } = usePromoBanners()
 const {
@@ -124,6 +140,7 @@ const {
 const onDownloadApp = () => navigateTo('/driver/download-app')
 const onHelp = () => openDriverSupportChatInstant()
 const onBuyTariff = () => navigateTo('/driver/payment')
+const onBuyPostTariff = () => navigateTo('/driver/payment?tab=post-tariff')
 
 usePullToRefresh(async () => {
   await Promise.all([
