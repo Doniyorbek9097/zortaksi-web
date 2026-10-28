@@ -35,19 +35,15 @@
           </p>
         </section>
 
-        <DashboardTariffCard
-          :name="tariffCard.name"
-          :info="tariffCard.info"
-          :price="tariffCard.price"
-          :expire-days="tariffCard.expireDays"
-          :start-date="tariffCard.startDate"
-          :end-date="tariffCard.endDate"
-          :started-at="tariffCard.startedAt"
-          :expire-at="tariffCard.expireAt"
-          :active="tariffCard.active"
-          :show-buy="isAdmin"
-          :inactive-hint="isAdmin"
-          @buy="openTariff"
+        <DashboardTariffLimitsCard
+          :order="orderTariffSlice"
+          :post="postTariffSlice"
+          :order-active="tariffCard.active"
+          :post-active="postTariffCard.active"
+          :show-buy-order="isAdmin"
+          :show-buy-post="isAdmin"
+          @buy-order="openTariff"
+          @buy-post="openPostTariff"
         />
 
         <DriverProfileInfoGrid
@@ -265,6 +261,7 @@ const {
   paymentsApiPath,
   telHref,
   tariffCard,
+  postTariffCard,
   balanceOpen,
   tariffOpen,
   postTariffOpen,
@@ -290,4 +287,22 @@ const {
   toggleListenGroups,
   confirmDelete,
 } = useDriverProfilePage()
+
+const orderTariffSlice = computed(() => ({
+  name: tariffCard.value.name,
+  startDate: tariffCard.value.startDate,
+  endDate: tariffCard.value.endDate,
+  startedAt: tariffCard.value.startedAt,
+  expireAt: tariffCard.value.expireAt,
+  expireDays: tariffCard.value.expireDays,
+}))
+
+const postTariffSlice = computed(() => ({
+  name: postTariffCard.value.name,
+  startDate: postTariffCard.value.startDate,
+  endDate: postTariffCard.value.endDate,
+  startedAt: postTariffCard.value.startedAt,
+  expireAt: postTariffCard.value.expireAt,
+  expireDays: postTariffCard.value.expireDays,
+}))
 </script>

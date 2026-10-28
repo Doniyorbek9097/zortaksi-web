@@ -81,6 +81,7 @@
         {{ inactiveHint }}
       </p>
       <button
+        v-if="!active && showBuy"
         type="button"
         class="w-full py-2 rounded-lg text-[10px] font-black uppercase tracking-wide active:scale-[0.98] transition-all"
         :class="buyClass"
@@ -108,12 +109,14 @@ const props = withDefaults(
     expireDays?: number
     active?: boolean
     nowMs: number
+    showBuy?: boolean
   }>(),
   {
     startedAt: null,
     expireAt: null,
     expireDays: 1,
     active: false,
+    showBuy: true,
   },
 )
 

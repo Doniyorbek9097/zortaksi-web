@@ -44,6 +44,16 @@ export interface DriverRow {
     price?: number
     expireDays?: number
   } | null
+  postTariffName?: string
+  postTariff?: {
+    name?: string
+    info?: string
+    price?: number
+    expireDays?: number
+  } | null
+  postTariffExpireAt?: string | Date | null
+  postStartedAt?: string | Date | null
+  postDaysLeft?: number
   role?: string
   allowedListenerUserIds?: string[]
 }

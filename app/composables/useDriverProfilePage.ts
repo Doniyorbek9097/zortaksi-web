@@ -3,6 +3,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { isTariffActive } from '~/utils/tariffActive'
+import { isPostTariffActive } from '~/utils/postTariffActive'
 import { isAdminUser } from '~/utils/userRole'
 import { normalizeTelHref } from '~/utils/phone'
 import { compactQuery } from '~/utils/navigationQuery'
@@ -92,6 +93,33 @@ export function useDriverProfilePage() {
       endDate: formatDate(expireAt),
       startedAt,
       expireAt,
+      active,
+    }
+  })
+
+  const postTariffCard = computed(() => {
+    const d = driver.value
+    const t = d?.postTariff
+    const expireAt = d?.postTariffExpireAt || null
+    let startedAt = d?.postStartedAt || null
+    const expireDays = t?.expireDays ?? Math.max(1, d?.postDaysLeft ?? 30)
+    if (!startedAt && expireAt && expireDays > 0) {
+      const e = new Date(expireAt)
+      if (!Number.isNaN(e.getTime())) {
+        startedAt = new Date(e.getTime() - expireDays * 86400000)
+      }
+    }
+    const active = isPostTariffActive({
+      postTariff: t || (d?.postTariffName ? { name: d.postTariffName } : null),
+      postTariffExpireAt: expireAt,
+    })
+    return {
+      name: t?.name || d?.postTariffName || "E'lon tarifi ulanmagan",
+      startDate: formatDate(startedAt),
+      endDate: formatDate(expireAt),
+      startedAt,
+      expireAt,
+      expireDays,
       active,
     }
   })
@@ -375,6 +403,7 @@ export function useDriverProfilePage() {
     paymentsApiPath,
     telHref,
     tariffCard,
+    postTariffCard,
     balanceOpen,
     tariffOpen,
     postTariffOpen,

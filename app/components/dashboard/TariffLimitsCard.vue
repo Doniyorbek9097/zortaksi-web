@@ -51,6 +51,7 @@
         :expire-days="order.expireDays"
         :active="orderActive"
         :now-ms="nowMs"
+        :show-buy="showBuyOrder"
         @buy="$emit('buyOrder')"
       />
       <DashboardTariffLimitPanel
@@ -63,6 +64,7 @@
         :expire-days="post.expireDays"
         :active="postActive"
         :now-ms="nowMs"
+        :show-buy="showBuyPost"
         @buy="$emit('buyPost')"
       />
     </div>
@@ -81,12 +83,17 @@ export type TariffLimitSlice = {
   expireDays: number
 }
 
-defineProps<{
-  order: TariffLimitSlice
-  post: TariffLimitSlice
-  orderActive: boolean
-  postActive: boolean
-}>()
+withDefaults(
+  defineProps<{
+    order: TariffLimitSlice
+    post: TariffLimitSlice
+    orderActive: boolean
+    postActive: boolean
+    showBuyOrder?: boolean
+    showBuyPost?: boolean
+  }>(),
+  { showBuyOrder: true, showBuyPost: true },
+)
 
 defineEmits<{ buyOrder: []; buyPost: [] }>()
 
