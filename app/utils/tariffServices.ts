@@ -9,11 +9,7 @@ export function resolveTariffServices(tariff: {
 } | null | undefined): TariffServices {
   if (!tariff) return { buyurtma: true, post: false }
 
-  const hasExplicit =
-    (tariff.serviceBuyurtma !== undefined && tariff.serviceBuyurtma !== null) ||
-    (tariff.servicePost !== undefined && tariff.servicePost !== null)
-
-  if (hasExplicit) {
+  if (tariff.serviceBuyurtma !== undefined || tariff.servicePost !== undefined) {
     return {
       buyurtma: tariff.serviceBuyurtma !== false,
       post: !!tariff.servicePost,

@@ -252,6 +252,7 @@
 
 <script setup lang="ts">
 import type { TariffRow } from '~/stores/tariff.store'
+import { tariffMatchesListKind } from '~/utils/tariffServices'
 import { useTariffStore } from '~/stores/tariff.store'
 import { useAuthStore } from '~/stores/auth.store'
 import {
@@ -290,8 +291,8 @@ const postTariffActive = computed(() => authStore.postTariffActive)
 
 const tariffsForMode = computed(() => {
   if (mode.value === 'topup') return []
-  const want = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
-  return tariffStore.tariffs.filter((t) => (t.kind || 'driver') === want)
+  const kind = mode.value === 'post-tariff' ? 'driver_post' : 'driver'
+  return tariffStore.tariffs.filter((t) => tariffMatchesListKind(t, kind))
 })
 
 const loadTariffsForMode = async () => {

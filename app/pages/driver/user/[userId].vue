@@ -189,7 +189,7 @@
       v-if="isAdmin"
       v-model="tariffOpen"
       :balance="driver?.balance ?? 0"
-      :tariffs="tariffStore.tariffs"
+      :tariffs="buyurtmaTariffsForAdmin"
       :loading="store.isSaving"
       @confirm="saveTariff"
     />
@@ -198,7 +198,7 @@
       v-if="isAdmin"
       v-model="postTariffOpen"
       :balance="driver?.balance ?? 0"
-      :tariffs="tariffStore.tariffs"
+      :tariffs="postTariffsForAdmin"
       :loading="store.isSaving"
       @confirm="savePostTariff"
     />
@@ -244,6 +244,7 @@
 <script setup lang="ts">
 import { useDriverStore } from '~/stores/driver.store'
 import { useDriverProfilePage } from '~/composables/useDriverProfilePage'
+import { tariffMatchesListKind } from '~/utils/tariffServices'
 
 definePageMeta({ layout: false })
 
@@ -287,6 +288,13 @@ const {
   toggleListenGroups,
   confirmDelete,
 } = useDriverProfilePage()
+
+const buyurtmaTariffsForAdmin = computed(() =>
+  tariffStore.tariffs.filter((t) => tariffMatchesListKind(t, 'driver'))
+)
+const postTariffsForAdmin = computed(() =>
+  tariffStore.tariffs.filter((t) => tariffMatchesListKind(t, 'driver_post'))
+)
 
 const orderTariffSlice = computed(() => ({
   name: tariffCard.value.name,
