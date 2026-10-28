@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { normalizeTariffKind } from '~/utils/tariffKind'
+import { resolveTariffServices, tariffMatchesListKind } from '~/utils/tariffServices'
 
 export type TariffKind = 'driver' | 'driver_post'
 
@@ -13,6 +14,8 @@ export interface TariffRow {
   price: number
   expireDays: number
   kind?: TariffKind
+  serviceBuyurtma?: boolean
+  servicePost?: boolean
 }
 
 export type TariffPayload = {
@@ -24,19 +27,26 @@ export type TariffPayload = {
   icon?: string
   badge?: string
   kind?: TariffKind
+  serviceBuyurtma?: boolean
+  servicePost?: boolean
 }
 
-const toRow = (t: any): TariffRow => ({
-  id: String(t.id || t._id),
-  name: t.name,
-  slug: String(t.slug || ''),
-  info: t.info,
-  icon: t.icon,
-  badge: t.badge,
-  price: Number(t.price),
-  expireDays: Number(t.expireDays),
-  kind: normalizeTariffKind(t.kind),
-})
+const toRow = (t: any): TariffRow => {
+  const services = resolveTariffServices(t)
+  return {
+    id: String(t.id || t._id),
+    name: t.name,
+    slug: String(t.slug || ''),
+    info: t.info,
+    icon: t.icon,
+    badge: t.badge,
+    price: Number(t.price),
+    expireDays: Number(t.expireDays),
+    kind: normalizeTariffKind(t.kind),
+    serviceBuyurtma: services.buyurtma,
+    servicePost: services.post,
+  }
+}
 
 export const useTariffStore = defineStore('tariff', () => {
   const tariffs = ref<TariffRow[]>([])
@@ -51,9 +61,7 @@ export const useTariffStore = defineStore('tariff', () => {
       })
       if (response.success) {
         const rows = (response.data.tariffs ?? []).map(toRow)
-        tariffs.value = kind
-          ? rows.filter((t) => (t.kind || 'driver') === kind)
-          : rows
+        tariffs.value = kind ? rows.filter((t) => tariffMatchesListKind(t, kind)) : rows
       }
       return response
     } catch (error) {
@@ -67,11 +75,7 @@ export const useTariffStore = defineStore('tariff', () => {
   const createTariff = async (payload: TariffPayload) => {
     try {
       isSaving.value = true
-      const body = {
-        ...payload,
-        kind: normalizeTariffKind(payload.kind),
-      }
-      const response = await useApi('/tariffs', { method: 'POST', body })
+      const response = await useApi('/tariffs', { method: 'POST', body: payload })
       if (response.success) {
         tariffs.value.unshift(toRow(response.data))
       }
@@ -87,11 +91,7 @@ export const useTariffStore = defineStore('tariff', () => {
   const updateTariff = async (id: string, payload: TariffPayload) => {
     try {
       isSaving.value = true
-      const body = {
-        ...payload,
-        kind: normalizeTariffKind(payload.kind),
-      }
-      const response = await useApi(`/tariffs/${id}`, { method: 'PUT', body })
+      const response = await useApi(`/tariffs/${id}`, { method: 'PUT', body: payload })
       if (response.success) {
         const row = toRow(response.data)
         const idx = tariffs.value.findIndex(t => t.id === id)

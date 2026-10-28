@@ -36,16 +36,33 @@
       @update:model-value="patch('info', $event)"
     />
 
-    <div class="space-y-1">
-      <label class="px-1 text-[11px] font-semibold text-slate-500">Tur</label>
-      <select
-        :value="model.kind"
-        class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700"
-        @change="patch('kind', normalizeTariffKind(($event.target as HTMLSelectElement).value))"
-      >
-        <option value="driver">Haydovchi (buyurtma)</option>
-        <option value="driver_post">E'lon tarqatish (avto)</option>
-      </select>
+    <div class="space-y-2">
+      <p class="px-1 text-[11px] font-semibold text-slate-500">Xizmatlar</p>
+      <label class="flex items-center gap-2.5 px-1 py-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          class="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+          :checked="model.serviceBuyurtma"
+          @change="patch('serviceBuyurtma', ($event.target as HTMLInputElement).checked)"
+        />
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+          Haydovchi (buyurtma olish)
+        </span>
+      </label>
+      <label class="flex items-center gap-2.5 px-1 py-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          class="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+          :checked="model.servicePost"
+          @change="patch('servicePost', ($event.target as HTMLInputElement).checked)"
+        />
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+          E'lon tarqatish (avto)
+        </span>
+      </label>
+      <p v-if="servicesError" class="px-1 text-[11px] font-semibold text-red-500">
+        {{ servicesError }}
+      </p>
     </div>
 
     <div class="grid grid-cols-2 gap-3">
@@ -88,16 +105,14 @@
 </template>
 
 <script setup lang="ts">
-import type { TariffKind } from '~/stores/tariff.store'
-import { normalizeTariffKind } from '~/utils/tariffKind'
-
 export interface TariffFormModel {
   name: string
   slug: string
   info: string
   price: number | null
   expireDays: number | null
-  kind: TariffKind
+  serviceBuyurtma: boolean
+  servicePost: boolean
 }
 
 const model = defineModel<TariffFormModel>({ required: true })
@@ -118,24 +133,31 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const servicesError = ref('')
+
 const patch = <K extends keyof TariffFormModel>(key: K, value: TariffFormModel[K]) => {
+  servicesError.value = ''
   model.value = { ...model.value, [key]: value }
 }
 
 const onSubmit = () => {
-  const { name, slug, price, expireDays, kind } = model.value
+  const { name, slug, price, expireDays, serviceBuyurtma, servicePost } = model.value
   if (!name.trim()) return
   if (!slug.trim()) return
   if (price == null || price < 0) return
   if (expireDays == null || expireDays < 1) return
-  if (kind !== 'driver' && kind !== 'driver_post') return
+  if (!serviceBuyurtma && !servicePost) {
+    servicesError.value = 'Kamida bitta xizmatni tanlang'
+    return
+  }
   emit('submit', {
     ...model.value,
     name: name.trim(),
     slug: slug.trim(),
-    kind: normalizeTariffKind(kind),
     price: Number(price),
     expireDays: Number(expireDays),
+    serviceBuyurtma: !!serviceBuyurtma,
+    servicePost: !!servicePost,
   })
 }
 </script>

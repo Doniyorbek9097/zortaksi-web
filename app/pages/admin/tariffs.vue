@@ -39,7 +39,8 @@
         :info="t.info"
         :price="t.price"
         :expire-days="t.expireDays"
-        :kind="t.kind"
+        :service-buyurtma="t.serviceBuyurtma !== false"
+        :service-post="!!t.servicePost"
         @edit="startEdit(t)"
         @delete="askDelete(t)"
       />
@@ -50,7 +51,8 @@
     <AdminTariffsTariffFormDialog
       v-model="formOpen"
       :editing="editingId != null"
-      :form-kind="form.kind"
+      :service-buyurtma="form.serviceBuyurtma"
+      :service-post="form.servicePost"
       @cancel="onFormCancel"
     >
       <AdminTariffsCreateForm
@@ -79,7 +81,7 @@
 import type { TariffFormModel } from '~/components/admin/tariffs/CreateForm.vue'
 import type { TariffKind, TariffRow } from '~/stores/tariff.store'
 import { useTariffStore } from '~/stores/tariff.store'
-import { normalizeTariffKind } from '~/utils/tariffKind'
+import { tariffMatchesListKind } from '~/utils/tariffServices'
 
 definePageMeta({ layout: 'admin' })
 
@@ -91,13 +93,14 @@ const kindTabs = [
   { label: "E'lon avto", value: 'driver_post' },
 ]
 
-const emptyForm = (kind: TariffKind = 'driver'): TariffFormModel => ({
+const emptyForm = (tab: TariffKind = 'driver'): TariffFormModel => ({
   name: '',
   slug: '',
   info: '',
   price: 0,
   expireDays: 30,
-  kind,
+  serviceBuyurtma: tab !== 'driver_post',
+  servicePost: tab === 'driver_post',
 })
 
 const form = ref<TariffFormModel>(emptyForm())
@@ -108,7 +111,7 @@ const deleteTarget = ref<TariffRow | null>(null)
 const error = ref('')
 
 const tariffsInTab = computed(() =>
-  store.tariffs.filter((t) => normalizeTariffKind(t.kind) === listTab.value)
+  store.tariffs.filter((t) => tariffMatchesListKind(t, listTab.value))
 )
 
 const resetForm = () => {
@@ -131,17 +134,23 @@ const onFormCancel = () => {
   if (!editingId.value) resetForm()
 }
 
+const pickTabAfterSave = (draft: TariffFormModel) => {
+  if (draft.serviceBuyurtma && !draft.servicePost) listTab.value = 'driver'
+  else if (draft.servicePost && !draft.serviceBuyurtma) listTab.value = 'driver_post'
+  else if (draft.serviceBuyurtma) listTab.value = 'driver'
+}
+
 const onSubmit = async (draft: TariffFormModel) => {
   error.value = ''
   form.value = { ...draft }
-  const kind = normalizeTariffKind(draft.kind)
   const payload = {
     name: draft.name.trim(),
     slug: draft.slug.trim(),
     info: String(draft.info || '').trim() || undefined,
     price: Number(draft.price ?? 0),
     expireDays: Number(draft.expireDays ?? 30),
-    kind,
+    serviceBuyurtma: draft.serviceBuyurtma,
+    servicePost: draft.servicePost,
   }
 
   try {
@@ -150,7 +159,7 @@ const onSubmit = async (draft: TariffFormModel) => {
     } else {
       await store.createTariff(payload)
     }
-    listTab.value = kind
+    pickTabAfterSave(draft)
     formOpen.value = false
     resetForm()
     await store.fetchTariffs()
@@ -161,14 +170,16 @@ const onSubmit = async (draft: TariffFormModel) => {
 
 const startEdit = (t: TariffRow) => {
   editingId.value = t.id
-  listTab.value = (t.kind || 'driver') as TariffKind
+  if (t.servicePost && !t.serviceBuyurtma) listTab.value = 'driver_post'
+  else listTab.value = 'driver'
   form.value = {
     name: t.name,
     slug: t.slug,
     info: t.info ?? '',
     price: t.price,
     expireDays: t.expireDays,
-    kind: (t.kind || 'driver') as TariffKind,
+    serviceBuyurtma: t.serviceBuyurtma !== false,
+    servicePost: !!t.servicePost,
   }
   formOpen.value = true
 }
@@ -201,18 +212,13 @@ const loadAll = () => {
 
 watch(listTab, (tab) => {
   if (formOpen.value && !editingId.value) {
-    form.value = { ...form.value, kind: tab as TariffKind }
+    form.value = {
+      ...form.value,
+      serviceBuyurtma: tab !== 'driver_post',
+      servicePost: tab === 'driver_post',
+    }
   }
 })
-
-watch(
-  () => form.value.kind,
-  (kind) => {
-    if (!formOpen.value) return
-    const k = normalizeTariffKind(kind)
-    if (k !== listTab.value) listTab.value = k
-  }
-)
 
 onMounted(loadAll)
 

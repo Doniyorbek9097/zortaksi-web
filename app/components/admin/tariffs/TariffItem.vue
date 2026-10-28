@@ -19,12 +19,16 @@
           {{ expireDays }} kun
         </span>
         <span
-          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border"
-          :class="kind === 'driver_post'
-            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300'
-            : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300'"
+          v-if="serviceBuyurtma"
+          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300"
         >
-          {{ kind === 'driver_post' ? "E'lon" : 'Buyurtma' }}
+          Buyurtma
+        </span>
+        <span
+          v-if="servicePost"
+          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300"
+        >
+          E'lon
         </span>
       </div>
 
@@ -65,7 +69,8 @@ const props = defineProps<{
   info?: string
   price: number
   expireDays: number
-  kind?: 'driver' | 'driver_post'
+  serviceBuyurtma?: boolean
+  servicePost?: boolean
 }>()
 
 defineEmits<{ edit: []; delete: [] }>()

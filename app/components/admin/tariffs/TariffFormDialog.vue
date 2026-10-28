@@ -39,12 +39,12 @@
 </template>
 
 <script setup lang="ts">
-import type { TariffKind } from '~/stores/tariff.store'
-import { normalizeTariffKind } from '~/utils/tariffKind'
+import { tariffServicesLabel } from '~/utils/tariffServices'
 
 const props = defineProps<{
   editing?: boolean
-  formKind?: TariffKind
+  serviceBuyurtma?: boolean
+  servicePost?: boolean
 }>()
 
 const open = defineModel<boolean>({ required: true })
@@ -53,10 +53,12 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const kindLabel = computed(() => {
-  const k = normalizeTariffKind(props.formKind)
-  return k === 'driver_post' ? "E'lon tarqatish (avto)" : 'Haydovchi (buyurtma)'
-})
+const kindLabel = computed(() =>
+  tariffServicesLabel({
+    buyurtma: props.serviceBuyurtma !== false,
+    post: !!props.servicePost,
+  })
+)
 
 const close = () => {
   open.value = false
