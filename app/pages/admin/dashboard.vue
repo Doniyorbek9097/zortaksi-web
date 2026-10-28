@@ -91,60 +91,128 @@
       @maintenance="onServerMaintenance"
     />
 
-    <!-- E'lonlar — ixcham -->
-    <button
-      v-if="driverPosts"
-      type="button"
-      class="w-full rounded-2xl border border-amber-200/70 dark:border-amber-900/40 bg-gradient-to-br from-amber-50/80 to-white dark:from-amber-950/20 dark:to-slate-900 p-3 text-left active:scale-[0.99] transition-transform"
-      @click="navigateTo('/admin/driver-posts')"
+    <!-- Auto e'lon statistika -->
+    <AdminSectionCard
+      v-if="driverPosts || postKeyStats"
+      title="Auto e'lon statistika"
+      icon="fa-solid fa-bullhorn"
+      icon-tone="amber"
+      header-subtitle="Kampaniyalar va e'lon tariflari"
     >
-      <div class="flex items-center justify-between gap-2 mb-2">
-        <div class="flex items-center gap-2">
-          <span class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
-            <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-sm" />
-          </span>
-          <div>
-            <p class="text-[12px] font-black text-slate-900 dark:text-white">Saqlangan e'lonlar</p>
-            <p class="text-[10px] font-semibold text-slate-400">{{ driverPosts.activeCampaigns }} faol · {{ driverPosts.totalCampaigns }} jami</p>
+      <template #action>
+        <button
+          type="button"
+          class="text-[10px] font-black uppercase tracking-wide text-amber-600 dark:text-amber-400 px-2 py-1 rounded-lg border border-amber-200/70 dark:border-amber-800/50 active:scale-95"
+          @click="navigateTo('/admin/driver-posts')"
+        >
+          Batafsil
+        </button>
+      </template>
+
+      <div class="p-2.5 space-y-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          <AdminStatChip
+            :value="driverPosts?.activeCampaigns ?? 0"
+            label="Faol kampaniya"
+            icon="fa-solid fa-play"
+            tone="green"
+          />
+          <AdminStatChip
+            :value="driverPosts?.pausedCampaigns ?? 0"
+            label="Pauza"
+            icon="fa-solid fa-pause"
+            tone="amber"
+          />
+          <AdminStatChip
+            :value="driverPosts?.estimatedSendsPerDay ?? 0"
+            label="Taxminiy yub/kun"
+            icon="fa-solid fa-paper-plane"
+            tone="sky"
+          />
+          <AdminStatChip
+            :value="driverPosts?.uniqueDrivers ?? 0"
+            label="Haydovchi (e'lon)"
+            icon="fa-solid fa-users"
+            tone="violet"
+          />
+          <AdminStatChip
+            :value="postKeyStats?.activePostTariffDrivers ?? 0"
+            label="Faol e'lon tarifi"
+            icon="fa-solid fa-tags"
+            tone="violet"
+          />
+          <AdminStatChip
+            :value="postTariffMonthAmount"
+            label="E'lon tarif (oy)"
+            icon="fa-solid fa-coins"
+            tone="rose"
+          />
+        </div>
+
+        <div
+          v-if="driverPosts"
+          class="grid grid-cols-3 gap-1.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/40 p-2"
+        >
+          <div class="text-center">
+            <p class="text-[13px] font-black tabular-nums text-slate-800 dark:text-slate-100">
+              {{ formatStat(driverPosts.totalLastSent) }}
+            </p>
+            <p class="text-[8px] font-bold text-slate-400 uppercase">Yuborilgan</p>
+          </div>
+          <div class="text-center border-x border-slate-200/80 dark:border-slate-800">
+            <p class="text-[13px] font-black tabular-nums text-emerald-600">
+              {{ formatStat(driverPosts.totalLastCharged) }}
+            </p>
+            <p class="text-[8px] font-bold text-slate-400 uppercase">Hisoblangan</p>
+          </div>
+          <div class="text-center">
+            <p class="text-[13px] font-black tabular-nums text-red-500">
+              {{ formatStat(driverPosts.totalLastFailed) }}
+            </p>
+            <p class="text-[8px] font-bold text-slate-400 uppercase">Xato</p>
           </div>
         </div>
-        <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-[10px] text-slate-300" />
-      </div>
-      <div class="grid grid-cols-2 gap-1.5">
-        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
-          <p class="text-[13px] font-black text-emerald-600 tabular-nums">{{ driverPosts.activeCampaigns }}</p>
-          <p class="text-[8px] font-bold text-slate-400 uppercase">Play</p>
-        </div>
-        <div class="rounded-lg bg-white/80 dark:bg-slate-950/50 px-2 py-1.5 text-center border border-slate-100 dark:border-slate-800">
-          <p class="text-[13px] font-black text-amber-600 tabular-nums">{{ driverPosts.uniqueDrivers }}</p>
-          <p class="text-[8px] font-bold text-slate-400 uppercase">Driver</p>
-        </div>
-      </div>
-      <div v-if="driverPosts.topDrivers?.length" class="mt-2 space-y-1">
-        <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 px-0.5">Eng ko'p yuk</p>
-        <div
-          v-for="row in driverPosts.topDrivers.slice(0, 3)"
-          :key="row.userId"
-          class="flex items-center gap-2 text-[11px]"
-        >
-          <img
-            v-if="driverAvatar(row.owner)"
-            :src="driverAvatar(row.owner)"
-            alt=""
-            class="w-5 h-5 rounded-full object-cover shrink-0 bg-slate-200"
-            @error="brokenDriverAvatars.add(row.userId)"
+
+        <div v-if="driverPosts?.topDrivers?.length" class="space-y-1.5">
+          <p class="text-[9px] font-black uppercase tracking-wide text-slate-400 px-0.5">
+            Eng faol (yuborish/kun)
+          </p>
+          <div
+            v-for="row in driverPosts.topDrivers.slice(0, 5)"
+            :key="row.userId"
+            class="flex items-center gap-2 text-[11px] rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800"
           >
-          <span
-            v-else
-            class="w-5 h-5 rounded-full shrink-0 bg-sky-100 text-sky-600 flex items-center justify-center text-[8px] font-black"
-          >
-            {{ row.owner.name.charAt(0) || '?' }}
-          </span>
-          <span class="font-bold text-slate-700 dark:text-slate-200 truncate flex-1">{{ row.owner.name }}</span>
-          <span class="font-black text-sky-600 tabular-nums shrink-0">{{ row.totalLastSent }} yub.</span>
+            <img
+              v-if="driverAvatar(row.owner)"
+              :src="driverAvatar(row.owner)"
+              alt=""
+              class="w-6 h-6 rounded-full object-cover shrink-0 bg-slate-200"
+              @error="brokenDriverAvatars.add(row.userId)"
+            >
+            <span
+              v-else
+              class="w-6 h-6 rounded-full shrink-0 bg-violet-100 text-violet-600 flex items-center justify-center text-[9px] font-black"
+            >
+              {{ row.owner.name.charAt(0) || '?' }}
+            </span>
+            <span class="font-bold text-slate-700 dark:text-slate-200 truncate flex-1 min-w-0">
+              {{ row.owner.name }}
+            </span>
+            <span class="font-black text-violet-600 tabular-nums shrink-0">{{ row.sendsPerDay }}/kun</span>
+          </div>
+        </div>
+
+        <div class="pt-1 border-t border-slate-100 dark:border-slate-800">
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <p class="text-[11px] font-black text-slate-700 dark:text-slate-200">
+              E'lon tarif sotuvlari
+            </p>
+            <AdminSegmentTabs v-model="postTariffTab" :tabs="tariffTabs" />
+          </div>
+          <AdminTariffRankGrid :items="postTariffStatsItems" />
         </div>
       </div>
-    </button>
+    </AdminSectionCard>
 
     <!-- Jonli statistika -->
     <section
@@ -264,7 +332,7 @@
 
     <!-- Tariflar -->
     <AdminSectionCard
-      title="Eng ko'p sotilgan tariflar"
+      title="Buyurtma tariflari (TOP)"
       icon="fa-solid fa-tags"
       icon-tone="violet"
     >
@@ -317,14 +385,23 @@ const {
   weekIncome,
   growth,
   driverPosts,
+  postKeyStats,
   regionIncomeChart,
   navItems,
   heroStats,
   chipStats,
   tariffTab,
+  postTariffTab,
   tariffTabs,
   tariffStatsItems,
+  postTariffStatsItems,
 } = useAdminDashboardStats(store)
+
+const formatStat = (n?: number) => (n ?? 0).toLocaleString('ru-RU')
+
+const postTariffMonthAmount = computed(
+  () => postKeyStats.value?.monthIncome?.amount ?? 0,
+)
 
 const {
   chartTab,

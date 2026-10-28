@@ -24,6 +24,7 @@ export function useAdminDashboardStats(store: Store) {
   const weekIncome = computed(() => store.data?.weekIncome ?? { amount: 0, payments: 0, total: 0 })
   const growth = computed(() => store.data?.growth)
   const driverPosts = computed(() => store.data?.driverPosts ?? null)
+  const postKeyStats = computed(() => store.data?.postKeyStats ?? null)
   const regionIncomeChart = computed(() => store.data?.regionIncomeChart ?? null)
 
   const navItems = computed(() => {
@@ -66,6 +67,7 @@ export function useAdminDashboardStats(store: Store) {
   })
 
   const tariffTab = ref('month')
+  const postTariffTab = ref('month')
   const tariffTabs = [
     { label: 'Shu oy', value: 'month' },
     { label: 'Jami', value: 'total' },
@@ -78,18 +80,28 @@ export function useAdminDashboardStats(store: Store) {
     return list.slice(0, 5)
   })
 
+  const postTariffStatsItems = computed(() => {
+    const stats = store.data?.postTariffStats
+    if (!stats) return []
+    const list = postTariffTab.value === 'month' ? stats.month : stats.total
+    return list.slice(0, 5)
+  })
+
   return {
     monthIncome,
     todayIncome,
     weekIncome,
     growth,
     driverPosts,
+    postKeyStats,
     regionIncomeChart,
     navItems,
     heroStats,
     chipStats,
     tariffTab,
+    postTariffTab,
     tariffTabs,
     tariffStatsItems,
+    postTariffStatsItems,
   }
 }

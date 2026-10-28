@@ -85,6 +85,7 @@ export interface DashboardDriverPostDriver {
     phone?: string
     username?: string
     balance?: number
+    avatar?: string
   }
 }
 
@@ -92,9 +93,18 @@ export interface DashboardDriverPostsSummary {
   totalCampaigns: number
   activeCampaigns: number
   pausedCampaigns: number
+  activeGroupSlots?: number
   estimatedSendsPerDay: number
   uniqueDrivers: number
+  totalLastSent?: number
+  totalLastFailed?: number
+  totalLastCharged?: number
   topDrivers: DashboardDriverPostDriver[]
+}
+
+export interface PostKeyStats {
+  activePostTariffDrivers: number
+  monthIncome: { amount: number; payments: number }
 }
 
 export interface AdminDashboardData {
@@ -131,6 +141,8 @@ export interface AdminDashboardData {
   incomeDetails: DataRow[]
   tariffSplit: DataRow[]
   tariffStats?: TariffStatsBlock
+  postTariffStats?: TariffStatsBlock
+  postKeyStats?: PostKeyStats
   chart: ChartMonth[]
   incomeDailyChart?: ChartMonth[]
   regionIncomeChart?: RegionIncomeChart
