@@ -69,6 +69,8 @@ export const useDriverStore = defineStore('driver', () => {
   const total = ref(0)
   const listFilter = ref<DriverFilter>('all')
   const listSubFilter = ref<DriverSubFilter>('')
+  const listTariffSlug = ref('')
+  const listRegionSlug = ref('')
   const listSearch = ref('')
   const listScrollY = ref(0)
   const listHydrated = ref(false)
@@ -82,6 +84,8 @@ export const useDriverStore = defineStore('driver', () => {
       search?: string
       filter?: DriverFilter
       subFilter?: DriverSubFilter
+      tariffSlug?: string
+      regionSlug?: string
     } = {},
     opts: { append?: boolean } = {}
   ) => {
@@ -101,6 +105,8 @@ export const useDriverStore = defineStore('driver', () => {
             tabFilter === 'all' && params.subFilter
               ? params.subFilter
               : undefined,
+          tariffSlug: params.tariffSlug || undefined,
+          regionSlug: params.regionSlug || undefined,
         },
       })
       if (response.success) {
@@ -132,6 +138,8 @@ export const useDriverStore = defineStore('driver', () => {
     search?: string
     filter?: DriverFilter
     subFilter?: DriverSubFilter
+    tariffSlug?: string
+    regionSlug?: string
   } = {}) => {
     if (isLoading.value || isLoadingMore.value || !hasMore.value) return
     return fetchDrivers({ ...params, page: page.value + 1 }, { append: true })
@@ -358,6 +366,8 @@ export const useDriverStore = defineStore('driver', () => {
     hasMore,
     listFilter,
     listSubFilter,
+    listTariffSlug,
+    listRegionSlug,
     listSearch,
     listScrollY,
     listHydrated,

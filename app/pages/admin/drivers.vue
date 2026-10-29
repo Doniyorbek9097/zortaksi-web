@@ -7,10 +7,9 @@
         <div class="flex items-center justify-between gap-2">
           <h1 class="text-base font-black text-slate-900 dark:text-white">Haydovchilar</h1>
           <button
-            v-if="filter === 'all'"
             type="button"
             class="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border transition-all active:scale-95"
-            :class="store.listSubFilter
+            :class="listFilterActive
               ? 'border-sky-400 bg-sky-50 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-500/50'
               : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900'"
             aria-label="Filter"
@@ -18,16 +17,16 @@
           >
             <font-awesome-icon icon="fa-solid fa-filter" class="text-[14px]" />
             <span
-              v-if="store.listSubFilter"
+              v-if="listFilterActive"
               class="absolute top-1 right-1 w-2 h-2 rounded-full bg-sky-500 ring-2 ring-white dark:ring-slate-900"
             />
           </button>
         </div>
         <p
-          v-if="filter === 'all' && store.listSubFilter"
+          v-if="listFilterActive"
           class="mt-1 text-[11px] font-bold text-sky-600 dark:text-sky-400 truncate"
         >
-          {{ subFilterLabel }}
+          {{ listFilterSummary }}
         </p>
       </header>
 
@@ -132,7 +131,10 @@
     <AdminDriversListFilterDialog
       v-model="filterDialogOpen"
       :value="store.listSubFilter"
-      @apply="onSubFilterApply"
+      :tariff-slug="store.listTariffSlug"
+      :region-slug="store.listRegionSlug"
+      :tariffs="driverTariffs"
+      @apply="onListFilterApply"
     />
 
     <BaseConfirmDialog
@@ -157,7 +159,11 @@ import type { DriverRow, DriverFilter, DriverSubFilter } from '~/stores/driver.s
 import { useDriverStore } from '~/stores/driver.store'
 import { useTariffStore } from '~/stores/tariff.store'
 import { openSupportChatInstant } from '~/utils/openSupportChat'
-import { driverSubFilterLabel } from '~/utils/driverSubFilters'
+import {
+  driverListFilterActive,
+  driverListFilterSummary,
+} from '~/utils/driverListFilterLabel'
+import { tariffMatchesListKind } from '~/utils/tariffServices'
 
 definePageMeta({ layout: 'admin', keepalive: true })
 
@@ -193,7 +199,45 @@ const blockOpen = ref(false)
 const blockTarget = ref<DriverRow | null>(null)
 const filterDialogOpen = ref(false)
 
-const subFilterLabel = computed(() => driverSubFilterLabel(store.listSubFilter))
+const driverTariffs = computed(() =>
+  tariffStore.tariffs.filter((t) => tariffMatchesListKind(t, 'driver')),
+)
+
+const listFilterActive = computed(() =>
+  driverListFilterActive({
+    subFilter: store.listSubFilter,
+    tariffSlug: store.listTariffSlug,
+    regionSlug: store.listRegionSlug,
+  }),
+)
+
+const regionTitleBySlug = ref<Record<string, string>>({})
+
+const loadRegionTitles = async () => {
+  try {
+    const res = await useApi('/bot-regions')
+    const rows: Array<{ slug: string; title: string }> = res?.data?.regions ?? []
+    regionTitleBySlug.value = Object.fromEntries(rows.map((r) => [r.slug, r.title]))
+  } catch {
+    regionTitleBySlug.value = {}
+  }
+}
+
+const listFilterSummary = computed(() => {
+  const tariffSlug = store.listTariffSlug
+  const tariffName = tariffSlug
+    ? driverTariffs.value.find((t) => t.slug === tariffSlug)?.name || tariffSlug
+    : undefined
+  const regionSlug = store.listRegionSlug
+  const regionTitle = regionSlug
+    ? regionTitleBySlug.value[regionSlug] || regionSlug
+    : undefined
+  return driverListFilterSummary({
+    subFilter: filter.value === 'all' ? store.listSubFilter : '',
+    tariffName,
+    regionTitle,
+  })
+})
 
 const withTariffLine = (d: DriverRow) => {
   if (!d.tariffName || !d.expireAt) return { ...d, tariffLine: undefined as string | undefined }
@@ -267,6 +311,8 @@ const queryParams = () => ({
   limit: LIMIT,
   filter: filter.value,
   subFilter: filter.value === 'all' ? store.listSubFilter || undefined : undefined,
+  tariffSlug: store.listTariffSlug || undefined,
+  regionSlug: store.listRegionSlug || undefined,
   search: search.value.trim() || undefined,
 })
 
@@ -306,10 +352,16 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null
-const onSubFilterApply = (value: DriverSubFilter) => {
-  store.listSubFilter = value
+const onListFilterApply = (value: {
+  subFilter: DriverSubFilter
+  tariffSlug: string
+  regionSlug: string
+}) => {
+  store.listSubFilter = value.subFilter
+  store.listTariffSlug = value.tariffSlug
+  store.listRegionSlug = value.regionSlug
   selected.value = new Set()
-  if (filter.value === 'all') void load()
+  void load()
 }
 
 watch(filter, () => {
@@ -451,7 +503,8 @@ onMounted(() => {
   } else {
     nextTick(() => restoreScroll())
   }
-  tariffStore.fetchTariffs().catch(() => {})
+  tariffStore.fetchTariffs('driver').catch(() => {})
+  void loadRegionTitles()
 
   observer = new IntersectionObserver(
     (entries) => {
