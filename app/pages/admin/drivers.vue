@@ -133,7 +133,7 @@
       :value="store.listSubFilter"
       :tariff-slug="store.listTariffSlug"
       :region-slug="store.listRegionSlug"
-      :tariffs="driverTariffs"
+      :tariffs="buyurtmaTariffs"
       @apply="onListFilterApply"
     />
 
@@ -163,7 +163,7 @@ import {
   driverListFilterActive,
   driverListFilterSummary,
 } from '~/utils/driverListFilterLabel'
-import { tariffMatchesListKind } from '~/utils/tariffServices'
+import { resolveTariffServices } from '~/utils/tariffServices'
 
 definePageMeta({ layout: 'admin', keepalive: true })
 
@@ -199,8 +199,8 @@ const blockOpen = ref(false)
 const blockTarget = ref<DriverRow | null>(null)
 const filterDialogOpen = ref(false)
 
-const driverTariffs = computed(() =>
-  tariffStore.tariffs.filter((t) => tariffMatchesListKind(t, 'driver')),
+const buyurtmaTariffs = computed(() =>
+  tariffStore.tariffs.filter((t) => resolveTariffServices(t).buyurtma),
 )
 
 const listFilterActive = computed(() =>
@@ -226,7 +226,7 @@ const loadRegionTitles = async () => {
 const listFilterSummary = computed(() => {
   const tariffSlug = store.listTariffSlug
   const tariffName = tariffSlug
-    ? driverTariffs.value.find((t) => t.slug === tariffSlug)?.name || tariffSlug
+    ? buyurtmaTariffs.value.find((t) => t.slug === tariffSlug)?.name || tariffSlug
     : undefined
   const regionSlug = store.listRegionSlug
   const regionTitle = regionSlug

@@ -46,12 +46,12 @@
               </label>
 
               <label class="block space-y-1.5">
-                <span class="text-[11px] font-black uppercase tracking-wide text-slate-400">Tarif</span>
+                <span class="text-[11px] font-black uppercase tracking-wide text-slate-400">Buyurtma tarifi</span>
                 <select
                   v-model="draftTariffSlug"
                   class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 px-3 py-2.5 text-[13px] font-bold text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-sky-400/40"
                 >
-                  <option value="">Barcha tariflar</option>
+                  <option value="">Barcha buyurtma tariflari</option>
                   <option v-for="t in tariffs" :key="t.slug" :value="t.slug">
                     {{ t.name }}
                   </option>
