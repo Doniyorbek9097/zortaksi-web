@@ -4,6 +4,7 @@ export interface IRealAd {
   id: string
   title: string
   productPrice: string
+  ctaLabel: string
   productUrl: string
   videoPath: string
   videoUrl: string

@@ -23,6 +23,7 @@
         v-for="r in reals"
         :key="r.id"
         :title="r.title"
+        :cta-label="r.ctaLabel"
         :product-price="r.productPrice"
         :product-url="r.productUrl"
         :video-src="realVideoSrc(r)"
@@ -46,7 +47,7 @@
     <BaseConfirmDialog
       v-model="deleteOpen"
       title="Realni o'chirish"
-      :message="deleteTarget ? `«${deleteTarget.title}» o'chirilsinmi?` : ''"
+      :message="deleteTarget ? `Real o'chirilsinmi?${deleteTarget.title ? ` «${deleteTarget.title}»` : ''}` : ''"
       confirm-text="O'chir"
       cancel-text="Bekor qilish"
       variant="danger"
@@ -59,6 +60,10 @@
 <script setup lang="ts">
 import type { RealFormModel } from '~/components/admin/reals/CreateForm.vue'
 import type { IRealAd } from '~/types/realAd'
+import {
+  DEFAULT_REAL_AD_CTA_LABEL,
+  resolveRealAdCtaLabel,
+} from '~/constants/realAdCta'
 
 definePageMeta({ layout: 'admin' })
 
@@ -79,6 +84,7 @@ const previewObjectUrl = ref('')
 const form = ref<RealFormModel>({
   title: '',
   productPrice: '',
+  ctaLabel: DEFAULT_REAL_AD_CTA_LABEL,
   productUrl: '',
   sortOrder: 0,
   active: true,
@@ -100,7 +106,14 @@ const resetForm = () => {
   pickedFile.value = null
   if (previewObjectUrl.value) URL.revokeObjectURL(previewObjectUrl.value)
   previewObjectUrl.value = ''
-  form.value = { title: '', productPrice: '', productUrl: '', sortOrder: 0, active: true }
+  form.value = {
+    title: '',
+    productPrice: '',
+    ctaLabel: DEFAULT_REAL_AD_CTA_LABEL,
+    productUrl: '',
+    sortOrder: 0,
+    active: true,
+  }
   error.value = ''
   saved.value = false
 }
@@ -138,6 +151,7 @@ const buildFormData = () => {
   const fd = new FormData()
   fd.append('title', form.value.title.trim())
   fd.append('productPrice', formFieldString(form.value.productPrice))
+  fd.append('ctaLabel', form.value.ctaLabel)
   fd.append('productUrl', form.value.productUrl.trim())
   fd.append('sortOrder', String(form.value.sortOrder || 0))
   fd.append('active', form.value.active ? '1' : '0')
@@ -146,8 +160,8 @@ const buildFormData = () => {
 }
 
 const save = async () => {
-  if (!form.value.title.trim()) {
-    error.value = 'Mahsulot nomi kerak'
+  if (!form.value.productUrl.trim()) {
+    error.value = 'Havola kerak'
     return
   }
   if (!editingId.value && !pickedFile.value) {
@@ -176,8 +190,9 @@ const save = async () => {
 const startEdit = (r: IRealAd) => {
   editingId.value = r.id
   form.value = {
-    title: r.title,
+    title: r.title || '',
     productPrice: r.productPrice || '',
+    ctaLabel: resolveRealAdCtaLabel(r.ctaLabel),
     productUrl: r.productUrl || '',
     sortOrder: r.sortOrder || 0,
     active: !!r.active,

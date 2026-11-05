@@ -14,22 +14,35 @@
     <div class="p-4 space-y-3">
       <BaseInput
         :model-value="modelValue.title"
-        label="Mahsulot nomi"
+        label="Mahsulot nomi (ixtiyoriy)"
         placeholder="Masalan: Shampun"
         @update:model-value="patch('title', $event)"
       />
 
       <BaseInput
         :model-value="modelValue.productPrice"
-        label="Narxi"
+        label="Narxi (ixtiyoriy)"
         placeholder="Masalan: 45 000 so'm"
         @update:model-value="patch('productPrice', formFieldString($event))"
       />
 
+      <div>
+        <span class="px-1 text-xs mb-1 block">Tugma matni</span>
+        <select
+          :value="modelValue.ctaLabel"
+          class="w-full px-3.5 py-3 rounded-xl text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          @change="patch('ctaLabel', ($event.target as HTMLSelectElement).value)"
+        >
+          <option v-for="opt in REAL_AD_CTA_OPTIONS" :key="opt" :value="opt">
+            {{ opt }}
+          </option>
+        </select>
+      </div>
+
       <BaseInput
         :model-value="modelValue.productUrl"
-        label="Mahsulot / xarid havolasi"
-        placeholder="https://shop.example.com/product"
+        label="Havola (tashqi URL yoki ilova path)"
+        placeholder="/driver/payment yoki https://example.com"
         @update:model-value="patch('productUrl', $event)"
       />
 
@@ -106,9 +119,16 @@
 </template>
 
 <script setup lang="ts">
+import {
+  REAL_AD_CTA_OPTIONS,
+  DEFAULT_REAL_AD_CTA_LABEL,
+  type RealAdCtaLabel,
+} from '~/constants/realAdCta'
+
 export interface RealFormModel {
   title: string
   productPrice: string
+  ctaLabel: RealAdCtaLabel
   productUrl: string
   sortOrder: number
   active: boolean

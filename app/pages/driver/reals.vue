@@ -68,37 +68,38 @@
             class="absolute inset-x-0 bottom-0 z-20 real-product-stack pointer-events-none"
           >
             <div class="real-product-bar w-full pointer-events-auto">
-              <a
-                :href="item.productUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="real-product-title real-title-box--link"
-                @click.stop
+              <button
+                v-if="productTitle(item) || productPriceLabel(item)"
+                type="button"
+                class="real-product-title real-title-box--link text-left w-full"
+                @click.stop="openProductLink(item)"
               >
                 <span class="flex-1 min-w-0 w-full">
-                  <span class="block text-[14px] font-black leading-snug line-clamp-2 text-white">
+                  <span
+                    v-if="productTitle(item)"
+                    class="block text-[14px] font-black leading-snug line-clamp-2 text-white"
+                  >
                     {{ productTitle(item) }}
                   </span>
                   <span
                     v-if="productPriceLabel(item)"
                     class="block mt-0.5 text-[12px] font-bold text-amber-300/95 tabular-nums"
+                    :class="productTitle(item) ? '' : 'text-[14px] font-black text-white'"
                   >
                     {{ productPriceLabel(item) }}
                   </span>
                 </span>
-              </a>
+              </button>
 
               <div class="real-product-actions">
-                <a
-                  :href="item.productUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
                   class="real-cta flex-1 min-w-0"
-                  @click.stop
+                  @click.stop="openProductLink(item)"
                 >
                   <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
-                  Xarid qilish
-                </a>
+                  {{ ctaLabel(item) }}
+                </button>
                 <button
                   type="button"
                   class="real-sound-toggle shrink-0"
@@ -178,6 +179,8 @@
 
 <script setup lang="ts">
 import type { IRealAd, RealAdVote } from '~/types/realAd'
+import { resolveRealAdCtaLabel } from '~/constants/realAdCta'
+import { openRealProductLink, realProductShareUrl } from '~/utils/realProductUrl'
 import { isDriverAppAuthenticated, navigateToServiceAuth } from '~/utils/authSession'
 
 definePageMeta({ layout: 'driver' })
@@ -200,12 +203,15 @@ let shareHintTimer: ReturnType<typeof setTimeout> | null = null
 
 const videoSrc = (r: IRealAd) => resolveMedia(r.videoUrl) || r.videoUrl
 
-const productTitle = (item: IRealAd) => {
-  const t = String(item.title || '').trim()
-  return t || 'Mahsulot'
-}
+const productTitle = (item: IRealAd) => String(item.title || '').trim()
 
 const productPriceLabel = (item: IRealAd) => String(item.productPrice || '').trim()
+
+const ctaLabel = (item: IRealAd) => resolveRealAdCtaLabel(item.ctaLabel)
+
+const openProductLink = (item: IRealAd) => {
+  openRealProductLink(item.productUrl)
+}
 
 const formatCount = (n: number) => {
   const v = Number(n) || 0
@@ -285,11 +291,11 @@ const toggleMute = (id: string) => {
 
 const shareUrlFor = (item: IRealAd) => {
   const product = String(item.productUrl || '').trim()
-  if (product) return product
   const appBase = String(config.public.appUrl || (import.meta.client ? window.location.origin : '')).replace(
     /\/$/,
     '',
   )
+  if (product) return realProductShareUrl(product, appBase)
   return `${appBase}/driver/reals?real=${encodeURIComponent(item.id)}`
 }
 
@@ -531,6 +537,8 @@ onBeforeRouteLeave(() => {
   font-size: 13px;
   font-weight: 900;
   color: #1c1917;
+  border: none;
+  cursor: pointer;
   background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 35%, #f59e0b 100%);
   box-shadow:
     0 4px 20px rgba(251, 191, 36, 0.35),
@@ -561,6 +569,11 @@ onBeforeRouteLeave(() => {
 }
 
 .real-title-box--link {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
   transition: transform 0.15s ease, background 0.15s ease;
 }
 

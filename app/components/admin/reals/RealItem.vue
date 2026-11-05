@@ -15,7 +15,12 @@
       </div>
     </div>
     <div class="p-3 space-y-2">
-      <p class="text-[14px] font-black text-slate-900 dark:text-white truncate">{{ title }}</p>
+      <p class="text-[14px] font-black text-slate-900 dark:text-white truncate">
+        {{ title || 'Real' }}
+      </p>
+      <p v-if="ctaLabel" class="text-[11px] font-bold text-violet-600 dark:text-violet-400 truncate">
+        {{ ctaLabel }}
+      </p>
       <p v-if="productPrice" class="text-[12px] font-bold text-amber-600 dark:text-amber-400 truncate">
         {{ productPrice }}
       </p>
@@ -47,6 +52,7 @@
 <script setup lang="ts">
 defineProps<{
   title: string
+  ctaLabel?: string
   productPrice?: string
   productUrl?: string
   videoSrc: string
