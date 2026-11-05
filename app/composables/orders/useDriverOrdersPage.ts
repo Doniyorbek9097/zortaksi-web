@@ -10,7 +10,7 @@ import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
 import { useOrdersAddToBot } from './useOrdersAddToBot'
 import { useOrdersPreconnect } from './useOrdersPreconnect'
-import { preloadOrdersList } from './preloadOrdersList'
+import { requireServiceAuth } from '~/utils/authSession'
 
 /**
  * Haydovchi buyurtmalar sahifasi — barcha composablelarni birlashtiradi.
@@ -73,7 +73,10 @@ export function useDriverOrdersPage() {
     showSuccess: moderation.showSuccess,
   })
 
-  const onUnlock = () => navigateTo('/driver/payment')
+  const onUnlock = () => {
+    if (!requireServiceAuth('/driver/payment?tab=tariff')) return
+    return navigateTo('/driver/payment?tab=tariff')
+  }
 
   const unreadCount = computed(() => orderStore.unreadOrdersCount)
   const isOrderSeen = (order: IOrder) => !orderStore.isOrderUnread(order)

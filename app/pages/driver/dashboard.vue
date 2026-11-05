@@ -5,14 +5,14 @@
       class="rounded-2xl border border-sky-200 dark:border-sky-800/60 bg-gradient-to-br from-sky-50 to-white dark:from-sky-950/40 dark:to-slate-900 p-4 space-y-3"
     >
       <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
-        Buyurtmalar, chat va e'lonlar uchun Telegram hisobingizni ulang.
+        Buyurtmalar, statistika va TOP 10 ochiq. Tarifga ulanish uchun Telegram orqali ro'yxatdan o'ting.
       </p>
       <button
         type="button"
         class="w-full py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all"
         @click="goConnect"
       >
-        Xizmatga ulanish
+        Tarifga ulanish
       </button>
     </div>
 
@@ -139,8 +139,6 @@ const {
   fetchLeaderboard: fetchGroupInviteLeaderboard,
 } = useGroupInviteLeaderboard({
   cacheKey: 'zt:dashboard-group-invite-lb',
-  requireActiveTariff: true,
-  tariffActive: () => tariffActive.value,
 })
 
 const {
