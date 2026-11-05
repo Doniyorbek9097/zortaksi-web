@@ -76,7 +76,7 @@
                 class="real-product-title real-title-box--link"
                 @click.stop
               >
-                <span class="flex-1 min-w-0">
+                <span class="flex-1 min-w-0 w-full">
                   <span class="block text-[14px] font-black leading-snug line-clamp-2 text-white">
                     {{ productTitle(item) }}
                   </span>
@@ -87,10 +87,6 @@
                     {{ productPriceLabel(item) }}
                   </span>
                 </span>
-                <font-awesome-icon
-                  icon="fa-solid fa-chevron-right"
-                  class="shrink-0 text-[13px] text-white/90"
-                />
               </a>
 
               <div class="real-product-actions">
@@ -458,16 +454,14 @@ onBeforeRouteLeave(() => {
 .real-product-bar {
   width: 100%;
   box-sizing: border-box;
-  padding: 3px;
-  background: rgba(0, 0, 0, 0.55);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(14px);
+  padding: 5px;
+  background: rgba(0, 0, 0, 0.28);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
 }
 
 .real-product-title {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
+  display: block;
   width: 100%;
   margin-bottom: 0.375rem;
   text-align: left;
