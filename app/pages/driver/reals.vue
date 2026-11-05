@@ -1,50 +1,78 @@
 <template>
-  <div class="reals-page mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl flex flex-col bg-black text-white overflow-hidden">
-    <header
-      class="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/10 bg-black/90 backdrop-blur-md z-20"
-    >
-      <div class="flex items-center gap-2.5 min-w-0">
-        <span
-          class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-orange-500 flex items-center justify-center shadow-lg shadow-rose-500/25 shrink-0"
-        >
-          <font-awesome-icon icon="fa-solid fa-clapperboard" class="text-sm" />
-        </span>
-        <div class="min-w-0">
-          <p class="text-[15px] font-black leading-none tracking-tight">Reals</p>
-          <p class="text-[10px] font-semibold text-white/50 mt-0.5 truncate">
-            Video reklamalar
-          </p>
-        </div>
-      </div>
-      <span
-        v-if="reals.length"
-        class="text-[10px] font-bold tabular-nums px-2.5 py-1 rounded-full bg-white/10 text-white/80"
+  <div class="reals-page mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl flex flex-col overflow-hidden text-white">
+    <!-- Ambient background -->
+    <div class="reals-ambient pointer-events-none" aria-hidden="true" />
+
+    <header class="reals-header shrink-0 relative z-20 px-4 pt-2 pb-3">
+      <div
+        class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-2xl border border-white/10 bg-white/[0.06] backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
       >
-        {{ activeIndex + 1 }} / {{ reals.length }}
-      </span>
+        <div class="flex items-center gap-3 min-w-0">
+          <span
+            class="relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br from-amber-400 via-rose-500 to-violet-600 shadow-lg shadow-rose-500/30"
+          >
+            <span class="absolute inset-[1px] rounded-[10px] bg-black/20" />
+            <font-awesome-icon icon="fa-solid fa-clapperboard" class="relative text-sm text-white drop-shadow" />
+          </span>
+          <div class="min-w-0">
+            <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-amber-200/80 leading-none">
+              Premium
+            </p>
+            <p class="text-[16px] font-black tracking-tight leading-tight mt-0.5 bg-gradient-to-r from-white via-white to-white/70 bg-clip-text text-transparent">
+              Zor Reals
+            </p>
+          </div>
+        </div>
+        <span
+          v-if="reals.length"
+          class="shrink-0 text-[10px] font-black tabular-nums px-2.5 py-1 rounded-full border border-amber-400/30 bg-amber-500/10 text-amber-100"
+        >
+          {{ activeIndex + 1 }}/{{ reals.length }}
+        </span>
+      </div>
+
+      <div v-if="reals.length > 1" class="flex gap-1 mt-2.5 px-1">
+        <span
+          v-for="(_, i) in reals"
+          :key="i"
+          class="h-[3px] flex-1 rounded-full transition-all duration-300"
+          :class="i === activeIndex
+            ? 'bg-gradient-to-r from-amber-400 to-rose-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+            : 'bg-white/15'"
+        />
+      </div>
     </header>
 
     <div
       v-if="loading && !reals.length"
-      class="flex-1 min-h-[50vh] flex flex-col items-center justify-center gap-3"
+      class="flex-1 flex flex-col items-center justify-center gap-4 px-6"
     >
-      <font-awesome-icon icon="fa-solid fa-spinner" class="text-2xl animate-spin text-white/60" />
-      <p class="text-[12px] font-bold text-white/50">Yuklanmoqda…</p>
+      <div class="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center">
+        <font-awesome-icon icon="fa-solid fa-spinner" class="text-xl animate-spin text-amber-300/80" />
+      </div>
+      <p class="text-[12px] font-bold tracking-wide text-white/45 uppercase">Yuklanmoqda</p>
     </div>
 
-    <BaseEmptyState
+    <div
       v-else-if="!reals.length"
-      class="flex-1 min-h-[50vh] flex flex-col justify-center px-6"
-      icon="fa-solid fa-clapperboard"
-      title="Reals yo'q"
-      subtitle="Tez orada yangi reklamalar chiqadi"
-      tone="slate"
-    />
+      class="flex-1 flex flex-col items-center justify-center text-center px-8 pb-8"
+    >
+      <div
+        class="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.02] shadow-xl"
+      >
+        <font-awesome-icon icon="fa-solid fa-clapperboard" class="text-3xl text-amber-300/70" />
+      </div>
+      <p class="text-[11px] font-black uppercase tracking-[0.25em] text-amber-200/60 mb-2">Zor Reals</p>
+      <h2 class="text-lg font-black text-white/95">Hozircha video yo'q</h2>
+      <p class="mt-2 text-[13px] font-medium text-white/45 max-w-xs leading-relaxed">
+        Tez orada premium reklama rollari shu yerda chiqadi
+      </p>
+    </div>
 
     <div
       v-else
       ref="scrollerEl"
-      class="reals-scroller flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth overscroll-y-contain"
+      class="reals-scroller flex-1 overflow-y-auto snap-y snap-mandatory scroll-smooth overscroll-y-contain relative z-10"
       @scroll="onScrollerScroll"
     >
       <section
@@ -52,13 +80,15 @@
         :key="item.id"
         :data-real-id="item.id"
         :data-real-index="index"
-        class="real-slide relative w-full max-w-full overflow-hidden snap-start snap-always flex flex-col bg-black"
+        class="real-slide relative w-full max-w-full snap-start snap-always flex flex-col px-3 pb-3 box-border"
       >
-        <div class="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full bg-black">
+        <div
+          class="real-frame relative flex-1 min-h-0 w-full rounded-[1.35rem] overflow-hidden border border-white/[0.12] shadow-[0_24px_60px_rgba(0,0,0,0.55)] ring-1 ring-inset ring-white/5"
+        >
           <video
             :ref="(el) => setVideoRef(item.id, el as HTMLVideoElement | null)"
             :src="videoSrc(item)"
-            class="max-w-full max-h-full w-full h-full object-contain"
+            class="absolute inset-0 w-full h-full object-contain bg-black"
             playsinline
             loop
             muted
@@ -66,9 +96,25 @@
             @click="togglePlay(item.id)"
           />
 
+          <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/50 via-transparent to-black/80" />
+          <div class="absolute inset-0 pointer-events-none reals-vignette" />
+
+          <Transition name="reals-play-hint">
+            <div
+              v-if="pausedId === item.id"
+              class="absolute inset-0 flex items-center justify-center pointer-events-none z-[2]"
+            >
+              <span
+                class="w-16 h-16 rounded-full border border-white/25 bg-black/40 backdrop-blur-md flex items-center justify-center"
+              >
+                <font-awesome-icon icon="fa-solid fa-play" class="text-2xl text-white/90 ml-1" />
+              </span>
+            </div>
+          </Transition>
+
           <button
             type="button"
-            class="absolute left-3 top-3 z-10 w-9 h-9 rounded-full bg-black/50 border border-white/15 text-white flex items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
+            class="absolute top-3 right-3 z-10 w-10 h-10 rounded-full border border-white/15 bg-black/35 backdrop-blur-md text-white flex items-center justify-center active:scale-95 transition-transform shadow-lg"
             :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
             @click.stop="toggleMute(item.id)"
           >
@@ -77,14 +123,52 @@
               class="text-sm"
             />
           </button>
-        </div>
 
-        <div
-          class="absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-14 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
-        >
-          <div class="flex items-end gap-2 w-full max-w-full pointer-events-none">
-            <div class="flex-1 min-w-0 space-y-2.5 pointer-events-auto">
-              <p class="text-[15px] font-black leading-snug line-clamp-2 drop-shadow-md text-left">
+          <div class="absolute right-3 top-1/2 -translate-y-1/2 z-10 flex flex-col items-center gap-3">
+            <button
+              type="button"
+              class="real-action"
+              aria-label="Yoqtirish"
+              @click="onReact(item, 'like')"
+            >
+              <span
+                class="real-action-btn"
+                :class="item.myVote === 'like' ? 'real-action-btn--like' : ''"
+              >
+                <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[15px]" />
+              </span>
+              <span class="real-action-label">{{ formatCount(item.likesCount) }}</span>
+            </button>
+            <button
+              type="button"
+              class="real-action"
+              aria-label="Yoqmadi"
+              @click="onReact(item, 'dislike')"
+            >
+              <span
+                class="real-action-btn"
+                :class="item.myVote === 'dislike' ? 'real-action-btn--dislike' : ''"
+              >
+                <font-awesome-icon icon="fa-solid fa-thumbs-down" class="text-[15px]" />
+              </span>
+              <span class="real-action-label">{{ formatCount(item.dislikesCount) }}</span>
+            </button>
+            <button type="button" class="real-action" aria-label="Ulashish" @click="onShare(item)">
+              <span class="real-action-btn">
+                <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-[14px]" />
+              </span>
+              <span class="real-action-label">Ulash</span>
+            </button>
+          </div>
+
+          <div class="absolute inset-x-0 bottom-0 z-10 p-3 pt-16 pointer-events-none">
+            <div
+              class="pointer-events-auto rounded-2xl border border-white/10 bg-black/45 backdrop-blur-xl p-3.5 shadow-[0_12px_40px_rgba(0,0,0,0.5)] pr-[4.25rem]"
+            >
+              <p class="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-200/70 mb-1.5">
+                Mahsulot
+              </p>
+              <p class="text-[16px] font-black leading-snug line-clamp-2 text-white/95">
                 {{ item.title }}
               </p>
               <a
@@ -92,60 +176,12 @@
                 :href="item.productUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex w-full max-w-full items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-transform"
+                class="real-cta mt-3 flex w-full items-center justify-center gap-2 py-3.5 rounded-xl text-[13px] font-black text-slate-900 active:scale-[0.98] transition-transform"
                 @click.stop
               >
                 <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
                 Xarid qilish
               </a>
-            </div>
-
-            <div class="flex flex-col items-center gap-2 shrink-0 pb-0.5 pointer-events-auto">
-              <button
-                type="button"
-                class="real-action group"
-                aria-label="Yoqtirish"
-                @click="onReact(item, 'like')"
-              >
-                <span
-                  class="real-action-btn"
-                  :class="item.myVote === 'like'
-                    ? 'bg-emerald-500 border-emerald-300 text-white ring-2 ring-emerald-400/40'
-                    : ''"
-                >
-                  <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[17px]" />
-                </span>
-                <span class="real-action-label">{{ item.likesCount }}</span>
-              </button>
-
-              <button
-                type="button"
-                class="real-action group"
-                aria-label="Yoqmadi"
-                @click="onReact(item, 'dislike')"
-              >
-                <span
-                  class="real-action-btn"
-                  :class="item.myVote === 'dislike'
-                    ? 'bg-rose-500 border-rose-300 text-white ring-2 ring-rose-400/40'
-                    : ''"
-                >
-                  <font-awesome-icon icon="fa-solid fa-thumbs-down" class="text-[17px]" />
-                </span>
-                <span class="real-action-label">{{ item.dislikesCount }}</span>
-              </button>
-
-              <button
-                type="button"
-                class="real-action group"
-                aria-label="Ulashish"
-                @click="onShare(item)"
-              >
-                <span class="real-action-btn">
-                  <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-[16px]" />
-                </span>
-                <span class="real-action-label">Ulashish</span>
-              </button>
             </div>
           </div>
         </div>
@@ -155,7 +191,7 @@
     <Transition name="reals-toast">
       <p
         v-if="shareHint"
-        class="fixed left-1/2 -translate-x-1/2 bottom-[4.75rem] z-50 px-4 py-2.5 rounded-xl bg-slate-900/95 text-white text-[12px] font-bold border border-white/10 shadow-xl max-w-[90vw] text-center"
+        class="fixed left-1/2 -translate-x-1/2 bottom-[4.75rem] z-50 px-4 py-2.5 rounded-2xl bg-black/80 text-white text-[12px] font-bold border border-amber-400/25 shadow-xl max-w-[90vw] text-center backdrop-blur-xl"
       >
         {{ shareHint }}
       </p>
@@ -176,6 +212,7 @@ const reals = ref<IRealAd[]>([])
 const loading = ref(true)
 const scrollerEl = ref<HTMLElement | null>(null)
 const activeIndex = ref(0)
+const pausedId = ref<string | null>(null)
 const shareHint = ref('')
 const videoRefs = new Map<string, HTMLVideoElement>()
 const mutedById = ref<Record<string, boolean>>({})
@@ -183,6 +220,13 @@ let observer: IntersectionObserver | null = null
 let shareHintTimer: ReturnType<typeof setTimeout> | null = null
 
 const videoSrc = (r: IRealAd) => resolveMedia(r.videoUrl) || r.videoUrl
+
+const formatCount = (n: number) => {
+  const v = Number(n) || 0
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}K`
+  return String(v)
+}
 
 const isMuted = (id: string) => mutedById.value[id] !== false
 
@@ -200,6 +244,7 @@ const pauseAllExcept = (exceptId?: string) => {
     if (exceptId && id === exceptId) continue
     v.pause()
   }
+  if (!exceptId) pausedId.value = null
 }
 
 const playReal = async (id: string) => {
@@ -209,8 +254,9 @@ const playReal = async (id: string) => {
   v.muted = isMuted(id)
   try {
     await v.play()
+    pausedId.value = null
   } catch {
-    /* autoplay policy */
+    pausedId.value = id
   }
 }
 
@@ -218,7 +264,10 @@ const togglePlay = (id: string) => {
   const v = videoRefs.get(id)
   if (!v) return
   if (v.paused) void playReal(id)
-  else v.pause()
+  else {
+    v.pause()
+    pausedId.value = id
+  }
 }
 
 const toggleMute = (id: string) => {
@@ -228,7 +277,6 @@ const toggleMute = (id: string) => {
   if (v) v.muted = next
 }
 
-/** Realsdagi mahsulot havolasi — ulashish uchun */
 const shareUrlFor = (item: IRealAd) => {
   const product = String(item.productUrl || '').trim()
   if (product) return product
@@ -369,6 +417,17 @@ onBeforeRouteLeave(() => {
 .reals-page {
   height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
   max-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
+  background: #07070c;
+  position: relative;
+}
+
+.reals-ambient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(251, 191, 36, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 20%, rgba(244, 63, 94, 0.1), transparent 50%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(139, 92, 246, 0.08), transparent 55%);
 }
 
 .reals-scroller {
@@ -381,41 +440,89 @@ onBeforeRouteLeave(() => {
 .real-slide {
   height: 100%;
   min-height: 100%;
-  box-sizing: border-box;
+}
+
+.real-frame {
+  min-height: 0;
+  aspect-ratio: 9 / 16;
+  max-height: 100%;
+  margin-inline: auto;
+  width: 100%;
+}
+
+@media (min-height: 700px) {
+  .real-frame {
+    max-height: calc(100% - 0.25rem);
+  }
+}
+
+.reals-vignette {
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.45);
 }
 
 .real-action {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.25rem;
 }
 
 .real-action-btn {
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.65rem;
+  height: 2.65rem;
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgb(255 255 255 / 0.22);
-  background: rgb(0 0 0 / 0.45);
-  color: white;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 4px 14px rgb(0 0 0 / 0.35);
-  transition: transform 0.15s ease, background 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.real-action-btn--like {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.85));
+  border-color: rgba(167, 243, 208, 0.5);
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+}
+
+.real-action-btn--dislike {
+  background: linear-gradient(145deg, rgba(244, 63, 94, 0.9), rgba(190, 18, 60, 0.85));
+  border-color: rgba(254, 205, 211, 0.45);
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.3);
 }
 
 .real-action:active .real-action-btn {
-  transform: scale(0.92);
+  transform: scale(0.9);
 }
 
 .real-action-label {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
-  text-shadow: 0 1px 4px rgb(0 0 0 / 0.8);
-  color: rgb(255 255 255 / 0.95);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 0.85);
   font-variant-numeric: tabular-nums;
+}
+
+.real-cta {
+  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 35%, #f59e0b 100%);
+  box-shadow:
+    0 4px 20px rgba(251, 191, 36, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.reals-play-hint-enter-active,
+.reals-play-hint-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.reals-play-hint-enter-from,
+.reals-play-hint-leave-to {
+  opacity: 0;
 }
 
 .reals-toast-enter-active,
