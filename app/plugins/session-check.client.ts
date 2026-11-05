@@ -21,7 +21,6 @@ export default defineNuxtPlugin(async () => {
       token.value = null
       authStore.user = null
       clearActiveAuth()
-      await navigateTo('/auth')
     }
   }
 })

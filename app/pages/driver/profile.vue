@@ -1,5 +1,21 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-5">
+    <div
+      v-if="!isLoggedIn"
+      class="rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-900 p-4 space-y-3"
+    >
+      <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
+        Hisoblar, to'lov va xizmatlar uchun Telegram orqali ro'yxatdan o'ting.
+      </p>
+      <button
+        type="button"
+        class="w-full py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] transition-all"
+        @click="goConnect"
+      >
+        Ro'yxatdan o'tish / Kirish
+      </button>
+    </div>
+
     <!-- Header -->
     <ProfileHeader @bonus="onBonus" />
 
@@ -189,6 +205,7 @@ import type { ILocalAccount } from '~/types'
 import { useAuthStore } from '~/stores/auth.store'
 import { useAccountStore } from '~/stores/account.store'
 import { isAdminUser, isPanelUser } from '~/utils/userRole'
+import { isDriverAppAuthenticated, navigateToServiceAuth } from '~/utils/authSession'
 import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
 
 definePageMeta({
@@ -199,6 +216,11 @@ usePanelShellLayout()
 
 const authStore = useAuthStore()
 const accountStore = useAccountStore()
+
+const isLoggedIn = computed(() => isDriverAppAuthenticated())
+const goConnect = () => {
+  void navigateToServiceAuth('/driver/profile')
+}
 
 const { effectiveTheme, toggleTheme } = useTheme()
 const { script } = useAppScript()
@@ -243,9 +265,18 @@ const adminUsername = computed(() =>
 )
 
 // --- Actions ---
-const onBonus = () => navigateTo('/driver/bonus')
-const onTopup = () => navigateTo('/driver/payment?tab=topup')
-const onBuyTariff = () => navigateTo('/driver/payment')
+const onBonus = () => {
+  if (!isLoggedIn.value) return void goConnect()
+  navigateTo('/driver/bonus')
+}
+const onTopup = () => {
+  if (!isLoggedIn.value) return void goConnect()
+  navigateTo('/driver/payment?tab=topup')
+}
+const onBuyTariff = () => {
+  if (!isLoggedIn.value) return void goConnect()
+  navigateTo('/driver/payment')
+}
 
 const switchError = ref('')
 
@@ -285,6 +316,10 @@ const confirmDeleteAccount = async () => {
 }
 
 const onAddAccount = () => {
+  if (!isLoggedIn.value) {
+    void goConnect()
+    return
+  }
   if (accountStore.isAtAccountLimit()) {
     switchError.value = accountStore.accountLimitMessage()
     return

@@ -70,7 +70,7 @@
           </div>
 
           <div class="flex flex-wrap gap-3 justify-center pt-8">
-            <LandingButton to="/auth" variant="primary">
+            <LandingButton to="/driver/dashboard" variant="primary">
               <font-awesome-icon icon="fa-solid fa-bolt" class="mr-2 text-sm" />
               Hoziroq boshlash
             </LandingButton>
@@ -147,7 +147,7 @@
             Buyurtmalar bir joyda — Telegram akkauntingiz reklamangizni o'zi avtomatik tashlaydi.
           </p>
           <div class="flex flex-wrap gap-3 justify-center">
-            <LandingButton to="/auth" variant="primary">
+            <LandingButton to="/driver/dashboard" variant="primary">
               <font-awesome-icon icon="fa-solid fa-bolt" class="mr-2 text-sm" />
               Hoziroq boshlash
             </LandingButton>

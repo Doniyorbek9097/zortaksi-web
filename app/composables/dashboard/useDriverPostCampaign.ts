@@ -12,7 +12,9 @@ export function useDriverPostCampaign() {
 
   const loading = computed(() => postStore.isCampaignsLoading || postStore.isCampaignStatsLoading)
   const activeCampaign = computed(() => postStore.activeCampaign)
-  const showCard = computed(() => !!activeCampaign.value || loading.value)
+  const showCard = computed(
+    () => !!authStore.user && (!!activeCampaign.value || loading.value),
+  )
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
@@ -30,13 +32,15 @@ export function useDriverPostCampaign() {
 
   /** Kampaniya ma'lumotlarini yuklash */
   const loadCampaign = async () => {
-    if (!authStore.user || !authStore.sessionReady) {
+    if (!authStore.user) {
+      if (authStore.sessionReady) return
       try {
         await authStore.getMe()
       } catch {
-        /* */
+        return
       }
     }
+    if (!authStore.user) return
     postStore.hydrateActiveCampaignCache()
     await postStore.refreshCampaignData()
   }

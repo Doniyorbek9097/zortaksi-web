@@ -23,13 +23,10 @@ import {
 import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam, routeFromTelegramStartParam } from '~/utils/telegramStartParam'
 import { isTelegramMiniApp, mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
-const isProtectedPath = (path: string) =>
-    path.startsWith('/driver') || path.startsWith('/admin')
+const isAdminPath = (path: string) => path.startsWith('/admin')
 
-const isGuestDownloadPath = (path: string) => {
-    const p = normalizePath(path)
-    return p === '/driver/download-app' || p === '/admin/download-app'
-}
+/** Faqat admin panel — majburiy login */
+const isProtectedPath = (path: string) => isAdminPath(path)
 
 const isAuthEntryPath = (path: string) =>
     path === '/' || path === '/auth' || path === '/login' || path === '/register'
@@ -69,14 +66,14 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         authStore.user = null
         authStore.sessionReady = false
 
-        if (!token.value && isProtectedPath(to.path)) {
-            if (isGuestDownloadPath(to.path)) {
-                return navigateTo('/download-app', { replace: true })
-            }
+        if (!token.value && isAdminPath(to.path)) {
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
         // "/" — Telegram start_param faqat client hash/initData da; SSR dashboard ga otmasin
         if (token.value && isAuthEntryPath(to.path) && to.path !== '/') {
+            return navigateTo('/driver/dashboard')
+        }
+        if (!token.value && to.path === '/') {
             return navigateTo('/driver/dashboard')
         }
         return
@@ -146,11 +143,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     if (!hasToken()) {
         authStore.user = null
         markReady()
-        if (isProtectedPath(to.path)) {
-            if (isGuestDownloadPath(to.path)) {
-                return navigateTo('/download-app', { replace: true })
-            }
+        if (isAdminPath(to.path)) {
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
+        }
+        if (to.path === '/' && import.meta.client) {
+            return navigateTo('/driver/dashboard', { replace: true })
         }
         return
     }
@@ -178,7 +175,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         needsUserRefresh()
     ) {
         markReady()
-        if (!authStore.user && isProtectedPath(to.path)) {
+        if (!authStore.user && isAdminPath(to.path)) {
             return redirectConnectionError(to.fullPath, 'offline')
         }
     }
@@ -190,14 +187,15 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             const kind = classifyApiError(e)
             if (kind === 'auth') {
                 clearSession()
-                if (isProtectedPath(to.path) || to.path === '/auth') {
+                if (isAdminPath(to.path) || to.path === '/auth') {
                     return navigateTo({ path: '/auth', query: { next: to.fullPath } })
                 }
+                markReady()
                 return
             }
             if (isConnectivityError(kind)) {
                 markReady()
-                if (!authStore.user && isProtectedPath(to.path)) {
+                if (!authStore.user && isAdminPath(to.path)) {
                     return redirectConnectionError(
                         to.fullPath,
                         kind === 'offline' ? 'offline' : 'server',
@@ -207,7 +205,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             }
             // Noma'lum xato — SessionGate qotib qolmasin
             markReady()
-            if (!authStore.user && isProtectedPath(to.path)) {
+            if (!authStore.user && isAdminPath(to.path)) {
                 return redirectConnectionError(to.fullPath, 'server')
             }
             return
@@ -215,7 +213,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     if (!authStore.user) {
-        if (isProtectedPath(to.path)) {
+        if (isAdminPath(to.path)) {
             if (hasToken()) {
                 return redirectConnectionError(to.fullPath, 'server')
             }
@@ -249,6 +247,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             markReady()
             return
         }
+        if (to.path === '/') {
+            markReady()
+            return navigateTo('/driver/dashboard', { replace: true })
+        }
         if (canSkipAuth) {
             captureTelegramStartParam()
             const startTarget =
@@ -256,10 +258,6 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
                 routeFromTelegramStartParam(readTelegramStartParam())
             if (startTarget) {
                 return navigateTo(startTarget, { replace: true })
-            }
-            if (to.path === '/' && (isTelegramMiniApp() || mightBeTelegramMiniApp())) {
-                markReady()
-                return
             }
             return navigateTo(resolveHomePath(authStore.user))
         }

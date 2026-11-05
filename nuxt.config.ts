@@ -130,7 +130,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
     // Manifest MIME / cache headers (Vercel/Nitro)
     registerWebManifestInRouteRules: true,
     manifest: {
-      id: '/',
+      id: '/driver/dashboard',
       name: "Zo'r Taksi",
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish',
@@ -138,7 +138,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       background_color: '#020617',
       display: 'standalone',
       orientation: 'portrait',
-      start_url: '/',
+      start_url: '/driver/dashboard',
       scope: '/',
       lang: 'uz-Latn',
       // PNG any icons first — required for Chrome installability
