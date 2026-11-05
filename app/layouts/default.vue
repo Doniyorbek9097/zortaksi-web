@@ -1,9 +1,7 @@
 <template>
-  <BasePullToRefresh>
-    <div>
-      <slot />
-    </div>
-  </BasePullToRefresh>
+  <div>
+    <slot />
+  </div>
 </template>
 
 <script setup lang="ts">

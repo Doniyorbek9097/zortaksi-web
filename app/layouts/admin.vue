@@ -1,11 +1,9 @@
 <template>
   <AuthSessionGate>
-    <BasePullToRefresh>
-      <div class="admin-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-        <slot />
-      </div>
-    </BasePullToRefresh>
-    <!-- Tabbar PTR transform dan tashqarida — fixed sticky saqlansin! -->
+    <div class="admin-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+      <slot />
+    </div>
+    <!-- Tabbar fixed sticky saqlansin -->
     <AdminBottomNavigation />
   </AuthSessionGate>
 </template>

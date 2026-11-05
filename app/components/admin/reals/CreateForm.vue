@@ -23,7 +23,7 @@
         :model-value="modelValue.productPrice"
         label="Narxi"
         placeholder="Masalan: 45 000 so'm"
-        @update:model-value="patch('productPrice', $event)"
+        @update:model-value="patch('productPrice', formFieldString($event))"
       />
 
       <BaseInput
@@ -132,6 +132,11 @@ const emit = defineEmits<{
 
 const patch = <K extends keyof RealFormModel>(key: K, value: RealFormModel[K]) => {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
+}
+
+const formFieldString = (v: string | number | null | undefined) => {
+  if (v == null) return ''
+  return String(v).trim()
 }
 
 const onFileChange = (e: Event) => {

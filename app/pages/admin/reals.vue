@@ -129,10 +129,15 @@ const load = async () => {
   }
 }
 
+const formFieldString = (v: string | number | null | undefined) => {
+  if (v == null) return ''
+  return String(v).trim()
+}
+
 const buildFormData = () => {
   const fd = new FormData()
   fd.append('title', form.value.title.trim())
-  fd.append('productPrice', form.value.productPrice.trim())
+  fd.append('productPrice', formFieldString(form.value.productPrice))
   fd.append('productUrl', form.value.productUrl.trim())
   fd.append('sortOrder', String(form.value.sortOrder || 0))
   fd.append('active', form.value.active ? '1' : '0')

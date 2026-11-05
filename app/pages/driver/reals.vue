@@ -44,12 +44,11 @@
             class="absolute inset-0 w-full h-full object-cover"
             playsinline
             loop
-            muted
-            preload="metadata"
+            preload="auto"
             @click="togglePlay(item.id)"
           />
 
-          <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/55 via-transparent to-black/75" />
+          <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-black/50 via-transparent to-transparent" />
 
           <Transition name="reals-play-hint">
             <div
@@ -153,7 +152,7 @@
               <span class="real-action-btn" :class="item.myVote === 'dislike' ? 'real-action-btn--dislike' : ''">
                 <font-awesome-icon icon="fa-solid fa-thumbs-down" class="text-[15px]" />
               </span>
-              <span class="real-action-label">{{ formatCount(item.dislikesCount) }}</span>
+              <span class="real-action-label">Yoqmadi</span>
             </button>
             <button type="button" class="real-action" aria-label="Ulashish" @click="onShare(item)">
               <span class="real-action-btn">
@@ -193,7 +192,9 @@ const activeIndex = ref(0)
 const pausedId = ref<string | null>(null)
 const shareHint = ref('')
 const videoRefs = new Map<string, HTMLVideoElement>()
-const mutedById = ref<Record<string, boolean>>({})
+/** Faqat foydalanuvchi o'chirganda true; yangi realga o'tganda yana ovozli */
+const soundMuted = ref(false)
+const playingId = ref<string | null>(null)
 let observer: IntersectionObserver | null = null
 let shareHintTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -213,12 +214,19 @@ const formatCount = (n: number) => {
   return String(v)
 }
 
-const isMuted = (id: string) => mutedById.value[id] !== false
+const isMuted = (_id: string) => soundMuted.value
+
+const syncAllVideoMute = () => {
+  const active = playingId.value
+  for (const [id, v] of videoRefs) {
+    v.muted = id !== active || soundMuted.value
+  }
+}
 
 const setVideoRef = (id: string, el: HTMLVideoElement | null) => {
   if (el) {
     videoRefs.set(id, el)
-    el.muted = isMuted(id)
+    el.muted = id !== playingId.value || soundMuted.value
   } else {
     videoRefs.delete(id)
   }
@@ -235,13 +243,27 @@ const pauseAllExcept = (exceptId?: string) => {
 const playReal = async (id: string) => {
   const v = videoRefs.get(id)
   if (!v) return
+
+  if (playingId.value !== id) {
+    soundMuted.value = false
+  }
+
+  playingId.value = id
   pauseAllExcept(id)
-  v.muted = isMuted(id)
+  syncAllVideoMute()
+
   try {
     await v.play()
     pausedId.value = null
   } catch {
-    pausedId.value = id
+    v.muted = true
+    soundMuted.value = true
+    try {
+      await v.play()
+      pausedId.value = null
+    } catch {
+      pausedId.value = id
+    }
   }
 }
 
@@ -256,10 +278,9 @@ const togglePlay = (id: string) => {
 }
 
 const toggleMute = (id: string) => {
-  const next = !isMuted(id)
-  mutedById.value = { ...mutedById.value, [id]: next }
-  const v = videoRefs.get(id)
-  if (v) v.muted = next
+  if (playingId.value !== id) return
+  soundMuted.value = !soundMuted.value
+  syncAllVideoMute()
 }
 
 const shareUrlFor = (item: IRealAd) => {
@@ -381,10 +402,17 @@ watch(
 )
 
 onMounted(async () => {
+  soundMuted.value = false
   await load()
   await nextTick()
   setupObserver()
   if (reals.value[0]?.id) void playReal(reals.value[0].id)
+})
+
+onActivated(() => {
+  soundMuted.value = false
+  const id = reals.value[activeIndex.value]?.id
+  if (id) void playReal(id)
 })
 
 onBeforeUnmount(() => {
@@ -395,6 +423,7 @@ onBeforeUnmount(() => {
 
 onBeforeRouteLeave(() => {
   pauseAllExcept()
+  playingId.value = null
 })
 </script>
 
@@ -451,13 +480,33 @@ onBeforeRouteLeave(() => {
   backdrop-filter: blur(8px);
 }
 
+.real-product-stack {
+  position: relative;
+}
+
+.real-product-stack::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 3.5rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.42), transparent);
+  pointer-events: none;
+}
+
 .real-product-bar {
   width: 100%;
   box-sizing: border-box;
   padding: 5px;
-  background: rgba(0, 0, 0, 0.28);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(10px);
+  border: none;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.22) 55%,
+    transparent 100%
+  );
+  backdrop-filter: blur(8px);
 }
 
 .real-product-title {
