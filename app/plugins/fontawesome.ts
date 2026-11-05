@@ -82,6 +82,12 @@ import {
   faListOl,
   faCreditCard,
   faUserShield,
+  faClapperboard,
+  faThumbsUp,
+  faThumbsDown,
+  faBagShopping,
+  faVolumeHigh,
+  faVolumeXmark,
 } from '@fortawesome/free-solid-svg-icons'
 
 config.autoAddCss = false
@@ -168,6 +174,12 @@ library.add(
   faListOl,
   faCreditCard,
   faUserShield,
+  faClapperboard,
+  faThumbsUp,
+  faThumbsDown,
+  faBagShopping,
+  faVolumeHigh,
+  faVolumeXmark,
 )
 
 export default defineNuxtPlugin((nuxtApp) => {

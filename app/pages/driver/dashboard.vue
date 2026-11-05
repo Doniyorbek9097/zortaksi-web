@@ -1,21 +1,5 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-4">
-    <div
-      v-if="!isLoggedIn"
-      class="rounded-2xl border border-sky-200 dark:border-sky-800/60 bg-gradient-to-br from-sky-50 to-white dark:from-sky-950/40 dark:to-slate-900 p-4 space-y-3"
-    >
-      <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
-        Buyurtmalar, statistika va TOP 10 ochiq. Tarifga ulanish uchun Telegram orqali ro'yxatdan o'ting.
-      </p>
-      <button
-        type="button"
-        class="w-full py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all"
-        @click="goConnect"
-      >
-        Tarifga ulanish
-      </button>
-    </div>
-
     <DashboardHeader action-button="download" @download="onDownloadApp" @help="onHelp" />
 
     <!-- Salomlashish va vaqt -->
@@ -107,17 +91,12 @@ import { usePromoBanners } from '~/composables/dashboard/usePromoBanners'
 import { useGroupInviteLeaderboard } from '~/composables/dashboard/useGroupInviteLeaderboard'
 import { useDriverPostCampaign } from '~/composables/dashboard/useDriverPostCampaign'
 import { useAuthStore } from '~/stores/auth.store'
-import { isDriverAppAuthenticated, navigateToServiceAuth } from '~/utils/authSession'
+import { navigateToServiceAuth } from '~/utils/authSession'
 import { openDriverSupportChatInstant } from '~/utils/openSupportChat'
 
 definePageMeta({ layout: 'driver' })
 
 const authStore = useAuthStore()
-const isLoggedIn = computed(() => isDriverAppAuthenticated())
-
-const goConnect = () => {
-  void navigateToServiceAuth('/driver/payment')
-}
 
 const { liveDateTimeLabel, greeting, isNight } = useLiveDateTime()
 const { tariff, tariffActive, balance, firstName } = useDriverTariffCard()
