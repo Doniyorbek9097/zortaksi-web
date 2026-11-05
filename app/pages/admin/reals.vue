@@ -23,6 +23,7 @@
         v-for="r in reals"
         :key="r.id"
         :title="r.title"
+        :product-price="r.productPrice"
         :product-url="r.productUrl"
         :video-src="realVideoSrc(r)"
         :sort-order="r.sortOrder"
@@ -77,6 +78,7 @@ const previewObjectUrl = ref('')
 
 const form = ref<RealFormModel>({
   title: '',
+  productPrice: '',
   productUrl: '',
   sortOrder: 0,
   active: true,
@@ -98,7 +100,7 @@ const resetForm = () => {
   pickedFile.value = null
   if (previewObjectUrl.value) URL.revokeObjectURL(previewObjectUrl.value)
   previewObjectUrl.value = ''
-  form.value = { title: '', productUrl: '', sortOrder: 0, active: true }
+  form.value = { title: '', productPrice: '', productUrl: '', sortOrder: 0, active: true }
   error.value = ''
   saved.value = false
 }
@@ -130,6 +132,7 @@ const load = async () => {
 const buildFormData = () => {
   const fd = new FormData()
   fd.append('title', form.value.title.trim())
+  fd.append('productPrice', form.value.productPrice.trim())
   fd.append('productUrl', form.value.productUrl.trim())
   fd.append('sortOrder', String(form.value.sortOrder || 0))
   fd.append('active', form.value.active ? '1' : '0')
@@ -139,7 +142,7 @@ const buildFormData = () => {
 
 const save = async () => {
   if (!form.value.title.trim()) {
-    error.value = 'Sarlavha kerak'
+    error.value = 'Mahsulot nomi kerak'
     return
   }
   if (!editingId.value && !pickedFile.value) {
@@ -169,6 +172,7 @@ const startEdit = (r: IRealAd) => {
   editingId.value = r.id
   form.value = {
     title: r.title,
+    productPrice: r.productPrice || '',
     productUrl: r.productUrl || '',
     sortOrder: r.sortOrder || 0,
     active: !!r.active,

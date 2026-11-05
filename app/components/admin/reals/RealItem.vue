@@ -16,6 +16,9 @@
     </div>
     <div class="p-3 space-y-2">
       <p class="text-[14px] font-black text-slate-900 dark:text-white truncate">{{ title }}</p>
+      <p v-if="productPrice" class="text-[12px] font-bold text-amber-600 dark:text-amber-400 truncate">
+        {{ productPrice }}
+      </p>
       <p v-if="productUrl" class="text-[11px] text-sky-600 dark:text-sky-400 truncate">{{ productUrl }}</p>
       <div class="flex items-center gap-3 text-[11px] font-bold text-slate-500">
         <span class="text-emerald-600"><font-awesome-icon icon="fa-solid fa-thumbs-up" /> {{ likesCount }}</span>
@@ -44,6 +47,7 @@
 <script setup lang="ts">
 defineProps<{
   title: string
+  productPrice?: string
   productUrl?: string
   videoSrc: string
   sortOrder: number

@@ -3,6 +3,7 @@ export type RealAdVote = 'like' | 'dislike'
 export interface IRealAd {
   id: string
   title: string
+  productPrice: string
   productUrl: string
   videoPath: string
   videoUrl: string

@@ -14,9 +14,16 @@
     <div class="p-4 space-y-3">
       <BaseInput
         :model-value="modelValue.title"
-        label="Sarlavha"
-        placeholder="Masalan: Yangi mahsulot"
+        label="Mahsulot nomi"
+        placeholder="Masalan: Shampun"
         @update:model-value="patch('title', $event)"
+      />
+
+      <BaseInput
+        :model-value="modelValue.productPrice"
+        label="Narxi"
+        placeholder="Masalan: 45 000 so'm"
+        @update:model-value="patch('productPrice', $event)"
       />
 
       <BaseInput
@@ -101,6 +108,7 @@
 <script setup lang="ts">
 export interface RealFormModel {
   title: string
+  productPrice: string
   productUrl: string
   sortOrder: number
   active: boolean

@@ -66,59 +66,61 @@
 
           <div
             v-if="item.productUrl"
-            class="absolute right-3 bottom-3 z-20 flex flex-col items-end gap-2 max-w-[min(100%,11.5rem)] real-product-stack"
+            class="absolute inset-x-0 bottom-0 z-20 real-product-stack pointer-events-none"
           >
-            <a
-              :href="item.productUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="real-title-box w-full flex items-center gap-1.5 text-left real-title-box--link"
-              @click.stop
-            >
-              <span
-                class="flex-1 min-w-0 text-[13px] font-black leading-snug line-clamp-2 text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.85)]"
-              >
-                {{ productTitle(item) }}
-              </span>
-              <font-awesome-icon
-                icon="fa-solid fa-chevron-right"
-                class="shrink-0 text-[13px] text-white/90 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.85))]"
-              />
-            </a>
-
-            <div class="flex flex-row items-end gap-2.5 shrink-0">
-              <button
-                type="button"
-                class="real-action shrink-0"
-                :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
-                @click.stop="toggleMute(item.id)"
-              >
-                <span
-                  class="real-premium-btn"
-                  :class="isMuted(item.id) ? 'real-premium-btn--muted' : 'real-premium-btn--sound'"
-                >
-                  <font-awesome-icon
-                    :icon="isMuted(item.id) ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"
-                    class="text-[15px]"
-                  />
-                </span>
-                <span class="real-action-label real-action-label--premium">Ovoz</span>
-              </button>
-
+            <div class="real-product-bar w-full pointer-events-auto">
               <a
                 :href="item.productUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="real-action shrink-0"
+                class="real-product-title real-title-box--link"
                 @click.stop
               >
-                <span class="real-premium-btn real-premium-btn--buy">
-                  <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-[16px]" />
+                <span class="flex-1 min-w-0">
+                  <span class="block text-[14px] font-black leading-snug line-clamp-2 text-white">
+                    {{ productTitle(item) }}
+                  </span>
+                  <span
+                    v-if="productPriceLabel(item)"
+                    class="block mt-0.5 text-[12px] font-bold text-amber-300/95 tabular-nums"
+                  >
+                    {{ productPriceLabel(item) }}
+                  </span>
                 </span>
-                <span class="real-action-label real-action-label--premium real-action-label--buy">
-                  Xarid qilish
-                </span>
+                <font-awesome-icon
+                  icon="fa-solid fa-chevron-right"
+                  class="shrink-0 text-[13px] text-white/90"
+                />
               </a>
+
+              <div class="real-product-actions">
+                <a
+                  :href="item.productUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="real-cta flex-1 min-w-0"
+                  @click.stop
+                >
+                  <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
+                  Xarid qilish
+                </a>
+                <button
+                  type="button"
+                  class="real-sound-toggle shrink-0"
+                  :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
+                  @click.stop="toggleMute(item.id)"
+                >
+                  <span
+                    class="real-premium-btn real-premium-btn--inline"
+                    :class="isMuted(item.id) ? 'real-premium-btn--muted' : 'real-premium-btn--sound'"
+                  >
+                    <font-awesome-icon
+                      :icon="isMuted(item.id) ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"
+                      class="text-[15px]"
+                    />
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -205,6 +207,8 @@ const productTitle = (item: IRealAd) => {
   const t = String(item.title || '').trim()
   return t || 'Mahsulot'
 }
+
+const productPriceLabel = (item: IRealAd) => String(item.productPrice || '').trim()
 
 const formatCount = (n: number) => {
   const v = Number(n) || 0
@@ -451,6 +455,72 @@ onBeforeRouteLeave(() => {
   backdrop-filter: blur(8px);
 }
 
+.real-product-bar {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.55);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(14px);
+}
+
+.real-product-title {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  width: 100%;
+  margin-bottom: 0.375rem;
+  text-align: left;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.85);
+}
+
+.real-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.real-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  color: #1c1917;
+  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 35%, #f59e0b 100%);
+  box-shadow:
+    0 4px 20px rgba(251, 191, 36, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: transform 0.15s ease;
+}
+
+.real-cta:active {
+  transform: scale(0.98);
+}
+
+.real-sound-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.real-sound-toggle:active .real-premium-btn {
+  transform: scale(0.9);
+}
+
+.real-premium-btn--inline {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
 .real-title-box--link {
   transition: transform 0.15s ease, background 0.15s ease;
 }
@@ -465,7 +535,7 @@ onBeforeRouteLeave(() => {
 }
 
 .real-rail-social--with-product {
-  bottom: calc(8.5rem + 30px);
+  bottom: calc(7.5rem + 30px);
 }
 
 .real-action {
