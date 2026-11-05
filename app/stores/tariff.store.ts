@@ -16,6 +16,7 @@ export interface TariffRow {
   kind?: TariffKind
   serviceBuyurtma?: boolean
   servicePost?: boolean
+  serviceLichka?: boolean
 }
 
 export type TariffPayload = {
@@ -29,6 +30,7 @@ export type TariffPayload = {
   kind?: TariffKind
   serviceBuyurtma?: boolean
   servicePost?: boolean
+  serviceLichka?: boolean
 }
 
 const toRow = (t: any): TariffRow => {
@@ -45,6 +47,7 @@ const toRow = (t: any): TariffRow => {
     kind: normalizeTariffKind(t.kind),
     serviceBuyurtma: services.buyurtma,
     servicePost: services.post,
+    serviceLichka: services.lichka,
   }
 }
 

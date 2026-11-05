@@ -41,6 +41,7 @@
         :expire-days="t.expireDays"
         :service-buyurtma="t.serviceBuyurtma !== false"
         :service-post="!!t.servicePost"
+        :service-lichka="!!t.serviceLichka"
         @edit="startEdit(t)"
         @delete="askDelete(t)"
       />
@@ -53,6 +54,7 @@
       :editing="editingId != null"
       :service-buyurtma="form.serviceBuyurtma"
       :service-post="form.servicePost"
+      :service-lichka="form.serviceLichka"
       @cancel="onFormCancel"
     >
       <AdminTariffsCreateForm
@@ -101,6 +103,7 @@ const emptyForm = (tab: TariffKind = 'driver'): TariffFormModel => ({
   expireDays: 30,
   serviceBuyurtma: tab !== 'driver_post',
   servicePost: tab === 'driver_post',
+  serviceLichka: false,
 })
 
 const form = ref<TariffFormModel>(emptyForm())
@@ -151,6 +154,7 @@ const onSubmit = async (draft: TariffFormModel) => {
     expireDays: Number(draft.expireDays ?? 30),
     serviceBuyurtma: draft.serviceBuyurtma,
     servicePost: draft.servicePost,
+    serviceLichka: draft.serviceLichka,
   }
 
   try {
@@ -180,6 +184,7 @@ const startEdit = (t: TariffRow) => {
     expireDays: t.expireDays,
     serviceBuyurtma: t.serviceBuyurtma !== false,
     servicePost: !!t.servicePost,
+    serviceLichka: !!t.serviceLichka,
   }
   formOpen.value = true
 }

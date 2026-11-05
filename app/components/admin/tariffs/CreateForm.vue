@@ -60,6 +60,17 @@
           E'lon tarqatish (avto)
         </span>
       </label>
+      <label class="flex items-center gap-2.5 px-1 py-1.5 cursor-pointer">
+        <input
+          type="checkbox"
+          class="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
+          :checked="model.serviceLichka"
+          @change="patch('serviceLichka', ($event.target as HTMLInputElement).checked)"
+        />
+        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+          Lichkaga buyurtma (private guruhdan forward)
+        </span>
+      </label>
       <p v-if="servicesError" class="px-1 text-[11px] font-semibold text-red-500">
         {{ servicesError }}
       </p>
@@ -113,6 +124,7 @@ export interface TariffFormModel {
   expireDays: number | null
   serviceBuyurtma: boolean
   servicePost: boolean
+  serviceLichka: boolean
 }
 
 const model = defineModel<TariffFormModel>({ required: true })
@@ -146,8 +158,12 @@ const onSubmit = () => {
   if (!slug.trim()) return
   if (price == null || price < 0) return
   if (expireDays == null || expireDays < 1) return
-  if (!serviceBuyurtma && !servicePost) {
+  if (!serviceBuyurtma && !servicePost && !model.value.serviceLichka) {
     servicesError.value = 'Kamida bitta xizmatni tanlang'
+    return
+  }
+  if (model.value.serviceLichka && !serviceBuyurtma) {
+    servicesError.value = 'Lichka uchun «Haydovchi (buyurtma)» ham yoqilgan bo‘lishi kerak'
     return
   }
   emit('submit', {
@@ -158,6 +174,7 @@ const onSubmit = () => {
     expireDays: Number(expireDays),
     serviceBuyurtma: !!serviceBuyurtma,
     servicePost: !!servicePost,
+    serviceLichka: !!model.value.serviceLichka,
   })
 }
 </script>
