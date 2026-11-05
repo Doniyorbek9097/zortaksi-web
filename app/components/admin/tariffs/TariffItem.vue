@@ -30,12 +30,6 @@
         >
           E'lon
         </span>
-        <span
-          v-if="serviceLichka"
-          class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-300"
-        >
-          Lichka
-        </span>
       </div>
 
       <p v-if="info" class="text-[12px] font-medium text-slate-400 dark:text-slate-500">
@@ -77,7 +71,6 @@ const props = defineProps<{
   expireDays: number
   serviceBuyurtma?: boolean
   servicePost?: boolean
-  serviceLichka?: boolean
 }>()
 
 defineEmits<{ edit: []; delete: [] }>()

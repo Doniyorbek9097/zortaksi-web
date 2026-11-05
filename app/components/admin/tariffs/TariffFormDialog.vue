@@ -45,7 +45,6 @@ const props = defineProps<{
   editing?: boolean
   serviceBuyurtma?: boolean
   servicePost?: boolean
-  serviceLichka?: boolean
 }>()
 
 const open = defineModel<boolean>({ required: true })
@@ -58,7 +57,6 @@ const kindLabel = computed(() =>
   tariffServicesLabel({
     buyurtma: props.serviceBuyurtma !== false,
     post: !!props.servicePost,
-    lichka: !!props.serviceLichka,
   })
 )
 

@@ -1,3 +1,6 @@
+/** Auth cookie — JWT cheksiz; brauzerda uzoq saqlash (10 yil) */
+export const AUTH_COOKIE_MAX_AGE_SEC = 10 * 365 * 24 * 60 * 60
+
 /** Har chaqiriqda yangi opts — import paytidagi server secure:true cookie ni buzmasin */
 export function getAuthCookieOptions() {
   const isHttps = import.meta.client
@@ -11,7 +14,7 @@ export function getAuthCookieOptions() {
     hostname.endsWith('.zortaksi.uz')
 
   return {
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: AUTH_COOKIE_MAX_AGE_SEC,
     path: '/',
     watch: true as const,
     sameSite: 'lax' as const,

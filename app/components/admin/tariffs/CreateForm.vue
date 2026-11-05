@@ -60,17 +60,6 @@
           E'lon tarqatish (avto)
         </span>
       </label>
-      <label class="flex items-center gap-2.5 px-1 py-1.5 cursor-pointer">
-        <input
-          type="checkbox"
-          class="w-4 h-4 rounded border-slate-300 text-sky-500 focus:ring-sky-500"
-          :checked="model.serviceLichka"
-          @change="patch('serviceLichka', ($event.target as HTMLInputElement).checked)"
-        />
-        <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-          Lichkaga buyurtma (private guruhdan forward)
-        </span>
-      </label>
       <p v-if="servicesError" class="px-1 text-[11px] font-semibold text-red-500">
         {{ servicesError }}
       </p>

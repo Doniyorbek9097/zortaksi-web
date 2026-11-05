@@ -1,5 +1,7 @@
 /** Multi-account: localStorage + client-only xotira (switch paytida) */
 
+import { AUTH_COOKIE_MAX_AGE_SEC } from '~/utils/authCookie'
+
 export const ACCOUNTS_KEY = 'zt_accounts'
 export const ACTIVE_USER_KEY = 'zt_active_user'
 export const ACTIVE_TOKEN_KEY = 'zt_active_token'
@@ -111,7 +113,7 @@ export function writeAuthCookie(token: string | null) {
 
   if (!token) return
   const secure = isHttps ? '; Secure' : ''
-  document.cookie = `auth_token=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${secure}`
+  document.cookie = `auth_token=${token}; Path=/; Max-Age=${AUTH_COOKIE_MAX_AGE_SEC}; SameSite=Lax${secure}`
 }
 
 /**
