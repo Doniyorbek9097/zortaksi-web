@@ -26,47 +26,6 @@
     </div>
 
     <div v-else class="reals-stage relative flex-1 min-h-0 w-full">
-      <header
-        class="absolute top-0 inset-x-0 z-30 px-4 pt-2 pb-1 pointer-events-none"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <component
-            :is="activeProductUrl ? 'a' : 'div'"
-            :href="activeProductUrl || undefined"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="real-title-box flex-1 min-w-0 flex items-center gap-1.5 text-left"
-            :class="activeProductUrl ? 'real-title-box--link pointer-events-auto' : ''"
-            @click.stop
-          >
-            <span
-              class="flex-1 min-w-0 text-[15px] font-black leading-snug line-clamp-2 text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.85)]"
-            >
-              {{ headerTitle }}
-            </span>
-            <font-awesome-icon
-              v-if="activeProductUrl"
-              icon="fa-solid fa-chevron-right"
-              class="shrink-0 text-[13px] text-white/90 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.85))]"
-            />
-          </component>
-          <span
-            v-if="reals.length > 1"
-            class="shrink-0 text-[10px] font-black tabular-nums text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.9)] pt-0.5"
-          >
-            {{ activeIndex + 1 }}/{{ reals.length }}
-          </span>
-        </div>
-        <div v-if="reals.length > 1" class="flex gap-1 mt-2">
-          <span
-            v-for="(_, i) in reals"
-            :key="i"
-            class="h-[2px] flex-1 rounded-full transition-all duration-300"
-            :class="i === activeIndex ? 'bg-amber-400/95' : 'bg-white/25'"
-          />
-        </div>
-      </header>
-
       <div
         ref="scrollerEl"
         class="reals-scroller absolute inset-0 overflow-y-auto snap-y snap-mandatory scroll-smooth overscroll-y-contain"
@@ -105,9 +64,68 @@
             </div>
           </Transition>
 
+          <div
+            v-if="item.productUrl"
+            class="absolute right-3 bottom-3 z-20 flex flex-col items-end gap-2 max-w-[min(100%,11.5rem)] real-product-stack"
+          >
+            <a
+              :href="item.productUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="real-title-box w-full flex items-center gap-1.5 text-left real-title-box--link"
+              @click.stop
+            >
+              <span
+                class="flex-1 min-w-0 text-[13px] font-black leading-snug line-clamp-2 text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.85)]"
+              >
+                {{ productTitle(item) }}
+              </span>
+              <font-awesome-icon
+                icon="fa-solid fa-chevron-right"
+                class="shrink-0 text-[13px] text-white/90 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.85))]"
+              />
+            </a>
+
+            <div class="flex flex-row items-end gap-2.5 shrink-0">
+              <button
+                type="button"
+                class="real-action shrink-0"
+                :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
+                @click.stop="toggleMute(item.id)"
+              >
+                <span
+                  class="real-premium-btn"
+                  :class="isMuted(item.id) ? 'real-premium-btn--muted' : 'real-premium-btn--sound'"
+                >
+                  <font-awesome-icon
+                    :icon="isMuted(item.id) ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"
+                    class="text-[15px]"
+                  />
+                </span>
+                <span class="real-action-label real-action-label--premium">Ovoz</span>
+              </button>
+
+              <a
+                :href="item.productUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="real-action shrink-0"
+                @click.stop
+              >
+                <span class="real-premium-btn real-premium-btn--buy">
+                  <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-[16px]" />
+                </span>
+                <span class="real-action-label real-action-label--premium real-action-label--buy">
+                  Xarid qilish
+                </span>
+              </a>
+            </div>
+          </div>
+
           <button
+            v-else
             type="button"
-            class="absolute right-3 top-[4.25rem] z-20 real-action"
+            class="absolute right-3 bottom-3 z-20 real-action"
             :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
             @click.stop="toggleMute(item.id)"
           >
@@ -123,7 +141,10 @@
             <span class="real-action-label real-action-label--premium">Ovoz</span>
           </button>
 
-          <div class="absolute right-3 bottom-3 z-20 flex flex-col items-center gap-2.5">
+          <div
+            class="absolute right-3 z-20 flex flex-col items-center gap-2.5 real-rail-social"
+            :class="item.productUrl ? 'real-rail-social--with-product' : ''"
+          >
             <button type="button" class="real-action" aria-label="Yoqtirish" @click="onReact(item, 'like')">
               <span class="real-action-btn" :class="item.myVote === 'like' ? 'real-action-btn--like' : ''">
                 <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[15px]" />
@@ -142,22 +163,6 @@
               </span>
               <span class="real-action-label">Ulash</span>
             </button>
-
-            <a
-              v-if="item.productUrl"
-              :href="item.productUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="real-action"
-              @click.stop
-            >
-              <span class="real-premium-btn real-premium-btn--buy">
-                <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-[16px]" />
-              </span>
-              <span class="real-action-label real-action-label--premium real-action-label--buy">
-                Xarid qilish
-              </span>
-            </a>
           </div>
         </section>
       </div>
@@ -196,15 +201,10 @@ let shareHintTimer: ReturnType<typeof setTimeout> | null = null
 
 const videoSrc = (r: IRealAd) => resolveMedia(r.videoUrl) || r.videoUrl
 
-const headerTitle = computed(() => {
-  const t = reals.value[activeIndex.value]?.title?.trim()
-  return t || 'Reals'
-})
-
-const activeProductUrl = computed(() => {
-  const url = String(reals.value[activeIndex.value]?.productUrl || '').trim()
-  return url || ''
-})
+const productTitle = (item: IRealAd) => {
+  const t = String(item.title || '').trim()
+  return t || 'Mahsulot'
+}
 
 const formatCount = (n: number) => {
   const v = Number(n) || 0
@@ -458,6 +458,14 @@ onBeforeRouteLeave(() => {
 .real-title-box--link:active {
   transform: scale(0.98);
   background: rgba(0, 0, 0, 0.4);
+}
+
+.real-rail-social {
+  bottom: calc(4.85rem + 30px);
+}
+
+.real-rail-social--with-product {
+  bottom: calc(8.5rem + 30px);
 }
 
 .real-action {
