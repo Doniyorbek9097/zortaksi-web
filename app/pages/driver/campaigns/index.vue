@@ -7,13 +7,14 @@
           Zor Taksi — guruhlarga avtomatik tarqatish
         </p>
       </div>
-      <NuxtLink
-        to="/driver/post"
+      <button
+        type="button"
         class="inline-flex items-center gap-1.5 shrink-0 px-3 py-2 rounded-xl text-[11px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-md shadow-amber-500/25 active:scale-95 transition-transform"
+        @click="goPost"
       >
         <font-awesome-icon icon="fa-solid fa-plus" class="text-[10px]" />
         E'lon joylash
-      </NuxtLink>
+      </button>
     </header>
 
     <div v-if="loading && !store.campaigns.length" class="space-y-3">
@@ -45,13 +46,14 @@
       <p class="mt-2 text-[12px] font-bold text-amber-700/90 dark:text-amber-300/90 max-w-xs">
         Buning uchun e'loningizni joylashtiring
       </p>
-      <NuxtLink
-        to="/driver/post"
+      <button
+        type="button"
         class="mt-6 inline-flex items-center gap-2 px-6 py-3.5 rounded-xl text-[13px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 active:scale-[0.98] transition-transform"
+        @click="goPost"
       >
         <font-awesome-icon icon="fa-solid fa-paper-plane" class="text-sm" />
         E'loningizni joylashtiring
-      </NuxtLink>
+      </button>
     </div>
 
     <div v-else class="space-y-4">
@@ -117,6 +119,11 @@ const sortedCampaigns = computed(() => {
 })
 
 const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=post-tariff&next=/driver/campaigns'
+
+const goPost = () => {
+  if (!requireServiceAuth('/driver/post')) return
+  void navigateTo('/driver/post')
+}
 
 const requireTariffForPost = (): boolean => {
   if (store.isAdmin || authStore.postTariffActive) return true

@@ -15,6 +15,7 @@ import {
   clearOrderFilterBotGroupId,
   clearOrderFilterKeywords,
   markOrderFilterConfigured,
+  shouldApplyScopedOrderListFilter,
   ORDERS_PAGE_LIMIT,
 } from '~/utils/orderFilterKeywords'
 
@@ -147,6 +148,21 @@ export function useOrdersFilter(orderStore: ReturnType<typeof useOrderStore>) {
   }
 
   const hydrateFilter = () => {
+    if (!shouldApplyScopedOrderListFilter()) {
+      draftKeywords.value = ''
+      appliedKeywords.value = ''
+      draftBotGroupId.value = ''
+      appliedBotGroupId.value = ''
+      scope.value = 'all'
+      orderStore.applyListFilter({
+        page: 1,
+        limit: ORDERS_PAGE_LIMIT,
+        ...(appliedOrderQuery.value.trim()
+          ? { text: appliedOrderQuery.value.trim() }
+          : {}),
+      })
+      return
+    }
     const saved = loadOrderFilterKeywords()
     const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
     draftKeywords.value = saved

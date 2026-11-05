@@ -227,7 +227,11 @@ export function useOrdersListSync(options: {
     }
 
     if (fromTabSwitch) orderStore.clearOrdersListScroll()
-    await orderStore.fetchOrders(pageParams)
+    try {
+      await orderStore.fetchOrders(pageParams)
+    } catch (e) {
+      console.warn('[orders] fetch failed:', e)
+    }
     await nextTick()
     restoreListScroll(fromTabSwitch)
   }

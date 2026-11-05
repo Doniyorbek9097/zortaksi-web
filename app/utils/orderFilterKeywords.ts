@@ -232,15 +232,27 @@ export function buildOrderFilterApiParams(
   return {}
 }
 
+/** Saqlangan yo'nalish filtri — faqat tanlangan haydovchi hisobi bilan */
+export function shouldApplyScopedOrderListFilter(): boolean {
+  if (!import.meta.client) return false
+  return !!readActiveUserId()
+}
+
 /** Buyurtmalar ro'yxati — saqlangan filter bilan bir xil bootstrap params */
 export function buildOrdersListBootstrapParams(extra: { text?: string } = {}) {
-  const saved = loadOrderFilterKeywords()
-  const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
   const text = String(extra.text || '').trim()
-  return {
+  const base = {
     page: 1,
     limit: ORDERS_PAGE_LIMIT,
     ...(text ? { text } : {}),
+  }
+  if (!shouldApplyScopedOrderListFilter()) {
+    return base
+  }
+  const saved = loadOrderFilterKeywords()
+  const savedGroup = formatBotGroupIds(parseBotGroupIds(loadOrderFilterBotGroupId()))
+  return {
+    ...base,
     ...buildOrderFilterApiParams(savedGroup, saved),
   }
 }

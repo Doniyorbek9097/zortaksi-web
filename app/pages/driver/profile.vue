@@ -1,7 +1,24 @@
 <template>
   <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2 space-y-5">
+    <!-- Header -->
+    <ProfileHeader @bonus="onBonus" />
+
+    <ProfileInfoCard
+      v-if="isLoggedIn"
+      :name="user.name"
+      :phone="user.phone"
+      :avatar="user.avatar"
+      :user-id="user.userId"
+      :active="user.active"
+      :balance="user.balance"
+      :tariff-name="user.tariffName"
+      :show-billing="!isPanel"
+      @topup="onTopup"
+      @buy="onBuyTariff"
+    />
+
     <div
-      v-if="!isLoggedIn"
+      v-else
       class="rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-900 p-4 space-y-3"
     >
       <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
@@ -16,25 +33,13 @@
       </button>
     </div>
 
-    <!-- Header -->
-    <ProfileHeader @bonus="onBonus" />
-
-    <!-- Profile info -->
-    <ProfileInfoCard
-      :name="user.name"
-      :phone="user.phone"
-      :avatar="user.avatar"
-      :user-id="user.userId"
-      :active="user.active"
-      :balance="user.balance"
-      :tariff-name="user.tariffName"
-      :show-billing="!isPanel"
-      @topup="onTopup"
-      @buy="onBuyTariff"
-    />
-
     <!-- Accounts -->
-    <ProfileSectionCard title="Hisoblar" :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`" no-padding>
+    <ProfileSectionCard
+      v-if="isLoggedIn"
+      title="Hisoblar"
+      :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`"
+      no-padding
+    >
       <!-- Loading -->
       <div v-if="accountStore.isLoading && !accountStore.accounts.length" class="p-4 space-y-3">
         <div v-for="n in 3" :key="n" class="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
