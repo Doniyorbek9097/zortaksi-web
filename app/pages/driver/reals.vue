@@ -1,5 +1,5 @@
 <template>
-  <div class="reals-page w-full flex flex-col overflow-hidden text-white bg-black relative">
+  <div class="reals-page w-full flex flex-col overflow-hidden text-white bg-black">
     <div
       v-if="loading && !reals.length"
       class="flex-1 flex flex-col items-center justify-center gap-4 px-6"
@@ -30,11 +30,26 @@
         class="absolute top-0 inset-x-0 z-30 px-4 pt-2 pb-1 pointer-events-none"
       >
         <div class="flex items-start justify-between gap-3">
-          <h1
-            class="flex-1 min-w-0 text-[17px] font-black leading-snug line-clamp-2 text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.85)]"
+          <component
+            :is="activeProductUrl ? 'a' : 'div'"
+            :href="activeProductUrl || undefined"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="real-title-box flex-1 min-w-0 flex items-center gap-1.5 text-left"
+            :class="activeProductUrl ? 'real-title-box--link pointer-events-auto' : ''"
+            @click.stop
           >
-            {{ headerTitle }}
-          </h1>
+            <span
+              class="flex-1 min-w-0 text-[15px] font-black leading-snug line-clamp-2 text-white [text-shadow:0_2px_12px_rgba(0,0,0,0.85)]"
+            >
+              {{ headerTitle }}
+            </span>
+            <font-awesome-icon
+              v-if="activeProductUrl"
+              icon="fa-solid fa-chevron-right"
+              class="shrink-0 text-[13px] text-white/90 [filter:drop-shadow(0_1px_4px_rgba(0,0,0,0.85))]"
+            />
+          </component>
           <span
             v-if="reals.length > 1"
             class="shrink-0 text-[10px] font-black tabular-nums text-white/90 [text-shadow:0_1px_6px_rgba(0,0,0,0.9)] pt-0.5"
@@ -92,17 +107,23 @@
 
           <button
             type="button"
-            class="absolute top-14 right-3 z-20 w-10 h-10 rounded-full border border-white/15 bg-black/35 backdrop-blur-md text-white flex items-center justify-center active:scale-95 transition-transform"
+            class="absolute right-3 top-[4.25rem] z-20 real-action"
             :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
             @click.stop="toggleMute(item.id)"
           >
-            <font-awesome-icon
-              :icon="isMuted(item.id) ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"
-              class="text-sm"
-            />
+            <span
+              class="real-premium-btn"
+              :class="isMuted(item.id) ? 'real-premium-btn--muted' : 'real-premium-btn--sound'"
+            >
+              <font-awesome-icon
+                :icon="isMuted(item.id) ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high'"
+                class="text-[15px]"
+              />
+            </span>
+            <span class="real-action-label real-action-label--premium">Ovoz</span>
           </button>
 
-          <div class="absolute right-3 top-[42%] -translate-y-1/2 z-20 flex flex-col items-center gap-3">
+          <div class="absolute right-3 bottom-3 z-20 flex flex-col items-center gap-2.5">
             <button type="button" class="real-action" aria-label="Yoqtirish" @click="onReact(item, 'like')">
               <span class="real-action-btn" :class="item.myVote === 'like' ? 'real-action-btn--like' : ''">
                 <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[15px]" />
@@ -121,21 +142,21 @@
               </span>
               <span class="real-action-label">Ulash</span>
             </button>
-          </div>
 
-          <div
-            v-if="item.productUrl"
-            class="absolute inset-x-0 bottom-0 z-20 px-4 pb-4 pt-20 pointer-events-none bg-gradient-to-t from-black/90 via-black/40 to-transparent"
-          >
             <a
+              v-if="item.productUrl"
               :href="item.productUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="real-cta pointer-events-auto flex w-full max-w-none items-center justify-center gap-2 py-3.5 rounded-xl text-[13px] font-black text-slate-900 active:scale-[0.98] transition-transform box-border"
+              class="real-action"
               @click.stop
             >
-              <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
-              Xarid qilish
+              <span class="real-premium-btn real-premium-btn--buy">
+                <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-[16px]" />
+              </span>
+              <span class="real-action-label real-action-label--premium real-action-label--buy">
+                Xarid qilish
+              </span>
             </a>
           </div>
         </section>
@@ -145,7 +166,7 @@
     <Transition name="reals-toast">
       <p
         v-if="shareHint"
-        class="fixed left-1/2 -translate-x-1/2 bottom-[4.75rem] z-50 px-4 py-2.5 rounded-2xl bg-black/80 text-white text-[12px] font-bold border border-amber-400/25 shadow-xl max-w-[90vw] text-center backdrop-blur-xl"
+        class="fixed left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-black/80 text-white text-[12px] font-bold border border-amber-400/25 shadow-xl max-w-[90vw] text-center backdrop-blur-xl reals-toast"
       >
         {{ shareHint }}
       </p>
@@ -178,6 +199,11 @@ const videoSrc = (r: IRealAd) => resolveMedia(r.videoUrl) || r.videoUrl
 const headerTitle = computed(() => {
   const t = reals.value[activeIndex.value]?.title?.trim()
   return t || 'Reals'
+})
+
+const activeProductUrl = computed(() => {
+  const url = String(reals.value[activeIndex.value]?.productUrl || '').trim()
+  return url || ''
 })
 
 const formatCount = (n: number) => {
@@ -373,13 +399,36 @@ onBeforeRouteLeave(() => {
 </script>
 
 <style scoped>
+/* Tabbar (h-14) + xavfsiz zona — layout padding bilan bir xil */
 .reals-page {
-  height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
-  max-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
+  position: fixed;
+  z-index: 30;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(3.5rem + var(--zt-safe-bottom, env(safe-area-inset-bottom, 0px)));
+  width: 100%;
+  max-width: 100vw;
+  height: auto;
+  min-height: 0;
+}
+
+:global(html[data-zt-embed='webview']) .reals-page {
+  bottom: 3.5rem;
+}
+
+.reals-toast {
+  bottom: calc(3.5rem + var(--zt-safe-bottom, env(safe-area-inset-bottom, 0px)) + 0.75rem);
+}
+
+:global(html[data-zt-embed='webview']) .reals-toast {
+  bottom: calc(3.5rem + 0.75rem);
 }
 
 .reals-stage {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .reals-scroller {
@@ -391,6 +440,24 @@ onBeforeRouteLeave(() => {
   height: 100%;
   min-height: 100%;
   scroll-snap-stop: always;
+  box-sizing: border-box;
+}
+
+.real-title-box {
+  padding: 5px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+
+.real-title-box--link {
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.real-title-box--link:active {
+  transform: scale(0.98);
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .real-action {
@@ -441,11 +508,99 @@ onBeforeRouteLeave(() => {
   font-variant-numeric: tabular-nums;
 }
 
-.real-cta {
-  background: linear-gradient(135deg, #fcd34d 0%, #fbbf24 35%, #f59e0b 100%);
+.real-premium-btn {
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(253, 224, 71, 0.55);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12) 0%, transparent 42%),
+    linear-gradient(135deg, #fde68a 0%, #fbbf24 38%, #d97706 100%);
+  color: #1c1917;
   box-shadow:
-    0 4px 20px rgba(251, 191, 36, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+    0 4px 22px rgba(251, 191, 36, 0.45),
+    0 8px 28px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.real-premium-btn::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 60%
+  );
+  animation: real-premium-shine 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.real-premium-btn--buy {
+  width: 3.1rem;
+  height: 3.1rem;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.28) inset,
+    0 0 28px rgba(251, 191, 36, 0.55),
+    0 6px 26px rgba(217, 119, 6, 0.4),
+    0 10px 32px rgba(0, 0, 0, 0.4);
+}
+
+.real-premium-btn--sound {
+  color: #422006;
+}
+
+.real-premium-btn--muted {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08) 0%, transparent 42%),
+    linear-gradient(135deg, rgba(253, 230, 138, 0.95) 0%, rgba(251, 191, 36, 0.75) 50%, rgba(180, 83, 9, 0.85) 100%);
+  color: rgba(28, 25, 23, 0.75);
+  border-color: rgba(253, 224, 71, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 4px 18px rgba(251, 191, 36, 0.28),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.real-action:active .real-premium-btn {
+  transform: scale(0.9);
+}
+
+.real-action-label--premium {
+  color: #fde68a;
+  text-shadow:
+    0 0 12px rgba(251, 191, 36, 0.55),
+    0 1px 4px rgba(0, 0, 0, 0.95);
+}
+
+.real-action-label--buy {
+  max-width: 4.5rem;
+  text-align: center;
+  line-height: 1.15;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+@keyframes real-premium-shine {
+  0%,
+  72% {
+    transform: translateX(-120%) rotate(12deg);
+    opacity: 0;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(120%) rotate(12deg);
+    opacity: 0;
+  }
 }
 
 .reals-play-hint-enter-active,

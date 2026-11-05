@@ -44,7 +44,7 @@
     </div>
 
     <div
-      v-if="showMe && data"
+      v-if="showMeBlock"
       class="px-3 py-2 border-b border-slate-100 dark:border-slate-800 bg-violet-50/40 dark:bg-violet-950/20"
     >
       <button
@@ -142,7 +142,7 @@
 <script setup lang="ts">
 /** TOP 10 haydovchilar — guruhga taklif statistikasi */
 import { useAuthStore } from '~/stores/auth.store'
-import { isTariffActive } from '~/utils/tariffActive'
+import { isDriverAppAuthenticated } from '~/utils/authSession'
 import { openTelegramExternalUrl } from '~/utils/telegramLinks'
 import type { GroupInviteLeaderboardData } from '~/types/group-invite'
 
@@ -166,14 +166,16 @@ const props = withDefaults(
 const authStore = useAuthStore()
 const { fetchGroups, openPublicGroup, groups } = useRegionGroupsWelcome()
 
-/** Kartani ko'rsatish shartlari */
+/** Kartani ko'rsatish — haydovchi dashboardda mehmon va tarifsiz ham */
 const visible = computed(() => {
   if (props.adminMode) return true
-  if (!import.meta.client || !authStore.sessionReady) return false
   if (authStore.user?.role === 'admin') return false
-  if (!isTariffActive(authStore.user)) return false
-  return props.data?.available === true
+  return true
 })
+
+const showMeBlock = computed(
+  () => props.showMe && isDriverAppAuthenticated() && !!props.data,
+)
 
 const leaderboard = computed(() => props.data?.leaderboard ?? [])
 const totalInvites = computed(() =>
@@ -189,7 +191,7 @@ const meRank = computed(() => props.data?.me.rank)
 const meGroupTitle = computed(() => props.data?.me.groupTitle ?? '')
 const showMeOutsideTop = computed(
   () =>
-    props.showMe &&
+    showMeBlock.value &&
     meInvites.value > 0 &&
     props.data?.me.inTop === false &&
     meRank.value != null,

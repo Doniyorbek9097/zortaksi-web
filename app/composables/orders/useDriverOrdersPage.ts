@@ -10,6 +10,7 @@ import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
 import { useOrdersAddToBot } from './useOrdersAddToBot'
 import { useOrdersPreconnect } from './useOrdersPreconnect'
+import { preloadOrdersList } from './preloadOrdersList'
 import { requireServiceAuth } from '~/utils/authSession'
 
 /**
