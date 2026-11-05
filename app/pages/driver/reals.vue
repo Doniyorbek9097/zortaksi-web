@@ -1,7 +1,7 @@
 <template>
-  <div class="reals-root -mx-4 -mt-0 flex flex-col bg-black text-white">
+  <div class="reals-page mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl flex flex-col bg-black text-white overflow-hidden">
     <header
-      class="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/10 bg-black/80 backdrop-blur-md z-20"
+      class="shrink-0 flex items-center justify-between gap-3 px-4 py-2.5 border-b border-white/10 bg-black/90 backdrop-blur-md z-20"
     >
       <div class="flex items-center gap-2.5 min-w-0">
         <span
@@ -52,13 +52,13 @@
         :key="item.id"
         :data-real-id="item.id"
         :data-real-index="index"
-        class="real-slide relative w-full snap-start snap-always flex flex-col bg-black"
+        class="real-slide relative w-full max-w-full overflow-hidden snap-start snap-always flex flex-col bg-black"
       >
-        <div class="relative flex-1 flex items-center justify-center min-h-0 bg-black">
+        <div class="relative flex-1 flex items-center justify-center min-h-0 min-w-0 w-full bg-black">
           <video
             :ref="(el) => setVideoRef(item.id, el as HTMLVideoElement | null)"
             :src="videoSrc(item)"
-            class="w-full max-h-full object-contain"
+            class="max-w-full max-h-full w-full h-full object-contain"
             playsinline
             loop
             muted
@@ -68,7 +68,7 @@
 
           <button
             type="button"
-            class="absolute left-3 top-3 w-9 h-9 rounded-full bg-black/50 border border-white/15 text-white flex items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
+            class="absolute left-3 top-3 z-10 w-9 h-9 rounded-full bg-black/50 border border-white/15 text-white flex items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
             :aria-label="isMuted(item.id) ? 'Ovozni yoqish' : 'Ovozni o\'chirish'"
             @click.stop="toggleMute(item.id)"
           >
@@ -80,73 +80,75 @@
         </div>
 
         <div
-          class="absolute inset-x-0 bottom-0 pb-3 pt-16 px-3 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none"
+          class="absolute inset-x-0 bottom-0 z-10 px-3 pb-3 pt-14 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none"
         >
-          <div class="pointer-events-auto space-y-2.5 max-w-[calc(100%-3.5rem)]">
-            <p class="text-[15px] font-black leading-snug line-clamp-2 drop-shadow-md">
-              {{ item.title }}
-            </p>
-            <a
-              v-if="item.productUrl"
-              :href="item.productUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex w-full items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-transform"
-              @click.stop
-            >
-              <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm" />
-              Xarid qilish
-            </a>
+          <div class="flex items-end gap-2 w-full max-w-full pointer-events-none">
+            <div class="flex-1 min-w-0 space-y-2.5 pointer-events-auto">
+              <p class="text-[15px] font-black leading-snug line-clamp-2 drop-shadow-md text-left">
+                {{ item.title }}
+              </p>
+              <a
+                v-if="item.productUrl"
+                :href="item.productUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex w-full max-w-full items-center justify-center gap-2 py-3 rounded-xl text-[13px] font-black bg-gradient-to-r from-sky-500 to-indigo-500 text-white shadow-lg shadow-sky-500/30 active:scale-[0.98] transition-transform"
+                @click.stop
+              >
+                <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
+                Xarid qilish
+              </a>
+            </div>
+
+            <div class="flex flex-col items-center gap-2 shrink-0 pb-0.5 pointer-events-auto">
+              <button
+                type="button"
+                class="real-action group"
+                aria-label="Yoqtirish"
+                @click="onReact(item, 'like')"
+              >
+                <span
+                  class="real-action-btn"
+                  :class="item.myVote === 'like'
+                    ? 'bg-emerald-500 border-emerald-300 text-white ring-2 ring-emerald-400/40'
+                    : ''"
+                >
+                  <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[17px]" />
+                </span>
+                <span class="real-action-label">{{ item.likesCount }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="real-action group"
+                aria-label="Yoqmadi"
+                @click="onReact(item, 'dislike')"
+              >
+                <span
+                  class="real-action-btn"
+                  :class="item.myVote === 'dislike'
+                    ? 'bg-rose-500 border-rose-300 text-white ring-2 ring-rose-400/40'
+                    : ''"
+                >
+                  <font-awesome-icon icon="fa-solid fa-thumbs-down" class="text-[17px]" />
+                </span>
+                <span class="real-action-label">{{ item.dislikesCount }}</span>
+              </button>
+
+              <button
+                type="button"
+                class="real-action group"
+                aria-label="Ulashish"
+                @click="onShare(item)"
+              >
+                <span class="real-action-btn">
+                  <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-[16px]" />
+                </span>
+                <span class="real-action-label">Ulashish</span>
+              </button>
+            </div>
           </div>
         </div>
-
-        <aside class="absolute right-2 bottom-28 z-10 flex flex-col items-center gap-2.5">
-          <button
-            type="button"
-            class="real-action group"
-            aria-label="Yoqtirish"
-            @click="onReact(item, 'like')"
-          >
-            <span
-              class="real-action-btn"
-              :class="item.myVote === 'like'
-                ? 'bg-emerald-500 border-emerald-300 text-white ring-2 ring-emerald-400/40'
-                : ''"
-            >
-              <font-awesome-icon icon="fa-solid fa-thumbs-up" class="text-[17px]" />
-            </span>
-            <span class="real-action-label">{{ item.likesCount }}</span>
-          </button>
-
-          <button
-            type="button"
-            class="real-action group"
-            aria-label="Yoqmadi"
-            @click="onReact(item, 'dislike')"
-          >
-            <span
-              class="real-action-btn"
-              :class="item.myVote === 'dislike'
-                ? 'bg-rose-500 border-rose-300 text-white ring-2 ring-rose-400/40'
-                : ''"
-            >
-              <font-awesome-icon icon="fa-solid fa-thumbs-down" class="text-[17px]" />
-            </span>
-            <span class="real-action-label">{{ item.dislikesCount }}</span>
-          </button>
-
-          <button
-            type="button"
-            class="real-action group"
-            aria-label="Ulashish"
-            @click="onShare(item)"
-          >
-            <span class="real-action-btn">
-              <font-awesome-icon icon="fa-solid fa-share-nodes" class="text-[16px]" />
-            </span>
-            <span class="real-action-label">Ulashish</span>
-          </button>
-        </aside>
       </section>
     </div>
 
@@ -364,18 +366,22 @@ onBeforeRouteLeave(() => {
 </script>
 
 <style scoped>
-.reals-root {
-  min-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
-  margin-bottom: calc(-1 * (3.5rem + env(safe-area-inset-bottom, 0px)));
+.reals-page {
+  height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px));
 }
 
 .reals-scroller {
-  height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - 3.25rem);
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .real-slide {
-  height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - 3.25rem);
-  min-height: calc(100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - 3.25rem);
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 .real-action {
