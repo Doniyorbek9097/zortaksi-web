@@ -487,28 +487,15 @@ onBeforeRouteLeave(() => {
 }
 
 .real-product-stack::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: 3.5rem;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.42), transparent);
-  pointer-events: none;
+  content: none;
 }
 
 .real-product-bar {
   width: 100%;
   box-sizing: border-box;
-  padding: 5px;
+  padding: 15px;
   border: none;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.5) 0%,
-    rgba(0, 0, 0, 0.22) 55%,
-    transparent 100%
-  );
-  backdrop-filter: blur(8px);
+  background: transparent;
 }
 
 .real-product-title {
@@ -595,7 +582,6 @@ onBeforeRouteLeave(() => {
 
 .real-title-box--link:active {
   transform: scale(0.98);
-  background: rgba(0, 0, 0, 0.4);
 }
 
 .real-rail-social {
