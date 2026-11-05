@@ -480,10 +480,6 @@ onBeforeRouteLeave(() => {
   backdrop-filter: blur(8px);
 }
 
-.real-product-stack {
-  position: relative;
-}
-
 .real-product-stack::before {
   content: '';
   position: absolute;
