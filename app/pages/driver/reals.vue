@@ -97,8 +97,8 @@
                   class="real-cta flex-1 min-w-0"
                   @click.stop="openProductLink(item)"
                 >
-                  <font-awesome-icon icon="fa-solid fa-bag-shopping" class="text-sm shrink-0" />
-                  {{ ctaLabel(item) }}
+                  <span class="real-cta-text">{{ ctaLabel(item) }}</span>
+                  <font-awesome-icon icon="fa-solid fa-arrow-right" class="real-cta-arrow text-sm" />
                 </button>
                 <button
                   type="button"
@@ -527,11 +527,12 @@ onBeforeRouteLeave(() => {
 }
 
 .real-cta {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
   border-radius: 0.75rem;
   text-align: center;
   font-size: 13px;
@@ -544,6 +545,21 @@ onBeforeRouteLeave(() => {
     0 4px 20px rgba(251, 191, 36, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
   transition: transform 0.15s ease;
+}
+
+.real-cta-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.real-cta-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.85;
 }
 
 .real-cta:active {

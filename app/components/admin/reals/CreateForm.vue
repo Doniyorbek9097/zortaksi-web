@@ -27,16 +27,27 @@
       />
 
       <div>
-        <span class="px-1 text-xs mb-1 block">Tugma matni</span>
-        <select
-          :value="modelValue.ctaLabel"
-          class="w-full px-3.5 py-3 rounded-xl text-base bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          @change="patch('ctaLabel', ($event.target as HTMLSelectElement).value)"
-        >
-          <option v-for="opt in REAL_AD_CTA_OPTIONS" :key="opt" :value="opt">
+        <BaseInput
+          :model-value="modelValue.ctaLabel"
+          label="Tugma matni"
+          placeholder="Masalan: Batafsil"
+          :maxlength="REAL_AD_CTA_MAX_LENGTH"
+          @update:model-value="patch('ctaLabel', formFieldString($event))"
+        />
+        <div class="flex flex-wrap gap-1.5 mt-2">
+          <button
+            v-for="opt in REAL_AD_CTA_OPTIONS"
+            :key="opt"
+            type="button"
+            class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors"
+            :class="modelValue.ctaLabel === opt
+              ? 'bg-indigo-600 border-indigo-600 text-white'
+              : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-indigo-400'"
+            @click="patch('ctaLabel', opt)"
+          >
             {{ opt }}
-          </option>
-        </select>
+          </button>
+        </div>
       </div>
 
       <BaseInput
@@ -122,13 +133,13 @@
 import {
   REAL_AD_CTA_OPTIONS,
   DEFAULT_REAL_AD_CTA_LABEL,
-  type RealAdCtaLabel,
+  REAL_AD_CTA_MAX_LENGTH,
 } from '~/constants/realAdCta'
 
 export interface RealFormModel {
   title: string
   productPrice: string
-  ctaLabel: RealAdCtaLabel
+  ctaLabel: string
   productUrl: string
   sortOrder: number
   active: boolean

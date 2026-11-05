@@ -6,14 +6,13 @@ export const REAL_AD_CTA_OPTIONS = [
   'Saytga kirish',
 ] as const
 
-export type RealAdCtaLabel = (typeof REAL_AD_CTA_OPTIONS)[number]
+export const REAL_AD_CTA_MAX_LENGTH = 48
 
-export const DEFAULT_REAL_AD_CTA_LABEL: RealAdCtaLabel = 'Xarid qilish'
+export const DEFAULT_REAL_AD_CTA_LABEL = 'Xarid qilish'
 
-export function resolveRealAdCtaLabel(raw?: string | null): RealAdCtaLabel {
+/** Ko'rsatish / forma — bo'sh bo'lsa standart matn */
+export function resolveRealAdCtaLabel(raw?: string | null): string {
   const v = String(raw || '').trim()
-  if ((REAL_AD_CTA_OPTIONS as readonly string[]).includes(v)) {
-    return v as RealAdCtaLabel
-  }
-  return DEFAULT_REAL_AD_CTA_LABEL
+  if (!v) return DEFAULT_REAL_AD_CTA_LABEL
+  return v.length > REAL_AD_CTA_MAX_LENGTH ? v.slice(0, REAL_AD_CTA_MAX_LENGTH) : v
 }
