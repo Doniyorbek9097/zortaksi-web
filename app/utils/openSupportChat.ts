@@ -2,6 +2,7 @@ import type { IChat } from '~/types'
 import { useChatStore } from '~/stores/chat.store'
 import { compactQuery } from '~/utils/navigationQuery'
 import { SUPPORT_OPERATOR_LABEL } from '~/utils/supportChatTheme'
+import { requireServiceAuth } from '~/utils/authSession'
 
 /** Admin ↔ haydovchi support chat — chats ro'yxatidan */
 export function findSupportChatByDriverId(
@@ -153,6 +154,7 @@ function adoptDriverSupportChat(chat: IChat) {
  * Haydovchi — admin yordam chatiga darhol o'tish.
  */
 export function openDriverSupportChatInstant() {
+  if (!requireServiceAuth('/driver/dashboard')) return
   const chatStore = useChatStore()
   const name = SUPPORT_OPERATOR_LABEL
   const navQuery = compactQuery({

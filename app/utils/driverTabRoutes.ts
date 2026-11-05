@@ -3,6 +3,7 @@ export const DRIVER_MAIN_TABS = [
   '/driver/dashboard',
   '/driver/orders',
   '/driver/chats',
+  '/driver/reals',
   '/driver/campaigns',
   '/driver/profile',
 ] as const
@@ -79,6 +80,9 @@ export function driverTabSection(path: string): DriverMainTab | null {
   }
   if (p.startsWith('/driver/campaigns') || p === '/driver/post') {
     return '/driver/campaigns'
+  }
+  if (p === '/driver/reals' || p.startsWith('/driver/reals/')) {
+    return '/driver/reals'
   }
   return null
 }

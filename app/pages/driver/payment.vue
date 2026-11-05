@@ -261,6 +261,7 @@ import {
   formatAdminTopupPaymentMessage,
   openTelegramExternalUrl,
 } from '~/utils/telegramLinks'
+import { requireServiceAuth } from '~/utils/authSession'
 
 const queueRegionGroupsModal = () => {
   if (import.meta.client) sessionStorage.setItem('zt-show-region-groups', '1')
@@ -357,6 +358,7 @@ const openAdminTelegramPayment = (text: string) => {
 
 const sendTariffRequest = async () => {
   if (!selected.value) return
+  if (!requireServiceAuth(route.fullPath)) return
   const amount = shortage.value > 0 ? shortage.value : selected.value.price
   savingRequest.value = true
   error.value = ''
@@ -378,6 +380,7 @@ const sendTopupRequest = async () => {
     error.value = 'Summani kiriting'
     return
   }
+  if (!requireServiceAuth(route.fullPath)) return
   savingRequest.value = true
   error.value = ''
   try {
@@ -420,6 +423,7 @@ const openPayUrl = (res: { success?: boolean; data?: { payUrl?: string }; messag
 
 const payOnline = async (provider: 'click' | 'payme') => {
   if (!selected.value) return
+  if (!requireServiceAuth(route.fullPath)) return
   payingProvider.value = provider
   error.value = ''
   try {
@@ -443,6 +447,7 @@ const payTopupOnline = async (provider: 'click' | 'payme') => {
     error.value = 'Summani kiriting'
     return
   }
+  if (!requireServiceAuth(route.fullPath)) return
   payingProvider.value = provider
   error.value = ''
   try {
@@ -462,6 +467,7 @@ const payTopupOnline = async (provider: 'click' | 'payme') => {
 
 const buyTariff = async () => {
   if (!selected.value) return
+  if (!requireServiceAuth(route.fullPath)) return
   if (shortage.value > 0) {
     await sendTariffRequest()
     return

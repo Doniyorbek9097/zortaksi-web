@@ -2,6 +2,7 @@ import type { ComputedRef } from 'vue'
 import type { IOrder } from '~/types'
 import type { useAuthStore } from '~/stores/auth.store'
 import type { useOrderStore } from '~/stores/order.store'
+import { requireServiceAuth } from '~/utils/authSession'
 
 const BOOK_PRICE = 1000
 
@@ -14,6 +15,7 @@ export function useOrdersBooking(options: {
   isAdmin: ComputedRef<boolean>
 }) {
   const { orderStore, authStore, isAdmin } = options
+  const route = useRoute()
 
   const showBookDialog = ref(false)
   const showUnbookDialog = ref(false)
@@ -34,12 +36,14 @@ export function useOrdersBooking(options: {
 
   const onBook = (order: IOrder) => {
     if (!order._id || order.status === 'booked') return
+    if (!isAdmin.value && !requireServiceAuth(route.fullPath)) return
     bookTarget.value = order
     showBookDialog.value = true
   }
 
   const onUnbook = (order: IOrder) => {
     if (!order._id || order.status !== 'booked') return
+    if (!isAdmin.value && !requireServiceAuth(route.fullPath)) return
     unbookTarget.value = order
     showUnbookDialog.value = true
   }

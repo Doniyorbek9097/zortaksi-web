@@ -92,6 +92,7 @@ import { usePostStore, type PostCampaign } from '~/stores/post.store'
 import { useAuthStore } from '~/stores/auth.store'
 import PostCampaignBoardCard from '~/components/post/CampaignBoardCard.vue'
 import { usePanelShellLayout } from '~/composables/layout/usePanelShellLayout'
+import { requireServiceAuth } from '~/utils/authSession'
 
 definePageMeta({ layout: 'driver', keepalive: true })
 
@@ -119,6 +120,7 @@ const POST_TARIFF_PAYMENT_PATH = '/driver/payment?tab=post-tariff&next=/driver/c
 
 const requireTariffForPost = (): boolean => {
   if (store.isAdmin || authStore.postTariffActive) return true
+  if (!requireServiceAuth('/driver/campaigns')) return false
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
 }

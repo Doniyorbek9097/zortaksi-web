@@ -12,6 +12,7 @@ import {
   isDriverPeerChat,
   isSupportChat,
 } from './chatPeerDisplay'
+import { requireServiceAuth } from '~/utils/authSession'
 
 /** Sahifa limiti — xotira byudjeti bilan bir xil */
 const PAGE_LIMIT = LIST_PAGE_SIZE
@@ -22,6 +23,7 @@ const PAGE_LIMIT = LIST_PAGE_SIZE
 export function useDriverChatsPage() {
   const chatStore = useChatStore()
   const authStore = useAuthStore()
+  const route = useRoute()
 
   const isAdmin = computed(() => isAdminUser(authStore.user))
   const peerName = (chat: IChat) =>
@@ -135,6 +137,7 @@ export function useDriverChatsPage() {
   const openChat = (chat: IChat) => {
     const id = String(chat._id || '').trim()
     if (!id) return
+    if (!requireServiceAuth(route.fullPath)) return
     persistScroll()
     chatStore.primeFromChat(chat)
     if (chat.kind !== 'support' && chat.kind !== 'direct' && !chat.inAppOnly) {

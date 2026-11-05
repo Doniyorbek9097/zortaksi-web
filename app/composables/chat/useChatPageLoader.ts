@@ -316,10 +316,9 @@ export function useChatPageLoader(opts: {
       if (seq !== loadSeq) return true
 
       if (
-        mode !== 'order' &&
-        (res?.code === 'TARIFF_INACTIVE' ||
-          res?.code === 'NOT_VERIFIED' ||
-          /tarif faol emas/i.test(String(res?.message || '')))
+        res?.code === 'TARIFF_INACTIVE' ||
+        res?.code === 'NOT_VERIFIED' ||
+        /tarif faol emas/i.test(String(res?.message || ''))
       ) {
         chatStore.isLoadingMessages = false
         if ((await redirectOrderTakeBlocked(route.fullPath)) || seq !== loadSeq) return true

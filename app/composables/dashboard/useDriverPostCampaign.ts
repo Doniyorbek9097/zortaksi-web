@@ -3,6 +3,7 @@
  */
 import { useAuthStore } from '~/stores/auth.store'
 import { usePostStore, type PostCampaign } from '~/stores/post.store'
+import { requireServiceAuth } from '~/utils/authSession'
 
 const POLL_MS = 30_000
 
@@ -19,14 +20,17 @@ export function useDriverPostCampaign() {
   let pollTimer: ReturnType<typeof setInterval> | null = null
 
   const startCampaign = async (c: PostCampaign) => {
+    if (!requireServiceAuth('/driver/dashboard')) return
     await postStore.startCampaign(c.id)
   }
 
   const stopCampaign = async (c: PostCampaign) => {
+    if (!requireServiceAuth('/driver/dashboard')) return
     await postStore.stopCampaign(c.id)
   }
 
   const deleteCampaign = async (c: PostCampaign) => {
+    if (!requireServiceAuth('/driver/dashboard')) return
     await postStore.deleteCampaign(c.id)
   }
 

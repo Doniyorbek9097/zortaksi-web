@@ -42,6 +42,21 @@
 
     <DashboardBannerCarousel v-if="promoBanners.length" :banners="promoBanners" />
 
+    <button
+      type="button"
+      class="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-rose-200/80 dark:border-rose-900/50 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/30 dark:to-orange-950/20 active:scale-[0.99] transition-transform"
+      @click="onReals"
+    >
+      <span class="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shrink-0">
+        <font-awesome-icon icon="fa-solid fa-clapperboard" />
+      </span>
+      <span class="min-w-0 flex-1 text-left">
+        <span class="block text-[13px] font-black text-slate-800 dark:text-slate-100">Reals reklama</span>
+        <span class="block text-[11px] font-semibold text-slate-500">Video + mahsulot havolasi</span>
+      </span>
+      <font-awesome-icon icon="fa-solid fa-chevron-right" class="text-slate-400 text-xs shrink-0" />
+    </button>
+
     <DashboardBalanceCard
       :balance="balance"
       :active="tariffActive"
@@ -142,9 +157,14 @@ const {
 } = useDriverPostCampaign()
 
 const onDownloadApp = () => navigateTo('/driver/download-app')
+const onReals = () => navigateTo('/driver/reals')
 const onHelp = () => openDriverSupportChatInstant()
-const onBuyTariff = () => navigateTo('/driver/payment')
-const onBuyPostTariff = () => navigateTo('/driver/payment?tab=post-tariff')
+const onBuyTariff = () => {
+  void navigateToServiceAuth('/driver/payment')
+}
+const onBuyPostTariff = () => {
+  void navigateToServiceAuth('/driver/payment?tab=post-tariff')
+}
 
 usePullToRefresh(async () => {
   await Promise.all([

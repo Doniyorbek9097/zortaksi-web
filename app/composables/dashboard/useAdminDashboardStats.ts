@@ -42,6 +42,12 @@ export function useAdminDashboardStats(store: Store) {
         tone: 'blue' as const,
         to: '/admin/banners',
       })
+      items.splice(4, 0, {
+        title: 'Reals',
+        icon: 'fa-solid fa-clapperboard',
+        tone: 'rose' as const,
+        to: '/admin/reals',
+      })
     }
     return items
   })

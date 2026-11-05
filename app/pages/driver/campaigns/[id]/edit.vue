@@ -148,6 +148,7 @@
 import { usePostStore, DEFAULT_POST_INTERVAL_MIN } from '~/stores/post.store'
 import { snapPostIntervalMin } from '~/utils/postCampaign'
 import { useAuthStore } from '~/stores/auth.store'
+import { requireServiceAuth } from '~/utils/authSession'
 
 definePageMeta({ layout: 'driver' })
 
@@ -179,6 +180,7 @@ const canSave = computed(
 
 const requireTariff = () => {
   if (store.isAdmin || authStore.postTariffActive) return true
+  if (!requireServiceAuth(route.fullPath)) return false
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
 }

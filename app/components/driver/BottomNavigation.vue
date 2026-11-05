@@ -5,7 +5,7 @@
   >
     <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-2">
       <!-- Fixed row height — badge/label o'zgarganda tabbar sakramasligi uchun -->
-      <ul class="grid h-14 grid-cols-5 items-stretch">
+      <ul class="grid h-14 grid-cols-6 items-stretch">
         <li v-for="item in items" :key="item.to" class="min-w-0">
           <NuxtLink
             :to="item.to"
@@ -69,13 +69,21 @@ const items = computed<NavItem[]>(() => {
       icon: 'fa-solid fa-comments',
       badge: chatsBadge > 0 ? chatsBadge : undefined,
     },
-    { to: '/driver/campaigns', label: "E'lonlar", icon: 'fa-solid fa-bullhorn' },
+    {
+      to: '/driver/reals',
+      label: 'Reals',
+      icon: 'fa-solid fa-clapperboard',
+    },
+    { to: '/driver/campaigns', label: "E'lon", icon: 'fa-solid fa-bullhorn' },
     { to: '/driver/profile', label: 'Profil', icon: 'fa-solid fa-user' },
   ]
 })
 
 const route = useRoute()
 const isActive = (to: string) => {
+  if (to === '/driver/reals') {
+    return route.path === '/driver/reals' || route.path.startsWith('/driver/reals/')
+  }
   if (to === '/driver/campaigns') {
     const p = route.path
     return p === to || p.startsWith('/driver/campaigns/') || p === '/driver/post'

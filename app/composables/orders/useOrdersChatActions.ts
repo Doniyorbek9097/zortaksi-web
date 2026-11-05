@@ -5,6 +5,7 @@ import { useAuthStore } from '~/stores/auth.store'
 import { orderQuickLinkQuery, buildChatStubFromOrder, buildChatStubFromOrderQuery, mergeOrderChatContext, primeOrderContext } from '~/utils/orderChatQuery'
 import { compactQuery } from '~/utils/navigationQuery'
 import { resolveWarmOwnerId } from '~/utils/activeAccount'
+import { requireServiceAuth } from '~/utils/authSession'
 
 /**
  * Chat / qiziqish / agent amallari.
@@ -184,6 +185,7 @@ export function useOrdersChatActions(options: {
 
   const onMessage = (order: IOrder) => {
     if (!order._id) return
+    if (!requireServiceAuth(route.fullPath)) return
     markOrderInterest(order)
 
     const orderId = String(order._id)
@@ -259,6 +261,7 @@ export function useOrdersChatActions(options: {
       interestDialog.value?.resetOpening('Order topilmadi')
       return
     }
+    if (!requireServiceAuth(route.fullPath)) return
 
     closeInterestDialogForNavigate()
     beforeNavigate?.()
@@ -279,6 +282,7 @@ export function useOrdersChatActions(options: {
       interestDialog.value?.resetOpening('Order topilmadi')
       return
     }
+    if (!requireServiceAuth(route.fullPath)) return
 
     const currentUserId = String(useAuthStore().user?.userId || '')
     const isSelf = !!currentUserId && String(user.userId) === currentUserId
@@ -316,6 +320,7 @@ export function useOrdersChatActions(options: {
 
   const onBookedChat = async (order: IOrder) => {
     if (!order._id) return
+    if (!requireServiceAuth(route.fullPath)) return
     const peerId = String(order.bookedBy || '')
     const existing = findChatByOrderPeer(order._id, peerId)
     const name =
@@ -342,6 +347,7 @@ export function useOrdersChatActions(options: {
 
   const onAgent = async (order: IOrder) => {
     if (!order._id) return
+    if (!requireServiceAuth(route.fullPath)) return
     const peerId = String(order.owner?.userId || '')
     const existing = findChatByOrderPeer(order._id, peerId)
     const name =

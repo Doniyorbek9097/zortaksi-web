@@ -235,6 +235,7 @@ import {
   filterGroupsByKeywords,
 } from '~/utils/orderFilterKeywords'
 import { campaignEditPath } from '~/utils/postCampaign'
+import { requireServiceAuth } from '~/utils/authSession'
 
 definePageMeta({ layout: 'driver' })
 
@@ -251,6 +252,7 @@ const canPostWithTariff = computed(() => store.isAdmin || authStore.postTariffAc
 
 const requireTariffForPost = (): boolean => {
   if (store.isAdmin) return true
+  if (!requireServiceAuth('/driver/post')) return false
   if (canPostWithTariff.value) return true
   navigateTo(POST_TARIFF_PAYMENT_PATH)
   return false
