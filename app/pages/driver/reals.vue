@@ -69,25 +69,13 @@
           >
             <div class="real-product-bar w-full pointer-events-auto">
               <button
-                v-if="productTitle(item) || productPriceLabel(item)"
+                v-if="productTitle(item)"
                 type="button"
                 class="real-product-title real-title-box--link text-left w-full"
                 @click.stop="openProductLink(item)"
               >
-                <span class="flex-1 min-w-0 w-full">
-                  <span
-                    v-if="productTitle(item)"
-                    class="block text-[14px] font-black leading-snug line-clamp-2 text-white"
-                  >
-                    {{ productTitle(item) }}
-                  </span>
-                  <span
-                    v-if="productPriceLabel(item)"
-                    class="block mt-0.5 text-[12px] font-bold text-amber-300/95 tabular-nums"
-                    :class="productTitle(item) ? '' : 'text-[14px] font-black text-white'"
-                  >
-                    {{ productPriceLabel(item) }}
-                  </span>
+                <span class="block text-[14px] font-black leading-snug line-clamp-2 text-white">
+                  {{ productTitle(item) }}
                 </span>
               </button>
 
@@ -97,7 +85,12 @@
                   class="real-cta flex-1 min-w-0"
                   @click.stop="openProductLink(item)"
                 >
-                  <span class="real-cta-text">{{ ctaLabel(item) }}</span>
+                  <span class="real-cta-inner">
+                    <span class="real-cta-line">{{ ctaLabel(item) }}</span>
+                    <span v-if="productPriceLabel(item)" class="real-cta-price-line tabular-nums">
+                      {{ productPriceLabel(item) }}
+                    </span>
+                  </span>
                   <font-awesome-icon icon="fa-solid fa-arrow-right" class="real-cta-arrow text-sm" />
                 </button>
                 <button
@@ -534,11 +527,32 @@ onBeforeRouteLeave(() => {
   transition: transform 0.15s ease;
 }
 
-.real-cta-text {
+.real-cta-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
   min-width: 0;
+  max-width: calc(100% - 1.75rem);
+}
+
+.real-cta-line {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 100%;
+}
+
+.real-cta-price-line {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: rgba(28, 25, 23, 0.88);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .real-cta-arrow {
