@@ -123,6 +123,7 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const hasMore = ref(false)
 const discoverCursor = ref('')
+const discoverPage = ref(1)
 const loadedCount = ref(0)
 const localError = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
@@ -148,10 +149,23 @@ const close = () => {
 const loadPage = async (append: boolean, force = false) => {
   const q = normalizedQuery.value
   const excludeIds = append ? groups.value.map((g) => g.id) : []
+  let pageNum = 1
+  let cursor: string | undefined
+  if (append) {
+    if (discoverCursor.value) {
+      cursor = discoverCursor.value
+      pageNum = 1
+    } else {
+      discoverPage.value += 1
+      pageNum = discoverPage.value
+    }
+  } else {
+    discoverPage.value = 1
+  }
   const { groups: rows, pagination, discoverHint } = await store.fetchUnjoinedGroups({
     q,
-    page: append ? 2 : 1,
-    discoverCursor: append ? discoverCursor.value || undefined : undefined,
+    page: pageNum,
+    discoverCursor: cursor,
     excludeIds,
     force,
   })
@@ -159,8 +173,10 @@ const loadPage = async (append: boolean, force = false) => {
   discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
   loadedCount.value = groups.value.length
-  if (discoverHint) {
+  if (discoverHint && !rows.length) {
     localError.value = discoverHint
+  } else if (discoverHint && rows.length) {
+    localError.value = ''
   } else if (!append || rows.length) {
     localError.value = ''
   }
@@ -178,6 +194,7 @@ const reload = async (force = false) => {
   localError.value = ''
   loading.value = true
   discoverCursor.value = ''
+  discoverPage.value = 1
   hasMore.value = false
   try {
     await loadPage(false, force)
