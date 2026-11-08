@@ -122,8 +122,8 @@ const groups = ref<PostGroup[]>([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const hasMore = ref(false)
-const page = ref(1)
-const total = ref(0)
+const discoverCursor = ref('')
+const loadedCount = ref(0)
 const localError = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
@@ -139,42 +139,43 @@ const normalizedQuery = computed(() =>
 
 const canSearch = computed(() => normalizedQuery.value.length >= MIN_SEARCH_LEN)
 
-const totalShown = computed(() => {
-  if (total.value) return total.value
-  return groups.value.length
-})
+const totalShown = computed(() => groups.value.length)
 
 const close = () => {
   emit('update:modelValue', false)
 }
 
-const loadPage = async (pageNum: number, append: boolean, force = false) => {
+const loadPage = async (append: boolean, force = false) => {
   const q = normalizedQuery.value
+  const excludeIds = append ? groups.value.map((g) => g.id) : []
   const { groups: rows, pagination } = await store.fetchUnjoinedGroups({
     q,
-    page: pageNum,
+    page: append ? 2 : 1,
+    discoverCursor: append ? discoverCursor.value || undefined : undefined,
+    excludeIds,
     force,
   })
   groups.value = append ? [...groups.value, ...rows] : rows
-  page.value = Number(pagination?.page ?? pageNum)
-  total.value = Number(pagination?.total ?? groups.value.length)
+  discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
+  loadedCount.value = groups.value.length
 }
 
 const reload = async (force = false) => {
   if (!canSearch.value) {
     groups.value = []
-    total.value = 0
+    loadedCount.value = 0
+    discoverCursor.value = ''
     hasMore.value = false
     localError.value = ''
     return
   }
   localError.value = ''
   loading.value = true
-  page.value = 1
+  discoverCursor.value = ''
   hasMore.value = false
   try {
-    await loadPage(1, false, force)
+    await loadPage(false, force)
   } catch (e: any) {
     localError.value = e?.message || 'Guruhlar yuklanmadi'
     groups.value = []
@@ -188,7 +189,7 @@ const loadMore = async () => {
   loadingMore.value = true
   localError.value = ''
   try {
-    await loadPage(page.value + 1, true)
+    await loadPage(true)
   } catch (e: any) {
     localError.value = e?.message || 'Yuklash xatosi'
   } finally {
@@ -203,7 +204,7 @@ const onJoin = async (g: PostGroup) => {
     const res = await store.joinGroup(g)
     if (res?.success) {
       groups.value = groups.value.filter((x) => x.id !== g.id)
-      total.value = Math.max(0, total.value - 1)
+      loadedCount.value = groups.value.length
       emit('joined', g.title || g.username || 'Guruh')
     }
   } catch (e: any) {
@@ -233,7 +234,8 @@ watch(searchQuery, () => {
   searchTimer = setTimeout(() => {
     if (!canSearch.value) {
       groups.value = []
-      total.value = 0
+      loadedCount.value = 0
+      discoverCursor.value = ''
       hasMore.value = false
       localError.value = ''
       loading.value = false

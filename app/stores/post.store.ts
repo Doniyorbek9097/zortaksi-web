@@ -32,6 +32,8 @@ export const MAX_POST_INTERVAL_MIN = POST_INTERVAL_PRESET_MINUTES[POST_INTERVAL_
 export const DEFAULT_POST_INTERVAL_MIN = 10
 /** Guruhlar ro'yxati — bir sahifada */
 export const GROUPS_PAGE_SIZE = LIST_PAGE_SIZE
+/** Yangi guruh izlash — scroll bilan yuklash */
+export const DISCOVER_GROUPS_PAGE_SIZE = 20
 
 export type PostCampaign = {
   id: string
@@ -259,19 +261,24 @@ export const usePostStore = defineStore('post', () => {
     q?: string
     page?: number
     force?: boolean
+    discoverCursor?: string | null
+    excludeIds?: string[]
   } = {}) => {
     const pageNum = opts.page ?? 1
     const q = String(opts.q ?? '')
       .trim()
       .replace(/^@+/, '')
+    const excludeIds = (opts.excludeIds || []).filter(Boolean)
     const res = await useApi('/groups/ads', {
       params: {
         page: pageNum,
-        limit: GROUPS_PAGE_SIZE,
+        limit: DISCOVER_GROUPS_PAGE_SIZE,
         ...(q ? { q } : {}),
+        ...(opts.discoverCursor ? { discoverCursor: opts.discoverCursor } : {}),
+        ...(excludeIds.length ? { excludeIds: excludeIds.join(',') } : {}),
         ...(opts.force ? { force: '1' } : {}),
       },
-      timeout: isAdmin.value ? 180_000 : 90_000,
+      timeout: isAdmin.value ? 180_000 : 120_000,
     })
     if (!res?.success) {
       throw new Error(friendlyErr(res?.message || ''))
