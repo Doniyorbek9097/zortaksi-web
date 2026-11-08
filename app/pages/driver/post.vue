@@ -23,6 +23,15 @@
         </div>
         <div class="flex items-center gap-1 shrink-0">
           <button
+            v-if="!pickGroupsMode"
+            type="button"
+            class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-black tracking-wide border border-sky-400/50 text-sky-600 dark:text-sky-400 bg-sky-500/10 active:scale-95"
+            @click="discoverOpen = true"
+          >
+            <font-awesome-icon icon="fa-solid fa-user-plus" class="text-[10px]" />
+            <span class="max-[380px]:hidden">Yangi guruh izlash</span>
+          </button>
+          <button
             v-if="store.isAdmin"
             type="button"
             class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all active:scale-95 border"
@@ -216,6 +225,11 @@
       @confirm="onConfirmLeave"
       @cancel="membershipTarget = null"
     />
+
+    <PostDiscoverGroupsDialog
+      v-model="discoverOpen"
+      @joined="onDiscoverJoined"
+    />
   </div>
 </template>
 
@@ -271,6 +285,12 @@ const filterActive = computed(
 )
 const showLeaveDialog = ref(false)
 const membershipTarget = ref<PostGroup | null>(null)
+const discoverOpen = ref(false)
+
+const onDiscoverJoined = (title: string) => {
+  success.value = `«${title}» guruhiga qo'shildingiz — Meniki ro'yxatda`
+  void store.fetchMine({ page: 1, force: true, append: false })
+}
 
 const openCompose = () => {
   if (!requireTariffForPost()) return

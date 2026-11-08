@@ -254,6 +254,37 @@ export const usePostStore = defineStore('post', () => {
     return res
   }
 
+  /** A'zo bo'linmagan guruhlar — alohida qidiruv (E'lon joylash dialogi) */
+  const fetchUnjoinedGroups = async (opts: {
+    q?: string
+    page?: number
+    force?: boolean
+  } = {}) => {
+    const pageNum = opts.page ?? 1
+    const q = String(opts.q ?? '').trim()
+    const res = await useApi('/groups/ads', {
+      params: {
+        page: pageNum,
+        limit: GROUPS_PAGE_SIZE,
+        ...(q ? { q } : {}),
+        ...(opts.force ? { force: '1' } : {}),
+      },
+      timeout: isAdmin.value ? 180_000 : 60_000,
+    })
+    if (!res?.success) {
+      throw new Error(friendlyErr(res?.message || ''))
+    }
+    const pagination = res.data?.pagination ?? {
+      total: res.data?.count,
+      page: pageNum,
+      hasMore: false,
+    }
+    return {
+      groups: (res.data?.groups ?? []) as PostGroup[],
+      pagination,
+    }
+  }
+
   const friendlyErr = (raw: string) => {
     if (/SESSION_LEASE_HELD|boshqa instance|AuthKeyDuplicated/i.test(raw)) {
       return "Telegram sessiyasi band. Birozdan keyin yangilang."
@@ -827,6 +858,7 @@ export const usePostStore = defineStore('post', () => {
     clearSelection,
     setVisibility,
     joinGroup,
+    fetchUnjoinedGroups,
     leaveGroup,
     broadcast,
     fetchCampaigns,
