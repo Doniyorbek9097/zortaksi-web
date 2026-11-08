@@ -269,17 +269,23 @@ export const usePostStore = defineStore('post', () => {
       .trim()
       .replace(/^@+/, '')
     const excludeIds = (opts.excludeIds || []).filter(Boolean)
-    const res = await useApi('/groups/ads', {
-      params: {
-        page: pageNum,
-        limit: DISCOVER_GROUPS_PAGE_SIZE,
-        ...(q ? { q } : {}),
-        ...(opts.discoverCursor ? { discoverCursor: opts.discoverCursor } : {}),
-        ...(excludeIds.length ? { excludeIds: excludeIds.join(',') } : {}),
-        ...(opts.force ? { force: '1' } : {}),
-      },
-      timeout: isAdmin.value ? 180_000 : 120_000,
-    })
+    let res: any
+    try {
+      res = await useApi('/groups/ads', {
+        params: {
+          page: pageNum,
+          limit: DISCOVER_GROUPS_PAGE_SIZE,
+          ...(q ? { q } : {}),
+          ...(opts.discoverCursor ? { discoverCursor: opts.discoverCursor } : {}),
+          ...(excludeIds.length ? { excludeIds: excludeIds.join(',') } : {}),
+          ...(opts.force ? { force: '1' } : {}),
+        },
+        timeout: isAdmin.value ? 180_000 : 120_000,
+      })
+    } catch (e: any) {
+      const msg = friendlyErr(e?.response?.data?.message || e?.message || '')
+      throw new Error(msg)
+    }
     if (!res?.success) {
       throw new Error(friendlyErr(res?.message || ''))
     }
@@ -291,6 +297,7 @@ export const usePostStore = defineStore('post', () => {
     return {
       groups: (res.data?.groups ?? []) as PostGroup[],
       pagination,
+      discoverHint: String(res.data?.discoverHint || '').trim() || undefined,
     }
   }
 

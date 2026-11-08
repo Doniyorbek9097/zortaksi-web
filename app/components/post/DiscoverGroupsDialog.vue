@@ -148,7 +148,7 @@ const close = () => {
 const loadPage = async (append: boolean, force = false) => {
   const q = normalizedQuery.value
   const excludeIds = append ? groups.value.map((g) => g.id) : []
-  const { groups: rows, pagination } = await store.fetchUnjoinedGroups({
+  const { groups: rows, pagination, discoverHint } = await store.fetchUnjoinedGroups({
     q,
     page: append ? 2 : 1,
     discoverCursor: append ? discoverCursor.value || undefined : undefined,
@@ -159,6 +159,11 @@ const loadPage = async (append: boolean, force = false) => {
   discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
   loadedCount.value = groups.value.length
+  if (discoverHint) {
+    localError.value = discoverHint
+  } else if (!append || rows.length) {
+    localError.value = ''
+  }
 }
 
 const reload = async (force = false) => {
