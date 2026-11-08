@@ -26,7 +26,7 @@
             <button
               type="button"
               class="w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-400 active:scale-95"
-              :disabled="loading"
+              :disabled="loading || !canSearch"
               aria-label="Yangilash"
               @click="reload(true)"
             >
@@ -53,7 +53,7 @@
             />
           </div>
 
-          <p class="mt-2 text-[11px] font-bold text-slate-400">
+          <p v-if="canSearch" class="mt-2 text-[11px] font-bold text-slate-400">
             {{ totalShown }} ta topildi
           </p>
         </header>
@@ -69,11 +69,11 @@
 
           <BaseEmptyState
             v-else-if="!loading && !groups.length"
-            icon="fa-solid fa-users-slash"
-            :title="searchQuery.trim() ? 'Mos guruh topilmadi' : 'Yangi guruh yo\'q'"
-            :description="searchQuery.trim()
-              ? 'Boshqa nom yoki username bilan qidiring'
-              : 'Barcha ochiq guruhlarga allaqachon a\'zosiz yoki admin hali qo\'shmagan'"
+            icon="fa-solid fa-magnifying-glass"
+            :title="!canSearch ? 'Guruh nomini yozing' : 'Mos guruh topilmadi'"
+            :description="!canSearch
+              ? 'Kamida 2 ta harf yoki @username kiriting — keyin izlanadi'
+              : 'Boshqa nom, hudud yoki @username bilan qidiring'"
             tone="slate"
           />
 
@@ -131,6 +131,14 @@ const sentinel = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | null = null
 let searchTimer: ReturnType<typeof setTimeout> | null = null
 
+const MIN_SEARCH_LEN = 2
+
+const normalizedQuery = computed(() =>
+  searchQuery.value.trim().replace(/^@+/, ''),
+)
+
+const canSearch = computed(() => normalizedQuery.value.length >= MIN_SEARCH_LEN)
+
 const totalShown = computed(() => {
   if (total.value) return total.value
   return groups.value.length
@@ -141,7 +149,7 @@ const close = () => {
 }
 
 const loadPage = async (pageNum: number, append: boolean, force = false) => {
-  const q = searchQuery.value.trim()
+  const q = normalizedQuery.value
   const { groups: rows, pagination } = await store.fetchUnjoinedGroups({
     q,
     page: pageNum,
@@ -154,6 +162,13 @@ const loadPage = async (pageNum: number, append: boolean, force = false) => {
 }
 
 const reload = async (force = false) => {
+  if (!canSearch.value) {
+    groups.value = []
+    total.value = 0
+    hasMore.value = false
+    localError.value = ''
+    return
+  }
   localError.value = ''
   loading.value = true
   page.value = 1
@@ -203,9 +218,9 @@ watch(
       searchQuery.value = ''
       groups.value = []
       localError.value = ''
+      loading.value = false
       return
     }
-    await reload()
     await nextTick()
     searchInputRef.value?.focus()
     if (sentinel.value && observer) observer.observe(sentinel.value)
@@ -216,6 +231,14 @@ watch(searchQuery, () => {
   if (!props.modelValue) return
   if (searchTimer) clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
+    if (!canSearch.value) {
+      groups.value = []
+      total.value = 0
+      hasMore.value = false
+      localError.value = ''
+      loading.value = false
+      return
+    }
     void reload()
   }, 350)
 })

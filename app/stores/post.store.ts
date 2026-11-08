@@ -261,7 +261,9 @@ export const usePostStore = defineStore('post', () => {
     force?: boolean
   } = {}) => {
     const pageNum = opts.page ?? 1
-    const q = String(opts.q ?? '').trim()
+    const q = String(opts.q ?? '')
+      .trim()
+      .replace(/^@+/, '')
     const res = await useApi('/groups/ads', {
       params: {
         page: pageNum,
@@ -430,7 +432,12 @@ export const usePostStore = defineStore('post', () => {
       error.value = ''
       const res = await useApi('/groups/ads/join', {
         method: 'POST',
-        body: { groupId: g.id },
+        body: {
+          groupId: g.id,
+          username: g.username,
+          accessHash: g.accessHash,
+          title: g.title,
+        },
         timeout: 60_000,
       })
       if (res.success) {
