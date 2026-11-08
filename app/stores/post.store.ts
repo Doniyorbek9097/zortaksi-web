@@ -280,7 +280,7 @@ export const usePostStore = defineStore('post', () => {
           ...(excludeIds.length ? { excludeIds: excludeIds.join(',') } : {}),
           ...(opts.force ? { force: '1' } : {}),
         },
-        timeout: isAdmin.value ? 180_000 : 120_000,
+        timeout: isAdmin.value ? 180_000 : 35_000,
       })
     } catch (e: any) {
       const msg = friendlyErr(e?.response?.data?.message || e?.message || '')
@@ -304,6 +304,9 @@ export const usePostStore = defineStore('post', () => {
   const friendlyErr = (raw: string) => {
     if (/SESSION_LEASE_HELD|boshqa instance|AuthKeyDuplicated/i.test(raw)) {
       return "Telegram sessiyasi band. Birozdan keyin yangilang."
+    }
+    if (/network error|timeout|ECONNABORTED|aborted/i.test(raw)) {
+      return 'Internet sekin yoki server javob bermadi. Qayta urining.'
     }
     return raw || 'Guruhlar yuklanmadi'
   }
