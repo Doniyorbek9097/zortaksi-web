@@ -271,7 +271,7 @@ export const usePostStore = defineStore('post', () => {
         ...(q ? { q } : {}),
         ...(opts.force ? { force: '1' } : {}),
       },
-      timeout: isAdmin.value ? 180_000 : 60_000,
+      timeout: isAdmin.value ? 180_000 : 90_000,
     })
     if (!res?.success) {
       throw new Error(friendlyErr(res?.message || ''))

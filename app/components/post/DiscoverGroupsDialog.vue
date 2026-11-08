@@ -48,7 +48,7 @@
               v-model="searchQuery"
               type="search"
               enterkeyhint="search"
-              placeholder="Guruh nomi yoki @username…"
+              placeholder="Nom, hudud yoki @username — Telegram bo'ylab"
               class="w-full pl-9 pr-3 py-3 rounded-xl text-[14px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
             />
           </div>
@@ -73,7 +73,7 @@
             :title="!canSearch ? 'Guruh nomini yozing' : 'Mos guruh topilmadi'"
             :description="!canSearch
               ? 'Kamida 2 ta harf yoki @username kiriting — keyin izlanadi'
-              : 'Boshqa nom, hudud yoki @username bilan qidiring'"
+              : 'Telegram ochiq guruhlari bo\'ylab qidiring (@username aniqroq)'"
             tone="slate"
           />
 
