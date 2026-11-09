@@ -78,7 +78,7 @@ export function driverTabSection(path: string): DriverMainTab | null {
   ) {
     return '/driver/profile'
   }
-  if (p.startsWith('/driver/campaigns') || p === '/driver/post') {
+  if (p.startsWith('/driver/campaigns') || p === '/driver/post' || p.startsWith('/driver/post/')) {
     return '/driver/campaigns'
   }
   if (p === '/driver/reals' || p.startsWith('/driver/reals/')) {

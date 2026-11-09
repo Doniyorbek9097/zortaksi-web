@@ -23,6 +23,7 @@ const PANEL_SHELL_DRIVER_ROUTES = new Set([
   '/driver/profile',
   '/driver/campaigns',
   '/driver/post',
+  '/driver/post/discover',
 ])
 
 export function isFullscreenRoute(path: string): boolean {

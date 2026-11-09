@@ -78,7 +78,7 @@ const route = useRoute()
 const isActive = (to: string) => {
   if (to === '/driver/campaigns') {
     const p = route.path
-    return p === to || p.startsWith('/driver/campaigns/') || p === '/driver/post'
+    return p === to || p.startsWith('/driver/campaigns/') || p === '/driver/post' || p.startsWith('/driver/post/')
   }
   return route.path === to || route.path.startsWith(to + '/')
 }
