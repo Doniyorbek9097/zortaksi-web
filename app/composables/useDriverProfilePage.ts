@@ -43,6 +43,8 @@ export function useDriverProfilePage() {
   const blockOpen = ref(false)
   const deleteOpen = ref(false)
   const deleting = ref(false)
+  const groupsListOpen = ref(false)
+  const groupsJoinOpen = ref(false)
   const listenerDisplayName = ref('')
 
   /** Sahifa darhol ochiladi — faqat preview bo'lmasa to'liq spinner */
@@ -412,6 +414,8 @@ export function useDriverProfilePage() {
     blockOpen,
     deleteOpen,
     deleting,
+    groupsListOpen,
+    groupsJoinOpen,
     tariffStore,
     formatMoney,
     goBack,

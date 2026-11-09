@@ -97,6 +97,22 @@
             </button>
             <button
               type="button"
+              class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-500/25 active:scale-[0.98] transition-all"
+              @click="groupsListOpen = true"
+            >
+              <font-awesome-icon icon="fa-solid fa-users" />
+              Guruhlari
+            </button>
+            <button
+              type="button"
+              class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/25 active:scale-[0.98] transition-all"
+              @click="groupsJoinOpen = true"
+            >
+              <font-awesome-icon icon="fa-solid fa-user-plus" />
+              Guruh qo'shish
+            </button>
+            <button
+              type="button"
               class="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-black text-white bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-all"
               @click="limitOpen = true"
             >
@@ -225,6 +241,18 @@
       @confirm="confirmBlock"
     />
 
+    <AdminDriversGroupsListDialog
+      v-if="isAdmin && driver"
+      v-model="groupsListOpen"
+      :user-id="driver.id"
+    />
+
+    <AdminDriversGroupsJoinDialog
+      v-if="isAdmin && driver"
+      v-model="groupsJoinOpen"
+      :user-id="driver.id"
+    />
+
     <BaseConfirmDialog
       v-if="isAdmin && driver"
       v-model="deleteOpen"
@@ -271,6 +299,8 @@ const {
   blockOpen,
   deleteOpen,
   deleting,
+  groupsListOpen,
+  groupsJoinOpen,
   tariffStore,
   formatMoney,
   goBack,
