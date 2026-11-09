@@ -62,7 +62,16 @@
               </div>
             </div>
 
-            <div class="p-4 border-t border-slate-100 dark:border-slate-800">
+            <div class="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <button
+                v-if="allJoinUrls.length"
+                type="button"
+                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all"
+                @click="copyAll"
+              >
+                <font-awesome-icon :icon="copiedAll ? 'fa-solid fa-check' : 'fa-solid fa-copy'" />
+                {{ copiedAll ? 'Nusxalandi' : 'Nusxa olish' }}
+              </button>
               <button
                 type="button"
                 class="w-full py-3 rounded-xl text-sm font-black text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
@@ -96,6 +105,12 @@ const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
 const groups = ref<AdminDriverGroupRow[]>([])
 const loading = ref(false)
 const error = ref('')
+const copiedAll = ref(false)
+let copiedAllTimer: ReturnType<typeof setTimeout> | null = null
+
+const allJoinUrls = computed(() =>
+  groups.value.map((g) => g.joinUrl).filter((u): u is string => !!String(u || '').trim())
+)
 
 const close = () => emit('update:modelValue', false)
 
@@ -129,10 +144,31 @@ const copy = async (text: string) => {
   }
 }
 
+const copyAll = async () => {
+  if (!allJoinUrls.value.length) return
+  await copy(allJoinUrls.value.join('\n'))
+  copiedAll.value = true
+  if (copiedAllTimer) clearTimeout(copiedAllTimer)
+  copiedAllTimer = setTimeout(() => {
+    copiedAll.value = false
+    copiedAllTimer = null
+  }, 2000)
+}
+
 watch(
   () => props.modelValue,
   (open) => {
-    if (open) void load()
+    if (open) {
+      copiedAll.value = false
+      void load()
+    } else if (copiedAllTimer) {
+      clearTimeout(copiedAllTimer)
+      copiedAllTimer = null
+    }
   }
 )
+
+onBeforeUnmount(() => {
+  if (copiedAllTimer) clearTimeout(copiedAllTimer)
+})
 </script>
