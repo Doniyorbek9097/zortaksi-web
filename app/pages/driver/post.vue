@@ -281,8 +281,9 @@ const filterActive = computed(
 )
 const showLeaveDialog = ref(false)
 const membershipTarget = ref<PostGroup | null>(null)
+/** Yangi guruh qidirish / qo'shilish — e'lon tarifi shart emas */
 const openDiscover = () => {
-  if (!requireTariffForPost()) return
+  if (!requireServiceAuth('/driver/post/discover')) return
   void navigateTo('/driver/post/discover')
 }
 
