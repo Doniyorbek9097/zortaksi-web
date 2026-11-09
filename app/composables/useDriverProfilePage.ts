@@ -385,6 +385,13 @@ export function useDriverProfilePage() {
     }
   }
 
+  const onDriverAutoPostStarted = () => {
+    success.value = "Avto e'lon saqlandi va yuborish boshlandi"
+    setTimeout(() => {
+      if (success.value === "Avto e'lon saqlandi va yuborish boshlandi") success.value = ''
+    }, 4000)
+  }
+
   watch(userId, () => { void reload() }, { immediate: true })
   watch(isAdmin, () => { void loadDriver() })
 
@@ -432,6 +439,7 @@ export function useDriverProfilePage() {
     confirmBlock,
     toggleListenGroups,
     confirmDelete,
+    onDriverAutoPostStarted,
     reload,
   }
 }

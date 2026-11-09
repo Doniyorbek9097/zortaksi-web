@@ -13,6 +13,7 @@ export type DriverSubFilter =
   | 'listen-groups'
   | 'expiring'
   | 'debt'
+  | 'premium'
 
 export interface DriverRow {
   id: string

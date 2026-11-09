@@ -15,7 +15,7 @@
               <div>
                 <h3 class="text-lg font-black text-slate-900 dark:text-white">Guruhlari</h3>
                 <p class="text-[11px] font-medium text-slate-400 mt-0.5">
-                  Haydovchi a'zo bo'lgan megaguruhlar
+                  Belgilang · avto e'lon uchun
                 </p>
               </div>
               <button
@@ -28,6 +28,31 @@
               </button>
             </div>
 
+            <div
+              v-if="groups.length && !loading"
+              class="shrink-0 px-4 py-2 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800"
+            >
+              <span class="text-[11px] font-bold text-slate-500">
+                {{ selectedIds.size }} / {{ groups.length }} tanlangan
+              </span>
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  class="text-[11px] font-black text-sky-600 dark:text-sky-400"
+                  @click="selectAll"
+                >
+                  Hammasi
+                </button>
+                <button
+                  type="button"
+                  class="text-[11px] font-black text-slate-400"
+                  @click="clearSelection"
+                >
+                  Tozalash
+                </button>
+              </div>
+            </div>
+
             <div class="flex-1 overflow-y-auto p-4 space-y-2">
               <p v-if="loading" class="text-center text-sm text-slate-400 py-8">
                 <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin mr-2" />
@@ -37,32 +62,58 @@
               <p v-else-if="!groups.length" class="text-center text-sm text-slate-400 py-8">
                 Guruh topilmadi yoki Telegram sessiyasi yo'q
               </p>
-              <div
+              <button
                 v-for="g in groups"
                 :key="g.id"
-                class="rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-slate-50/80 dark:bg-slate-950/50"
+                type="button"
+                class="w-full text-left rounded-xl border p-3 transition-all active:scale-[0.99]"
+                :class="isSelected(g.id)
+                  ? 'border-amber-400/70 bg-amber-50/90 dark:bg-amber-950/30 ring-1 ring-amber-400/40'
+                  : 'border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-950/50'"
+                @click="toggle(g.id)"
               >
-                <p class="text-sm font-black text-slate-900 dark:text-white truncate">{{ g.title }}</p>
-                <p v-if="g.username" class="text-[11px] text-slate-400 mt-0.5">@{{ g.username }}</p>
-                <div v-if="g.joinUrl" class="mt-2 flex gap-2 items-center">
-                  <input
-                    :value="g.joinUrl"
-                    readonly
-                    class="flex-1 min-w-0 px-2.5 py-2 rounded-lg text-[11px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                <div class="flex items-start gap-3">
+                  <span
+                    class="w-6 h-6 shrink-0 rounded-lg flex items-center justify-center border text-[11px]"
+                    :class="isSelected(g.id)
+                      ? 'bg-amber-500 border-amber-500 text-white'
+                      : 'border-slate-300 dark:border-slate-600 text-transparent'"
                   >
-                  <button
-                    type="button"
-                    class="shrink-0 px-3 py-2 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 border border-sky-400/40 bg-sky-50 dark:bg-sky-950/40 active:scale-95"
-                    @click="copy(g.joinUrl)"
-                  >
-                    Nusxa
-                  </button>
+                    <font-awesome-icon v-if="isSelected(g.id)" icon="fa-solid fa-check" />
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-black text-slate-900 dark:text-white truncate">{{ g.title }}</p>
+                    <p v-if="g.username" class="text-[11px] text-slate-400 mt-0.5">@{{ g.username }}</p>
+                    <div v-if="g.joinUrl" class="mt-2 flex gap-2 items-center" @click.stop>
+                      <input
+                        :value="g.joinUrl"
+                        readonly
+                        class="flex-1 min-w-0 px-2.5 py-2 rounded-lg text-[11px] font-mono bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
+                      >
+                      <button
+                        type="button"
+                        class="shrink-0 px-3 py-2 rounded-lg text-[11px] font-black text-sky-600 dark:text-sky-400 border border-sky-400/40 bg-sky-50 dark:bg-sky-950/40 active:scale-95"
+                        @click="copy(g.joinUrl)"
+                      >
+                        Nusxa
+                      </button>
+                    </div>
+                    <p v-else class="mt-1.5 text-[10px] text-slate-400">Ommaviy @username yo'q — havola nusxalanmaydi</p>
+                  </div>
                 </div>
-                <p v-else class="mt-1.5 text-[10px] text-slate-400">Ommaviy @username yo'q — havola nusxalanmaydi</p>
-              </div>
+              </button>
             </div>
 
             <div class="p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <button
+                v-if="selectedIds.size > 0"
+                type="button"
+                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25 active:scale-[0.98] transition-all"
+                @click="autoPostOpen = true"
+              >
+                <font-awesome-icon icon="fa-solid fa-paper-plane" />
+                Avto xabar yuborish ({{ selectedIds.size }})
+              </button>
               <button
                 v-if="allJoinUrls.length"
                 type="button"
@@ -84,10 +135,19 @@
         </Transition>
       </div>
     </Transition>
+
+    <AdminDriversAutoPostDialog
+      v-model="autoPostOpen"
+      :user-id="userId"
+      :group-ids="selectedGroupIds"
+      @started="onAutoPostStarted"
+    />
   </Teleport>
 </template>
 
 <script setup lang="ts">
+import { MAX_POST_GROUPS } from '~/stores/post.store'
+
 export type AdminDriverGroupRow = {
   id: string
   title: string
@@ -100,19 +160,52 @@ const props = defineProps<{
   userId: string
 }>()
 
-const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
+const emit = defineEmits<{
+  'update:modelValue': [boolean]
+  autoPostStarted: []
+}>()
 
 const groups = ref<AdminDriverGroupRow[]>([])
 const loading = ref(false)
 const error = ref('')
 const copiedAll = ref(false)
+const selectedIds = ref<Set<string>>(new Set())
+const autoPostOpen = ref(false)
 let copiedAllTimer: ReturnType<typeof setTimeout> | null = null
 
 const allJoinUrls = computed(() =>
   groups.value.map((g) => g.joinUrl).filter((u): u is string => !!String(u || '').trim())
 )
 
+const selectedGroupIds = computed(() => Array.from(selectedIds.value))
+
 const close = () => emit('update:modelValue', false)
+
+const isSelected = (id: string) => selectedIds.value.has(id)
+
+const toggle = (id: string) => {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) {
+    next.delete(id)
+  } else {
+    if (next.size >= MAX_POST_GROUPS) return
+    next.add(id)
+  }
+  selectedIds.value = next
+}
+
+const selectAll = () => {
+  const next = new Set<string>()
+  for (const g of groups.value) {
+    if (next.size >= MAX_POST_GROUPS) break
+    next.add(g.id)
+  }
+  selectedIds.value = next
+}
+
+const clearSelection = () => {
+  selectedIds.value = new Set()
+}
 
 const load = async () => {
   if (!props.userId) return
@@ -124,6 +217,11 @@ const load = async () => {
     )
     if (res.success) {
       groups.value = res.data?.groups || []
+      const kept = new Set<string>()
+      for (const g of groups.value) {
+        if (selectedIds.value.has(g.id)) kept.add(g.id)
+      }
+      selectedIds.value = kept
     } else {
       error.value = res.message || 'Xatolik'
     }
@@ -155,15 +253,23 @@ const copyAll = async () => {
   }, 2000)
 }
 
+const onAutoPostStarted = () => {
+  clearSelection()
+  emit('autoPostStarted')
+}
+
 watch(
   () => props.modelValue,
   (open) => {
     if (open) {
       copiedAll.value = false
       void load()
-    } else if (copiedAllTimer) {
-      clearTimeout(copiedAllTimer)
-      copiedAllTimer = null
+    } else {
+      autoPostOpen.value = false
+      if (copiedAllTimer) {
+        clearTimeout(copiedAllTimer)
+        copiedAllTimer = null
+      }
     }
   }
 )

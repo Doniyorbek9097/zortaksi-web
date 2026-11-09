@@ -12,6 +12,7 @@ export const DRIVER_SUB_FILTER_OPTIONS: DriverSubFilterOption[] = [
   { value: 'inactive', label: 'Faol emas', icon: 'fa-solid fa-ban' },
   { value: 'unpaid', label: "To'lov qilmaganlar", icon: 'fa-solid fa-wallet' },
   { value: 'in-app', label: "Telegram session bor", icon: 'fa-solid fa-mobile-screen' },
+  { value: 'premium', label: 'Telegram Premium', icon: 'fa-solid fa-medal' },
   { value: 'listen-groups', label: 'Tinglovchi guruh tinglaydiganlar', icon: 'fa-solid fa-headset' },
   { value: 'expiring', label: 'Muddati kelganlar (1 kun)', icon: 'fa-solid fa-hourglass-half' },
   { value: 'debt', label: 'Qarzdorlar', icon: 'fa-solid fa-money-bill' },

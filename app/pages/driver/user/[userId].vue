@@ -245,6 +245,7 @@
       v-if="isAdmin && driver"
       v-model="groupsListOpen"
       :user-id="driver.id"
+      @auto-post-started="onDriverAutoPostStarted"
     />
 
     <AdminDriversGroupsJoinDialog
@@ -317,6 +318,7 @@ const {
   confirmBlock,
   toggleListenGroups,
   confirmDelete,
+  onDriverAutoPostStarted,
 } = useDriverProfilePage()
 
 const buyurtmaTariffsForAdmin = computed(() =>
