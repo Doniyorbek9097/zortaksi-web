@@ -1,14 +1,16 @@
 <template>
-  <div class="flex flex-col min-h-[calc(100dvh-4rem)] md:min-h-[calc(100dvh-5rem)] -mx-4 md:-mx-0">
-    <header class="shrink-0 px-4 pt-2 pb-2 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-950/95 backdrop-blur-lg sticky top-0 z-20">
-      <div class="flex items-center gap-2">
+  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-4 space-y-3">
+    <div
+      class="sticky top-0 z-30 -mx-4 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm"
+    >
+      <header class="flex items-center gap-2 px-4 py-1.5">
         <button
           type="button"
-          class="w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 active:scale-95"
+          class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 bg-white dark:bg-slate-900 active:scale-95 shrink-0"
           aria-label="Orqaga"
           @click="goBack"
         >
-          <font-awesome-icon icon="fa-solid fa-arrow-left" class="text-sm" />
+          <font-awesome-icon icon="fa-solid fa-arrow-left" class="text-xs" />
         </button>
         <div class="flex-1 min-w-0">
           <h1 class="text-base font-black text-slate-900 dark:text-white">
@@ -20,7 +22,7 @@
         </div>
         <button
           type="button"
-          class="w-9 h-9 rounded-xl flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-400 active:scale-95"
+          class="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-400 bg-white dark:bg-slate-900 active:scale-95 shrink-0"
           :disabled="loading || !canSearch"
           aria-label="Yangilash"
           @click="reload(true)"
@@ -28,75 +30,83 @@
           <font-awesome-icon
             icon="fa-solid fa-rotate"
             :class="loading ? 'animate-spin' : ''"
-            class="text-sm"
+            class="text-xs"
           />
         </button>
+      </header>
+
+      <div class="px-4 pb-3">
+        <div class="relative">
+          <font-awesome-icon
+            icon="fa-solid fa-magnifying-glass"
+            class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none"
+          />
+          <input
+            ref="searchInputRef"
+            v-model="searchQuery"
+            type="search"
+            enterkeyhint="search"
+            placeholder="Nom, hudud yoki @username — Telegram bo'ylab"
+            class="w-full pl-9 pr-3 py-3 rounded-xl text-[14px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+          />
+        </div>
+        <p v-if="canSearch" class="mt-2 text-[11px] font-bold text-slate-400">
+          {{ totalShown }} ta topildi
+        </p>
       </div>
+    </div>
 
-      <div class="relative mt-3">
-        <font-awesome-icon
-          icon="fa-solid fa-magnifying-glass"
-          class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 pointer-events-none"
-        />
-        <input
-          ref="searchInputRef"
-          v-model="searchQuery"
-          type="search"
-          enterkeyhint="search"
-          placeholder="Nom, hudud yoki @username — Telegram bo'ylab"
-          class="w-full pl-9 pr-3 py-3 rounded-xl text-[14px] font-medium bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-        />
-      </div>
+    <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500">
+      {{ success }}
+    </p>
 
-      <p v-if="canSearch" class="mt-2 text-[11px] font-bold text-slate-400">
-        {{ totalShown }} ta topildi
-      </p>
-    </header>
+    <div v-if="loading && !groups.length" class="space-y-2.5">
+      <div
+        v-for="n in 6"
+        :key="n"
+        class="h-[72px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
+      />
+    </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3 space-y-2.5 pb-6">
-      <p v-if="success" class="text-center text-[12px] font-bold text-emerald-500 py-1">
-        {{ success }}
-      </p>
+    <BaseEmptyState
+      v-else-if="!loading && !groups.length"
+      icon="fa-solid fa-magnifying-glass"
+      :title="!canSearch ? 'Guruh nomini yozing' : 'Mos guruh topilmadi'"
+      :description="!canSearch
+        ? 'Kamida 2 ta harf yoki @username kiriting — keyin izlanadi'
+        : 'Telegram ochiq guruhlari bo\'ylab qidiring (@username aniqroq)'"
+      tone="slate"
+    />
 
-      <div v-if="loading && !groups.length" class="space-y-2.5">
-        <div
-          v-for="n in 6"
-          :key="n"
-          class="h-[100px] rounded-2xl bg-slate-100 dark:bg-slate-900 animate-pulse"
-        />
-      </div>
-
-      <BaseEmptyState
-        v-else-if="!loading && !groups.length"
-        icon="fa-solid fa-magnifying-glass"
-        :title="!canSearch ? 'Guruh nomini yozing' : 'Mos guruh topilmadi'"
-        :description="!canSearch
-          ? 'Kamida 2 ta harf yoki @username kiriting — keyin izlanadi'
-          : 'Telegram ochiq guruhlari bo\'ylab qidiring (@username aniqroq)'"
-        tone="slate"
+    <div v-else class="space-y-2.5">
+      <PostGroupCard
+        v-for="g in groups"
+        :key="g.id"
+        :group="g"
+        :selectable="false"
+        :swipe-actions="false"
+        :show-join="true"
+        :joining="store.joiningId === g.id"
+        @join="onJoin(g)"
       />
 
-      <template v-else>
-        <PostGroupCard
-          v-for="g in groups"
-          :key="g.id"
-          :group="g"
-          :selectable="false"
-          :swipe-actions="false"
-          :show-join="true"
-          :joining="store.joiningId === g.id"
-          @join="onJoin(g)"
-        />
-        <div ref="sentinel" class="h-1" />
-        <div v-if="loadingMore" class="py-4 flex justify-center">
-          <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-slate-400" />
-        </div>
-      </template>
+      <div ref="sentinel" class="h-1" />
 
-      <p v-if="localError" class="text-center text-[12px] font-bold text-red-500 py-2">
-        {{ localError }}
+      <div v-if="loadingMore" class="py-3 flex justify-center">
+        <font-awesome-icon icon="fa-solid fa-spinner" class="animate-spin text-slate-400" />
+      </div>
+
+      <p
+        v-else-if="!hasMore && groups.length"
+        class="py-3 text-center text-[11px] font-medium text-slate-400 dark:text-slate-600"
+      >
+        Barcha natijalar ko'rsatildi
       </p>
     </div>
+
+    <p v-if="localError" class="text-center text-[12px] font-bold text-red-500">
+      {{ localError }}
+    </p>
   </div>
 </template>
 
@@ -243,9 +253,30 @@ watch(searchQuery, () => {
   }, 350)
 })
 
+const bindSentinelObserver = () => {
+  if (!import.meta.client || !sentinel.value) return
+  if (!observer) {
+    observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) void loadMore()
+      },
+      { rootMargin: '520px' },
+    )
+  }
+  observer.disconnect()
+  observer.observe(sentinel.value)
+}
+
 watch(sentinel, (el) => {
-  if (observer && el) observer.observe(el)
+  if (el) bindSentinelObserver()
 })
+
+watch(
+  () => groups.value.length,
+  () => {
+    nextTick(() => bindSentinelObserver())
+  },
+)
 
 usePullToRefresh(async () => {
   if (canSearch.value) await reload(true)
@@ -253,14 +284,8 @@ usePullToRefresh(async () => {
 
 onMounted(async () => {
   if (!requireServiceAuth('/driver/post/discover')) return
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting) void loadMore()
-    },
-    { rootMargin: '400px' },
-  )
-  if (sentinel.value) observer.observe(sentinel.value)
   await nextTick()
+  bindSentinelObserver()
   searchInputRef.value?.focus()
 })
 

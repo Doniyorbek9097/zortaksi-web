@@ -115,8 +115,8 @@ const onSubmit = async () => {
   loading.value = true
   error.value = ''
   try {
+    const driverId = String(props.userId).trim()
     const body = {
-      forUserId: props.userId,
       mode: 'mine' as const,
       name: name.value.trim(),
       text: text.value.trim(),
@@ -124,16 +124,28 @@ const onSubmit = async () => {
       intervalMin: intervalMin.value,
       start: true,
     }
-    let res: { success?: boolean; message?: string }
+    const postForDriver = (path: string) =>
+      useApi<{ success?: boolean; message?: string; data?: { userId?: string } }>(path, {
+        method: 'POST',
+        body,
+      })
+
+    let res: { success?: boolean; message?: string; data?: { userId?: string } }
     try {
-      res = await useApi('/groups/broadcast/campaigns', { method: 'POST', body })
+      res = await postForDriver(
+        `/admin/drivers/${encodeURIComponent(driverId)}/auto-post-campaign`,
+      )
     } catch (e: any) {
       if (e?.response?.status !== 404) throw e
-      res = await useApi(
-        `/admin/drivers/${encodeURIComponent(props.userId)}/auto-post-campaign`,
-        { method: 'POST', body: { ...body, forUserId: undefined } },
-      )
+      res = await postForDriver(`/drivers/${encodeURIComponent(driverId)}/auto-post-campaign`)
     }
+
+    const ownerId = String(res?.data?.userId || '').trim()
+    if (ownerId && ownerId !== driverId) {
+      error.value = `Xato: e'lon admin akkauntiga yozildi. Backend yangilang va qayta urinib ko'ring.`
+      return
+    }
+
     if (res.success) {
       emit('started')
       close()
