@@ -1,8 +1,13 @@
 <template>
   <AuthSessionGate>
-    <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <slot />
-    </div>
+    <BasePullToRefresh
+      :disabled="ptr.disabled"
+      :scroll-selector="ptr.scrollSelector"
+    >
+      <div class="driver-shell min-h-[100dvh] bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
+        <slot />
+      </div>
+    </BasePullToRefresh>
     <DriverBottomNavigation />
     <OrdersRegionGroupsWelcome />
   </AuthSessionGate>
@@ -10,8 +15,10 @@
 
 <script setup lang="ts">
 import { useDriverLayoutBoot } from '~/composables/layout/useDriverLayoutBoot'
+import { usePullToRefreshRoute } from '~/composables/usePullToRefreshRoute'
 
 useDriverLayoutBoot()
+const ptr = usePullToRefreshRoute()
 </script>
 
 <style scoped>

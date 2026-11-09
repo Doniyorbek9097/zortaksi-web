@@ -176,7 +176,7 @@ import { resolveRealAdCtaLabel } from '~/constants/realAdCta'
 import { openRealProductLink, realProductShareUrl } from '~/utils/realProductUrl'
 import { isDriverAppAuthenticated, navigateToServiceAuth } from '~/utils/authSession'
 
-definePageMeta({ layout: 'driver' })
+definePageMeta({ layout: 'driver', pullToRefresh: false })
 
 const { resolve: resolveMedia } = useMediaUrl()
 const config = useRuntimeConfig()

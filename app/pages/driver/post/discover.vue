@@ -247,6 +247,10 @@ watch(sentinel, (el) => {
   if (observer && el) observer.observe(el)
 })
 
+usePullToRefresh(async () => {
+  if (canSearch.value) await reload(true)
+})
+
 onMounted(async () => {
   if (!requireServiceAuth('/driver/post/discover')) return
   observer = new IntersectionObserver(

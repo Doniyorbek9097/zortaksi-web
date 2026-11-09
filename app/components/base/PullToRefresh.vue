@@ -88,6 +88,32 @@ const refreshing = ref(false)
 let startY = 0
 let tracking = false
 let armed = false
+/** Jestda scroll konteksti — ichki overflow yoki window */
+let gestureScrollEl: HTMLElement | null = null
+
+const PTR_BLOCK_SELECTORS = 'video, .reals-scroller, .reals-page, [data-ptr-block]'
+
+function isScrollableY(el: HTMLElement): boolean {
+  const oy = getComputedStyle(el).overflowY
+  if (oy !== 'auto' && oy !== 'scroll' && oy !== 'overlay') return false
+  return el.scrollHeight > el.clientHeight + 2
+}
+
+function findScrollParentFrom(target: EventTarget | null): HTMLElement | null {
+  let node = target as HTMLElement | null
+  const root = rootEl.value
+  while (node && node !== root && node !== document.body) {
+    if (isScrollableY(node)) return node
+    node = node.parentElement
+  }
+  return null
+}
+
+function isBlockedGestureTarget(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  if (!el?.closest) return false
+  return Boolean(el.closest(PTR_BLOCK_SELECTORS))
+}
 
 const arrowDeg = computed(() =>
   pullDistance.value >= props.threshold ? 180 : Math.min(180, (pullDistance.value / props.threshold) * 180)
@@ -117,6 +143,7 @@ const contentStyle = computed(() => ({
 
 function getScrollTop(): number {
   if (!import.meta.client) return 0
+  if (gestureScrollEl) return gestureScrollEl.scrollTop
   if (props.scrollSelector) {
     const el = document.querySelector(props.scrollSelector) as HTMLElement | null
     if (el) return el.scrollTop
@@ -128,8 +155,20 @@ function getScrollTop(): number {
 function onTouchStart(e: TouchEvent) {
   if (props.disabled || refreshing.value) return
   if (e.touches.length !== 1) return
+  if (isBlockedGestureTarget(e.target)) {
+    armed = false
+    tracking = false
+    gestureScrollEl = null
+    return
+  }
+
+  gestureScrollEl = props.scrollSelector
+    ? (document.querySelector(props.scrollSelector) as HTMLElement | null)
+    : findScrollParentFrom(e.target)
+
   if (getScrollTop() > 2) {
     armed = false
+    gestureScrollEl = null
     return
   }
   startY = e.touches[0].clientY
@@ -169,6 +208,7 @@ async function onTouchEnd() {
   if (!shouldRefresh) {
     pullDistance.value = 0
     armed = false
+    gestureScrollEl = null
     return
   }
 
@@ -181,6 +221,7 @@ async function onTouchEnd() {
     refreshing.value = false
     pullDistance.value = 0
     armed = false
+    gestureScrollEl = null
   }
 }
 </script>
