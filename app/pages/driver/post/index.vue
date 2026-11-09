@@ -284,7 +284,7 @@ const membershipTarget = ref<PostGroup | null>(null)
 /** Yangi guruh qidirish / qo'shilish — e'lon tarifi shart emas */
 const openDiscover = () => {
   if (!requireServiceAuth('/driver/post/discover')) return
-  void navigateTo('/driver/post/discover')
+  void navigateTo({ path: '/driver/post/discover' })
 }
 
 const openCompose = () => {

@@ -115,16 +115,19 @@ const onSubmit = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await useApi(`/drivers/${encodeURIComponent(props.userId)}/auto-post-campaign`, {
-      method: 'POST',
-      body: {
-        name: name.value.trim(),
-        text: text.value.trim(),
-        groupIds: props.groupIds,
-        intervalMin: intervalMin.value,
-        start: true,
+    const res = await useApi(
+      `/admin/drivers/${encodeURIComponent(props.userId)}/auto-post-campaign`,
+      {
+        method: 'POST',
+        body: {
+          name: name.value.trim(),
+          text: text.value.trim(),
+          groupIds: props.groupIds,
+          intervalMin: intervalMin.value,
+          start: true,
+        },
       },
-    })
+    )
     if (res.success) {
       emit('started')
       close()
@@ -132,7 +135,13 @@ const onSubmit = async () => {
       error.value = res.message || 'Saqlanmadi'
     }
   } catch (e: any) {
-    error.value = e?.data?.message || e?.message || 'Xatolik'
+    const status = e?.response?.status
+    if (status === 404) {
+      error.value =
+        'API topilmadi — backend yangilanmagan. Serverda dist ni qayta joylang.'
+    } else {
+      error.value = e?.response?.data?.message || e?.data?.message || e?.message || 'Xatolik'
+    }
   } finally {
     loading.value = false
   }
