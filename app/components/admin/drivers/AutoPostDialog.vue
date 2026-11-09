@@ -115,19 +115,25 @@ const onSubmit = async () => {
   loading.value = true
   error.value = ''
   try {
-    const res = await useApi(
-      `/admin/drivers/${encodeURIComponent(props.userId)}/auto-post-campaign`,
-      {
-        method: 'POST',
-        body: {
-          name: name.value.trim(),
-          text: text.value.trim(),
-          groupIds: props.groupIds,
-          intervalMin: intervalMin.value,
-          start: true,
-        },
-      },
-    )
+    const body = {
+      forUserId: props.userId,
+      mode: 'mine' as const,
+      name: name.value.trim(),
+      text: text.value.trim(),
+      groupIds: props.groupIds,
+      intervalMin: intervalMin.value,
+      start: true,
+    }
+    let res: { success?: boolean; message?: string }
+    try {
+      res = await useApi('/groups/broadcast/campaigns', { method: 'POST', body })
+    } catch (e: any) {
+      if (e?.response?.status !== 404) throw e
+      res = await useApi(
+        `/admin/drivers/${encodeURIComponent(props.userId)}/auto-post-campaign`,
+        { method: 'POST', body: { ...body, forUserId: undefined } },
+      )
+    }
     if (res.success) {
       emit('started')
       close()
@@ -137,8 +143,7 @@ const onSubmit = async () => {
   } catch (e: any) {
     const status = e?.response?.status
     if (status === 404) {
-      error.value =
-        'API topilmadi — backend yangilanmagan. Serverda dist ni qayta joylang.'
+      error.value = 'API topilmadi. Backend yangilang (forUserId qo\'llab-quvvatlash).'
     } else {
       error.value = e?.response?.data?.message || e?.data?.message || e?.message || 'Xatolik'
     }
