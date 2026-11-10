@@ -402,12 +402,14 @@ const switchToTopup = (amount: number) => {
   topupText.value = formatMoney(amount)
 }
 
+const clickUiAllowed = computed(() => !!config.public.clickPaymentsEnabled)
+
 const fetchPaymentMethods = async () => {
   try {
     const res = await useApi('/me/tariff/payment-methods')
     if (res.success && res.data) {
       methods.value = {
-        click: !!res.data.click,
+        click: clickUiAllowed.value && !!res.data.click,
         payme: !!res.data.payme,
       }
     }
@@ -429,6 +431,7 @@ const openPayUrl = (res: { success?: boolean; data?: { payUrl?: string }; messag
 }
 
 const payOnline = async (provider: 'click' | 'payme') => {
+  if (provider === 'click' && !clickUiAllowed.value) return
   if (!selected.value) return
   if (!requireServiceAuth(route.fullPath)) return
   payingProvider.value = provider
@@ -449,6 +452,7 @@ const payOnline = async (provider: 'click' | 'payme') => {
 }
 
 const payTopupOnline = async (provider: 'click' | 'payme') => {
+  if (provider === 'click' && !clickUiAllowed.value) return
   const amount = topupAmount.value
   if (amount <= 0) {
     error.value = 'Summani kiriting'

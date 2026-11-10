@@ -187,6 +187,10 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       paymentCard1: process.env.NUXT_PUBLIC_PAYMENT_CARD_1 || '4067070007722601',
       paymentCard2: process.env.NUXT_PUBLIC_PAYMENT_CARD_2 || '9860260115547846',
       paymentCardOwner: process.env.NUXT_PUBLIC_PAYMENT_CARD_OWNER || 'Doniyor Mirgiyozov',
+      /** Vaqtincha: 0 — ilovada Click tugmasi API dan qaytmasa ham yashirin */
+      clickPaymentsEnabled: !['0', 'false', 'no', 'off', 'disabled'].includes(
+        String(process.env.NUXT_PUBLIC_CLICK_PAYMENTS_ENABLED ?? '0').trim().toLowerCase(),
+      ),
     }
   },
 })
