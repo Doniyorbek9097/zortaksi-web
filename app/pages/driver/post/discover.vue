@@ -50,9 +50,23 @@
             class="w-full pl-9 pr-3 py-3 rounded-xl text-[14px] font-medium bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
           />
         </div>
-        <p v-if="canSearch" class="mt-2 text-[11px] font-bold text-slate-400">
-          {{ totalShown }} ta topildi
-        </p>
+        <div v-if="canSearch" class="mt-2 flex items-center justify-between gap-2">
+          <p class="text-[11px] font-bold text-slate-400">
+            {{ totalShown }} ta topildi
+          </p>
+          <div v-if="groups.length" class="flex items-center gap-2">
+            <span class="text-[10px] font-bold text-slate-400">
+              {{ selectedIds.size }} tanlangan
+            </span>
+            <button
+              type="button"
+              class="text-[10px] font-black text-sky-600 dark:text-sky-400"
+              @click="toggleSelectAll"
+            >
+              {{ allListedSelected ? 'Bekor' : 'Hammasi' }}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -79,14 +93,27 @@
     />
 
     <div v-else class="space-y-2.5">
+      <button
+        v-if="selectedIds.size > 0"
+        type="button"
+        class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all disabled:opacity-50"
+        :disabled="!selectedJoinUrls.length"
+        @click="copySelectedJoinUrls"
+      >
+        <font-awesome-icon :icon="copiedLinks ? 'fa-solid fa-check' : 'fa-solid fa-copy'" />
+        {{ copiedLinks ? 'Nusxalandi' : `Havolalarni nusxalash (${selectedIds.size})` }}
+      </button>
+
       <PostGroupCard
         v-for="g in groups"
         :key="g.id"
         :group="g"
-        :selectable="false"
+        :selectable="true"
+        :selected="isSelected(g.id)"
         :swipe-actions="false"
         :show-join="true"
         :joining="store.joiningId === g.id"
+        @toggle="toggleSelect(g.id)"
         @join="onJoin(g)"
       />
 
@@ -113,6 +140,7 @@
 <script setup lang="ts">
 import { usePostStore, type PostGroup } from '~/stores/post.store'
 import { requireServiceAuth } from '~/utils/authSession'
+import { normalizeTelegramChannelId } from '~/utils/telegramLinks'
 
 definePageMeta({ layout: 'driver' })
 
@@ -130,9 +158,12 @@ const localError = ref('')
 const success = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
+const selectedIds = ref<Set<string>>(new Set())
+const copiedLinks = ref(false)
 
 let observer: IntersectionObserver | null = null
 let searchTimer: ReturnType<typeof setTimeout> | null = null
+let copiedLinksTimer: ReturnType<typeof setTimeout> | null = null
 
 const MIN_SEARCH_LEN = 2
 
@@ -142,6 +173,68 @@ const normalizedQuery = computed(() =>
 
 const canSearch = computed(() => normalizedQuery.value.length >= MIN_SEARCH_LEN)
 const totalShown = computed(() => groups.value.length)
+
+const allListedSelected = computed(
+  () => groups.value.length > 0 && groups.value.every((g) => selectedIds.value.has(g.id)),
+)
+
+const resolveGroupJoinUrl = (g: PostGroup): string => {
+  const join = String(g.joinUrl || '').trim()
+  if (join) return join
+  const username = String(g.username || '').replace(/^@/, '').trim()
+  if (username) return `https://t.me/${username}`
+  const channelId = normalizeTelegramChannelId(g.id)
+  if (!channelId) return ''
+  return `https://t.me/c/${channelId}`
+}
+
+const selectedJoinUrls = computed(() =>
+  groups.value
+    .filter((g) => selectedIds.value.has(g.id))
+    .map((g) => resolveGroupJoinUrl(g))
+    .filter((u): u is string => !!u),
+)
+
+const isSelected = (id: string) => selectedIds.value.has(id)
+
+const toggleSelect = (id: string) => {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+const selectAllListed = () => {
+  selectedIds.value = new Set(groups.value.map((g) => g.id))
+}
+
+const clearSelection = () => {
+  selectedIds.value = new Set()
+}
+
+const toggleSelectAll = () => {
+  if (allListedSelected.value) clearSelection()
+  else selectAllListed()
+}
+
+const copyText = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    /* ignore */
+  }
+}
+
+const copySelectedJoinUrls = async () => {
+  if (!selectedJoinUrls.value.length) return
+  await copyText(selectedJoinUrls.value.join('\n'))
+  copiedLinks.value = true
+  if (copiedLinksTimer) clearTimeout(copiedLinksTimer)
+  copiedLinksTimer = setTimeout(() => {
+    copiedLinks.value = false
+    copiedLinksTimer = null
+  }, 2000)
+}
 
 const goBack = () => {
   if (import.meta.client && window.history.length > 1) {
@@ -175,6 +268,17 @@ const loadPage = async (append: boolean, force = false) => {
     force,
   })
   groups.value = append ? [...groups.value, ...rows] : rows
+  if (!append) {
+    selectedIds.value = new Set()
+    copiedLinks.value = false
+  } else {
+    const listed = new Set(groups.value.map((g) => g.id))
+    const kept = new Set<string>()
+    for (const id of selectedIds.value) {
+      if (listed.has(id)) kept.add(id)
+    }
+    selectedIds.value = kept
+  }
   discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
   if (discoverHint && !rows.length) {
@@ -230,6 +334,11 @@ const onJoin = async (g: PostGroup) => {
     const res = await store.joinGroup(g)
     if (res?.success) {
       groups.value = groups.value.filter((x) => x.id !== g.id)
+      if (selectedIds.value.has(g.id)) {
+        const next = new Set(selectedIds.value)
+        next.delete(g.id)
+        selectedIds.value = next
+      }
       success.value = `«${g.title || g.username || 'Guruh'}» qo'shildi — Meniki ro'yxatda`
       void store.fetchMine({ page: 1, force: true, append: false })
     }
@@ -291,6 +400,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (searchTimer) clearTimeout(searchTimer)
+  if (copiedLinksTimer) clearTimeout(copiedLinksTimer)
   if (observer) observer.disconnect()
 })
 </script>
