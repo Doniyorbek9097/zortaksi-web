@@ -1,5 +1,8 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-4 space-y-3">
+  <div
+    class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 space-y-3"
+    :class="selectedIds.size > 0 ? 'pb-[5.75rem]' : 'pb-4'"
+  >
     <div
       class="sticky top-0 z-30 -mx-4 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-lg border-b border-slate-200/50 dark:border-slate-800/50 shadow-sm"
     >
@@ -74,6 +77,13 @@
       {{ success }}
     </p>
 
+    <p
+      v-if="discoverInfo"
+      class="text-center text-[11px] font-semibold text-amber-700 dark:text-amber-300 px-2"
+    >
+      {{ discoverInfo }}
+    </p>
+
     <div v-if="loading && !groups.length" class="space-y-2.5">
       <div
         v-for="n in 6"
@@ -93,17 +103,6 @@
     />
 
     <div v-else class="space-y-2.5">
-      <button
-        v-if="selectedIds.size > 0"
-        type="button"
-        class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all disabled:opacity-50"
-        :disabled="!selectedJoinUrls.length"
-        @click="copySelectedJoinUrls"
-      >
-        <font-awesome-icon :icon="copiedLinks ? 'fa-solid fa-check' : 'fa-solid fa-copy'" />
-        {{ copiedLinks ? 'Nusxalandi' : `Havolalarni nusxalash (${selectedIds.size})` }}
-      </button>
-
       <PostGroupCard
         v-for="g in groups"
         :key="g.id"
@@ -135,6 +134,22 @@
       {{ localError }}
     </p>
   </div>
+
+  <div
+    v-if="selectedIds.size > 0"
+    class="fixed inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+    :style="{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom, 0px) + 0.5rem)' }"
+  >
+    <button
+      type="button"
+      class="pointer-events-auto w-full max-w-md inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-sky-500 hover:bg-sky-600 active:scale-[0.98] transition-all shadow-lg shadow-sky-500/30 border border-sky-400/40 disabled:opacity-50"
+      :disabled="!selectedJoinUrls.length"
+      @click="copySelectedJoinUrls"
+    >
+      <font-awesome-icon :icon="copiedLinks ? 'fa-solid fa-check' : 'fa-solid fa-copy'" />
+      {{ copiedLinks ? 'Nusxalandi' : `Havolalarni nusxalash (${selectedIds.size})` }}
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -155,6 +170,7 @@ const hasMore = ref(false)
 const discoverCursor = ref('')
 const discoverPage = ref(1)
 const localError = ref('')
+const discoverInfo = ref('')
 const success = ref('')
 const searchInputRef = ref<HTMLInputElement | null>(null)
 const sentinel = ref<HTMLElement | null>(null)
@@ -225,6 +241,30 @@ const copyText = async (text: string) => {
   }
 }
 
+const isSoftDiscoverHint = (hint: string) =>
+  /Telegram qidiruv uzoq|mahalliy ro'yxat/i.test(hint)
+
+const applyDiscoverHint = (
+  hint: string | undefined,
+  append: boolean,
+  rowsLength: number,
+) => {
+  if (!hint) {
+    if (!append) discoverInfo.value = ''
+    return
+  }
+  if (append) return
+  if (rowsLength > 0 && isSoftDiscoverHint(hint)) {
+    discoverInfo.value = hint
+    localError.value = ''
+    return
+  }
+  if (!rowsLength) {
+    discoverInfo.value = ''
+    localError.value = hint
+  }
+}
+
 const copySelectedJoinUrls = async () => {
   if (!selectedJoinUrls.value.length) return
   await copyText(selectedJoinUrls.value.join('\n'))
@@ -281,12 +321,14 @@ const loadPage = async (append: boolean, force = false) => {
   }
   discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
-  if (discoverHint && !rows.length) {
-    localError.value = discoverHint
-  } else if (discoverHint && rows.length) {
+  if (append) {
     localError.value = ''
-  } else if (!append || rows.length) {
-    localError.value = ''
+  } else {
+    applyDiscoverHint(discoverHint, false, rows.length)
+    if (!discoverHint) {
+      discoverInfo.value = ''
+      if (rows.length) localError.value = ''
+    }
   }
 }
 
@@ -296,9 +338,11 @@ const reload = async (force = false) => {
     discoverCursor.value = ''
     hasMore.value = false
     localError.value = ''
+    discoverInfo.value = ''
     return
   }
   localError.value = ''
+  discoverInfo.value = ''
   loading.value = true
   discoverCursor.value = ''
   discoverPage.value = 1
@@ -316,7 +360,6 @@ const reload = async (force = false) => {
 const loadMore = async () => {
   if (loading.value || loadingMore.value || !hasMore.value) return
   loadingMore.value = true
-  localError.value = ''
   try {
     await loadPage(true)
   } catch (e: any) {
@@ -355,6 +398,7 @@ watch(searchQuery, () => {
       discoverCursor.value = ''
       hasMore.value = false
       localError.value = ''
+      discoverInfo.value = ''
       loading.value = false
       return
     }
