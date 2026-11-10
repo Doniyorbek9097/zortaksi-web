@@ -194,7 +194,7 @@
           Balans to'ldirish
         </p>
         <p class="text-[13px] font-medium text-slate-600 dark:text-slate-300 leading-snug">
-          Click yoki Payme orqali to'lov — balans darhol qo'shiladi. Admin orqali — Telegram lichkasiga tayyor xabar bilan.
+          {{ onlinePayLabel }} orqali to'lov — balans darhol qo'shiladi. Admin orqali — Telegram lichkasiga tayyor xabar bilan.
         </p>
       </section>
 
@@ -233,7 +233,7 @@
           :payme-enabled="methods.payme"
           :show-admin="true"
           admin-label="Adminga to'lov qilish"
-          online-hint="Click yoki Payme orqali to'lovdan so'ng balans darhol qo'shiladi."
+          :online-hint="`${onlinePayLabel} orqali to'lovdan so'ng balans darhol qo'shiladi.`"
           :loading="payingProvider"
           :admin-loading="savingRequest"
           :disabled="topupAmount <= 0"
@@ -285,6 +285,13 @@ const payingProvider = ref<'click' | 'payme' | null>(null)
 const error = ref('')
 const amountPresets = [50000, 100000, 150000, 200000]
 const methods = ref<{ click: boolean; payme: boolean }>({ click: false, payme: false })
+
+const onlinePayLabel = computed(() => {
+  const parts: string[] = []
+  if (methods.value.click) parts.push('Click')
+  if (methods.value.payme) parts.push('Payme')
+  return parts.length ? parts.join(' yoki ') : 'Online'
+})
 
 const balance = computed(() => authStore.user?.balance ?? 0)
 const tariffActive = computed(() => authStore.tariffActive)
