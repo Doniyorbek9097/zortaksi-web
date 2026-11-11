@@ -280,7 +280,7 @@ export const usePostStore = defineStore('post', () => {
           ...(excludeIds.length ? { excludeIds: excludeIds.join(',') } : {}),
           ...(opts.force ? { force: '1' } : {}),
         },
-        timeout: isAdmin.value ? 180_000 : 35_000,
+        timeout: isAdmin.value ? 180_000 : 75_000,
       })
     } catch (e: any) {
       const msg = friendlyErr(e?.response?.data?.message || e?.message || '')

@@ -322,7 +322,11 @@ const loadPage = async (append: boolean, force = false) => {
   discoverCursor.value = String(pagination?.discoverCursor || '')
   hasMore.value = Boolean(pagination?.hasMore)
   if (append) {
-    localError.value = ''
+    if (discoverHint && !rows.length) {
+      localError.value = discoverHint
+    } else if (rows.length) {
+      localError.value = ''
+    }
   } else {
     applyDiscoverHint(discoverHint, false, rows.length)
     if (!discoverHint) {
