@@ -76,8 +76,17 @@
         aria-labelledby="pwa-install-title"
       >
         <div
-          class="w-full max-w-lg rounded-3xl border border-slate-200/90 bg-white/95 shadow-2xl shadow-black/20 overflow-hidden"
+          class="relative w-full max-w-lg rounded-3xl border border-slate-200/90 bg-white/95 shadow-2xl shadow-black/20 overflow-hidden"
         >
+          <button
+            type="button"
+            class="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition-colors"
+            aria-label="Yopish"
+            :disabled="installing"
+            @click="dismissPwaInstall"
+          >
+            <font-awesome-icon icon="fa-solid fa-xmark" class="text-lg" />
+          </button>
           <div class="px-6 pt-6 pb-4 text-center">
             <img
               src="/logo.png"
@@ -101,7 +110,7 @@
             Ulashish → Bosh ekranga qo'shish → Qo'shish
           </div>
 
-          <div class="px-6 pb-6">
+          <div class="px-6 pb-6 space-y-2">
             <button
               type="button"
               class="w-full py-4 rounded-2xl text-base sm:text-lg font-black text-white bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-60"
@@ -114,6 +123,14 @@
                 class="animate-spin mr-2"
               />
               {{ installButtonLabel }}
+            </button>
+            <button
+              type="button"
+              class="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 hover:text-slate-700 active:scale-[0.98] transition-colors"
+              :disabled="installing"
+              @click="dismissPwaInstall"
+            >
+              Keyinroq
             </button>
           </div>
         </div>
@@ -138,6 +155,7 @@ const {
   refreshGates,
   openInSystemBrowser,
   dismissOpenBrowser,
+  dismissPwaInstall,
   installPwaAndGo,
 } = useTelegramPwaOnboarding()
 

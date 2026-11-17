@@ -6,6 +6,7 @@ import {
   openCurrentSiteInSystemBrowser,
   resolveTelegramWebContext,
   TG_BROWSER_DISMISS_SESSION,
+  TG_PWA_INSTALL_DISMISS_SESSION,
 } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
@@ -108,6 +109,11 @@ export function useTelegramPwaOnboarding() {
       return
     }
 
+    if (dismissed(TG_PWA_INSTALL_DISMISS_SESSION)) {
+      showPwaInstall.value = false
+      return
+    }
+
     resetPwaInstallDismissed()
 
     if (await detectInstalledWebApp()) {
@@ -129,6 +135,13 @@ export function useTelegramPwaOnboarding() {
   function dismissOpenBrowser() {
     dismiss(TG_BROWSER_DISMISS_SESSION)
     showOpenBrowser.value = false
+  }
+
+  function dismissPwaInstall() {
+    dismiss(TG_PWA_INSTALL_DISMISS_SESSION)
+    pwaInstallDialogSuppressed.value = false
+    iosInstallHint.value = false
+    showPwaInstall.value = false
   }
 
   async function installPwaAndGo() {
@@ -218,6 +231,7 @@ export function useTelegramPwaOnboarding() {
     refreshGates,
     openInSystemBrowser,
     dismissOpenBrowser,
+    dismissPwaInstall,
     installPwaAndGo,
   }
 }
