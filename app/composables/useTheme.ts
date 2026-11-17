@@ -1,7 +1,6 @@
-import { isAndroidDevice } from '~/utils/devicePlatform'
 import { startAndroidThemeColorGuard } from '~/utils/androidStatusBar'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { pwaImmersiveThemeColor, shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import {
   STATUS_BAR_CHROME,
@@ -33,10 +32,6 @@ export function resolveTheme(pref: ThemePreference, systemDark = false): ThemeNa
   return pref
 }
 
-function isAndroidPwaChromeSkip(_value: ThemeName): boolean {
-  return shouldApplyPwaStatusBarChrome() && isAndroidDevice()
-}
-
 function hookSystemColorScheme(
   systemDark: Ref<boolean>,
   onChange: () => void,
@@ -63,7 +58,7 @@ export function applyBrowserChrome(value: ThemeName) {
   const root = document.documentElement
 
   root.dataset.ztTheme = value
-  if (!isAndroidPwaChromeSkip(value)) {
+  if (!shouldApplyPwaStatusBarChrome()) {
     root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
   }
   root.style.backgroundColor = color
@@ -126,7 +121,7 @@ export const useTheme = () => {
     if (!import.meta.client) return
     if (!androidGuardStarted && shouldApplyPwaStatusBarChrome()) {
       androidGuardStarted = true
-      startAndroidThemeColorGuard(() => STATUS_BAR_CHROME[effectiveTheme.value])
+      startAndroidThemeColorGuard(() => pwaImmersiveThemeColor())
     }
     hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') syncChrome()

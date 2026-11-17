@@ -13,6 +13,9 @@ export const STATUS_BAR_CHROME: Record<ThemeName, string> = {
   dark: '#020617',
 }
 
+/** PWA immersive — tizim status bar yashirin/edge-to-edge */
+export const PWA_IMMERSIVE_THEME_COLOR = '#00000000'
+
 /** Tabbar fon — `bg-white dark:bg-slate-950` */
 export const TABBAR_CHROME: Record<ThemeName, string> = {
   light: '#ffffff',

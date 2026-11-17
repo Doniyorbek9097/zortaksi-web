@@ -1,17 +1,17 @@
-import { bootstrapAndroidPwaStatusBar } from '~/utils/pwaStatusBar'
+import { bootstrapPwaImmersiveChrome } from '~/utils/pwaStatusBar'
 
-/** Android PWA — Flutterdan ajratilgan erta status bar */
+/** PWA immersive — Flutter emas */
 export default defineNuxtPlugin({
   name: 'pwa-android-status',
   enforce: 'pre',
   setup() {
     if (!import.meta.client) return
-    bootstrapAndroidPwaStatusBar()
+    bootstrapPwaImmersiveChrome()
     const modes = ['standalone', 'fullscreen', 'minimal-ui'] as const
     for (const mode of modes) {
       try {
         window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', () => {
-          bootstrapAndroidPwaStatusBar()
+          bootstrapPwaImmersiveChrome()
         })
       } catch {
         /* */

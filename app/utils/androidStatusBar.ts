@@ -1,4 +1,4 @@
-import { isAndroidPwaForStatusBar } from '~/utils/pwaStatusBar'
+import { isAndroidPwaForStatusBar, pwaImmersiveThemeColor } from '~/utils/pwaStatusBar'
 import type { ThemeName } from '~/utils/themeChrome'
 
 const SHIM_ID = 'zt-android-status-shim'

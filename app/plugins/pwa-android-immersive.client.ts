@@ -19,8 +19,5 @@ export default defineNuxtPlugin(() => {
     }
   }
 
-  if (window.matchMedia('(display-mode: fullscreen)').matches) return
-
   window.addEventListener('touchend', enterFullscreen, { once: true, passive: true })
-  window.addEventListener('click', enterFullscreen, { once: true, passive: true })
 })

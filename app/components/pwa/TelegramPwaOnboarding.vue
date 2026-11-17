@@ -196,7 +196,9 @@ watch(gateOpen, (open) => {
 }, { immediate: true })
 
 onUnmounted(() => {
-  if (import.meta.client) document.body.style.overflow = ''
+  if (!import.meta.client) return
+  document.body.style.overflow = ''
+  document.documentElement.style.overflow = ''
 })
 
 onMounted(() => {

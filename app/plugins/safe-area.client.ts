@@ -100,9 +100,9 @@ export function applyZtSafeArea() {
     return
   }
 
-  // Android PWA — tizim pastki nav paneli uchun qo'shimcha bo'shliq emas
+  // Android PWA immersive — status/nav uchun qo'shimcha pad yo'q
   if (isPwaStandalone() && isAndroidDevice()) {
-    setSafeVars(Math.min(readEnvInset('top'), MAX_TOP), 0)
+    setSafeVars(0, 0)
     return
   }
 
