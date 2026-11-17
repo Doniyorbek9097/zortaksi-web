@@ -11,36 +11,41 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
-import { STATUS_BAR_CHROME } from '~/utils/themeChrome'
-import { IOS_STATUS_BAR_STYLE } from '~/utils/themeChrome'
+import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { IOS_STATUS_BAR_STYLE, STATUS_BAR_CHROME } from '~/utils/themeChrome'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
 
 const chromeColor = computed(() => THEME_CHROME[effectiveTheme.value])
-const statusBarColor = computed(() => STATUS_BAR_CHROME[effectiveTheme.value])
 
-useHead({
-  meta: computed(() => [
+const pwaHeadMeta = computed(() => {
+  if (!import.meta.client || !shouldApplyPwaStatusBarChrome()) return []
+  const mode = effectiveTheme.value
+  return [
     {
       key: 'zt-theme-color',
       name: 'theme-color',
-      content: statusBarColor.value,
+      content: STATUS_BAR_CHROME[mode],
       tagPriority: 0,
     },
     {
       key: 'zt-color-scheme',
       name: 'color-scheme',
-      content: effectiveTheme.value === 'light' ? 'light' : 'dark',
+      content: mode === 'light' ? 'light' : 'dark',
       tagPriority: 0,
     },
     {
       key: 'zt-ios-status-bar',
       name: 'apple-mobile-web-app-status-bar-style',
-      content: IOS_STATUS_BAR_STYLE[effectiveTheme.value],
+      content: IOS_STATUS_BAR_STYLE[mode],
       tagPriority: 1,
     },
-  ]),
+  ]
+})
+
+useHead({
+  meta: pwaHeadMeta,
   htmlAttrs: {
     class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),

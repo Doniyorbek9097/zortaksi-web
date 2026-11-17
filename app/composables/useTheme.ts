@@ -1,5 +1,6 @@
 import { startAndroidThemeColorGuard } from '~/utils/androidStatusBar'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
+import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import {
   STATUS_BAR_CHROME,
@@ -62,7 +63,10 @@ export function applyBrowserChrome(value: ThemeName) {
   if (document.body) document.body.style.backgroundColor = color
 
   root.dataset.ztChromeNav = navColor
-  scheduleThemeColorRepaint(value, statusBarColor, color)
+
+  if (shouldApplyPwaStatusBarChrome()) {
+    scheduleThemeColorRepaint(value, statusBarColor, color)
+  }
 
   const tg = (window as Window & { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp
   try {
@@ -73,9 +77,8 @@ export function applyBrowserChrome(value: ThemeName) {
     /* */
   }
 
-  // Flutter WebView — darhol native chrome yangilash (async import kechikmasin)
   notifyFlutterChrome(
-    { mode: value, status: statusBarColor, nav: TABBAR_CHROME[value] },
+    { mode: value, status: color, nav: TABBAR_CHROME[value] },
     0,
   )
 }
@@ -114,7 +117,7 @@ export const useTheme = () => {
 
   const initTheme = () => {
     if (!import.meta.client) return
-    if (!androidGuardStarted) {
+    if (!androidGuardStarted && shouldApplyPwaStatusBarChrome()) {
       androidGuardStarted = true
       startAndroidThemeColorGuard(() => STATUS_BAR_CHROME[effectiveTheme.value])
     }

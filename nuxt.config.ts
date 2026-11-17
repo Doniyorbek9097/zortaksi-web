@@ -81,9 +81,6 @@ export default defineNuxtConfig({
       title: "Zo'r Taksi",
       viewport: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover',
       meta: [
-        { name: 'theme-color', content: '#ffffff' },
-        { name: 'color-scheme', content: 'light' },
-        // theme-color / color-scheme — runtime useTheme
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -114,7 +111,6 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
       script: [
-        { src: '/zt-theme-boot.js', tagPriority: 0 },
         {
           src: 'https://telegram.org/js/telegram-web-app.js',
           defer: true,

@@ -1,4 +1,9 @@
 import { applyAndroidSystemUiTheme } from '~/utils/androidStatusBar'
+import {
+  applyAndroidPwaMeta,
+  isAndroidPwaForStatusBar,
+  shouldApplyPwaStatusBarChrome,
+} from '~/utils/pwaStatusBar'
 import { IOS_STATUS_BAR_STYLE, type ThemeName } from '~/utils/themeChrome'
 
 const THEME_META_ID = 'zt-theme-color-meta'
@@ -56,11 +61,15 @@ export function scheduleThemeColorRepaint(
   statusBarColor: string,
   _pageBg?: string,
 ): void {
-  if (!import.meta.client) return
+  if (!import.meta.client || !shouldApplyPwaStatusBarChrome()) return
   const apply = () => {
     replaceThemeColorMeta(statusBarColor)
     replaceColorSchemeMeta(mode)
-    replaceIosStatusBarMeta(mode)
+    if (isAndroidPwaForStatusBar()) {
+      applyAndroidPwaMeta(mode)
+    } else {
+      replaceIosStatusBarMeta(mode)
+    }
     applyAndroidSystemUiTheme(mode, statusBarColor)
   }
   apply()
