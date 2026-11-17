@@ -104,7 +104,12 @@ export function applyZtSafeArea() {
   if (isPwaStandalone() && isAndroidDevice()) {
     const envTop = readEnvInset('top')
     const top = envTop > 6 ? Math.min(envTop, MAX_TOP) : 24
-    setSafeVars(top, 0)
+    const fullscreen = window.matchMedia('(display-mode: fullscreen)').matches
+    const envBottom = readEnvInset('bottom')
+    const bottom = fullscreen
+      ? Math.min(Math.max(envBottom, 0), MAX_BOTTOM)
+      : Math.min(envBottom > 6 ? envBottom : 0, MAX_BOTTOM)
+    setSafeVars(top, bottom)
     return
   }
 

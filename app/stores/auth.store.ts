@@ -125,7 +125,10 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             isLoading.value = true
             const forced = opts?.authToken
-            const response = await useApi('/me', forced ? { authToken: forced } : {})
+            const response = await useApi('/me', {
+              ...(forced ? { authToken: forced } : {}),
+              timeout: 15_000,
+            })
             if (response.success) {
                 user.value = normalizeUser(response.data)
                 // Session sync faqat client — SSR da writeActiveSession/memory leak bo'lmasin

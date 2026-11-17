@@ -219,14 +219,22 @@ onUnmounted(() => {
   document.documentElement.style.overflow = ''
 })
 
+const route = useRoute()
+
 onMounted(() => {
   bootOnboarding()
   watch(
     () => isPwaStandalone(),
     (standalone) => {
-      if (standalone) {
-        showPwaInstall.value = false
-        void navigateTo('/driver/dashboard')
+      if (!standalone) return
+      showPwaInstall.value = false
+      if (
+        route.path !== '/driver/dashboard' &&
+        !route.path.startsWith('/driver/') &&
+        !route.path.startsWith('/admin/') &&
+        !route.path.startsWith('/passenger/')
+      ) {
+        void navigateTo('/driver/dashboard', { replace: true })
       }
     },
     { immediate: true },

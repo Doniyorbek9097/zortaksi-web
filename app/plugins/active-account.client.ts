@@ -17,10 +17,6 @@ export default defineNuxtPlugin({
   setup() {
     const cookie = useCookie<string | null>('auth_token', { ...getAuthCookieOptions() })
 
-    try {
-      useAuthStore().sessionReady = false
-    } catch { /* */ }
-
     if (!cookie.value) {
       const orphan = readActiveToken()
       if (orphan) writeActiveSession(null, null)
