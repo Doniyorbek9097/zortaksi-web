@@ -1,3 +1,4 @@
+import { applyAndroidSystemUiTheme } from '~/utils/androidStatusBar'
 import { IOS_STATUS_BAR_STYLE, type ThemeName } from '~/utils/themeChrome'
 
 const THEME_META_ID = 'zt-theme-color-meta'
@@ -56,9 +57,11 @@ export function scheduleThemeColorRepaint(mode: ThemeName, color: string): void 
     replaceThemeColorMeta(color)
     replaceColorSchemeMeta(mode)
     replaceIosStatusBarMeta(mode)
+    applyAndroidSystemUiTheme(mode, color)
   }
   apply()
   requestAnimationFrame(apply)
   window.setTimeout(apply, 0)
   window.setTimeout(apply, 120)
+  window.setTimeout(apply, 400)
 }

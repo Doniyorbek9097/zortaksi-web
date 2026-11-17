@@ -18,13 +18,20 @@ const { script } = useAppScript()
 
 const chromeColor = computed(() => THEME_CHROME[effectiveTheme.value])
 
-useSeoMeta({
-  themeColor: chromeColor,
-  colorScheme: computed(() => effectiveTheme.value),
-})
-
 useHead({
   meta: computed(() => [
+    {
+      key: 'zt-theme-color',
+      name: 'theme-color',
+      content: chromeColor.value,
+      tagPriority: 0,
+    },
+    {
+      key: 'zt-color-scheme',
+      name: 'color-scheme',
+      content: effectiveTheme.value === 'light' ? 'light' : 'dark',
+      tagPriority: 0,
+    },
     {
       key: 'zt-ios-status-bar',
       name: 'apple-mobile-web-app-status-bar-style',

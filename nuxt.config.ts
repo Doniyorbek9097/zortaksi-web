@@ -137,7 +137,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       theme_color: '#f8fafc',
       background_color: '#f8fafc',
       display: 'standalone',
-      display_override: ['fullscreen', 'standalone', 'minimal-ui'],
+      display_override: ['standalone', 'minimal-ui'],
       orientation: 'portrait',
       start_url: '/driver/dashboard',
       scope: '/',

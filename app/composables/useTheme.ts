@@ -1,3 +1,4 @@
+import { startAndroidThemeColorGuard } from '~/utils/androidStatusBar'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import { TABBAR_CHROME, THEME_CHROME, type ThemeName, type ThemePreference } from '~/utils/themeChrome'
@@ -74,6 +75,7 @@ export function applyBrowserChrome(value: ThemeName) {
 
 let reactiveChromeBound = false
 let visibilityChromeBound = false
+let androidGuardStarted = false
 
 export const useTheme = () => {
   const theme = useCookie<ThemePreference>('zt-theme', {
@@ -105,6 +107,10 @@ export const useTheme = () => {
 
   const initTheme = () => {
     if (!import.meta.client) return
+    if (!androidGuardStarted) {
+      androidGuardStarted = true
+      startAndroidThemeColorGuard(() => THEME_CHROME[effectiveTheme.value])
+    }
     hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') syncChrome()
     })
