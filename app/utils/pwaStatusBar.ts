@@ -1,11 +1,6 @@
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice } from '~/utils/devicePlatform'
-import {
-  PWA_IMMERSIVE_THEME_COLOR,
-  STATUS_BAR_CHROME,
-  THEME_CHROME,
-  type ThemeName,
-} from '~/utils/themeChrome'
+import { STATUS_BAR_CHROME, THEME_CHROME, type ThemeName } from '~/utils/themeChrome'
 
 const COLOR_SCHEME_STYLE_ID = 'zt-pwa-color-scheme'
 
@@ -38,45 +33,75 @@ function resolveModeFromCookie(): ThemeName {
   }
 }
 
-/** PWA: status bar yo‘q / fullscreen — faqat sahifa foni */
-export function applyPwaImmersiveChrome(mode: ThemeName): void {
+/** PWA: status bar fon = ilova light/dark (iconlar teskari kontrastda) */
+export function applyPwaStatusBarChrome(mode: ThemeName): void {
   if (!shouldApplyPwaStatusBarChrome()) return
 
+  const status = STATUS_BAR_CHROME[mode]
   const pageBg = THEME_CHROME[mode]
   purgeMediaThemeColorMetas()
 
-  document.querySelectorAll('meta[name="theme-color"]').forEach((node) => node.remove())
-  const meta = document.createElement('meta')
-  meta.setAttribute('name', 'theme-color')
-  meta.setAttribute('content', PWA_IMMERSIVE_THEME_COLOR)
-  meta.setAttribute('data-zt-pwa-immersive', '1')
-  document.head.insertBefore(meta, document.head.firstChild)
+  document
+    .querySelectorAll('meta[name="theme-color"]:not([data-zt-pwa-status])')
+    .forEach((node) => node.remove())
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"][data-zt-pwa-status]')
+  if (!meta) {
+    meta = document.createElement('meta')
+    meta.setAttribute('data-zt-pwa-status', '1')
+    meta.name = 'theme-color'
+    document.head.prepend(meta)
+  }
+  meta.content = status
 
-  document.getElementById(COLOR_SCHEME_STYLE_ID)?.remove()
+  let scheme = document.querySelector<HTMLMetaElement>('meta[name="color-scheme"][data-zt-pwa-status]')
+  if (!scheme) {
+    scheme = document.createElement('meta')
+    scheme.name = 'color-scheme'
+    scheme.setAttribute('data-zt-pwa-status', '1')
+    document.head.prepend(scheme)
+  }
+  scheme.content = mode === 'light' ? 'light' : 'dark'
+
+  const schemeCss = mode === 'light' ? 'light only' : 'dark only'
+  let styleEl = document.getElementById(COLOR_SCHEME_STYLE_ID) as HTMLStyleElement | null
+  if (!styleEl) {
+    styleEl = document.createElement('style')
+    styleEl.id = COLOR_SCHEME_STYLE_ID
+    document.head.appendChild(styleEl)
+  }
+  styleEl.textContent = `:root,html,body{color-scheme:${schemeCss}!important}`
+
   document.documentElement.style.backgroundColor = pageBg
   if (document.body) document.body.style.backgroundColor = pageBg
-  document.documentElement.dataset.ztImmersive = '1'
+  document.documentElement.style.colorScheme = schemeCss
+  if (document.body) document.body.style.colorScheme = schemeCss
+  document.documentElement.dataset.ztStatusIcons = mode === 'light' ? 'dark' : 'light'
+  delete document.documentElement.dataset.ztImmersive
+  try {
+    document.documentElement.style.setProperty('--zt-status-bar-bg', status)
+    document.documentElement.style.setProperty('--theme-color', status)
+  } catch {
+    /* */
+  }
+}
+
+export function bootstrapPwaStatusBarChrome(): void {
+  if (!shouldApplyPwaStatusBarChrome()) return
+  applyPwaStatusBarChrome(resolveModeFromCookie())
 }
 
 export function bootstrapPwaImmersiveChrome(): void {
-  if (!shouldApplyPwaStatusBarChrome()) return
-  applyPwaImmersiveChrome(resolveModeFromCookie())
+  bootstrapPwaStatusBarChrome()
 }
 
-/** @deprecated — applyPwaImmersiveChrome */
 export function bootstrapAndroidPwaStatusBar(): void {
-  bootstrapPwaImmersiveChrome()
+  bootstrapPwaStatusBarChrome()
 }
 
-/** @deprecated — applyPwaImmersiveChrome */
 export function applyAndroidPwaMeta(mode: ThemeName): void {
-  applyPwaImmersiveChrome(mode)
+  applyPwaStatusBarChrome(mode)
 }
 
-export function pwaImmersiveThemeColor(): string {
-  return PWA_IMMERSIVE_THEME_COLOR
-}
-
-export function pwaStatusBarColorForHead(mode: ThemeName): string {
-  return shouldApplyPwaStatusBarChrome() ? PWA_IMMERSIVE_THEME_COLOR : STATUS_BAR_CHROME[mode]
+export function applyPwaImmersiveChrome(mode: ThemeName): void {
+  applyPwaStatusBarChrome(mode)
 }

@@ -11,8 +11,8 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
-import { pwaImmersiveThemeColor, shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
-import { IOS_STATUS_BAR_STYLE } from '~/utils/themeChrome'
+import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { IOS_STATUS_BAR_STYLE, STATUS_BAR_CHROME } from '~/utils/themeChrome'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
@@ -26,14 +26,16 @@ const pwaHeadMeta = computed(() => {
     {
       key: 'zt-theme-color',
       name: 'theme-color',
-      content: pwaImmersiveThemeColor(),
-      tagPriority: 0,
+      content: STATUS_BAR_CHROME[mode],
+      'data-zt-pwa-status': '1',
+      tagPriority: -20,
     },
     {
       key: 'zt-color-scheme',
       name: 'color-scheme',
       content: mode === 'light' ? 'light' : 'dark',
-      tagPriority: 0,
+      'data-zt-pwa-status': '1',
+      tagPriority: -20,
     },
     {
       key: 'zt-ios-status-bar',
@@ -116,7 +118,9 @@ html[data-zt-pwa='1'] .theme-page {
 html[data-zt-pwa='1'][data-zt-android='1'] body {
   min-height: 100dvh;
   min-height: 100svh;
+  padding-top: var(--zt-safe-top, 24px);
   padding-bottom: 0 !important;
+  box-sizing: border-box;
 }
 
 html[data-zt-pwa='1'][data-zt-android='1'] .driver-tabbar,

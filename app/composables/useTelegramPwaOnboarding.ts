@@ -26,6 +26,8 @@ const iosInstallHint = ref(false)
 const openFromHomeHint = ref(false)
 const installPromptReady = ref(false)
 const telegramContextPending = ref(false)
+/** Tizim o‘rnatish oynasi ochilguncha bizning dialog yopiq qoladi */
+const pwaInstallDialogSuppressed = ref(false)
 let booted = false
 
 function dismissed(key: string): boolean {
@@ -97,6 +99,12 @@ export function useTelegramPwaOnboarding() {
 
     if (!mobileNeedsPwaShell() || isTelegramWebContext()) {
       showPwaInstall.value = false
+      pwaInstallDialogSuppressed.value = false
+      return
+    }
+
+    if (pwaInstallDialogSuppressed.value) {
+      showPwaInstall.value = false
       return
     }
 
@@ -125,14 +133,22 @@ export function useTelegramPwaOnboarding() {
 
   async function installPwaAndGo() {
     if (openFromHomeHint.value) {
+      showPwaInstall.value = false
       reloadIntoPwaShell('/driver/dashboard')
       return
     }
 
+    pwaInstallDialogSuppressed.value = true
+    showPwaInstall.value = false
+
     const own = await triggerDeferredPwaInstall()
     if (own?.outcome === 'accepted') {
-      showPwaInstall.value = false
       reloadIntoPwaShell('/driver/dashboard')
+      return
+    }
+    if (own?.outcome === 'dismissed') {
+      pwaInstallDialogSuppressed.value = false
+      void refreshGates()
       return
     }
 
@@ -141,23 +157,34 @@ export function useTelegramPwaOnboarding() {
       try {
         const choice = await pin.install()
         if (choice?.outcome === 'accepted' || isPwaStandalone()) {
-          showPwaInstall.value = false
           reloadIntoPwaShell('/driver/dashboard')
           return
         }
+        if (choice?.outcome === 'dismissed') {
+          pwaInstallDialogSuppressed.value = false
+          void refreshGates()
+          return
+        }
       } catch {
-        /* */
+        pwaInstallDialogSuppressed.value = false
+        void refreshGates()
+        return
       }
     }
 
+    pwaInstallDialogSuppressed.value = false
+
     if (isIosDevice()) {
       iosInstallHint.value = true
+      showPwaInstall.value = true
       return
     }
 
     if (isMobileDevice()) {
       iosInstallHint.value = false
     }
+
+    void refreshGates()
   }
 
   function bootOnboarding() {
@@ -167,6 +194,10 @@ export function useTelegramPwaOnboarding() {
     onPwaInstallReady(() => {
       installPromptReady.value = true
       void refreshGates()
+    })
+    window.addEventListener('appinstalled', () => {
+      pwaInstallDialogSuppressed.value = false
+      showPwaInstall.value = false
     })
     void refreshGates()
     const delays = [80, 400, 1200, 2500, 5000]

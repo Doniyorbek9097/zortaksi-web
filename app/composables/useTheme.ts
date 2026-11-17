@@ -1,6 +1,6 @@
 import { startAndroidThemeColorGuard } from '~/utils/androidStatusBar'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { pwaImmersiveThemeColor, shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import {
   STATUS_BAR_CHROME,
@@ -121,7 +121,7 @@ export const useTheme = () => {
     if (!import.meta.client) return
     if (!androidGuardStarted && shouldApplyPwaStatusBarChrome()) {
       androidGuardStarted = true
-      startAndroidThemeColorGuard(() => pwaImmersiveThemeColor())
+      startAndroidThemeColorGuard(() => effectiveTheme.value)
     }
     hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') syncChrome()

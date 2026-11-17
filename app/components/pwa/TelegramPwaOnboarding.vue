@@ -167,11 +167,11 @@ const installButtonLabel = computed(() => {
 
 async function onInstallConfirm() {
   installing.value = true
+  showPwaInstall.value = false
   try {
     await installPwaAndGo()
   } finally {
     installing.value = false
-    refreshGates()
   }
 }
 

@@ -100,9 +100,11 @@ export function applyZtSafeArea() {
     return
   }
 
-  // Android PWA immersive — status/nav uchun qo'shimcha pad yo'q
+  // Android PWA — kontent status bar ostiga kirib ketmasin (env ko‘pincha 0)
   if (isPwaStandalone() && isAndroidDevice()) {
-    setSafeVars(0, 0)
+    const envTop = readEnvInset('top')
+    const top = envTop > 6 ? Math.min(envTop, MAX_TOP) : 24
+    setSafeVars(top, 0)
     return
   }
 
