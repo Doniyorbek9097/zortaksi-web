@@ -51,13 +51,17 @@ export function replaceIosStatusBarMeta(mode: ThemeName): void {
 }
 
 /** Android PWA ba'zan bir necha framedan keyin yangilaydi */
-export function scheduleThemeColorRepaint(mode: ThemeName, color: string): void {
+export function scheduleThemeColorRepaint(
+  mode: ThemeName,
+  statusBarColor: string,
+  _pageBg?: string,
+): void {
   if (!import.meta.client) return
   const apply = () => {
-    replaceThemeColorMeta(color)
+    replaceThemeColorMeta(statusBarColor)
     replaceColorSchemeMeta(mode)
     replaceIosStatusBarMeta(mode)
-    applyAndroidSystemUiTheme(mode, color)
+    applyAndroidSystemUiTheme(mode, statusBarColor)
   }
   apply()
   requestAnimationFrame(apply)

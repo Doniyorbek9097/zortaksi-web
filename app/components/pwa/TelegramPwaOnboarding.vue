@@ -25,9 +25,8 @@
             <h2 id="tg-browser-title" class="text-2xl sm:text-3xl font-black text-white leading-tight">
               {{ browserCopy.title }}
             </h2>
-            <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mx-auto">
-              Telegram ichida PWA o'rnatish va to'liq funksiyalar cheklangan.
-              {{ isIosDevice() ? "Safari" : "Chrome" }} da oching — keyin ilovani qurilmaga o'rnatasiz.
+            <p class="mt-2 text-sm text-slate-300 leading-snug max-w-sm mx-auto">
+              Telegramda cheklangan — {{ isIosDevice() ? 'Safari' : 'Chrome' }}da oching.
             </p>
             <div class="mt-5 flex items-center justify-center gap-3 text-slate-400">
               <font-awesome-icon :icon="browserCopy.icon" class="text-3xl text-white/90" />
@@ -79,56 +78,30 @@
         <div
           class="w-full max-w-lg rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-black/50 overflow-hidden"
         >
-          <div class="px-6 pt-8 pb-6 text-center">
+          <div class="px-6 pt-6 pb-4 text-center">
             <img
               src="/logo.png"
               alt="Zo'r Taksi"
-              width="96"
-              height="96"
-              class="mx-auto mb-5 h-24 w-24 rounded-2xl object-cover drop-shadow-lg"
+              width="72"
+              height="72"
+              class="mx-auto mb-4 h-[4.5rem] w-[4.5rem] rounded-2xl object-cover drop-shadow-lg"
             />
-            <p class="text-xs font-bold uppercase tracking-widest text-emerald-400/90 mb-2">
-              Majburiy qadam
-            </p>
-            <h2 id="pwa-install-title" class="text-2xl sm:text-3xl font-black text-white leading-tight">
-              {{ openFromHomeHint ? "Ilovani bosh ekrandan oching" : "Ilovani o'rnatib oling" }}
+            <h2 id="pwa-install-title" class="text-xl sm:text-2xl font-black text-white leading-tight">
+              {{ openFromHomeHint ? 'Bosh ekrandan oching' : "Ilovani o'rnatish" }}
             </h2>
-            <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mx-auto">
+            <p class="mt-2 text-sm text-slate-300 leading-snug max-w-sm mx-auto">
               {{ installMessage }}
             </p>
           </div>
 
           <div
             v-if="iosInstallHint"
-            class="mx-6 mb-5 rounded-2xl bg-white/5 border border-white/10 p-4 text-left text-sm text-slate-200 space-y-2"
+            class="mx-6 mb-4 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-left text-xs text-slate-300"
           >
-            <p class="font-bold text-white flex items-center gap-2">
-              <font-awesome-icon icon="fa-brands fa-safari" class="text-sky-400" />
-              Safari'da qadamlar
-            </p>
-            <ol class="list-decimal list-inside space-y-1.5 text-slate-300">
-              <li>Pastdagi <b class="text-white">Ulashish</b> tugmasini bosing</li>
-              <li><b class="text-white">«Bosh ekranga qo'shish»</b> ni tanlang</li>
-              <li><b class="text-white">Qo'shish</b> — keyin ilova ochiladi</li>
-            </ol>
+            Ulashish → Bosh ekranga qo'shish → Qo'shish
           </div>
 
-          <div v-else class="mx-6 mb-6 grid gap-3 text-left">
-            <div
-              v-for="(step, i) in installSteps"
-              :key="i"
-              class="flex gap-3 rounded-xl bg-white/5 px-4 py-3 border border-white/5"
-            >
-              <span
-                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 font-black text-sm"
-              >
-                {{ i + 1 }}
-              </span>
-              <p class="text-sm text-slate-200 pt-1">{{ step }}</p>
-            </div>
-          </div>
-
-          <div class="px-6 pb-8">
+          <div class="px-6 pb-6">
             <button
               type="button"
               class="w-full py-4 rounded-2xl text-base sm:text-lg font-black text-white bg-emerald-500 hover:bg-emerald-400 active:scale-[0.98] transition-all shadow-lg shadow-emerald-500/30 disabled:opacity-60"
@@ -142,9 +115,6 @@
               />
               {{ installButtonLabel }}
             </button>
-            <p class="mt-4 text-center text-xs text-slate-500">
-              O'rnatilguncha boshqa sahifalar bloklangan
-            </p>
           </div>
         </div>
       </div>
@@ -177,44 +147,22 @@ const isMobile = computed(() => isMobileDevice())
 
 const installMessage = computed(() => {
   if (openFromHomeHint.value) {
-    return "Ilova allaqachon o'rnatilgan. Brauzer o'rniga Zo'r Taksi ilovasini bosh ekrandan oching — shunda barcha funksiyalar ishlaydi."
+    return "Ilova o'rnatilgan — bosh ekrandagi belgidan oching."
   }
   if (iosInstallHint.value) {
-    return "Buyurtma va tez kirish uchun ilovani bosh ekranga qo'shish shart. Quyidagi qadamlarni bajaring."
+    return "Safari: Ulashish → Bosh ekranga qo'shish."
   }
   if (canNativeInstall.value) {
-    return "Zo'r Taksi mobil ilovasini o'rnatmasdan davom etib bo'lmaydi. Tugmani bosing va brauzer so'rovini tasdiqlang."
+    return "Tugmani bosing va «O'rnatish»ni tasdiqlang."
   }
-  return "Ilovani o'rnatish majburiy. Tugmani bosing — so'ng brauzer o'rnatish oynasini tasdiqlang."
-})
-
-const installSteps = computed(() => {
-  if (openFromHomeHint.value) {
-    return [
-      'Telefon bosh ekraniga o‘ting',
-      'Zo‘r Taksi belgisini bosing (brauzer emas)',
-      'Ilova alohida ochiladi — siz davom etasiz',
-    ]
-  }
-  if (isIosDevice()) {
-    return [
-      'Tugmani bosing — Safari yo\'riqnomasi chiqadi',
-      'Ulashish → Bosh ekranga qo\'shish',
-      'Ilovani bosh ekrandan oching',
-    ]
-  }
-  return [
-    '«Ilovani o\'rnatib olish» tugmasini bosing',
-    'Chrome oynasida «O\'rnatish» ni tasdiqlang',
-    'Ilova bosh ekranga qo\'shiladi',
-  ]
+  return "Davom etish uchun ilovani o'rnating."
 })
 
 const installButtonLabel = computed(() => {
   if (installing.value) return 'Kutilmoqda…'
   if (openFromHomeHint.value) return "Bosh ekrandan ochishga o'tdim"
-  if (iosInstallHint.value) return 'Tushundim, qadamlarni bajaraman'
-  return "Ilovani o'rnatib olish"
+  if (iosInstallHint.value) return 'Tushundim'
+  return "O'rnatish"
 })
 
 async function onInstallConfirm() {

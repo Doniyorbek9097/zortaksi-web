@@ -25,7 +25,7 @@ function readStatusBarInsetPx(): number {
 
 /** Chrome fullscreen PWA da meta ba'zan yangilanmaydi — vizual qatlam */
 export function updateAndroidStatusShim(color: string): void {
-  if (!isAndroidPwaShell()) return
+  if (!import.meta.client || !isAndroidDevice()) return
   let el = document.getElementById(SHIM_ID) as HTMLDivElement | null
   if (!el) {
     el = document.createElement('div')
@@ -86,5 +86,6 @@ export function startAndroidThemeColorGuard(getColor: () => string): void {
 
 export function applyAndroidSystemUiTheme(_mode: ThemeName, color: string): void {
   if (!import.meta.client || !isAndroidDevice()) return
+  if (document.documentElement.dataset.ztEmbed === 'telegram') return
   updateAndroidStatusShim(color)
 }

@@ -81,7 +81,9 @@ export default defineNuxtConfig({
       title: "Zo'r Taksi",
       viewport: 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover',
       meta: [
-        // theme-color / color-scheme — runtime useTheme (OS dark + app light bottom nav)
+        { name: 'theme-color', content: '#ffffff' },
+        { name: 'color-scheme', content: 'light' },
+        // theme-color / color-scheme — runtime useTheme
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
@@ -111,8 +113,8 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
         // Backup if NuxtPwaManifest is missing from a layout; primary injection is <NuxtPwaManifest />
         { rel: 'manifest', href: '/manifest.webmanifest' },
       ],
-      // Telegram Mini App SDK — BackButton / history uchun
       script: [
+        { src: '/zt-theme-boot.js', tagPriority: 0 },
         {
           src: 'https://telegram.org/js/telegram-web-app.js',
           defer: true,
@@ -134,7 +136,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       name: "Zo'r Taksi",
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish',
-      theme_color: '#f8fafc',
+      theme_color: '#ffffff',
       background_color: '#f8fafc',
       display: 'standalone',
       display_override: ['standalone', 'minimal-ui'],

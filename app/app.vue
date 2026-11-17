@@ -11,19 +11,21 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
+import { STATUS_BAR_CHROME } from '~/utils/themeChrome'
 import { IOS_STATUS_BAR_STYLE } from '~/utils/themeChrome'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
 
 const chromeColor = computed(() => THEME_CHROME[effectiveTheme.value])
+const statusBarColor = computed(() => STATUS_BAR_CHROME[effectiveTheme.value])
 
 useHead({
   meta: computed(() => [
     {
       key: 'zt-theme-color',
       name: 'theme-color',
-      content: chromeColor.value,
+      content: statusBarColor.value,
       tagPriority: 0,
     },
     {

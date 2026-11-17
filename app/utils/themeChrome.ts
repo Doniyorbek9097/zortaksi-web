@@ -1,9 +1,15 @@
 export type ThemeName = 'light' | 'dark'
 export type ThemePreference = ThemeName | 'system'
 
-/** PWA / status bar — layout `bg-slate-50` / `dark:bg-slate-950` */
+/** Sahifa foni — layout `bg-slate-50` / `dark:bg-slate-950` */
 export const THEME_CHROME: Record<ThemeName, string> = {
   light: '#f8fafc',
+  dark: '#020617',
+}
+
+/** Android tizim status bar — light uchun oq (qora iconlar) */
+export const STATUS_BAR_CHROME: Record<ThemeName, string> = {
+  light: '#ffffff',
   dark: '#020617',
 }
 
