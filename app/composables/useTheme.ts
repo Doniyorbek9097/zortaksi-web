@@ -1,5 +1,4 @@
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { isPwaStandalone } from '~/utils/appEmbed'
 import {
   IOS_STATUS_BAR_STYLE,
   TABBAR_CHROME,
@@ -18,28 +17,46 @@ type TgWebApp = {
   setBottomBarColor?: (color: string) => void
 }
 
-function removeMetaAll(name: string) {
-  if (!import.meta.client) return
-  document.querySelectorAll(`meta[name="${name}"]`).forEach((el) => el.remove())
-}
-
-function appendMeta(name: string, content: string, media?: string) {
-  if (!import.meta.client) return
-  const el = document.createElement('meta')
-  el.setAttribute('name', name)
-  el.setAttribute('content', content)
-  if (media) el.setAttribute('media', media)
-  document.head.appendChild(el)
-}
+/** OS dark/light — SSRda false, klientda yangilanadi */
+const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
+let systemMqHooked = false
 
 export function systemPrefersDark(): boolean {
-  if (!import.meta.client) return false
+  if (!import.meta.client) return systemPrefersDarkState.value
   return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
 export function resolveTheme(pref: ThemePreference): ThemeName {
-  if (pref === 'system') return systemPrefersDark() ? 'dark' : 'light'
+  if (pref === 'system') {
+    return systemPrefersDarkState.value ? 'dark' : 'light'
+  }
   return pref
+}
+
+function hookSystemColorScheme(onChange: () => void) {
+  if (!import.meta.client || systemMqHooked) return
+  systemMqHooked = true
+  const mq = window.matchMedia('(prefers-color-scheme: dark)')
+  systemPrefersDarkState.value = mq.matches
+  mq.addEventListener('change', () => {
+    systemPrefersDarkState.value = mq.matches
+    onChange()
+  })
+}
+
+/** Android PWA ba'zan faqat DOM orqali yangilansa status barni yangilaydi */
+function punchThemeColorMeta(color: string) {
+  if (!import.meta.client) return
+  const nodes = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+  for (const node of nodes) {
+    node.setAttribute('content', color)
+  }
+  if (nodes.length === 0) {
+    const el = document.createElement('meta')
+    el.name = 'theme-color'
+    el.content = color
+    document.head.appendChild(el)
+  }
 }
 
 /**
@@ -57,21 +74,14 @@ export function applyBrowserChrome(value: ThemeName) {
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
-  removeMetaAll('theme-color')
-  removeMetaAll('color-scheme')
-  removeMetaAll('apple-mobile-web-app-status-bar-style')
-
-  // Android PWA: yorug' theme-color → status/nav iconlari qorong'u
-  appendMeta('theme-color', color)
-  if (isPwaStandalone()) {
-    appendMeta('theme-color', color, '(prefers-color-scheme: light)')
-    appendMeta('theme-color', color, '(prefers-color-scheme: dark)')
-  }
-
-  appendMeta('color-scheme', value === 'light' ? 'light' : 'dark')
-  appendMeta('apple-mobile-web-app-status-bar-style', IOS_STATUS_BAR_STYLE[value])
-
   root.dataset.ztChromeNav = navColor
+  punchThemeColorMeta(color)
+
+  const iosStatus = document.querySelector<HTMLMetaElement>(
+    'meta[name="apple-mobile-web-app-status-bar-style"]',
+  )
+  const statusStyle = IOS_STATUS_BAR_STYLE[value]
+  if (iosStatus) iosStatus.content = statusStyle
 
   const tg = (window as Window & { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp
   try {
@@ -89,6 +99,10 @@ export function applyBrowserChrome(value: ThemeName) {
   )
 }
 
+let themeChromeHeadInstalled = false
+let reactiveChromeBound = false
+let visibilityChromeBound = false
+
 export const useTheme = () => {
   const theme = useCookie<ThemePreference>('zt-theme', {
     default: () => 'system',
@@ -100,9 +114,43 @@ export const useTheme = () => {
 
   const effectiveTheme = computed<ThemeName>(() => resolveTheme(theme.value))
 
+  const syncChrome = () => {
+    applyBrowserChrome(effectiveTheme.value)
+  }
+
+  if (!themeChromeHeadInstalled) {
+    themeChromeHeadInstalled = true
+    useHead({
+      meta: computed(() => {
+        const mode = effectiveTheme.value
+        const color = THEME_CHROME[mode]
+        return [
+          {
+            key: 'zt-theme-color',
+            name: 'theme-color',
+            content: color,
+            tagPriority: 1,
+          },
+          {
+            key: 'zt-color-scheme',
+            name: 'color-scheme',
+            content: mode,
+            tagPriority: 1,
+          },
+          {
+            key: 'zt-ios-status-bar',
+            name: 'apple-mobile-web-app-status-bar-style',
+            content: IOS_STATUS_BAR_STYLE[mode],
+            tagPriority: 1,
+          },
+        ]
+      }),
+    })
+  }
+
   const setTheme = (value: ThemePreference) => {
     theme.value = value === 'dark' || value === 'light' ? value : 'system'
-    applyBrowserChrome(resolveTheme(theme.value))
+    syncChrome()
   }
 
   const toggleTheme = () => {
@@ -110,20 +158,24 @@ export const useTheme = () => {
     setTheme(current === 'dark' ? 'light' : 'dark')
   }
 
-  let systemMqBound = false
-
   const initTheme = () => {
     if (!import.meta.client) return
-    applyBrowserChrome(resolveTheme(theme.value))
-    if (!systemMqBound) {
-      systemMqBound = true
-      const mq = window.matchMedia('(prefers-color-scheme: dark)')
-      mq.addEventListener('change', () => {
-        if (theme.value === 'system') {
-          applyBrowserChrome(resolveTheme('system'))
-        }
+    hookSystemColorScheme(() => {
+      if (theme.value === 'system') syncChrome()
+    })
+    syncChrome()
+    if (!visibilityChromeBound) {
+      visibilityChromeBound = true
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') syncChrome()
       })
     }
+  }
+
+  if (!reactiveChromeBound) {
+    reactiveChromeBound = true
+    watch(effectiveTheme, () => syncChrome(), { flush: 'post' })
+    watch(theme, () => syncChrome())
   }
 
   return {

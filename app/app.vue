@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { THEME_CHROME, applyBrowserChrome } from '~/composables/useTheme'
+import { THEME_CHROME } from '~/composables/useTheme'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
@@ -33,22 +33,8 @@ useHead({
   },
 })
 
-watch(
-  effectiveTheme,
-  (value) => {
-    applyBrowserChrome(value)
-  },
-  { flush: 'post' },
-)
-
 onMounted(() => {
   initTheme()
-  requestAnimationFrame(() => {
-    applyBrowserChrome(effectiveTheme.value)
-  })
-  setTimeout(() => {
-    applyBrowserChrome(effectiveTheme.value)
-  }, 100)
 })
 </script>
 

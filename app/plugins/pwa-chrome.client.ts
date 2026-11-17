@@ -1,4 +1,4 @@
-import { applyBrowserChrome, resolveTheme } from '~/composables/useTheme'
+import { useTheme } from '~/composables/useTheme'
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice, isIosDevice } from '~/utils/devicePlatform'
 
@@ -10,9 +10,7 @@ export default defineNuxtPlugin({
   setup() {
     if (!import.meta.client) return
 
-    const theme = useCookie<'light' | 'dark' | 'system'>('zt-theme', {
-      default: () => 'system',
-    })
+    const { initTheme } = useTheme()
 
     const syncDisplayAttrs = () => {
       const root = document.documentElement
@@ -28,14 +26,14 @@ export default defineNuxtPlugin({
       }
     }
 
-    applyBrowserChrome(resolveTheme(theme.value))
     syncDisplayAttrs()
+    initTheme()
 
     for (const mode of ['fullscreen', 'standalone', 'minimal-ui'] as const) {
       try {
         window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', () => {
           syncDisplayAttrs()
-          applyBrowserChrome(resolveTheme(theme.value))
+          initTheme()
         })
       } catch {
         /* */
