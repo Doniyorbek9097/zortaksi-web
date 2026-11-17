@@ -2,6 +2,8 @@ import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice } from '~/utils/devicePlatform'
 import { STATUS_BAR_CHROME, THEME_CHROME, type ThemeName } from '~/utils/themeChrome'
 
+const COLOR_SCHEME_STYLE_ID = 'zt-pwa-color-scheme'
+
 /** Faqat o‘rnatilgan PWA — Flutter / WebView / oddiy tab emas */
 export function shouldApplyPwaStatusBarChrome(): boolean {
   if (!import.meta.client) return false
