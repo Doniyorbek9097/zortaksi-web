@@ -2,9 +2,10 @@ import {
   browserLabelForPlatform,
   consumeTelegramBrowserEntry,
   isTelegramWebContext,
+  likelyTelegramEntry,
   openCurrentSiteInSystemBrowser,
+  resolveTelegramWebContext,
   TG_BROWSER_DISMISS_SESSION,
-  TG_PWA_FROM_SESSION,
 } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
@@ -24,6 +25,8 @@ const showPwaInstall = ref(false)
 const iosInstallHint = ref(false)
 const openFromHomeHint = ref(false)
 const installPromptReady = ref(false)
+const telegramContextPending = ref(false)
+let booted = false
 
 function dismissed(key: string): boolean {
   try {
@@ -62,10 +65,27 @@ export function useTelegramPwaOnboarding() {
       showOpenBrowser.value = false
       showPwaInstall.value = false
       openFromHomeHint.value = false
+      telegramContextPending.value = false
       return
     }
 
-    if (isTelegramWebContext() && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
+    if (telegramContextPending.value) {
+      showPwaInstall.value = false
+      showOpenBrowser.value = false
+      return
+    }
+
+    let inTelegram = isTelegramWebContext()
+    if (!inTelegram && likelyTelegramEntry() && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
+      telegramContextPending.value = true
+      try {
+        inTelegram = await resolveTelegramWebContext()
+      } finally {
+        telegramContextPending.value = false
+      }
+    }
+
+    if (inTelegram && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
       showPwaInstall.value = false
       openFromHomeHint.value = false
       showOpenBrowser.value = true
@@ -92,9 +112,10 @@ export function useTelegramPwaOnboarding() {
     showPwaInstall.value = true
   }
 
-  function openInSystemBrowser() {
-    openCurrentSiteInSystemBrowser()
-    showOpenBrowser.value = false
+  async function openInSystemBrowser() {
+    await openCurrentSiteInSystemBrowser()
+    // Mobil Telegramda kontekst o'zgarmaguncha dialog ochiq qoladi
+    if (!isTelegramWebContext()) showOpenBrowser.value = false
   }
 
   function dismissOpenBrowser() {
@@ -140,6 +161,8 @@ export function useTelegramPwaOnboarding() {
   }
 
   function bootOnboarding() {
+    if (booted) return
+    booted = true
     initPwaInstallCapture()
     onPwaInstallReady(() => {
       installPromptReady.value = true
@@ -157,6 +180,7 @@ export function useTelegramPwaOnboarding() {
     showPwaInstall,
     iosInstallHint,
     openFromHomeHint,
+    telegramContextPending,
     browserCopy,
     canNativeInstall,
     bootOnboarding,

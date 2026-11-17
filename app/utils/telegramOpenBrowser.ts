@@ -14,14 +14,114 @@ type TgOpenLink = {
   openLink?: (url: string, options?: { try_instant_view?: boolean; try_browser?: boolean }) => void
 }
 
+let telegramScriptLoad: Promise<void> | null = null
+
+/** telegram-web-app.js — openLink uchun SDK kerak */
+export function ensureTelegramWebAppScript(): Promise<void> {
+  if (!import.meta.client) return Promise.resolve()
+  if (window.Telegram?.WebApp) return Promise.resolve()
+  if (telegramScriptLoad) return telegramScriptLoad
+
+  telegramScriptLoad = new Promise((resolve) => {
+    const done = () => resolve()
+    const existing = document.querySelector<HTMLScriptElement>('script[data-telegram-web-app]')
+    if (existing) {
+      existing.addEventListener('load', done, { once: true })
+      existing.addEventListener('error', done, { once: true })
+      if (window.Telegram?.WebApp) done()
+      return
+    }
+    const s = document.createElement('script')
+    s.src = 'https://telegram.org/js/telegram-web-app.js'
+    s.async = true
+    s.dataset.telegramWebApp = '1'
+    s.onload = done
+    s.onerror = done
+    document.head.appendChild(s)
+  })
+  return telegramScriptLoad
+}
+
 /** Telegram Mini App yoki Telegram ichki brauzeri */
 export function isTelegramWebContext(): boolean {
   if (!import.meta.client) return false
   if (isFlutterWebView() || isPwaStandalone()) return false
+
+  if (document.documentElement.dataset.ztEmbed === 'telegram') return true
   if (isTelegramMiniApp() || mightBeTelegramMiniApp()) return true
+
+  try {
+    const tg = (window as Window & { Telegram?: { WebApp?: { initData?: string; platform?: string } } })
+      .Telegram?.WebApp
+    if (tg?.initData) return true
+    const platform = String(tg?.platform || '')
+    if (platform && platform !== 'unknown') return true
+  } catch {
+    /* */
+  }
+
   const ua = navigator.userAgent || ''
   if (/Telegram/i.test(ua)) return true
+
+  try {
+    const blob = `${window.location.hash}${window.location.search}`
+    if (/tgWebApp|tgWebAppData|tgWebAppVersion/i.test(blob)) return true
+  } catch {
+    /* */
+  }
+
+  try {
+    if (/t\.me|telegram\.(org|me)/i.test(document.referrer || '')) return true
+  } catch {
+    /* */
+  }
+
   return false
+}
+
+/** SDK yuklanishidan oldin ham Telegram ekanligiga ishonch */
+export function likelyTelegramEntry(): boolean {
+  if (!import.meta.client) return false
+  if (isFlutterWebView() || isPwaStandalone()) return false
+  if (mightBeTelegramMiniApp()) return true
+  if (/Telegram/i.test(navigator.userAgent || '')) return true
+  try {
+    const blob = `${window.location.hash}${window.location.search}`
+    if (/tgWebApp|tgWebAppData|start_param/i.test(blob)) return true
+  } catch {
+    /* */
+  }
+  try {
+    if (/t\.me|telegram\.(org|me)/i.test(document.referrer || '')) return true
+  } catch {
+    /* */
+  }
+  return false
+}
+
+/** SDK yuklanmaguncha kutib, kontekstni aniqlash */
+export async function resolveTelegramWebContext(maxWaitMs = 4500): Promise<boolean> {
+  if (!import.meta.client) return false
+  if (isTelegramWebContext()) return true
+
+  const likely =
+    mightBeTelegramMiniApp() ||
+    /Telegram/i.test(navigator.userAgent || '') ||
+    /tgWebApp/i.test(`${window.location.hash}${window.location.search}`)
+
+  if (!likely) {
+    await ensureTelegramWebAppScript()
+    await new Promise((r) => setTimeout(r, 60))
+    return isTelegramWebContext()
+  }
+
+  await ensureTelegramWebAppScript()
+  const deadline = Date.now() + maxWaitMs
+  while (Date.now() < deadline) {
+    if (isTelegramWebContext()) return true
+    await new Promise((r) => setTimeout(r, 100))
+  }
+  return isTelegramWebContext()
 }
 
 export function markPendingPwaInstallAfterBrowser(): void {
@@ -61,13 +161,75 @@ export function buildExternalBrowserUrl(href?: string): string {
   }
 }
 
-/** Chrome / Safari — bitta tugma */
-export function openCurrentSiteInSystemBrowser(currentHref?: string): void {
+function openAndroidChromeIntent(target: string): void {
+  try {
+    const stripped = target.replace(/^https?:\/\//i, '')
+    const chrome = `intent://${stripped}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(
+      target,
+    )};end`
+    window.location.assign(chrome)
+  } catch {
+    /* */
+  }
+}
+
+function openGenericBrowserView(target: string): void {
+  try {
+    const stripped = target.replace(/^https?:\/\//i, '')
+    const view = `intent://${stripped}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(
+      target,
+    )};end`
+    window.location.assign(view)
+  } catch {
+    window.location.assign(target)
+  }
+}
+
+/** Chrome / Safari — Android: intent birinchi (TMA openLink ichki brauzerda qoladi) */
+export async function openCurrentSiteInSystemBrowser(currentHref?: string): Promise<void> {
   if (!import.meta.client) return
   const target = buildExternalBrowserUrl(currentHref)
   markPendingPwaInstallAfterBrowser()
 
+  await ensureTelegramWebAppScript()
+
   const tg = (window as Window & { Telegram?: { WebApp?: TgOpenLink } }).Telegram?.WebApp
+  const inTelegram = isTelegramWebContext()
+
+  if (isAndroidDevice()) {
+    openAndroidChromeIntent(target)
+    window.setTimeout(() => openGenericBrowserView(target), 700)
+    if (tg?.openLink && inTelegram) {
+      window.setTimeout(() => {
+        try {
+          tg.openLink(target, { try_instant_view: false, try_browser: true })
+        } catch {
+          /* */
+        }
+      }, 1200)
+    }
+    return
+  }
+
+  if (isIosDevice()) {
+    if (tg?.openLink) {
+      try {
+        tg.openLink(target, { try_instant_view: false, try_browser: true })
+        return
+      } catch {
+        /* */
+      }
+      try {
+        tg.openLink(target, { try_instant_view: false })
+        return
+      } catch {
+        /* */
+      }
+    }
+    window.location.assign(target)
+    return
+  }
+
   if (tg?.openLink) {
     try {
       tg.openLink(target, { try_instant_view: false, try_browser: true })
@@ -75,22 +237,6 @@ export function openCurrentSiteInSystemBrowser(currentHref?: string): void {
     } catch {
       /* */
     }
-  }
-
-  if (isAndroidDevice()) {
-    try {
-      const stripped = target.replace(/^https?:\/\//i, '')
-      const intent = `intent://${stripped}#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=${encodeURIComponent(target)};end`
-      window.location.assign(intent)
-      return
-    } catch {
-      /* */
-    }
-  }
-
-  if (isIosDevice()) {
-    window.location.assign(target)
-    return
   }
 
   const opened = window.open(target, '_blank', 'noopener,noreferrer')

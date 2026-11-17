@@ -1,20 +1,71 @@
 <template>
-  <BaseConfirmDialog
-    v-model="showOpenBrowser"
-    title="Ilovani to'liq ishlatish"
-    :description="browserCopy.title"
-    message="Telegram ichida ba'zi funksiyalar cheklangan. Quyidagi tugma orqali Chrome yoki Safari'da oching — keyin ilovani qurilmaga o'rnatishingiz mumkin."
-    :confirm-text="browserCopy.action"
-    cancel-text="Telegramda davom etish"
-    variant="primary"
-    @confirm="openInSystemBrowser"
-    @cancel="dismissOpenBrowser"
-  >
-    <div class="mt-3 flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
-      <font-awesome-icon :icon="browserCopy.icon" class="text-2xl" />
-      <font-awesome-icon icon="fa-solid fa-mobile-screen" class="text-xl opacity-70" />
-    </div>
-  </BaseConfirmDialog>
+  <Teleport to="body">
+    <Transition name="pwa-gate-fade">
+      <div
+        v-if="showOpenBrowser"
+        class="fixed inset-0 z-[10001] flex flex-col items-center justify-end sm:justify-center bg-slate-950/95 backdrop-blur-md px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tg-browser-title"
+      >
+        <div
+          class="w-full max-w-lg rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-black/50 overflow-hidden"
+        >
+          <div class="px-6 pt-8 pb-6 text-center">
+            <img
+              src="/logo.png"
+              alt="Zo'r Taksi"
+              width="96"
+              height="96"
+              class="mx-auto mb-5 h-24 w-24 rounded-2xl object-cover drop-shadow-lg"
+            />
+            <p class="text-xs font-bold uppercase tracking-widest text-sky-400/90 mb-2">
+              Majburiy qadam
+            </p>
+            <h2 id="tg-browser-title" class="text-2xl sm:text-3xl font-black text-white leading-tight">
+              {{ browserCopy.title }}
+            </h2>
+            <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mx-auto">
+              Telegram ichida PWA o'rnatish va to'liq funksiyalar cheklangan.
+              {{ isIosDevice() ? "Safari" : "Chrome" }} da oching — keyin ilovani qurilmaga o'rnatasiz.
+            </p>
+            <div class="mt-5 flex items-center justify-center gap-3 text-slate-400">
+              <font-awesome-icon :icon="browserCopy.icon" class="text-3xl text-white/90" />
+              <font-awesome-icon icon="fa-solid fa-arrow-right" class="text-lg opacity-60" />
+              <font-awesome-icon icon="fa-solid fa-mobile-screen" class="text-2xl" />
+            </div>
+          </div>
+
+          <div class="px-6 pb-8 space-y-3">
+            <button
+              type="button"
+              class="w-full py-4 rounded-2xl text-base sm:text-lg font-black text-white bg-sky-500 hover:bg-sky-400 active:scale-[0.98] transition-all shadow-lg shadow-sky-500/30 disabled:opacity-60"
+              :disabled="browserOpening"
+              @click="onBrowserConfirm"
+            >
+              <font-awesome-icon
+                v-if="browserOpening"
+                icon="fa-solid fa-spinner"
+                class="animate-spin mr-2"
+              />
+              {{ browserCopy.action }}
+            </button>
+            <button
+              v-if="!isMobile"
+              type="button"
+              class="w-full py-3 rounded-2xl text-sm font-bold text-slate-400 hover:text-slate-200"
+              @click="dismissOpenBrowser"
+            >
+              Telegramda davom etish
+            </button>
+            <p v-else class="text-center text-xs text-slate-500">
+              Tashqi brauzer ochilguncha bu ekran yopilmaydi
+            </p>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 
   <Teleport to="body">
     <Transition name="pwa-gate-fade">
@@ -103,7 +154,7 @@
 
 <script setup lang="ts">
 import { useTelegramPwaOnboarding } from '~/composables/useTelegramPwaOnboarding'
-import { isIosDevice } from '~/utils/devicePlatform'
+import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
 import { isPwaStandalone } from '~/utils/appEmbed'
 
 const {
@@ -121,6 +172,8 @@ const {
 } = useTelegramPwaOnboarding()
 
 const installing = ref(false)
+const browserOpening = ref(false)
+const isMobile = computed(() => isMobileDevice())
 
 const installMessage = computed(() => {
   if (openFromHomeHint.value) {
@@ -174,9 +227,21 @@ async function onInstallConfirm() {
   }
 }
 
+async function onBrowserConfirm() {
+  browserOpening.value = true
+  try {
+    await openInSystemBrowser()
+  } finally {
+    browserOpening.value = false
+    void refreshGates()
+  }
+}
+
 const nuxtApp = useNuxtApp()
 
-watch(showPwaInstall, (open) => {
+const gateOpen = computed(() => showOpenBrowser.value || showPwaInstall.value)
+
+watch(gateOpen, (open) => {
   if (!import.meta.client) return
   document.body.style.overflow = open ? 'hidden' : ''
 }, { immediate: true })

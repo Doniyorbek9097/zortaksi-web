@@ -5,6 +5,7 @@
  */
 
 import { isFlutterWebView } from '~/utils/appEmbed'
+import { mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const MAX_TOP = 28
 const MAX_BOTTOM = 34
@@ -65,13 +66,17 @@ export function applyZtSafeArea() {
   if (!import.meta.client) return
 
   // Flutter / host WebView — pastki padding kerak emas
-  if (isFlutterWebView() || (isAndroidSystemWebView() && !isTelegramMiniApp())) {
+  if (
+    isFlutterWebView() ||
+    (isAndroidSystemWebView() && !isTelegramMiniApp() && !mightBeTelegramMiniApp())
+  ) {
     setSafeVars(0, 0)
     document.documentElement.dataset.ztEmbed = 'webview'
     return
   }
 
-  document.documentElement.dataset.ztEmbed = isTelegramMiniApp() ? 'telegram' : 'browser'
+  document.documentElement.dataset.ztEmbed =
+    isTelegramMiniApp() || mightBeTelegramMiniApp() ? 'telegram' : 'browser'
 
   // Telegram o'z pluginida safeAreaInset beradi — shu yerda faqat fallback
   if (isTelegramMiniApp()) {
@@ -103,4 +108,6 @@ export default defineNuxtPlugin(() => {
   // WebView ba'zan kech UA/bridge beradi
   requestAnimationFrame(() => applyZtSafeArea())
   setTimeout(() => applyZtSafeArea(), 300)
+  setTimeout(() => applyZtSafeArea(), 1200)
+  setTimeout(() => applyZtSafeArea(), 3500)
 })
