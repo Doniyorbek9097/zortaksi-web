@@ -40,7 +40,7 @@
               Majburiy qadam
             </p>
             <h2 id="pwa-install-title" class="text-2xl sm:text-3xl font-black text-white leading-tight">
-              Ilovani o'rnatib oling
+              {{ openFromHomeHint ? "Ilovani bosh ekrandan oching" : "Ilovani o'rnatib oling" }}
             </h2>
             <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed max-w-md mx-auto">
               {{ installMessage }}
@@ -104,11 +104,13 @@
 <script setup lang="ts">
 import { useTelegramPwaOnboarding } from '~/composables/useTelegramPwaOnboarding'
 import { isIosDevice } from '~/utils/devicePlatform'
+import { isPwaStandalone } from '~/utils/appEmbed'
 
 const {
   showOpenBrowser,
   showPwaInstall,
   iosInstallHint,
+  openFromHomeHint,
   browserCopy,
   canNativeInstall,
   bootOnboarding,
@@ -121,6 +123,9 @@ const {
 const installing = ref(false)
 
 const installMessage = computed(() => {
+  if (openFromHomeHint.value) {
+    return "Ilova allaqachon o'rnatilgan. Brauzer o'rniga Zo'r Taksi ilovasini bosh ekrandan oching — shunda barcha funksiyalar ishlaydi."
+  }
   if (iosInstallHint.value) {
     return "Buyurtma va tez kirish uchun ilovani bosh ekranga qo'shish shart. Quyidagi qadamlarni bajaring."
   }
@@ -131,6 +136,13 @@ const installMessage = computed(() => {
 })
 
 const installSteps = computed(() => {
+  if (openFromHomeHint.value) {
+    return [
+      'Telefon bosh ekraniga o‘ting',
+      'Zo‘r Taksi belgisini bosing (brauzer emas)',
+      'Ilova alohida ochiladi — siz davom etasiz',
+    ]
+  }
   if (isIosDevice()) {
     return [
       'Tugmani bosing — Safari yo\'riqnomasi chiqadi',
@@ -147,6 +159,7 @@ const installSteps = computed(() => {
 
 const installButtonLabel = computed(() => {
   if (installing.value) return 'Kutilmoqda…'
+  if (openFromHomeHint.value) return "Bosh ekrandan ochishga o'tdim"
   if (iosInstallHint.value) return 'Tushundim, qadamlarni bajaraman'
   return "Ilovani o'rnatib olish"
 })
@@ -175,13 +188,14 @@ onUnmounted(() => {
 onMounted(() => {
   bootOnboarding()
   watch(
-    () => nuxtApp.$pwa?.isPWAInstalled,
-    (installed) => {
-      if (installed) {
+    () => isPwaStandalone(),
+    (standalone) => {
+      if (standalone) {
         showPwaInstall.value = false
         void navigateTo('/driver/dashboard')
       }
     },
+    { immediate: true },
   )
   watch(
     () => nuxtApp.$pwa?.showInstallPrompt,

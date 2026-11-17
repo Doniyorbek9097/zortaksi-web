@@ -7,11 +7,23 @@ import {
   TG_PWA_FROM_SESSION,
 } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
-import { isIosDevice } from '~/utils/devicePlatform'
+import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
+import {
+  detectInstalledWebApp,
+  hasDeferredPwaInstall,
+  initPwaInstallCapture,
+  mobileNeedsPwaShell,
+  onPwaInstallReady,
+  reloadIntoPwaShell,
+  resetPwaInstallDismissed,
+  triggerDeferredPwaInstall,
+} from '~/utils/pwaInstall'
 
 const showOpenBrowser = ref(false)
 const showPwaInstall = ref(false)
 const iosInstallHint = ref(false)
+const openFromHomeHint = ref(false)
+const installPromptReady = ref(false)
 
 function dismissed(key: string): boolean {
   try {
@@ -37,40 +49,47 @@ export function useTelegramPwaOnboarding() {
   const pwa = computed(() => nuxtApp.$pwa)
 
   const canNativeInstall = computed(() => {
+    if (installPromptReady.value || hasDeferredPwaInstall()) return true
     const pin = pwa.value
     if (!pin) return false
     const flag = pin.showInstallPrompt as boolean | { value?: boolean }
     return flag === true || flag?.value === true
   })
 
-  function refreshGates() {
+  async function refreshGates() {
     if (!import.meta.client) return
     if (isFlutterWebView() || isPwaStandalone()) {
       showOpenBrowser.value = false
       showPwaInstall.value = false
+      openFromHomeHint.value = false
       return
     }
 
     if (isTelegramWebContext() && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
       showPwaInstall.value = false
+      openFromHomeHint.value = false
       showOpenBrowser.value = true
       return
     }
 
     showOpenBrowser.value = false
+    void consumeTelegramBrowserEntry()
 
-    const fromTelegram = consumeTelegramBrowserEntry()
-    if (fromTelegram && !isTelegramWebContext() && !isPwaStandalone()) {
-      showPwaInstall.value = true
-    } else if (!fromTelegram && !isPwaStandalone() && !isTelegramWebContext()) {
-      try {
-        if (sessionStorage.getItem(TG_PWA_FROM_SESSION) === '1') {
-          showPwaInstall.value = true
-        }
-      } catch {
-        /* */
-      }
+    if (!mobileNeedsPwaShell() || isTelegramWebContext()) {
+      showPwaInstall.value = false
+      return
     }
+
+    resetPwaInstallDismissed()
+
+    if (await detectInstalledWebApp()) {
+      openFromHomeHint.value = true
+      showPwaInstall.value = true
+      return
+    }
+
+    openFromHomeHint.value = false
+    showPwaInstall.value = true
   }
 
   function openInSystemBrowser() {
@@ -84,13 +103,25 @@ export function useTelegramPwaOnboarding() {
   }
 
   async function installPwaAndGo() {
+    if (openFromHomeHint.value) {
+      reloadIntoPwaShell('/driver/dashboard')
+      return
+    }
+
+    const own = await triggerDeferredPwaInstall()
+    if (own?.outcome === 'accepted') {
+      showPwaInstall.value = false
+      reloadIntoPwaShell('/driver/dashboard')
+      return
+    }
+
     const pin = pwa.value
     if (canNativeInstall.value && pin?.install) {
       try {
         const choice = await pin.install()
-        if (choice?.outcome === 'accepted' || pin.isPWAInstalled) {
+        if (choice?.outcome === 'accepted' || isPwaStandalone()) {
           showPwaInstall.value = false
-          await router.push('/driver/dashboard')
+          reloadIntoPwaShell('/driver/dashboard')
           return
         }
       } catch {
@@ -100,14 +131,24 @@ export function useTelegramPwaOnboarding() {
 
     if (isIosDevice()) {
       iosInstallHint.value = true
+      return
+    }
+
+    if (isMobileDevice()) {
+      iosInstallHint.value = false
     }
   }
 
   function bootOnboarding() {
-    refreshGates()
-    const delays = [80, 400, 1200, 2500]
+    initPwaInstallCapture()
+    onPwaInstallReady(() => {
+      installPromptReady.value = true
+      void refreshGates()
+    })
+    void refreshGates()
+    const delays = [80, 400, 1200, 2500, 5000]
     for (const ms of delays) {
-      setTimeout(refreshGates, ms)
+      setTimeout(() => void refreshGates(), ms)
     }
   }
 
@@ -115,6 +156,7 @@ export function useTelegramPwaOnboarding() {
     showOpenBrowser,
     showPwaInstall,
     iosInstallHint,
+    openFromHomeHint,
     browserCopy,
     canNativeInstall,
     bootOnboarding,

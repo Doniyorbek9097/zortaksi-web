@@ -17,3 +17,7 @@ export function isAndroidDevice(): boolean {
 export function isIosDevice(): boolean {
   return detectMobilePlatform() === 'ios'
 }
+
+export function isMobileDevice(): boolean {
+  return detectMobilePlatform() !== 'other'
+}

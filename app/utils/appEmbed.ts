@@ -21,17 +21,13 @@ export function isFlutterWebView(): boolean {
   return false
 }
 
+/** Faqat haqiqiy PWA (bosh ekran) rejimi — $pwa heuristikasi ishlatilmaydi */
 export function isPwaStandalone(): boolean {
   if (!import.meta.client) return false
   if (window.matchMedia('(display-mode: standalone)').matches) return true
-  if ((navigator as Navigator & { standalone?: boolean }).standalone === true) return true
-  try {
-    const pwa = useNuxtApp().$pwa as { isPWAInstalled?: boolean } | undefined
-    if (pwa?.isPWAInstalled) return true
-  } catch {
-    /* */
-  }
-  return false
+  if (window.matchMedia('(display-mode: fullscreen)').matches) return true
+  if (window.matchMedia('(display-mode: minimal-ui)').matches) return true
+  return (navigator as Navigator & { standalone?: boolean }).standalone === true
 }
 
 /** Brauzerda ochilgan veb — APK yuklash ko'rsatiladi */
