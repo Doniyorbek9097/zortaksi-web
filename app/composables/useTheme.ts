@@ -17,29 +17,28 @@ type TgWebApp = {
   setBottomBarColor?: (color: string) => void
 }
 
-/** OS dark/light — SSRda false, klientda yangilanadi */
-const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
 let systemMqHooked = false
 
 export function systemPrefersDark(): boolean {
-  if (!import.meta.client) return systemPrefersDarkState.value
+  if (!import.meta.client) return false
   return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
-export function resolveTheme(pref: ThemePreference): ThemeName {
-  if (pref === 'system') {
-    return systemPrefersDarkState.value ? 'dark' : 'light'
-  }
+export function resolveTheme(pref: ThemePreference, systemDark = false): ThemeName {
+  if (pref === 'system') return systemDark ? 'dark' : 'light'
   return pref
 }
 
-function hookSystemColorScheme(onChange: () => void) {
+function hookSystemColorScheme(
+  systemDark: Ref<boolean>,
+  onChange: () => void,
+) {
   if (!import.meta.client || systemMqHooked) return
   systemMqHooked = true
   const mq = window.matchMedia('(prefers-color-scheme: dark)')
-  systemPrefersDarkState.value = mq.matches
+  systemDark.value = mq.matches
   mq.addEventListener('change', () => {
-    systemPrefersDarkState.value = mq.matches
+    systemDark.value = mq.matches
     onChange()
   })
 }
@@ -112,7 +111,11 @@ export const useTheme = () => {
     watch: true,
   })
 
-  const effectiveTheme = computed<ThemeName>(() => resolveTheme(theme.value))
+  const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
+
+  const effectiveTheme = computed<ThemeName>(() =>
+    resolveTheme(theme.value, systemPrefersDarkState.value),
+  )
 
   const syncChrome = () => {
     applyBrowserChrome(effectiveTheme.value)
@@ -154,13 +157,12 @@ export const useTheme = () => {
   }
 
   const toggleTheme = () => {
-    const current = resolveTheme(theme.value)
-    setTheme(current === 'dark' ? 'light' : 'dark')
+    setTheme(effectiveTheme.value === 'dark' ? 'light' : 'dark')
   }
 
   const initTheme = () => {
     if (!import.meta.client) return
-    hookSystemColorScheme(() => {
+    hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') syncChrome()
     })
     syncChrome()
