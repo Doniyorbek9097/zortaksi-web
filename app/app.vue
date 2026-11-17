@@ -10,16 +10,28 @@
 </template>
 
 <script setup lang="ts">
-import { THEME_CHROME } from '~/composables/useTheme'
+import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
+import { IOS_STATUS_BAR_STYLE } from '~/utils/themeChrome'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
 
-const chromeColor = computed(() =>
-  effectiveTheme.value === 'light' ? THEME_CHROME.light : THEME_CHROME.dark,
-)
+const chromeColor = computed(() => THEME_CHROME[effectiveTheme.value])
+
+useSeoMeta({
+  themeColor: chromeColor,
+  colorScheme: computed(() => effectiveTheme.value),
+})
 
 useHead({
+  meta: computed(() => [
+    {
+      key: 'zt-ios-status-bar',
+      name: 'apple-mobile-web-app-status-bar-style',
+      content: IOS_STATUS_BAR_STYLE[effectiveTheme.value],
+      tagPriority: 1,
+    },
+  ]),
   htmlAttrs: {
     class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
@@ -33,8 +45,17 @@ useHead({
   },
 })
 
+watch(
+  effectiveTheme,
+  (mode) => {
+    applyBrowserChrome(mode)
+  },
+  { flush: 'post' },
+)
+
 onMounted(() => {
   initTheme()
+  applyBrowserChrome(effectiveTheme.value)
 })
 </script>
 

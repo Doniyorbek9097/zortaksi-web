@@ -1,11 +1,6 @@
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import {
-  IOS_STATUS_BAR_STYLE,
-  TABBAR_CHROME,
-  THEME_CHROME,
-  type ThemeName,
-  type ThemePreference,
-} from '~/utils/themeChrome'
+import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
+import { TABBAR_CHROME, THEME_CHROME, type ThemeName, type ThemePreference } from '~/utils/themeChrome'
 
 export type { ThemeName, ThemePreference }
 export { THEME_CHROME }
@@ -43,21 +38,6 @@ function hookSystemColorScheme(
   })
 }
 
-/** Android PWA ba'zan faqat DOM orqali yangilansa status barni yangilaydi */
-function punchThemeColorMeta(color: string) {
-  if (!import.meta.client) return
-  const nodes = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
-  for (const node of nodes) {
-    node.setAttribute('content', color)
-  }
-  if (nodes.length === 0) {
-    const el = document.createElement('meta')
-    el.name = 'theme-color'
-    el.content = color
-    document.head.appendChild(el)
-  }
-}
-
 /**
  * Status / bottom navigation bar (Android PWA).
  */
@@ -74,13 +54,7 @@ export function applyBrowserChrome(value: ThemeName) {
   if (document.body) document.body.style.backgroundColor = color
 
   root.dataset.ztChromeNav = navColor
-  punchThemeColorMeta(color)
-
-  const iosStatus = document.querySelector<HTMLMetaElement>(
-    'meta[name="apple-mobile-web-app-status-bar-style"]',
-  )
-  const statusStyle = IOS_STATUS_BAR_STYLE[value]
-  if (iosStatus) iosStatus.content = statusStyle
+  scheduleThemeColorRepaint(value, color)
 
   const tg = (window as Window & { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp
   try {
@@ -98,7 +72,6 @@ export function applyBrowserChrome(value: ThemeName) {
   )
 }
 
-let themeChromeHeadInstalled = false
 let reactiveChromeBound = false
 let visibilityChromeBound = false
 
@@ -119,36 +92,6 @@ export const useTheme = () => {
 
   const syncChrome = () => {
     applyBrowserChrome(effectiveTheme.value)
-  }
-
-  if (!themeChromeHeadInstalled) {
-    themeChromeHeadInstalled = true
-    useHead({
-      meta: computed(() => {
-        const mode = effectiveTheme.value
-        const color = THEME_CHROME[mode]
-        return [
-          {
-            key: 'zt-theme-color',
-            name: 'theme-color',
-            content: color,
-            tagPriority: 1,
-          },
-          {
-            key: 'zt-color-scheme',
-            name: 'color-scheme',
-            content: mode,
-            tagPriority: 1,
-          },
-          {
-            key: 'zt-ios-status-bar',
-            name: 'apple-mobile-web-app-status-bar-style',
-            content: IOS_STATUS_BAR_STYLE[mode],
-            tagPriority: 1,
-          },
-        ]
-      }),
-    })
   }
 
   const setTheme = (value: ThemePreference) => {

@@ -16,7 +16,7 @@ export const TABBAR_CHROME: Record<ThemeName, string> = {
 /** iOS PWA status bar — light fonda qora iconlar, dark fonda oq */
 export const IOS_STATUS_BAR_STYLE: Record<ThemeName, 'default' | 'black' | 'black-translucent'> = {
   light: 'default',
-  dark: 'black-translucent',
+  dark: 'black',
 }
 
 function hexLuminance(hex: string): number {
