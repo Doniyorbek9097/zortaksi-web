@@ -7,9 +7,9 @@ export const THEME_CHROME: Record<ThemeName, string> = {
   dark: '#020617',
 }
 
-/** Android tizim status bar — light uchun oq (qora iconlar) */
+/** Android PWA status bar — yorug‘ fon, qora iconlar (faqat #fff ba’zan oq icon beradi) */
 export const STATUS_BAR_CHROME: Record<ThemeName, string> = {
-  light: '#ffffff',
+  light: '#e8eef5',
   dark: '#020617',
 }
 

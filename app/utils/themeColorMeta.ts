@@ -11,6 +11,7 @@ const IOS_STATUS_ID = 'zt-ios-status-meta'
 
 export function replaceThemeColorMeta(color: string): void {
   if (!import.meta.client) return
+  document.querySelectorAll('meta[name="theme-color"][media]').forEach((node) => node.remove())
   document.querySelectorAll('meta[name="theme-color"]').forEach((node) => {
     if (node.id !== THEME_META_ID) node.remove()
   })

@@ -17,6 +17,7 @@ export function startAndroidThemeColorGuard(getColor: () => string): void {
 
   const sync = () => {
     const color = getColor()
+    document.querySelectorAll('meta[name="theme-color"][media]').forEach((n) => n.remove())
     const nodes = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
     for (const node of nodes) {
       if (node.content !== color) node.content = color

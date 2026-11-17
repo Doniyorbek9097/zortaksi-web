@@ -3,13 +3,13 @@
     <Transition name="pwa-gate-fade">
       <div
         v-if="showOpenBrowser"
-        class="fixed inset-0 z-[10001] flex flex-col items-center justify-end sm:justify-center bg-slate-950/95 backdrop-blur-md px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6"
+        class="fixed inset-0 z-[10001] flex flex-col items-center justify-end sm:justify-center bg-slate-900/30 backdrop-blur-[2px] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby="tg-browser-title"
       >
         <div
-          class="w-full max-w-lg rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-black/50 overflow-hidden"
+          class="w-full max-w-lg rounded-3xl border border-slate-200/90 bg-white/95 shadow-2xl shadow-black/20 overflow-hidden"
         >
           <div class="px-6 pt-8 pb-6 text-center">
             <img
@@ -22,10 +22,10 @@
             <p class="text-xs font-bold uppercase tracking-widest text-sky-400/90 mb-2">
               Majburiy qadam
             </p>
-            <h2 id="tg-browser-title" class="text-2xl sm:text-3xl font-black text-white leading-tight">
+            <h2 id="tg-browser-title" class="text-2xl sm:text-3xl font-black text-slate-900 leading-tight">
               {{ browserCopy.title }}
             </h2>
-            <p class="mt-2 text-sm text-slate-300 leading-snug max-w-sm mx-auto">
+            <p class="mt-2 text-sm text-slate-600 leading-snug max-w-sm mx-auto">
               Telegramda cheklangan — {{ isIosDevice() ? 'Safari' : 'Chrome' }}da oching.
             </p>
             <div class="mt-5 flex items-center justify-center gap-3 text-slate-400">
@@ -70,13 +70,13 @@
     <Transition name="pwa-gate-fade">
       <div
         v-if="showPwaInstall"
-        class="fixed inset-0 z-[10000] flex flex-col items-center justify-end sm:justify-center bg-slate-950/95 backdrop-blur-md px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6"
+        class="fixed inset-0 z-[10000] flex flex-col items-center justify-end sm:justify-center bg-slate-900/30 backdrop-blur-[2px] px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6"
         role="dialog"
         aria-modal="true"
         aria-labelledby="pwa-install-title"
       >
         <div
-          class="w-full max-w-lg rounded-3xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-black/50 overflow-hidden"
+          class="w-full max-w-lg rounded-3xl border border-slate-200/90 bg-white/95 shadow-2xl shadow-black/20 overflow-hidden"
         >
           <div class="px-6 pt-6 pb-4 text-center">
             <img
@@ -86,17 +86,17 @@
               height="72"
               class="mx-auto mb-4 h-[4.5rem] w-[4.5rem] rounded-2xl object-cover drop-shadow-lg"
             />
-            <h2 id="pwa-install-title" class="text-xl sm:text-2xl font-black text-white leading-tight">
+            <h2 id="pwa-install-title" class="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
               {{ openFromHomeHint ? 'Bosh ekrandan oching' : "Ilovani o'rnatish" }}
             </h2>
-            <p class="mt-2 text-sm text-slate-300 leading-snug max-w-sm mx-auto">
+            <p class="mt-2 text-sm text-slate-600 leading-snug max-w-sm mx-auto">
               {{ installMessage }}
             </p>
           </div>
 
           <div
             v-if="iosInstallHint"
-            class="mx-6 mb-4 rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-left text-xs text-slate-300"
+            class="mx-6 mb-4 rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-left text-xs text-slate-600"
           >
             Ulashish → Bosh ekranga qo'shish → Qo'shish
           </div>
@@ -192,6 +192,7 @@ const gateOpen = computed(() => showOpenBrowser.value || showPwaInstall.value)
 watch(gateOpen, (open) => {
   if (!import.meta.client) return
   document.body.style.overflow = open ? 'hidden' : ''
+  document.documentElement.style.overflow = open ? 'hidden' : ''
 }, { immediate: true })
 
 onUnmounted(() => {

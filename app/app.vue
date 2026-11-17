@@ -112,6 +112,12 @@ html[data-zt-pwa='1'] .theme-page {
   min-height: 100svh;
 }
 
+html[data-zt-pwa='1'][data-zt-android='1'] {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 html[data-zt-pwa='1'][data-zt-android='1'] .driver-tabbar,
 html[data-zt-pwa='1'][data-zt-android='1'] .admin-tabbar {
   padding-bottom: 0 !important;

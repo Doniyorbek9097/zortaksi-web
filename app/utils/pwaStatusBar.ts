@@ -30,24 +30,33 @@ export function bootstrapAndroidPwaStatusBar(): void {
   }
 }
 
+function purgeMediaThemeColorMetas(): void {
+  document.querySelectorAll('meta[name="theme-color"][media]').forEach((node) => node.remove())
+}
+
 export function applyAndroidPwaMeta(mode: ThemeName): void {
   if (!isAndroidPwaForStatusBar()) return
   const status = STATUS_BAR_CHROME[mode]
   const pageBg = THEME_CHROME[mode]
-  let meta = document.querySelector('meta[name="theme-color"]')
-  if (!meta) {
-    meta = document.createElement('meta')
-    meta.setAttribute('name', 'theme-color')
-    document.head.prepend(meta)
-  }
+  purgeMediaThemeColorMetas()
+
+  document.querySelectorAll('meta[name="theme-color"]').forEach((node) => node.remove())
+  const meta = document.createElement('meta')
+  meta.setAttribute('name', 'theme-color')
   meta.setAttribute('content', status)
-  let scheme = document.querySelector('meta[name="color-scheme"]')
-  if (!scheme) {
-    scheme = document.createElement('meta')
-    scheme.setAttribute('name', 'color-scheme')
-    document.head.prepend(scheme)
-  }
+  meta.setAttribute('data-zt-pwa-status', '1')
+  document.head.insertBefore(meta, document.head.firstChild)
+
+  document.querySelectorAll('meta[name="color-scheme"]').forEach((node) => {
+    if (!node.getAttribute('data-zt-pwa-status')) node.remove()
+  })
+  const scheme = document.createElement('meta')
+  scheme.setAttribute('name', 'color-scheme')
   scheme.setAttribute('content', mode === 'light' ? 'light' : 'dark')
+  scheme.setAttribute('data-zt-pwa-status', '1')
+  document.head.insertBefore(scheme, meta.nextSibling)
+
   document.documentElement.style.backgroundColor = pageBg
-  document.documentElement.style.colorScheme = mode === 'light' ? 'only light' : 'only dark'
+  document.documentElement.style.colorScheme = mode === 'light' ? 'light' : 'dark'
+  document.documentElement.dataset.ztStatusIcons = mode === 'light' ? 'dark' : 'light'
 }
