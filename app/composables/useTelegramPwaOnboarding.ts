@@ -4,7 +4,6 @@ import {
   isTelegramWebContext,
   openCurrentSiteInSystemBrowser,
   TG_BROWSER_DISMISS_SESSION,
-  TG_PWA_INSTALL_DISMISS_SESSION,
   TG_PWA_FROM_SESSION,
 } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
@@ -61,13 +60,16 @@ export function useTelegramPwaOnboarding() {
     showOpenBrowser.value = false
 
     const fromTelegram = consumeTelegramBrowserEntry()
-    if (
-      fromTelegram &&
-      !isTelegramWebContext() &&
-      !dismissed(TG_PWA_INSTALL_DISMISS_SESSION) &&
-      !isPwaStandalone()
-    ) {
+    if (fromTelegram && !isTelegramWebContext() && !isPwaStandalone()) {
       showPwaInstall.value = true
+    } else if (!fromTelegram && !isPwaStandalone() && !isTelegramWebContext()) {
+      try {
+        if (sessionStorage.getItem(TG_PWA_FROM_SESSION) === '1') {
+          showPwaInstall.value = true
+        }
+      } catch {
+        /* */
+      }
     }
   }
 
@@ -81,24 +83,12 @@ export function useTelegramPwaOnboarding() {
     showOpenBrowser.value = false
   }
 
-  function dismissPwaInstall() {
-    dismiss(TG_PWA_INSTALL_DISMISS_SESSION)
-    try {
-      sessionStorage.removeItem(TG_PWA_FROM_SESSION)
-    } catch {
-      /* */
-    }
-    showPwaInstall.value = false
-    iosInstallHint.value = false
-  }
-
   async function installPwaAndGo() {
     const pin = pwa.value
     if (canNativeInstall.value && pin?.install) {
       try {
         const choice = await pin.install()
         if (choice?.outcome === 'accepted' || pin.isPWAInstalled) {
-          dismiss(TG_PWA_INSTALL_DISMISS_SESSION)
           showPwaInstall.value = false
           await router.push('/driver/dashboard')
           return
@@ -110,10 +100,7 @@ export function useTelegramPwaOnboarding() {
 
     if (isIosDevice()) {
       iosInstallHint.value = true
-      return
     }
-
-    dismissPwaInstall()
   }
 
   function bootOnboarding() {
@@ -134,7 +121,6 @@ export function useTelegramPwaOnboarding() {
     refreshGates,
     openInSystemBrowser,
     dismissOpenBrowser,
-    dismissPwaInstall,
     installPwaAndGo,
   }
 }
