@@ -23,6 +23,6 @@ const ptr = usePullToRefreshRoute()
 
 <style scoped>
 .admin-shell {
-  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(3.5rem + var(--zt-safe-bottom, 0px));
 }
 </style>

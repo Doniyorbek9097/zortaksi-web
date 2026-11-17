@@ -4,7 +4,8 @@
  * Aks holda katta env() (50–100px+) tabbar ostida bo'shliq ochadi.
  */
 
-import { isFlutterWebView } from '~/utils/appEmbed'
+import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
+import { isAndroidDevice } from '~/utils/devicePlatform'
 import { mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const MAX_TOP = 28
@@ -90,7 +91,7 @@ export function applyZtSafeArea() {
     }
   }
 
-  // iOS PWA home indicator — kichik pad; oddiy brauzer / Flutter — 0
+  // iOS PWA home indicator — kichik pad
   if (isIosStandalone()) {
     setSafeVars(
       Math.min(readEnvInset('top'), MAX_TOP),
@@ -99,7 +100,12 @@ export function applyZtSafeArea() {
     return
   }
 
-  // Default: hech qanday pastki bo'shliq
+  // Android PWA — tizim pastki nav paneli uchun qo'shimcha bo'shliq emas
+  if (isPwaStandalone() && isAndroidDevice()) {
+    setSafeVars(Math.min(readEnvInset('top'), MAX_TOP), 0)
+    return
+  }
+
   setSafeVars(0, 0)
 }
 

@@ -84,6 +84,18 @@ html[data-zt-embed='telegram'] body {
   margin: 0;
 }
 
+/* PWA — kontent to'liq ekran (tizim pastki paneli ostiga kirmaydi) */
+html[data-zt-pwa='1'] body,
+html[data-zt-pwa='1'] .theme-page {
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+html[data-zt-pwa='1'][data-zt-android='1'] .driver-tabbar,
+html[data-zt-pwa='1'][data-zt-android='1'] .admin-tabbar {
+  padding-bottom: 0 !important;
+}
+
 /* Yaqinlashtirish va matnni ko'chirib olish */
 html {
   -webkit-text-size-adjust: 100%;

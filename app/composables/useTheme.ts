@@ -1,7 +1,9 @@
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
+import { isPwaStandalone } from '~/utils/appEmbed'
 import {
-  THEME_CHROME,
+  IOS_STATUS_BAR_STYLE,
   TABBAR_CHROME,
+  THEME_CHROME,
   type ThemeName,
   type ThemePreference,
 } from '~/utils/themeChrome'
@@ -47,8 +49,10 @@ export function applyBrowserChrome(value: ThemeName) {
   if (!import.meta.client) return
 
   const color = THEME_CHROME[value]
+  const navColor = TABBAR_CHROME[value]
   const root = document.documentElement
 
+  root.dataset.ztTheme = value
   root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
@@ -57,15 +61,17 @@ export function applyBrowserChrome(value: ThemeName) {
   removeMetaAll('color-scheme')
   removeMetaAll('apple-mobile-web-app-status-bar-style')
 
-  appendMeta('theme-color', color, '(prefers-color-scheme: light)')
-  appendMeta('theme-color', color, '(prefers-color-scheme: dark)')
+  // Android PWA: yorug' theme-color → status/nav iconlari qorong'u
   appendMeta('theme-color', color)
+  if (isPwaStandalone()) {
+    appendMeta('theme-color', color, '(prefers-color-scheme: light)')
+    appendMeta('theme-color', color, '(prefers-color-scheme: dark)')
+  }
 
   appendMeta('color-scheme', value === 'light' ? 'light' : 'dark')
-  appendMeta(
-    'apple-mobile-web-app-status-bar-style',
-    value === 'dark' ? 'black-translucent' : 'default',
-  )
+  appendMeta('apple-mobile-web-app-status-bar-style', IOS_STATUS_BAR_STYLE[value])
+
+  root.dataset.ztChromeNav = navColor
 
   const tg = (window as Window & { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp
   try {

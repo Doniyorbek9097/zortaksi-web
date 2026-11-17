@@ -24,6 +24,6 @@ const ptr = usePullToRefreshRoute()
 <style scoped>
 .driver-shell {
   /* Faqat tabbar balandligi + xavfsiz zona — sahifada qo'shimcha pb kerak emas */
-  padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(3.5rem + var(--zt-safe-bottom, 0px));
 }
 </style>
