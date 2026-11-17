@@ -56,7 +56,18 @@ export function applyAndroidPwaMeta(mode: ThemeName): void {
   scheme.setAttribute('data-zt-pwa-status', '1')
   document.head.insertBefore(scheme, meta.nextSibling)
 
+  const schemeCss = mode === 'light' ? 'light only' : 'dark only'
+  let styleEl = document.getElementById(COLOR_SCHEME_STYLE_ID) as HTMLStyleElement | null
+  if (!styleEl) {
+    styleEl = document.createElement('style')
+    styleEl.id = COLOR_SCHEME_STYLE_ID
+    document.head.appendChild(styleEl)
+  }
+  styleEl.textContent = `:root,html,body{color-scheme:${schemeCss}!important}`
+
   document.documentElement.style.backgroundColor = pageBg
-  document.documentElement.style.colorScheme = mode === 'light' ? 'light' : 'dark'
+  if (document.body) document.body.style.backgroundColor = pageBg
+  document.documentElement.style.colorScheme = schemeCss
+  if (document.body) document.body.style.colorScheme = schemeCss
   document.documentElement.dataset.ztStatusIcons = mode === 'light' ? 'dark' : 'light'
 }

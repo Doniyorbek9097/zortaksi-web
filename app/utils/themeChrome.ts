@@ -7,9 +7,9 @@ export const THEME_CHROME: Record<ThemeName, string> = {
   dark: '#020617',
 }
 
-/** Android PWA status bar — yorug‘ fon, qora iconlar (faqat #fff ba’zan oq icon beradi) */
+/** Android PWA status bar foni — yorug‘; iconlar tizim dark (qora) bo‘ladi */
 export const STATUS_BAR_CHROME: Record<ThemeName, string> = {
-  light: '#e8eef5',
+  light: '#f8fafc',
   dark: '#020617',
 }
 

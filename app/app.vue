@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
-import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { isAndroidPwaForStatusBar, shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { IOS_STATUS_BAR_STYLE, STATUS_BAR_CHROME } from '~/utils/themeChrome'
 
 const { effectiveTheme, initTheme } = useTheme()
@@ -50,7 +50,15 @@ useHead({
     class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
     style: computed(() => {
-      const scheme = effectiveTheme.value === 'light' ? 'only light' : 'only dark'
+      const mode = effectiveTheme.value
+      const scheme =
+        import.meta.client && isAndroidPwaForStatusBar()
+          ? mode === 'light'
+            ? 'light only'
+            : 'dark only'
+          : mode === 'light'
+            ? 'only light'
+            : 'only dark'
       return `color-scheme: ${scheme}; background-color: ${chromeColor.value}`
     }),
   },
@@ -112,10 +120,13 @@ html[data-zt-pwa='1'] .theme-page {
   min-height: 100svh;
 }
 
-html[data-zt-pwa='1'][data-zt-android='1'] {
+html[data-zt-pwa='1'][data-zt-android='1'],
+html[data-zt-pwa='1'][data-zt-android='1'] body {
   height: 100dvh;
   max-height: 100dvh;
+  min-height: 100dvh;
   overflow: hidden;
+  padding-bottom: 0 !important;
 }
 
 html[data-zt-pwa='1'][data-zt-android='1'] .driver-tabbar,
