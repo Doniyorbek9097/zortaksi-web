@@ -17,27 +17,13 @@
       @buy="onBuyTariff"
     />
 
-    <div
-      v-else
-      class="rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-900 p-4 space-y-3"
-    >
-      <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
-        Hisoblar, to'lov va xizmatlar uchun Telegram orqali ro'yxatdan o'ting.
-      </p>
-      <button
-        type="button"
-        class="w-full py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] transition-all"
-        @click="goConnect"
-      >
-        Ro'yxatdan o'tish / Kirish
-      </button>
-    </div>
+    <ProfileRegisterCard v-if="!isLoggedIn" @connect="goConnect" />
 
     <!-- Accounts -->
     <ProfileSectionCard
       v-if="isLoggedIn"
       title="Hisoblar"
-      :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`"
+      :badge="accountsBadge"
       no-padding
     >
       <!-- Loading -->
@@ -45,13 +31,8 @@
         <div v-for="n in 3" :key="n" class="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
       </div>
 
-      <!-- Empty -->
-      <div
-        v-else-if="!accountStore.accounts.length"
-        class="flex flex-col items-center justify-center px-4 py-10 text-center text-slate-400 dark:text-slate-500"
-      >
-        <font-awesome-icon icon="fa-solid fa-user-plus" class="text-2xl mb-2 opacity-50" />
-        <p class="text-[12px] font-medium">Hali qo'shimcha hisob yo'q</p>
+      <div v-else-if="!accountStore.accounts.length" class="p-4">
+        <ProfileRegisterCard compact @connect="goConnect" />
       </div>
 
       <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -223,6 +204,13 @@ const authStore = useAuthStore()
 const accountStore = useAccountStore()
 
 const isLoggedIn = computed(() => isDriverAppAuthenticated())
+
+const accountsBadge = computed(() => {
+  const n = accountStore.accounts.length
+  if (!n) return ''
+  return `${n}/${accountStore.maxAccounts}`
+})
+
 const goConnect = () => {
   void navigateToServiceAuth('/driver/profile')
 }
@@ -314,10 +302,14 @@ const requestDeleteAccount = (acc: ILocalAccount) => {
 const confirmDeleteAccount = async () => {
   if (!accountToDelete.value) return
   deletingAccount.value = true
-  await accountStore.removeAccount(accountToDelete.value.userId)
-  showDeleteAccount.value = false
-  accountToDelete.value = null
-  deletingAccount.value = false
+  try {
+    await accountStore.removeAccount(accountToDelete.value.userId)
+    showDeleteAccount.value = false
+    accountToDelete.value = null
+    switchError.value = ''
+  } finally {
+    deletingAccount.value = false
+  }
 }
 
 const onAddAccount = () => {

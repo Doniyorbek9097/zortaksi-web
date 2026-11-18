@@ -4,6 +4,7 @@ import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   ACCOUNTS_KEY,
   MAX_LOCAL_ACCOUNTS,
+  clearActiveAuth,
   readActiveToken,
   readActiveUserId,
   resolveAuthToken,
@@ -389,13 +390,28 @@ export const useAccountStore = defineStore('account', () => {
       }
     } catch { /* */ }
 
+    if (!accounts.value.length) {
+      clearActiveAuth()
+      applyToken(null, null)
+      const auth = useAuthStore()
+      auth.user = null
+      auth.token = null
+      auth.sessionReady = true
+      activeId.value = null
+      try {
+        reconnectSocket()
+      } catch {
+        /* */
+      }
+      return
+    }
+
     if (!wasActive) return
 
     const next = accounts.value[0]
     if (next?.token) {
       await switchAccount(String(next.userId))
     }
-    // Boshqa hisob yo'q — faol sessiya saqlanadi
   }
 
   /** Hisob yangi Telegramga ko'chirilgach — eski yozuvni olib, yangisini faol qilish */
