@@ -1,8 +1,3 @@
-import {
-  applyPwaStatusBarChrome,
-  isAndroidPwaForStatusBar,
-  shouldApplyPwaStatusBarChrome,
-} from '~/utils/pwaStatusBar'
 import { IOS_STATUS_BAR_STYLE, type ThemeName } from '~/utils/themeChrome'
 
 const THEME_META_ID = 'zt-theme-color-meta'
@@ -12,7 +7,7 @@ export function replaceThemeColorMeta(color: string): void {
   if (!import.meta.client) return
   document.querySelectorAll('meta[name="theme-color"][media]').forEach((node) => node.remove())
   document.querySelectorAll('meta[name="theme-color"]').forEach((node) => {
-    if (node.id !== THEME_META_ID && !node.getAttribute('data-zt-pwa-status')) node.remove()
+    if (node.id !== THEME_META_ID) node.remove()
   })
   let el = document.getElementById(THEME_META_ID) as HTMLMetaElement | null
   if (!el) {
@@ -63,15 +58,9 @@ export function scheduleThemeColorRepaint(
   if (!import.meta.client) return
 
   const apply = () => {
-    if (shouldApplyPwaStatusBarChrome()) {
-      applyPwaStatusBarChrome(mode)
-      if (!isAndroidPwaForStatusBar()) {
-        replaceIosStatusBarMeta(mode)
-      }
-      return
-    }
     replaceThemeColorMeta(statusBarColor)
     replaceColorSchemeMeta(mode)
+    replaceIosStatusBarMeta(mode)
   }
 
   apply()

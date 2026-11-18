@@ -1,6 +1,5 @@
-import { startAndroidThemeColorGuard } from '~/utils/androidStatusBar'
+import { isPwaStandalone } from '~/utils/appEmbed'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import {
   STATUS_BAR_CHROME,
@@ -46,9 +45,7 @@ function hookSystemColorScheme(
   })
 }
 
-/**
- * Status / bottom navigation bar (Android PWA).
- */
+/** Brauzer/Telegram/Flutter — PWA tizim paneliga tegmaydi */
 export function applyBrowserChrome(value: ThemeName) {
   if (!import.meta.client) return
 
@@ -56,19 +53,18 @@ export function applyBrowserChrome(value: ThemeName) {
   const statusBarColor = STATUS_BAR_CHROME[value]
   const navColor = TABBAR_CHROME[value]
   const root = document.documentElement
+  const inPwa = isPwaStandalone()
 
   root.dataset.ztTheme = value
-  if (!shouldApplyPwaStatusBarChrome()) {
-    root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
-  }
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
-  root.dataset.ztChromeNav = navColor
-
-  if (shouldApplyPwaStatusBarChrome()) {
+  if (!inPwa) {
+    root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
     scheduleThemeColorRepaint(value, statusBarColor, color)
   }
+
+  root.dataset.ztChromeNav = navColor
 
   const tg = (window as Window & { Telegram?: { WebApp?: TgWebApp } }).Telegram?.WebApp
   try {
@@ -87,7 +83,6 @@ export function applyBrowserChrome(value: ThemeName) {
 
 let reactiveChromeBound = false
 let visibilityChromeBound = false
-let androidGuardStarted = false
 
 export const useTheme = () => {
   const theme = useCookie<ThemePreference>('zt-theme', {
@@ -119,10 +114,6 @@ export const useTheme = () => {
 
   const initTheme = () => {
     if (!import.meta.client) return
-    if (!androidGuardStarted && shouldApplyPwaStatusBarChrome()) {
-      androidGuardStarted = true
-      startAndroidThemeColorGuard(() => effectiveTheme.value)
-    }
     hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') syncChrome()
     })

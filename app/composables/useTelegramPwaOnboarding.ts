@@ -1,13 +1,4 @@
-import {
-  browserLabelForPlatform,
-  consumeTelegramBrowserEntry,
-  isTelegramWebContext,
-  likelyTelegramEntry,
-  openCurrentSiteInSystemBrowser,
-  resolveTelegramWebContext,
-  TG_BROWSER_DISMISS_SESSION,
-  TG_PWA_INSTALL_DISMISS_SESSION,
-} from '~/utils/telegramOpenBrowser'
+import { TG_PWA_INSTALL_DISMISS_SESSION } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
 import {
@@ -21,13 +12,10 @@ import {
   triggerDeferredPwaInstall,
 } from '~/utils/pwaInstall'
 
-const showOpenBrowser = ref(false)
 const showPwaInstall = ref(false)
 const iosInstallHint = ref(false)
 const openFromHomeHint = ref(false)
 const installPromptReady = ref(false)
-const telegramContextPending = ref(false)
-/** Tizim o‘rnatish oynasi ochilguncha bizning dialog yopiq qoladi */
 const pwaInstallDialogSuppressed = ref(false)
 let booted = false
 
@@ -48,10 +36,7 @@ function dismiss(key: string) {
 }
 
 export function useTelegramPwaOnboarding() {
-  const router = useRouter()
   const nuxtApp = useNuxtApp()
-  const browserCopy = computed(() => browserLabelForPlatform())
-
   const pwa = computed(() => nuxtApp.$pwa)
 
   const canNativeInstall = computed(() => {
@@ -65,40 +50,12 @@ export function useTelegramPwaOnboarding() {
   async function refreshGates() {
     if (!import.meta.client) return
     if (isFlutterWebView() || isPwaStandalone()) {
-      showOpenBrowser.value = false
       showPwaInstall.value = false
       openFromHomeHint.value = false
-      telegramContextPending.value = false
       return
     }
 
-    if (telegramContextPending.value) {
-      showPwaInstall.value = false
-      showOpenBrowser.value = false
-      return
-    }
-
-    let inTelegram = isTelegramWebContext()
-    if (!inTelegram && likelyTelegramEntry() && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
-      telegramContextPending.value = true
-      try {
-        inTelegram = await resolveTelegramWebContext()
-      } finally {
-        telegramContextPending.value = false
-      }
-    }
-
-    if (inTelegram && !dismissed(TG_BROWSER_DISMISS_SESSION)) {
-      showPwaInstall.value = false
-      openFromHomeHint.value = false
-      showOpenBrowser.value = true
-      return
-    }
-
-    showOpenBrowser.value = false
-    void consumeTelegramBrowserEntry()
-
-    if (!mobileNeedsPwaShell() || isTelegramWebContext()) {
+    if (!mobileNeedsPwaShell()) {
       showPwaInstall.value = false
       pwaInstallDialogSuppressed.value = false
       return
@@ -124,17 +81,6 @@ export function useTelegramPwaOnboarding() {
 
     openFromHomeHint.value = false
     showPwaInstall.value = true
-  }
-
-  async function openInSystemBrowser() {
-    await openCurrentSiteInSystemBrowser()
-    // Mobil Telegramda kontekst o'zgarmaguncha dialog ochiq qoladi
-    if (!isTelegramWebContext()) showOpenBrowser.value = false
-  }
-
-  function dismissOpenBrowser() {
-    dismiss(TG_BROWSER_DISMISS_SESSION)
-    showOpenBrowser.value = false
   }
 
   function dismissPwaInstall() {
@@ -220,17 +166,12 @@ export function useTelegramPwaOnboarding() {
   }
 
   return {
-    showOpenBrowser,
     showPwaInstall,
     iosInstallHint,
     openFromHomeHint,
-    telegramContextPending,
-    browserCopy,
     canNativeInstall,
     bootOnboarding,
     refreshGates,
-    openInSystemBrowser,
-    dismissOpenBrowser,
     dismissPwaInstall,
     installPwaAndGo,
   }

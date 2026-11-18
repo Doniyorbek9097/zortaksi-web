@@ -11,54 +11,28 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
-import { shouldApplyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
-import { IOS_STATUS_BAR_STYLE, STATUS_BAR_CHROME } from '~/utils/themeChrome'
+import { isPwaStandalone } from '~/utils/appEmbed'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
 
 const chromeColor = computed(() => THEME_CHROME[effectiveTheme.value])
 
-const pwaHeadMeta = computed(() => {
-  if (!import.meta.client || !shouldApplyPwaStatusBarChrome()) return []
-  const mode = effectiveTheme.value
-  return [
-    {
-      key: 'zt-theme-color',
-      name: 'theme-color',
-      content: STATUS_BAR_CHROME[mode],
-      'data-zt-pwa-status': '1',
-      tagPriority: -20,
-    },
-    {
-      key: 'zt-color-scheme',
-      name: 'color-scheme',
-      content: mode === 'light' ? 'light' : 'dark',
-      'data-zt-pwa-status': '1',
-      tagPriority: -20,
-    },
-    {
-      key: 'zt-ios-status-bar',
-      name: 'apple-mobile-web-app-status-bar-style',
-      content: IOS_STATUS_BAR_STYLE[mode],
-      tagPriority: 1,
-    },
-  ]
-})
-
 useHead({
-  meta: pwaHeadMeta,
   htmlAttrs: {
     class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
     style: computed(() => {
+      if (import.meta.client && isPwaStandalone()) return undefined
       const mode = effectiveTheme.value
       const scheme = mode === 'light' ? 'only light' : 'only dark'
       return `color-scheme: ${scheme}; background-color: ${chromeColor.value}`
     }),
   },
   bodyAttrs: {
-    style: computed(() => `background-color: ${chromeColor.value}`),
+    style: computed(() =>
+      import.meta.client && isPwaStandalone() ? undefined : `background-color: ${chromeColor.value}`,
+    ),
   },
 })
 
@@ -113,19 +87,6 @@ html[data-zt-pwa='1'] body,
 html[data-zt-pwa='1'] .theme-page {
   min-height: 100dvh;
   min-height: 100svh;
-}
-
-html[data-zt-pwa='1'][data-zt-android='1'] body {
-  min-height: 100dvh;
-  min-height: 100svh;
-  padding-top: var(--zt-safe-top, 24px);
-  padding-bottom: 0 !important;
-  box-sizing: border-box;
-}
-
-html[data-zt-pwa='1'][data-zt-android='1'] .driver-tabbar,
-html[data-zt-pwa='1'][data-zt-android='1'] .admin-tabbar {
-  padding-bottom: 0 !important;
 }
 
 /* Yaqinlashtirish va matnni ko'chirib olish */

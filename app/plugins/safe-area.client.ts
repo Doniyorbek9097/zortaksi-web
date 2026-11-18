@@ -100,16 +100,8 @@ export function applyZtSafeArea() {
     return
   }
 
-  // Android PWA — kontent status bar ostiga kirib ketmasin (env ko‘pincha 0)
   if (isPwaStandalone() && isAndroidDevice()) {
-    const envTop = readEnvInset('top')
-    const top = envTop > 6 ? Math.min(envTop, MAX_TOP) : 24
-    const fullscreen = window.matchMedia('(display-mode: fullscreen)').matches
-    const envBottom = readEnvInset('bottom')
-    const bottom = fullscreen
-      ? Math.min(Math.max(envBottom, 0), MAX_BOTTOM)
-      : Math.min(envBottom > 6 ? envBottom : 0, MAX_BOTTOM)
-    setSafeVars(top, bottom)
+    setSafeVars(0, 0)
     return
   }
 

@@ -1,16 +1,13 @@
-import { useTheme } from '~/composables/useTheme'
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice, isIosDevice } from '~/utils/devicePlatform'
 
-/** PWA: erta status/nav chrome (manifest ochilish rangidan oldin) */
+/** Faqat PWA atributlari (CSS uchun), tema chrome yo‘q */
 export default defineNuxtPlugin({
   name: 'pwa-chrome',
   enforce: 'pre',
   parallel: true,
   setup() {
     if (!import.meta.client) return
-
-    const { initTheme } = useTheme()
 
     const syncDisplayAttrs = () => {
       const root = document.documentElement
@@ -27,14 +24,10 @@ export default defineNuxtPlugin({
     }
 
     syncDisplayAttrs()
-    initTheme()
 
     for (const mode of ['fullscreen', 'standalone', 'minimal-ui'] as const) {
       try {
-        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', () => {
-          syncDisplayAttrs()
-          initTheme()
-        })
+        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', syncDisplayAttrs)
       } catch {
         /* */
       }
