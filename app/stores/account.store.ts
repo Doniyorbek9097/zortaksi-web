@@ -4,10 +4,10 @@ import { getAuthCookieOptions } from '~/utils/authCookie'
 import {
   ACCOUNTS_KEY,
   MAX_LOCAL_ACCOUNTS,
-  clearActiveAuth,
   readActiveToken,
   readActiveUserId,
   resolveAuthToken,
+  clearActiveAuth,
   writeActiveSession,
   writeAuthCookie,
 } from '~/utils/activeAccount'
@@ -373,6 +373,18 @@ export const useAccountStore = defineStore('account', () => {
     }
   }
 
+  const clearSessionAfterLastAccount = () => {
+    activeId.value = null
+    applyToken(null, null)
+    const auth = useAuthStore()
+    auth.user = null
+    auth.token = null
+    auth.sessionReady = true
+    clearActiveAuth()
+    clearLegacyOrderFilterGlobals()
+    reconnectSocket()
+  }
+
   const removeAccount = async (userId: string) => {
     if (!import.meta.client) return
     load()
@@ -391,18 +403,7 @@ export const useAccountStore = defineStore('account', () => {
     } catch { /* */ }
 
     if (!accounts.value.length) {
-      clearActiveAuth()
-      applyToken(null, null)
-      const auth = useAuthStore()
-      auth.user = null
-      auth.token = null
-      auth.sessionReady = true
-      activeId.value = null
-      try {
-        reconnectSocket()
-      } catch {
-        /* */
-      }
+      clearSessionAfterLastAccount()
       return
     }
 

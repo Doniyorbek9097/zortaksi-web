@@ -14,18 +14,18 @@
       </div>
       <div class="min-w-0">
         <p class="text-[13px] font-black text-slate-800 dark:text-slate-100 truncate">
-          {{ greeting }}, {{ firstName }}!
-        </p>
+        {{ greeting }}, {{ firstName }}!
+      </p>
         <p class="text-[13px] font-bold tabular-nums text-slate-600 dark:text-slate-300 truncate">
           {{ liveDateTimeLabel }}
         </p>
       </div>
     </div>
 
-    <AdminIncomeCard
-      :amount="monthIncome.amount"
-      :payments="monthIncome.payments"
-      :total="monthIncome.total"
+      <AdminIncomeCard
+        :amount="monthIncome.amount"
+        :payments="monthIncome.payments"
+        :total="monthIncome.total"
       :total-days="monthIncome.totalDays"
       :change-percent="growth?.monthIncomePercent"
       :today-amount="todayIncome.amount"
@@ -57,11 +57,11 @@
       :close-on-confirm="false"
       @confirm="onPaymentChannelResetConfirm"
       @cancel="onPaymentChannelResetCancel"
-    />
+      />
 
-    <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
-      {{ store.error }}
-    </p>
+      <p v-if="store.error" class="text-center text-[12px] font-bold text-red-500">
+        {{ store.error }}
+      </p>
 
     <!-- Boshqaruv -->
     <AdminSectionCard
@@ -194,10 +194,10 @@
               class="w-6 h-6 rounded-full shrink-0 bg-violet-100 text-violet-600 flex items-center justify-center text-[9px] font-black"
             >
               {{ row.owner.name.charAt(0) || '?' }}
-            </span>
+          </span>
             <span class="font-bold text-slate-700 dark:text-slate-200 truncate flex-1 min-w-0">
               {{ row.owner.name }}
-            </span>
+          </span>
             <span class="font-black text-violet-600 tabular-nums shrink-0">{{ row.sendsPerDay }}/kun</span>
           </div>
         </div>
@@ -328,7 +328,7 @@
         :value-mode="chartTab === 'amount' ? 'amount' : 'number'"
         :selected-title="chartSelectedTitle"
       />
-    </AdminSectionCard>
+      </AdminSectionCard>
 
     <!-- Tariflar -->
     <AdminSectionCard
@@ -338,7 +338,7 @@
     >
       <template #action>
         <AdminSegmentTabs v-model="tariffTab" :tabs="tariffTabs" />
-      </template>
+    </template>
       <AdminTariffRankGrid :items="tariffStatsItems" />
     </AdminSectionCard>
 

@@ -17,22 +17,34 @@
       @buy="onBuyTariff"
     />
 
-    <ProfileRegisterCard v-if="!isLoggedIn" @connect="goConnect" />
+    <div
+      v-else
+      class="rounded-2xl border border-indigo-200 dark:border-indigo-800/60 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-900 p-4 space-y-3"
+    >
+      <p class="text-[13px] font-bold text-slate-700 dark:text-slate-200 leading-snug">
+        Hisoblar, to'lov va xizmatlar uchun Telegram orqali ro'yxatdan o'ting.
+      </p>
+      <button
+        type="button"
+        class="w-full py-3 rounded-xl text-sm font-black text-white bg-indigo-500 hover:bg-indigo-600 active:scale-[0.98] transition-all"
+        @click="goConnect"
+      >
+        Ro'yxatdan o'tish / Kirish
+      </button>
+    </div>
 
     <!-- Accounts -->
     <ProfileSectionCard
-      v-if="isLoggedIn"
       title="Hisoblar"
-      :badge="accountsBadge"
+      :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`"
       no-padding
     >
-      <!-- Loading -->
       <div v-if="accountStore.isLoading && !accountStore.accounts.length" class="p-4 space-y-3">
         <div v-for="n in 3" :key="n" class="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
       </div>
 
-      <div v-else-if="!accountStore.accounts.length" class="p-4">
-        <ProfileRegisterCard compact @connect="goConnect" />
+      <div v-else-if="!accountStore.accounts.length" class="p-3">
+        <ProfileRegisterCard @connect="goConnect" />
       </div>
 
       <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
@@ -50,12 +62,12 @@
         />
       </div>
       <p
-        v-if="switchError"
+        v-if="switchError && accountStore.accounts.length"
         class="mx-3 mb-2 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 text-[12px] font-bold text-center"
       >
         {{ switchError }}
       </p>
-      <div class="p-3">
+      <div v-if="accountStore.accounts.length" class="p-3">
         <button
           type="button"
           class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-indigo-600 dark:text-indigo-400 border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-500/60 hover:bg-indigo-500/5 active:scale-[0.98] transition-all disabled:opacity-45 disabled:pointer-events-none"
@@ -204,13 +216,6 @@ const authStore = useAuthStore()
 const accountStore = useAccountStore()
 
 const isLoggedIn = computed(() => isDriverAppAuthenticated())
-
-const accountsBadge = computed(() => {
-  const n = accountStore.accounts.length
-  if (!n) return ''
-  return `${n}/${accountStore.maxAccounts}`
-})
-
 const goConnect = () => {
   void navigateToServiceAuth('/driver/profile')
 }
@@ -302,14 +307,10 @@ const requestDeleteAccount = (acc: ILocalAccount) => {
 const confirmDeleteAccount = async () => {
   if (!accountToDelete.value) return
   deletingAccount.value = true
-  try {
-    await accountStore.removeAccount(accountToDelete.value.userId)
-    showDeleteAccount.value = false
-    accountToDelete.value = null
-    switchError.value = ''
-  } finally {
-    deletingAccount.value = false
-  }
+  await accountStore.removeAccount(accountToDelete.value.userId)
+  showDeleteAccount.value = false
+  accountToDelete.value = null
+  deletingAccount.value = false
 }
 
 const onAddAccount = () => {
@@ -370,8 +371,9 @@ onMounted(async () => {
   if (!authStore.user) {
     try { await authStore.getMe() } catch { /* */ }
   }
-  // Faqat joriy user — boshqa hisob tokenlarini buzmasin
-  if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  if (authStore.user && accountStore.accounts.length) {
+    accountStore.ensureCurrent(authStore.user)
+  }
   void refreshCacheStats()
 })
 
@@ -379,7 +381,9 @@ usePullToRefresh(async () => {
   await authStore.getMe().catch(() => {})
   accountStore.load()
   await accountStore.syncFromStorage()
-  if (authStore.user) accountStore.ensureCurrent(authStore.user)
+  if (authStore.user && accountStore.accounts.length) {
+    accountStore.ensureCurrent(authStore.user)
+  }
   await refreshCacheStats()
 })
 </script>
