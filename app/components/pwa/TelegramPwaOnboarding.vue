@@ -152,6 +152,12 @@ onMounted(() => {
     { immediate: true },
   )
   watch(
+    () => route.path,
+    () => {
+      refreshGates()
+    },
+  )
+  watch(
     () => nuxtApp.$pwa?.showInstallPrompt,
     () => {
       refreshGates()

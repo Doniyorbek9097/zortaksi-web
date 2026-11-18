@@ -1,5 +1,26 @@
-import { isPwaStandalone } from '~/utils/appEmbed'
+import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isMobileDevice } from '~/utils/devicePlatform'
+import { isTelegramWebContext } from '~/utils/telegramOpenBrowser'
+
+/** PWA o‘rnatish taklifi — faqat shu yo‘llarda */
+export const PWA_INSTALL_HOME_PATHS = ['/', '/driver/dashboard'] as const
+
+export function isOnPwaInstallHome(path: string): boolean {
+  const p = (path.split('?')[0] || '/').replace(/\/+$/, '') || '/'
+  return p === '/' || p === '/driver/dashboard'
+}
+
+/** Mobil oddiy brauzer + asosiy sahifa (Telegram / WebView emas) */
+export function shouldOfferPwaInstallPrompt(path: string): boolean {
+  if (!import.meta.client) return false
+  if (!mobileNeedsPwaShell()) return false
+  if (isFlutterWebView()) return false
+  if (document.documentElement.dataset.ztEmbed === 'webview') return false
+  if (document.documentElement.dataset.ztEmbed === 'telegram') return false
+  if (isTelegramWebContext()) return false
+  if (!isOnPwaInstallHome(path)) return false
+  return true
+}
 
 const HIDE_INSTALL_KEY = 'vite-pwa:hide-install'
 

@@ -5,8 +5,8 @@ import {
   detectInstalledWebApp,
   hasDeferredPwaInstall,
   initPwaInstallCapture,
-  mobileNeedsPwaShell,
   onPwaInstallReady,
+  shouldOfferPwaInstallPrompt,
   reloadIntoPwaShell,
   resetPwaInstallDismissed,
   triggerDeferredPwaInstall,
@@ -37,6 +37,7 @@ function dismiss(key: string) {
 
 export function useTelegramPwaOnboarding() {
   const nuxtApp = useNuxtApp()
+  const route = useRoute()
   const pwa = computed(() => nuxtApp.$pwa)
 
   const canNativeInstall = computed(() => {
@@ -55,7 +56,7 @@ export function useTelegramPwaOnboarding() {
       return
     }
 
-    if (!mobileNeedsPwaShell()) {
+    if (!shouldOfferPwaInstallPrompt(route.path)) {
       showPwaInstall.value = false
       pwaInstallDialogSuppressed.value = false
       return

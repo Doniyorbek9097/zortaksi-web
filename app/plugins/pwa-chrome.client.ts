@@ -1,5 +1,6 @@
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice, isIosDevice } from '~/utils/devicePlatform'
+import { applyDeviceStatusBarChrome } from '~/utils/themeColorMeta'
 
 /** Faqat PWA atributlari (CSS uchun), tema chrome yo‘q */
 export default defineNuxtPlugin({
@@ -24,10 +25,24 @@ export default defineNuxtPlugin({
     }
 
     syncDisplayAttrs()
+    applyDeviceStatusBarChrome()
+
+    const pref = window.matchMedia('(prefers-color-scheme: dark)')
+    const onDeviceTheme = () => {
+      if (isPwaStandalone()) applyDeviceStatusBarChrome()
+    }
+    try {
+      pref.addEventListener('change', onDeviceTheme)
+    } catch {
+      pref.addListener(onDeviceTheme)
+    }
 
     for (const mode of ['fullscreen', 'standalone', 'minimal-ui'] as const) {
       try {
-        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', syncDisplayAttrs)
+        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', () => {
+          syncDisplayAttrs()
+          applyDeviceStatusBarChrome()
+        })
       } catch {
         /* */
       }

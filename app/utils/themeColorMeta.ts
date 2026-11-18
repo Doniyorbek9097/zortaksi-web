@@ -1,4 +1,16 @@
-import { IOS_STATUS_BAR_STYLE, type ThemeName } from '~/utils/themeChrome'
+import { IOS_STATUS_BAR_STYLE, STATUS_BAR_CHROME, type ThemeName } from '~/utils/themeChrome'
+
+/** PWA status bar — ilova temasi emas, qurilma (prefers-color-scheme) */
+export function deviceUiTheme(): ThemeName {
+  if (!import.meta.client) return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+export function applyDeviceStatusBarChrome(): void {
+  if (!import.meta.client) return
+  const mode = deviceUiTheme()
+  scheduleThemeColorRepaint(mode, STATUS_BAR_CHROME[mode])
+}
 
 const THEME_META_ID = 'zt-theme-color-meta'
 const IOS_STATUS_ID = 'zt-ios-status-meta'
