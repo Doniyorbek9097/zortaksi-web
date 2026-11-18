@@ -111,14 +111,12 @@ const installButtonLabel = computed(() => {
   return "O'rnatish"
 })
 
-async function onInstallConfirm() {
-  installing.value = true
+function onInstallConfirm() {
   showPwaInstall.value = false
-  try {
-    await installPwaAndGo()
-  } finally {
+  installing.value = true
+  void installPwaAndGo().finally(() => {
     installing.value = false
-  }
+  })
 }
 
 watch(showPwaInstall, (open) => {

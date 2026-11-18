@@ -23,6 +23,25 @@ export function shouldOfferPwaInstallPrompt(path: string): boolean {
 }
 
 const HIDE_INSTALL_KEY = 'vite-pwa:hide-install'
+export const PWA_INSTALLED_LS_KEY = 'zt-pwa-installed'
+
+export function markPwaInstalledOnDevice(): void {
+  if (!import.meta.client) return
+  try {
+    localStorage.setItem(PWA_INSTALLED_LS_KEY, '1')
+  } catch {
+    /* */
+  }
+}
+
+export function isPwaInstalledOnDevice(): boolean {
+  if (!import.meta.client) return false
+  try {
+    return localStorage.getItem(PWA_INSTALLED_LS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => void
@@ -69,6 +88,7 @@ export function initPwaInstallCapture(): void {
 
   window.addEventListener('appinstalled', () => {
     deferredInstall = null
+    markPwaInstalledOnDevice()
     for (const fn of installReadyListeners) {
       try {
         fn()
@@ -98,6 +118,13 @@ export async function triggerDeferredPwaInstall(): Promise<{ outcome: string } |
   } catch {
     return null
   }
+}
+
+export async function isPwaInstalledInBrowser(): Promise<boolean> {
+  if (!import.meta.client) return false
+  if (isPwaStandalone()) return false
+  if (isPwaInstalledOnDevice()) return true
+  return detectInstalledWebApp()
 }
 
 export async function detectInstalledWebApp(): Promise<boolean> {

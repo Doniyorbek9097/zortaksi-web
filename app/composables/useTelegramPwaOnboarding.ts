@@ -2,8 +2,9 @@ import { TG_PWA_INSTALL_DISMISS_SESSION } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
 import {
-  detectInstalledWebApp,
   hasDeferredPwaInstall,
+  isPwaInstalledInBrowser,
+  markPwaInstalledOnDevice,
   initPwaInstallCapture,
   onPwaInstallReady,
   shouldOfferPwaInstallPrompt,
@@ -74,7 +75,7 @@ export function useTelegramPwaOnboarding() {
 
     resetPwaInstallDismissed()
 
-    if (await detectInstalledWebApp()) {
+    if (await isPwaInstalledInBrowser()) {
       openFromHomeHint.value = true
       showPwaInstall.value = true
       return
@@ -103,6 +104,7 @@ export function useTelegramPwaOnboarding() {
 
     const own = await triggerDeferredPwaInstall()
     if (own?.outcome === 'accepted') {
+      markPwaInstalledOnDevice()
       reloadIntoPwaShell('/driver/dashboard')
       return
     }
@@ -117,6 +119,7 @@ export function useTelegramPwaOnboarding() {
       try {
         const choice = await pin.install()
         if (choice?.outcome === 'accepted' || isPwaStandalone()) {
+          markPwaInstalledOnDevice()
           reloadIntoPwaShell('/driver/dashboard')
           return
         }
@@ -136,15 +139,12 @@ export function useTelegramPwaOnboarding() {
 
     if (isIosDevice()) {
       iosInstallHint.value = true
-      showPwaInstall.value = true
       return
     }
 
     if (isMobileDevice()) {
       iosInstallHint.value = false
     }
-
-    void refreshGates()
   }
 
   function bootOnboarding() {
@@ -158,6 +158,7 @@ export function useTelegramPwaOnboarding() {
     window.addEventListener('appinstalled', () => {
       pwaInstallDialogSuppressed.value = false
       showPwaInstall.value = false
+      void refreshGates()
     })
     void refreshGates()
     const delays = [80, 400, 1200, 2500, 5000]

@@ -35,19 +35,12 @@
 
     <!-- Accounts -->
     <ProfileSectionCard
+      v-if="accountStore.accounts.length"
       title="Hisoblar"
       :badge="`${accountStore.accounts.length}/${accountStore.maxAccounts}`"
       no-padding
     >
-      <div v-if="accountStore.isLoading && !accountStore.accounts.length" class="p-4 space-y-3">
-        <div v-for="n in 3" :key="n" class="h-10 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
-      </div>
-
-      <div v-else-if="!accountStore.accounts.length" class="p-3">
-        <ProfileRegisterCard @connect="goConnect" />
-      </div>
-
-      <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+      <div class="divide-y divide-slate-100 dark:divide-slate-800">
         <ProfileAccountItem
           v-for="acc in accountStore.accounts"
           :key="acc.userId"
