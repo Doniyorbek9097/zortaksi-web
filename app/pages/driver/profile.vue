@@ -91,16 +91,6 @@
           @click="showMigrateAccount = true"
         />
 
-        <!-- Theme -->
-        <ProfileSettingRow
-          :icon="isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon'"
-          :title="isDark ? `Yorug' rejim` : `Qorong'i rejim`"
-          subtitle="Mavzuni almashtirish"
-          :color="isDark ? 'amber' : 'violet'"
-          clickable
-          @click="toggleTheme"
-        />
-
         <!-- Notification sound -->
         <ProfileSettingRow
           icon="fa-solid fa-bell"
@@ -213,10 +203,7 @@ const goConnect = () => {
   void navigateToServiceAuth('/driver/profile')
 }
 
-const { effectiveTheme, toggleTheme } = useTheme()
 const { script } = useAppScript()
-
-const isDark = computed(() => effectiveTheme.value === 'dark')
 const isAdmin = computed(() => isAdminUser(authStore.user))
 const isPanel = computed(() => isPanelUser(authStore.user))
 

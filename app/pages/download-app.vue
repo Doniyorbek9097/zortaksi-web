@@ -1,7 +1,5 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2">
-    <AppDownloadGuide back-path="/" />
-  </div>
+  <div class="min-h-[40vh]" />
 </template>
 
 <script setup lang="ts">
@@ -10,14 +8,17 @@ import { isFlutterWebView } from '~/utils/appEmbed'
 definePageMeta({ layout: 'default' })
 
 useSeoMeta({
-  title: "Ilovani yuklab olish — Zo'r Taksi",
-  description: 'ZorTaksi Android ilovasini yuklab olish va o\'rnatish bo\'yicha qo\'llanma.',
+  title: "Ilovani o'rnatish — Zo'r Taksi",
+  description: "ZorTaksi PWA ilovasini brauzerdan o'rnatish.",
 })
 
 onMounted(() => {
-  // Ilova ichida (WebView) — yuklash sahifasi kerak emas
   if (isFlutterWebView()) {
     void navigateTo('/', { replace: true })
+    return
   }
+  const { openAppInstall } = useAppInstallAction()
+  openAppInstall()
+  void navigateTo('/', { replace: true })
 })
 </script>

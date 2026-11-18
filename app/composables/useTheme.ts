@@ -98,8 +98,9 @@ export const useTheme = () => {
 
   const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
 
+  /** Faqat qurilma (prefers-color-scheme); qo‘lda dark/light o‘chirilgan */
   const effectiveTheme = computed<ThemeName>(() =>
-    resolveTheme(theme.value, systemPrefersDarkState.value),
+    resolveTheme('system', systemPrefersDarkState.value),
   )
 
   const syncChrome = () => {
@@ -118,8 +119,8 @@ export const useTheme = () => {
   const initTheme = () => {
     if (!import.meta.client) return
     hookSystemColorScheme(systemPrefersDarkState, () => {
-      if (theme.value === 'system') syncChrome()
-      else if (isPwaStandalone()) applyDeviceStatusBarChrome()
+      syncChrome()
+      if (isPwaStandalone()) applyDeviceStatusBarChrome()
     })
     syncChrome()
     if (!visibilityChromeBound) {

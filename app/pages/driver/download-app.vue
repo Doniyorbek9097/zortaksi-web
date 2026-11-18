@@ -1,22 +1,25 @@
 <template>
-  <div class="mx-auto w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 pt-0 pb-2">
-    <AppDownloadGuide back-path="/driver/dashboard" />
-  </div>
+  <div class="min-h-[40vh]" />
 </template>
 
 <script setup lang="ts">
-import { shouldShowApkDownload } from '~/utils/appEmbed'
+import { isFlutterWebView, shouldShowApkDownload } from '~/utils/appEmbed'
 
 definePageMeta({ layout: 'driver' })
 
 useSeoMeta({
-  title: "Ilovani yuklab olish — Zo'r Taksi",
-  description: 'ZorTaksi Android ilovasini yuklab olish va o\'rnatish bo\'yicha qo\'llanma.',
+  title: "Ilovani o'rnatish — Zo'r Taksi",
+  description: "ZorTaksi PWA ilovasini brauzerdan o'rnatish.",
 })
 
 onMounted(() => {
-  if (!shouldShowApkDownload()) {
-    void navigateTo('/driver/dashboard', { replace: true })
+  const back = '/driver/dashboard'
+  if (!shouldShowApkDownload() || isFlutterWebView()) {
+    void navigateTo(back, { replace: true })
+    return
   }
+  const { openAppInstall } = useAppInstallAction()
+  openAppInstall()
+  void navigateTo(back, { replace: true })
 })
 </script>

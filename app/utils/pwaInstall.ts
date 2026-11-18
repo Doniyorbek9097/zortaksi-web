@@ -10,38 +10,27 @@ export function isOnPwaInstallHome(path: string): boolean {
   return p === '/' || p === '/driver/dashboard'
 }
 
-/** Mobil oddiy brauzer + asosiy sahifa (Telegram / WebView emas) */
-export function shouldOfferPwaInstallPrompt(path: string): boolean {
+/** Brauzerda PWA taklifi mumkinligi (Telegram / WebView / standalone emas) */
+export function canOpenPwaInstallPrompt(userInitiated = false): boolean {
   if (!import.meta.client) return false
-  if (!mobileNeedsPwaShell()) return false
   if (isFlutterWebView()) return false
   if (document.documentElement.dataset.ztEmbed === 'webview') return false
   if (document.documentElement.dataset.ztEmbed === 'telegram') return false
   if (isTelegramWebContext()) return false
+  if (isPwaStandalone()) return false
+  if (userInitiated) return true
+  return mobileNeedsPwaShell()
+}
+
+/** Mobil oddiy brauzer + asosiy sahifa (Telegram / WebView emas) */
+export function shouldOfferPwaInstallPrompt(path: string): boolean {
+  if (!import.meta.client) return false
+  if (!canOpenPwaInstallPrompt(false)) return false
   if (!isOnPwaInstallHome(path)) return false
   return true
 }
 
 const HIDE_INSTALL_KEY = 'vite-pwa:hide-install'
-export const PWA_INSTALLED_LS_KEY = 'zt-pwa-installed'
-
-export function markPwaInstalledOnDevice(): void {
-  if (!import.meta.client) return
-  try {
-    localStorage.setItem(PWA_INSTALLED_LS_KEY, '1')
-  } catch {
-    /* */
-  }
-}
-
-export function isPwaInstalledOnDevice(): boolean {
-  if (!import.meta.client) return false
-  try {
-    return localStorage.getItem(PWA_INSTALLED_LS_KEY) === '1'
-  } catch {
-    return false
-  }
-}
 
 export type BeforeInstallPromptEvent = Event & {
   prompt: () => void
@@ -88,7 +77,6 @@ export function initPwaInstallCapture(): void {
 
   window.addEventListener('appinstalled', () => {
     deferredInstall = null
-    markPwaInstalledOnDevice()
     for (const fn of installReadyListeners) {
       try {
         fn()
@@ -120,10 +108,10 @@ export async function triggerDeferredPwaInstall(): Promise<{ outcome: string } |
   }
 }
 
+/** Brauzerda ochiq — getInstalledRelatedApps (localStorage ishlatilmaydi) */
 export async function isPwaInstalledInBrowser(): Promise<boolean> {
   if (!import.meta.client) return false
   if (isPwaStandalone()) return false
-  if (isPwaInstalledOnDevice()) return true
   return detectInstalledWebApp()
 }
 

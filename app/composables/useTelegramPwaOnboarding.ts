@@ -2,9 +2,9 @@ import { TG_PWA_INSTALL_DISMISS_SESSION } from '~/utils/telegramOpenBrowser'
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isIosDevice, isMobileDevice } from '~/utils/devicePlatform'
 import {
+  canOpenPwaInstallPrompt,
   hasDeferredPwaInstall,
   isPwaInstalledInBrowser,
-  markPwaInstalledOnDevice,
   initPwaInstallCapture,
   onPwaInstallReady,
   shouldOfferPwaInstallPrompt,
@@ -49,26 +49,28 @@ export function useTelegramPwaOnboarding() {
     return flag === true || flag?.value === true
   })
 
-  async function refreshGates() {
+  async function refreshGates(opts?: { userInitiated?: boolean }) {
     if (!import.meta.client) return
-    if (isFlutterWebView() || isPwaStandalone()) {
+    const userInitiated = opts?.userInitiated === true
+
+    if (!canOpenPwaInstallPrompt(userInitiated)) {
       showPwaInstall.value = false
       openFromHomeHint.value = false
       return
     }
 
-    if (!shouldOfferPwaInstallPrompt(route.path)) {
+    if (!userInitiated && !shouldOfferPwaInstallPrompt(route.path)) {
       showPwaInstall.value = false
       pwaInstallDialogSuppressed.value = false
       return
     }
 
-    if (pwaInstallDialogSuppressed.value) {
+    if (!userInitiated && pwaInstallDialogSuppressed.value) {
       showPwaInstall.value = false
       return
     }
 
-    if (dismissed(TG_PWA_INSTALL_DISMISS_SESSION)) {
+    if (!userInitiated && dismissed(TG_PWA_INSTALL_DISMISS_SESSION)) {
       showPwaInstall.value = false
       return
     }
@@ -92,6 +94,21 @@ export function useTelegramPwaOnboarding() {
     showPwaInstall.value = false
   }
 
+  /** «Yuklab olish» va boshqa qo‘lda chaqiruvlar — APK sahifasiga o‘tmaydi */
+  function requestPwaInstall() {
+    if (!import.meta.client) return
+    initPwaInstallCapture()
+    resetPwaInstallDismissed()
+    try {
+      sessionStorage.removeItem(TG_PWA_INSTALL_DISMISS_SESSION)
+    } catch {
+      /* */
+    }
+    pwaInstallDialogSuppressed.value = false
+    iosInstallHint.value = false
+    void refreshGates({ userInitiated: true })
+  }
+
   async function installPwaAndGo() {
     if (openFromHomeHint.value) {
       showPwaInstall.value = false
@@ -104,7 +121,6 @@ export function useTelegramPwaOnboarding() {
 
     const own = await triggerDeferredPwaInstall()
     if (own?.outcome === 'accepted') {
-      markPwaInstalledOnDevice()
       reloadIntoPwaShell('/driver/dashboard')
       return
     }
@@ -119,7 +135,6 @@ export function useTelegramPwaOnboarding() {
       try {
         const choice = await pin.install()
         if (choice?.outcome === 'accepted' || isPwaStandalone()) {
-          markPwaInstalledOnDevice()
           reloadIntoPwaShell('/driver/dashboard')
           return
         }
@@ -176,5 +191,6 @@ export function useTelegramPwaOnboarding() {
     refreshGates,
     dismissPwaInstall,
     installPwaAndGo,
+    requestPwaInstall,
   }
 }

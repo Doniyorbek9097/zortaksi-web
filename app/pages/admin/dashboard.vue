@@ -479,7 +479,8 @@ const onPaymentChannelResetConfirm = async () => {
   }
 }
 
-const onDownloadApp = () => navigateTo('/admin/download-app')
+const { openAppInstall } = useAppInstallAction()
+const onDownloadApp = () => openAppInstall()
 const onBonus = () => navigateTo('/admin/bonus')
 
 usePullToRefresh(async () => {

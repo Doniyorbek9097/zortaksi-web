@@ -118,7 +118,8 @@ const {
   stopPolling,
 } = useDriverPostCampaign()
 
-const onDownloadApp = () => navigateTo('/driver/download-app')
+const { openAppInstall } = useAppInstallAction()
+const onDownloadApp = () => openAppInstall()
 const onHelp = () => openDriverSupportChatInstant()
 const onBuyTariff = () => {
   void navigateToServiceAuth('/driver/payment')
