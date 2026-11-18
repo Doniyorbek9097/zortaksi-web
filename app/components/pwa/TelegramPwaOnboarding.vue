@@ -112,7 +112,6 @@ const installButtonLabel = computed(() => {
 })
 
 function onInstallConfirm() {
-  showPwaInstall.value = false
   installing.value = true
   void installPwaAndGo().finally(() => {
     installing.value = false

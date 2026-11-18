@@ -19,6 +19,5 @@ onMounted(() => {
   }
   const { openAppInstall } = useAppInstallAction()
   openAppInstall()
-  void navigateTo('/', { replace: true })
 })
 </script>

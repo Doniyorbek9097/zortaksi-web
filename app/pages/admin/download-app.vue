@@ -20,6 +20,6 @@ onMounted(() => {
   }
   const { openAppInstall } = useAppInstallAction()
   openAppInstall()
-  void navigateTo(back, { replace: true })
+  nextTick(() => void navigateTo(back))
 })
 </script>

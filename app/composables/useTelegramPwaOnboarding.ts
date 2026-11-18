@@ -8,7 +8,6 @@ import {
   initPwaInstallCapture,
   onPwaInstallReady,
   shouldOfferPwaInstallPrompt,
-  reloadIntoPwaShell,
   resetPwaInstallDismissed,
   triggerDeferredPwaInstall,
 } from '~/utils/pwaInstall'
@@ -109,10 +108,16 @@ export function useTelegramPwaOnboarding() {
     void refreshGates({ userInitiated: true })
   }
 
+  function finishPwaInstallSuccess() {
+    pwaInstallDialogSuppressed.value = false
+    showPwaInstall.value = false
+    iosInstallHint.value = false
+    void refreshGates()
+  }
+
   async function installPwaAndGo() {
     if (openFromHomeHint.value) {
-      showPwaInstall.value = false
-      reloadIntoPwaShell('/driver/dashboard')
+      dismissPwaInstall()
       return
     }
 
@@ -121,11 +126,12 @@ export function useTelegramPwaOnboarding() {
 
     const own = await triggerDeferredPwaInstall()
     if (own?.outcome === 'accepted') {
-      reloadIntoPwaShell('/driver/dashboard')
+      finishPwaInstallSuccess()
       return
     }
     if (own?.outcome === 'dismissed') {
       pwaInstallDialogSuppressed.value = false
+      showPwaInstall.value = true
       void refreshGates()
       return
     }
@@ -135,16 +141,18 @@ export function useTelegramPwaOnboarding() {
       try {
         const choice = await pin.install()
         if (choice?.outcome === 'accepted' || isPwaStandalone()) {
-          reloadIntoPwaShell('/driver/dashboard')
+          finishPwaInstallSuccess()
           return
         }
         if (choice?.outcome === 'dismissed') {
           pwaInstallDialogSuppressed.value = false
+          showPwaInstall.value = true
           void refreshGates()
           return
         }
       } catch {
         pwaInstallDialogSuppressed.value = false
+        showPwaInstall.value = true
         void refreshGates()
         return
       }
@@ -154,11 +162,13 @@ export function useTelegramPwaOnboarding() {
 
     if (isIosDevice()) {
       iosInstallHint.value = true
+      showPwaInstall.value = true
       return
     }
 
     if (isMobileDevice()) {
       iosInstallHint.value = false
+      showPwaInstall.value = true
     }
   }
 

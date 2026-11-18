@@ -128,10 +128,3 @@ export async function detectInstalledWebApp(): Promise<boolean> {
     return false
   }
 }
-
-/** PWA o'rnatilgach — standalone rejimga o'tish uchun qayta yuklash */
-export function reloadIntoPwaShell(path = '/driver/dashboard'): void {
-  if (!import.meta.client) return
-  const url = new URL(path, window.location.origin)
-  window.location.replace(url.toString())
-}
