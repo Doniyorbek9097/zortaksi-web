@@ -89,18 +89,6 @@
       @stop-user="onStopUser"
       @restrict-user="onRestrictUser"
       @delete="onDelete"
-      @add-to-bot="onAddToBot"
-    />
-
-    <DriverOrdersAddToBotDialog
-      v-model="showAddToBotDialog"
-      :message="addToBotMessage"
-      :source-username="sourceGroupUsername"
-      :groups="botGroups"
-      :loading="addToBotLoading"
-      :saving="addToBotSaving"
-      @select="selectBotGroup"
-      @cancel="cancelAddToBot"
     />
 
     <BaseConfirmDialog
@@ -260,14 +248,5 @@ const {
   unreadCount,
   isOrderSeen,
   markAllAsRead,
-  showAddToBotDialog,
-  addToBotMessage,
-  sourceGroupUsername,
-  botGroups,
-  addToBotLoading,
-  addToBotSaving,
-  onAddToBot,
-  cancelAddToBot,
-  selectBotGroup,
 } = useDriverOrdersPage()
 </script>

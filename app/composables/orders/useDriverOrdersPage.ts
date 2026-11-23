@@ -8,7 +8,6 @@ import { useOrdersListSync } from './useOrdersListSync'
 import { useOrdersBooking } from './useOrdersBooking'
 import { useOrdersChatActions } from './useOrdersChatActions'
 import { useOrdersModeration } from './useOrdersModeration'
-import { useOrdersAddToBot } from './useOrdersAddToBot'
 import { useOrdersPreconnect } from './useOrdersPreconnect'
 import { preloadOrdersList } from './preloadOrdersList'
 import { requireServiceAuth } from '~/utils/authSession'
@@ -69,11 +68,6 @@ export function useDriverOrdersPage() {
     displayOrders: filter.displayOrders,
   })
 
-  const addToBot = useOrdersAddToBot({
-    showError: moderation.showError,
-    showSuccess: moderation.showSuccess,
-  })
-
   const onUnlock = () => {
     if (!requireServiceAuth('/driver/payment?tab=tariff')) return
     return navigateTo('/driver/payment?tab=tariff')
@@ -127,7 +121,6 @@ export function useDriverOrdersPage() {
     ...booking,
     ...chat,
     ...moderation,
-    ...addToBot,
     onUnlock,
     unreadCount,
     isOrderSeen,

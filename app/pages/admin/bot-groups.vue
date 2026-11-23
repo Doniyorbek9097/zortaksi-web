@@ -123,7 +123,6 @@ watch(
 const emptyForm = (): BotGroupFormModel => ({
   regionSlug: '',
   title: '',
-  keywords: '',
   listenerUserId: '',
   tariffIds: [],
   botToken: '',
@@ -170,7 +169,6 @@ const onSubmit = async () => {
   const payload = {
     regionSlug: form.value.regionSlug.trim(),
     title: form.value.title.trim(),
-    keywords: form.value.keywords.trim(),
     listenerUserId: form.value.listenerUserId.trim(),
     tariffIds: form.value.tariffIds,
     botToken: form.value.botToken.trim() || undefined,
@@ -219,7 +217,6 @@ const startEdit = (card: BotRegionCard) => {
   form.value = {
     regionSlug: card.slug,
     title: card.title,
-    keywords: (card.keywords || []).join('\n'),
     listenerUserId: card.listenerUserId || '',
     tariffIds: [...(card.tariffIds || [])],
     botToken: '',

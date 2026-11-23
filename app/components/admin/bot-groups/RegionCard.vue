@@ -68,21 +68,6 @@
         </div>
       </div>
 
-      <div
-        v-if="card.keywords?.length"
-        class="flex items-start gap-2 text-[12px]"
-      >
-        <span class="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0 text-amber-600">
-          <font-awesome-icon icon="fa-solid fa-key" class="text-[11px]" />
-        </span>
-        <div class="min-w-0">
-          <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400">Kalit so'zlar</p>
-          <p class="font-semibold text-slate-700 dark:text-slate-200 leading-snug break-words">
-            {{ card.keywords.join(', ') }}
-          </p>
-        </div>
-      </div>
-
       <div class="flex items-start gap-2 text-[12px]">
         <span class="w-7 h-7 rounded-lg bg-sky-500/10 flex items-center justify-center shrink-0 text-sky-600">
           <font-awesome-icon icon="fa-solid fa-bullhorn" class="text-[11px]" />

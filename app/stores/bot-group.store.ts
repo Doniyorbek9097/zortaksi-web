@@ -59,7 +59,6 @@ export type BotRegionSidePayload = {
 export type BotRegionPayload = {
   regionSlug: string
   title?: string
-  keywords?: string | string[]
   listenerUserId: string
   tariffIds?: string[]
   active?: boolean
@@ -203,7 +202,6 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         body: {
           regionSlug: payload.regionSlug.trim(),
           title: payload.title?.trim() || undefined,
-          keywords: payload.keywords,
           listenerUserId: payload.listenerUserId?.trim() || '',
           tariffIds: payload.tariffIds || [],
           active: payload.active !== false,
@@ -237,9 +235,6 @@ export const useBotGroupStore = defineStore('botGroup', () => {
         body.regionSlug = String(payload.regionSlug || '').trim()
       }
       if (payload.title !== undefined) body.title = payload.title?.trim() || ''
-      if (payload.keywords !== undefined) {
-        body.keywords = payload.keywords
-      }
       if (payload.listenerUserId !== undefined) {
         body.listenerUserId = String(payload.listenerUserId || '').trim()
       }
