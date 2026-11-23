@@ -21,6 +21,7 @@ import {
     isConnectivityError,
 } from '~/utils/connectionError'
 import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam, routeFromTelegramStartParam } from '~/utils/telegramStartParam'
+import { isOrderTakeChatOpen, resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
 import { isTelegramMiniApp, mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const isAdminPath = (path: string) => path.startsWith('/admin')
@@ -73,9 +74,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         if (token.value && isAuthEntryPath(to.path) && to.path !== '/') {
             return navigateTo('/driver/dashboard')
         }
-        if (!token.value && to.path === '/') {
-            return navigateTo('/driver/dashboard')
-        }
+        // start_param — client hash da; SSR da dashboard ga zorlamaymiz
         return
     }
 
@@ -146,7 +145,24 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         if (isAdminPath(to.path)) {
             return navigateTo({ path: '/auth', query: { next: to.fullPath } })
         }
+        if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
+            return navigateTo({ path: '/auth', query: { next: to.fullPath } }, { replace: true })
+        }
         if (to.path === '/' && import.meta.client) {
+            const startParam = readTelegramStartParam()
+            const target = routeFromTelegramStartParam(startParam)
+            const targetPath = String((target as { path?: string })?.path || '')
+            if (targetPath === '/driver/chat/open') {
+                const q = (target as { query?: Record<string, string> }).query || {}
+                const qs = new URLSearchParams()
+                for (const [k, v] of Object.entries(q)) {
+                    if (v != null && String(v).trim()) qs.set(k, String(v))
+                }
+                const next = qs.toString()
+                    ? `/driver/chat/open?${qs.toString()}`
+                    : '/driver/chat/open'
+                return navigateTo({ path: '/auth', query: { next } }, { replace: true })
+            }
             return navigateTo('/driver/dashboard', { replace: true })
         }
         return
@@ -297,6 +313,16 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     // Driver tanlangan, lekin URL admin — driver home
     if (!hasPanelShellAccess(authStore.user) && to.path.startsWith('/admin')) {
         return navigateTo('/driver/dashboard')
+    }
+
+    if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
+        const blocked = resolveOrderTakeAccessRedirect({
+            user: authStore.user,
+            fullPath: to.fullPath,
+        })
+        if (blocked) {
+            return navigateTo(blocked, { replace: true })
+        }
     }
 
     // Shu sahifada qolamiz — endi UI ochilsin

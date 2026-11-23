@@ -60,6 +60,21 @@
           @update:model-value="patch('title', $event)"
         />
 
+        <div class="space-y-1.5">
+          <label class="px-1 text-xs text-slate-600 dark:text-slate-300">Kalit so'zlar</label>
+          <p class="px-1 text-[10px] text-slate-400 leading-snug">
+            Buyurtma matni va manba guruh nomida qidiriladi. Vergul, nuqta-vergul yoki yangi qator bilan ajrating.
+            Lotin/kirill va x/h farqi hisobga olinmaydi.
+          </p>
+          <textarea
+            :value="modelValue.keywords"
+            rows="4"
+            placeholder="namangan&#10;chust&#10;pop"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-3 text-[13px] font-semibold outline-none focus:ring-2 focus:ring-amber-500/30 resize-y min-h-[5.5rem]"
+            @input="patch('keywords', ($event.target as HTMLTextAreaElement).value)"
+          />
+        </div>
+
         <div v-if="showListenerSelect" class="space-y-1.5">
           <label class="px-1 text-xs text-slate-600 dark:text-slate-300">Tinglovchi userbot</label>
           <p class="px-1 text-[10px] text-slate-400 leading-snug">
@@ -257,6 +272,7 @@ import type { ListenerCandidate } from '~/stores/bot-group.store'
 export interface BotGroupFormModel {
   regionSlug: string
   title: string
+  keywords: string
   listenerUserId: string
   tariffIds: string[]
   botToken: string

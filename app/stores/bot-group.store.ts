@@ -59,6 +59,7 @@ export type BotRegionSidePayload = {
 export type BotRegionPayload = {
   regionSlug: string
   title?: string
+  keywords?: string | string[]
   listenerUserId: string
   tariffIds?: string[]
   active?: boolean

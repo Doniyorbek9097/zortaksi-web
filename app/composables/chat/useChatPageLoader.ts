@@ -381,7 +381,18 @@ export function useChatPageLoader(opts: {
       return
     }
 
+    const needsOrderTakeGate =
+      mode === 'order' && !!orderId && isFromGroupTakeClient(q)
+
     try {
+      if (needsOrderTakeGate && !canSkipOrderTakeAccessCheck()) {
+        const allowed = await ensureOrderTakeAccessFromApi(route.fullPath)
+        if (!allowed || seq !== loadSeq) {
+          chatStore.isLoadingMessages = false
+          return
+        }
+      }
+
       if (needsAccess && !skipAccessCheck) {
         const [allowed, res] = await Promise.all([
           ensureOrderTakeAccessFromApi(route.fullPath),
