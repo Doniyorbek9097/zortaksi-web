@@ -35,10 +35,12 @@ export function parseKeywords(raw: string): string[] {
     .filter(Boolean)
 }
 
+const APOSTROPHE_LIKE = "''‛ʻʼ`´ʹ\u02bb\u2018\u2019\u02bc"
+
 export function toLatin(input: string): string {
   let s = String(input || '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/['''‛ʻʼ`´ʹ]/g, "'")
+    .replace(new RegExp(`[${APOSTROPHE_LIKE}]`, 'g'), "'")
     .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase()
@@ -46,9 +48,12 @@ export function toLatin(input: string): string {
   return s
 }
 
-/** Qidiruv: lotin/kirill + o'/g' → o/g (katta-kichik farqsiz) */
+/** Qidiruv: lotin/kirill + o'/o`/oʻ → o, g'/g` → g */
 export function normalizeMatchText(input: string): string {
-  return toLatin(input).replace(/o'/g, 'o').replace(/g'/g, 'g')
+  let s = toLatin(input)
+  const glide = new RegExp(`([og])[${APOSTROPHE_LIKE}]+`, 'gi')
+  s = s.replace(glide, '$1')
+  return s.replace(/o'/g, 'o').replace(/g'/g, 'g')
 }
 
 /** Bo'shliq, _, -, ' ni olib tashlaydi — baliqkol ≈ Baliq_kol */
