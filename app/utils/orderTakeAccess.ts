@@ -1,3 +1,4 @@
+import type { RouteLocationRaw } from 'vue-router'
 import type { IUser } from '~/types'
 import { isAdminUser } from '~/utils/userRole'
 import { isTariffActive } from '~/utils/tariffActive'
@@ -33,6 +34,19 @@ export function patchUserFromOrderTakeAccess(
   }
 
   return next
+}
+
+/** Telegram startapp / navigateTo target → next= uchun to'liq yo'l */
+export function buildRouteFullPath(target: RouteLocationRaw): string {
+  if (typeof target === 'string') return target
+  const path = String((target as { path?: string }).path || '')
+  const query = (target as { query?: Record<string, string> }).query || {}
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(query)) {
+    if (v != null && String(v).trim()) qs.set(k, String(v))
+  }
+  const q = qs.toString()
+  return q ? `${path}?${q}` : path
 }
 
 /** /driver/chat/open — buyurtmadan chat (tarif / ro'yxat talab qilinadi) */

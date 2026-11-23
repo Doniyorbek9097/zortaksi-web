@@ -21,7 +21,11 @@ import {
     isConnectivityError,
 } from '~/utils/connectionError'
 import { resolveTelegramStartNavigation, captureTelegramStartParam, readTelegramStartParam, routeFromTelegramStartParam } from '~/utils/telegramStartParam'
-import { isOrderTakeChatOpen, resolveOrderTakeAccessRedirect } from '~/utils/orderTakeAccess'
+import {
+    buildRouteFullPath,
+    isOrderTakeChatOpen,
+    resolveOrderTakeAccessRedirect,
+} from '~/utils/orderTakeAccess'
 import { isTelegramMiniApp, mightBeTelegramMiniApp } from '~/utils/telegramStartRedirect'
 
 const isAdminPath = (path: string) => path.startsWith('/admin')
@@ -78,13 +82,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         return
     }
 
-    // Telegram start_param (t.me?startapp=) — SDK dan oldin ham hash orqali
+    // start_param — faqat saqlash; yo'naltirish sessiya tekshiruvidan keyin
     if (import.meta.client) {
         captureTelegramStartParam()
-        const telegramStartTarget = resolveTelegramStartNavigation(to)
-        if (telegramStartTarget) {
-            return navigateTo(telegramStartTarget, { replace: true })
-        }
     }
 
     if (isConnectionErrorPath(to.path)) {
@@ -203,7 +203,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
             const kind = classifyApiError(e)
             if (kind === 'auth') {
                 clearSession()
-                if (isAdminPath(to.path) || to.path === '/auth') {
+                if (
+                    isAdminPath(to.path) ||
+                    to.path === '/auth' ||
+                    isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)
+                ) {
                     return navigateTo({ path: '/auth', query: { next: to.fullPath } })
                 }
                 markReady()
@@ -229,6 +233,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     }
 
     if (!authStore.user) {
+        if (isOrderTakeChatOpen(to.path, to.query as Record<string, unknown>)) {
+            return navigateTo({ path: '/auth', query: { next: to.fullPath } }, { replace: true })
+        }
         if (isAdminPath(to.path)) {
             if (hasToken()) {
                 return redirectConnectionError(to.fullPath, 'server')
@@ -322,6 +329,27 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
         })
         if (blocked) {
             return navigateTo(blocked, { replace: true })
+        }
+    }
+
+    // Mini App startapp=order_* — avval ro'yxat/tarif, keyin chat/open
+    if (import.meta.client) {
+        const telegramStartTarget = resolveTelegramStartNavigation(to)
+        if (telegramStartTarget) {
+            const targetPath = String(
+                (telegramStartTarget as { path?: string }).path || '',
+            )
+            if (targetPath === '/driver/chat/open') {
+                const full = buildRouteFullPath(telegramStartTarget)
+                const blocked = resolveOrderTakeAccessRedirect({
+                    user: authStore.user,
+                    fullPath: full,
+                })
+                if (blocked) {
+                    return navigateTo(blocked, { replace: true })
+                }
+            }
+            return navigateTo(telegramStartTarget, { replace: true })
         }
     }
 

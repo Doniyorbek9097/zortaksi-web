@@ -438,6 +438,15 @@ export function useChatPageLoader(opts: {
     }
 
     if (id === 'open') {
+      const blocked = resolveOrderTakeAccessRedirect({
+        user: authStore.user,
+        fullPath: route.fullPath,
+      })
+      if (blocked) {
+        await navigateTo(blocked, { replace: true })
+        return
+      }
+
       openFailed.value = false
       openError.value = ''
       applyInstantOrderUiFromQuery()
