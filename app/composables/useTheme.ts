@@ -1,6 +1,7 @@
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { applyDeviceStatusBarChrome, scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
+import { applyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
+import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import { applyRootThemeBootstrap } from '~/utils/themeBoot'
 import {
   STATUS_BAR_CHROME,
@@ -57,12 +58,13 @@ export function applyBrowserChrome(value: ThemeName) {
   const inPwa = isPwaStandalone()
 
   root.dataset.ztTheme = value
+  root.classList.toggle('dark', value === 'dark')
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
   if (inPwa) {
-    root.style.colorScheme = systemPrefersDark() ? 'only dark' : 'only light'
-    applyDeviceStatusBarChrome()
+    root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
+    applyPwaStatusBarChrome(value)
   } else {
     root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
     scheduleThemeColorRepaint(value, statusBarColor, color)
@@ -120,16 +122,21 @@ export const useTheme = () => {
     if (!import.meta.client) return
     applyRootThemeBootstrap(theme.value)
     hookSystemColorScheme(systemPrefersDarkState, () => {
+      if (theme.value === 'system') {
+        applyRootThemeBootstrap('system')
+      }
       syncChrome()
-      if (isPwaStandalone()) applyDeviceStatusBarChrome()
     })
     syncChrome()
     if (!visibilityChromeBound) {
       visibilityChromeBound = true
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') return
+        if (theme.value === 'system') {
+          systemPrefersDarkState.value = systemPrefersDark()
+          applyRootThemeBootstrap('system')
+        }
         syncChrome()
-        if (isPwaStandalone()) applyDeviceStatusBarChrome()
       })
     }
   }
