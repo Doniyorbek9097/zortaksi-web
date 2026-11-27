@@ -1,5 +1,6 @@
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice } from '~/utils/devicePlatform'
+import { replaceIosStatusBarMeta } from '~/utils/themeColorMeta'
 import { STATUS_BAR_CHROME, THEME_CHROME, type ThemeName } from '~/utils/themeChrome'
 
 const COLOR_SCHEME_STYLE_ID = 'zt-pwa-color-scheme'
@@ -77,6 +78,7 @@ export function applyPwaStatusBarChrome(mode: ThemeName): void {
   if (document.body) document.body.style.colorScheme = schemeCss
   document.documentElement.dataset.ztStatusIcons = mode === 'light' ? 'dark' : 'light'
   delete document.documentElement.dataset.ztImmersive
+  replaceIosStatusBarMeta(mode)
   try {
     document.documentElement.style.setProperty('--zt-status-bar-bg', status)
     document.documentElement.style.setProperty('--theme-color', status)

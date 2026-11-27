@@ -28,6 +28,12 @@ export function systemPrefersDark(): boolean {
   return window.matchMedia('(prefers-color-scheme: dark)').matches
 }
 
+/** SSR state yuklanganidan keyin — cookie `system` bo‘lsa qurilma rejimi */
+export function syncSystemPrefersDarkState(): void {
+  if (!import.meta.client) return
+  useState('zt-system-prefers-dark', () => false).value = systemPrefersDark()
+}
+
 export function resolveTheme(pref: ThemePreference, systemDark = false): ThemeName {
   if (pref === 'system') return systemDark ? 'dark' : 'light'
   return pref
@@ -115,11 +121,16 @@ export const useTheme = () => {
   }
 
   const toggleTheme = () => {
+    if (theme.value === 'system') {
+      setTheme(effectiveTheme.value === 'dark' ? 'light' : 'dark')
+      return
+    }
     setTheme(effectiveTheme.value === 'dark' ? 'light' : 'dark')
   }
 
   const initTheme = () => {
     if (!import.meta.client) return
+    syncSystemPrefersDarkState()
     applyRootThemeBootstrap(theme.value)
     hookSystemColorScheme(systemPrefersDarkState, () => {
       if (theme.value === 'system') {

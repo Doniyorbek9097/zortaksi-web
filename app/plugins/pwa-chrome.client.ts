@@ -1,8 +1,8 @@
+import { applyBrowserChrome, useTheme } from '~/composables/useTheme'
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice, isIosDevice } from '~/utils/devicePlatform'
-import { useTheme } from '~/composables/useTheme'
 
-/** Faqat PWA atributlari (CSS uchun), tema chrome yo‘q */
+/** PWA `data-zt-*` atributlari (tema — theme-boot.client.ts) */
 export default defineNuxtPlugin({
   name: 'pwa-chrome',
   enforce: 'pre',
@@ -24,30 +24,17 @@ export default defineNuxtPlugin({
       }
     }
 
-    syncDisplayAttrs()
-    useTheme().initTheme()
+    const syncChromeAfterDisplayChange = () => {
+      syncDisplayAttrs()
+      const { effectiveTheme } = useTheme()
+      applyBrowserChrome(effectiveTheme.value)
+    }
 
-    const pref = window.matchMedia('(prefers-color-scheme: dark)')
-    const onDeviceTheme = () => {
-      if (!isPwaStandalone()) return
-      const { theme, applyBrowserChrome } = useTheme()
-      if (theme.value !== 'system') return
-      applyBrowserChrome(
-        pref.matches ? 'dark' : 'light',
-      )
-    }
-    try {
-      pref.addEventListener('change', onDeviceTheme)
-    } catch {
-      pref.addListener(onDeviceTheme)
-    }
+    syncDisplayAttrs()
 
     for (const mode of ['fullscreen', 'standalone', 'minimal-ui'] as const) {
       try {
-        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', () => {
-          syncDisplayAttrs()
-          applyDeviceStatusBarChrome()
-        })
+        window.matchMedia(`(display-mode: ${mode})`).addEventListener('change', syncChromeAfterDisplayChange)
       } catch {
         /* */
       }

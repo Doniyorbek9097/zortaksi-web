@@ -1,11 +1,12 @@
-import { applyRootThemeBootstrap } from '~/utils/themeBoot'
+import { syncSystemPrefersDarkState, useTheme } from '~/composables/useTheme'
 
-/** `dark` klassi va fon — Vue / SessionGate yuklanishidan oldin */
+/** Qurilma rejimi + `dark` klassi — Vue / hydratsiya oldin */
 export default defineNuxtPlugin({
   name: 'theme-boot',
   enforce: 'pre',
-  parallel: true,
+  parallel: false,
   setup() {
-    applyRootThemeBootstrap()
+    syncSystemPrefersDarkState()
+    useTheme().initTheme()
   },
 })

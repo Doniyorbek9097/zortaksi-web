@@ -1,5 +1,5 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
-const PWA_SPLASH_BACKGROUND = '#020617'
+const PWA_SPLASH_BACKGROUND = '#000000'
 
 const isProd = process.env.NODE_ENV === 'production'
 const apiProxyTarget =
@@ -85,23 +85,10 @@ export default defineNuxtConfig({
       meta: [
         { name: 'mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'color-scheme', content: 'light dark' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'default' },
         { name: 'apple-mobile-web-app-title', content: 'ZorTaksi' },
-        { name: 'description', content: `🚕 ZorTaksi — haydovchining ishini osonlashtiradi!
-
-📢 Siz e’lonni bir marta yuborasiz — ZorTaksi uni kerakli Telegram guruhlariga avtomatik tarqatadi.
-Endi har bir guruhga alohida kirib, e’lon joylashtirishga vaqt ketmaydi.
-
-📥 Siz buyurtmalarni qidirib o‘tirmaysiz — ZorTaksi ularni bir joyga jamlaydi.
-Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
-
-⏱ Natija: kamroq vaqtni Telegram guruhlariga sarflaysiz, ko‘proq vaqtni yo‘lovchi olishga ajratasiz.
-
-💰 Ko‘proq buyurtma olish uchun ko‘proq harakat qilish shart emas — to‘g‘ri vositadan foydalanish kerak.
-
-🔥 ZorTaksi’ni yoqing va buyurtma olishni bugunoq osonlashtiring!
-
-👉 Hoziroq qo‘shiling va foydalanishni boshlang.` },
+        { name: 'description', content: `🚕 ZorTaksi — Telegramdagi buyurtmalarni bir joyga jamlaydi va haydovchi reklamasini guruhlarga tarqatib beradi` },
 
       ],
       link: [
@@ -140,7 +127,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       name: "Zo'r Taksi",
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish',
-      theme_color: '#f8fafc',
+      theme_color: '#000000',
       background_color: PWA_SPLASH_BACKGROUND,
       display: 'standalone',
       display_override: ['standalone', 'minimal-ui'],
@@ -193,6 +180,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       adminTelegram: process.env.NUXT_PUBLIC_ADMIN_TELEGRAM || 'zortaksi_admin',
       paymentCard1: process.env.NUXT_PUBLIC_PAYMENT_CARD_1 || '4067070007722601',
       paymentCard2: process.env.NUXT_PUBLIC_PAYMENT_CARD_2 || '9860260115547846',
+      paymentCard3: process.env.NUXT_PUBLIC_PAYMENT_CARD_3 || '6262570056159900',
       paymentCardOwner: process.env.NUXT_PUBLIC_PAYMENT_CARD_OWNER || 'Doniyor Mirgiyozov',
       /** Vaqtincha: 0 — ilovada Click tugmasi API dan qaytmasa ham yashirin */
       clickPaymentsEnabled: !['0', 'false', 'no', 'off', 'disabled'].includes(
