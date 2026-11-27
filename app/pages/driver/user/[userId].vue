@@ -58,13 +58,13 @@
         />
 
         <section
-          v-if="isAdmin && driver.listenGroups"
+          v-if="isAdmin"
           class="rounded-2xl p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3"
         >
           <div>
             <h2 class="text-sm font-black text-slate-900 dark:text-white">Tinglovchi nomi</h2>
             <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-              Yo'nalish filtrida shu nom ko'rinadi
+              Guruh tinglashni yoqishdan oldin nom kiriting — filtr va bot guruhda shu nom ko'rinadi
             </p>
           </div>
           <input

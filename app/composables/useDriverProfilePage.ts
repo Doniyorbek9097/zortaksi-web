@@ -358,6 +358,21 @@ export function useDriverProfilePage() {
     success.value = ''
     const next = !driver.value.listenGroups
     try {
+      if (next) {
+        const savedName = String(driver.value.listenerDisplayName || '').trim()
+        const draftName = listenerDisplayName.value.trim()
+        const name = savedName || draftName
+        if (!name) {
+          driverError.value =
+            'Avval tinglovchi nomini kiriting va «Nomni saqlash» bosing (yoki nom yozib tinglashni yoqing)'
+          return
+        }
+        if (!savedName && draftName) {
+          await store.setListenerDisplayName(driver.value.id, draftName)
+        } else if (draftName && draftName !== savedName) {
+          await store.setListenerDisplayName(driver.value.id, draftName)
+        }
+      }
       await store.setListenGroups(driver.value.id, next)
       success.value = next
         ? 'Guruh tinglash yoqildi — userbot endi tinglaydi'
