@@ -1,6 +1,7 @@
 import { isPwaStandalone } from '~/utils/appEmbed'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
 import { applyDeviceStatusBarChrome, scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
+import { applyRootThemeBootstrap } from '~/utils/themeBoot'
 import {
   STATUS_BAR_CHROME,
   TABBAR_CHROME,
@@ -98,9 +99,8 @@ export const useTheme = () => {
 
   const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
 
-  /** Faqat qurilma (prefers-color-scheme); qo‘lda dark/light o‘chirilgan */
   const effectiveTheme = computed<ThemeName>(() =>
-    resolveTheme('system', systemPrefersDarkState.value),
+    resolveTheme(theme.value, systemPrefersDarkState.value),
   )
 
   const syncChrome = () => {
@@ -118,6 +118,7 @@ export const useTheme = () => {
 
   const initTheme = () => {
     if (!import.meta.client) return
+    applyRootThemeBootstrap(theme.value)
     hookSystemColorScheme(systemPrefersDarkState, () => {
       syncChrome()
       if (isPwaStandalone()) applyDeviceStatusBarChrome()

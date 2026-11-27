@@ -1,7 +1,9 @@
 <template>
   <div
     v-if="!ready"
-    class="session-gate fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-950"
+    class="session-gate fixed inset-0 z-[100] flex items-center justify-center overflow-hidden transition-colors"
+    :class="isDark ? 'bg-slate-950' : 'bg-slate-50'"
+    :style="{ backgroundColor: gateBackground }"
   >
   <div
     class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(14,165,233,0.12),transparent_45%),radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.1),transparent_40%)]"
@@ -41,8 +43,13 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/auth.store'
+import { THEME_CHROME } from '~/composables/useTheme'
 
 const authStore = useAuthStore()
+const { effectiveTheme } = useTheme()
+
+const isDark = computed(() => effectiveTheme.value === 'dark')
+const gateBackground = computed(() => THEME_CHROME[effectiveTheme.value])
 
 /** Faqat client + sessionReady — SSR/noto'g'ri hisob hech qachon ko'rinmasin */
 const ready = computed(() => import.meta.client && authStore.sessionReady)

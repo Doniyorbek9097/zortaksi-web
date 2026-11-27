@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+const PWA_SPLASH_BACKGROUND = '#020617'
+
 const isProd = process.env.NODE_ENV === 'production'
 const apiProxyTarget =
   process.env.NUXT_API_PROXY_TARGET ||
@@ -112,6 +114,12 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       ],
       script: [
         {
+          key: 'zt-theme-boot',
+          tagPriority: 'critical' as const,
+          type: 'text/javascript',
+          innerHTML: `(function(){try{var m=document.cookie.match(/(?:^|;\\s*)zt-theme=([^;]+)/);var p=m?decodeURIComponent(m[1]).trim():'system';var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d)r.classList.add('dark');else r.classList.remove('dark');r.dataset.ztTheme=d?'dark':'light';var bg=d?'#020617':'#f8fafc';r.style.backgroundColor=bg;if(document.body)document.body.style.backgroundColor=bg;r.style.colorScheme=d?'only dark':'only light';}catch(e){}})();`,
+        },
+        {
           src: 'https://telegram.org/js/telegram-web-app.js',
           defer: true,
           tagPriority: 1,
@@ -133,7 +141,7 @@ Kerakli buyurtmani tezroq ko‘rib, mijoz bilan bog‘lanasiz.
       short_name: 'ZorTaksi',
       description: 'Telegram buyurtmalari — tez kirish',
       theme_color: '#f8fafc',
-      background_color: '#f8fafc',
+      background_color: PWA_SPLASH_BACKGROUND,
       display: 'standalone',
       display_override: ['standalone', 'minimal-ui'],
       orientation: 'portrait',

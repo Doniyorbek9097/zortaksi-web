@@ -1,6 +1,9 @@
 export type ThemeName = 'light' | 'dark'
 export type ThemePreference = ThemeName | 'system'
 
+/** Android/iOS PWA splash ekrani — doim qorong‘u fon */
+export const PWA_SPLASH_BACKGROUND = '#020617'
+
 /** Sahifa foni — layout `bg-slate-50` / `dark:bg-slate-950` */
 export const THEME_CHROME: Record<ThemeName, string> = {
   light: '#f8fafc',
