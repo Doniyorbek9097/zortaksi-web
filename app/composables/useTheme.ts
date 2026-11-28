@@ -1,6 +1,4 @@
-import { isPwaStandalone } from '~/utils/appEmbed'
 import { notifyFlutterChrome } from '~/utils/flutterChromeBridge'
-import { applyPwaStatusBarChrome } from '~/utils/pwaStatusBar'
 import { scheduleThemeColorRepaint } from '~/utils/themeColorMeta'
 import { applyRootThemeBootstrap } from '~/utils/themeBoot'
 import {
@@ -64,7 +62,7 @@ function hookSystemColorScheme(
   }
 }
 
-/** Brauzer/Telegram/Flutter — PWA tizim paneliga tegmaydi */
+/** Brauzer / PWA / Telegram / Flutter — bir xil tema chrome */
 export function applyBrowserChrome(value: ThemeName) {
   if (!import.meta.client) return
 
@@ -72,20 +70,14 @@ export function applyBrowserChrome(value: ThemeName) {
   const statusBarColor = STATUS_BAR_CHROME[value]
   const navColor = TABBAR_CHROME[value]
   const root = document.documentElement
-  const inPwa = isPwaStandalone()
 
   root.dataset.ztTheme = value
   root.classList.toggle('dark', value === 'dark')
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
-  root.style.colorScheme = htmlColorSchemeCss(value, inPwa)
-
-  if (inPwa) {
-    applyPwaStatusBarChrome(value)
-  } else {
-    scheduleThemeColorRepaint(value, statusBarColor, color)
-  }
+  root.style.colorScheme = htmlColorSchemeCss(value)
+  scheduleThemeColorRepaint(value, statusBarColor, color)
 
   root.dataset.ztChromeNav = navColor
 

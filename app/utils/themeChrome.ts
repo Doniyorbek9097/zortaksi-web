@@ -64,9 +64,8 @@ export function isLightChromeColor(hex: string): boolean {
   return hexLuminance(hex) > 0.6
 }
 
-/** Brauzer: `light dark` — qurilma + `.dark`; PWA: faqat joriy rejim */
-export function htmlColorSchemeCss(mode: ThemeName, inPwa: boolean): string {
-  if (inPwa) return mode === 'light' ? 'only light' : 'only dark'
+/** `light dark` — `.dark` klassi va foydalanuvchi/tizim tanlovi */
+export function htmlColorSchemeCss(_mode?: ThemeName): string {
   return 'light dark'
 }
 

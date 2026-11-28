@@ -11,7 +11,6 @@
 
 <script setup lang="ts">
 import { applyBrowserChrome, THEME_CHROME } from '~/composables/useTheme'
-import { isPwaStandalone } from '~/utils/appEmbed'
 
 const { effectiveTheme, initTheme } = useTheme()
 const { script } = useAppScript()
@@ -22,15 +21,10 @@ useHead({
   htmlAttrs: {
     class: computed(() => (effectiveTheme.value === 'dark' ? 'dark' : '')),
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
-    style: computed(() => {
-      if (import.meta.client && isPwaStandalone()) return undefined
-      return `color-scheme: light dark; background-color: ${chromeColor.value}`
-    }),
+    style: computed(() => `color-scheme: light dark; background-color: ${chromeColor.value}`),
   },
   bodyAttrs: {
-    style: computed(() =>
-      import.meta.client && isPwaStandalone() ? undefined : `background-color: ${chromeColor.value}`,
-    ),
+    style: computed(() => `background-color: ${chromeColor.value}`),
   },
 })
 

@@ -81,6 +81,20 @@
     <!-- Settings -->
     <ProfileSectionCard title="Sozlamalar" no-padding>
       <div class="divide-y divide-slate-100 dark:divide-slate-800">
+        <!-- Theme -->
+        <div class="px-4 py-3 space-y-2.5">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-violet-500/10 text-violet-500">
+              <font-awesome-icon icon="fa-solid fa-circle-half-stroke" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-black text-slate-900 dark:text-white">Ko'rinish</p>
+              <p class="text-[11px] font-medium text-slate-400 dark:text-slate-500">{{ themeSubtitle }}</p>
+            </div>
+          </div>
+          <ProfileThemeToggle :model-value="theme" @update:model-value="setTheme" />
+        </div>
+
         <!-- Account migration -->
         <ProfileSettingRow
           icon="fa-solid fa-right-left"
@@ -204,6 +218,16 @@ const goConnect = () => {
 }
 
 const { script } = useAppScript()
+const { theme, setTheme, effectiveTheme } = useTheme()
+
+const themeSubtitle = computed(() => {
+  if (theme.value === 'system') {
+    return effectiveTheme.value === 'dark'
+      ? 'Tizim: qorong\'u'
+      : 'Tizim: yorug\''
+  }
+  return theme.value === 'dark' ? 'Qorong\'u rejim' : 'Yorug\' rejim'
+})
 const isAdmin = computed(() => isAdminUser(authStore.user))
 const isPanel = computed(() => isPanelUser(authStore.user))
 

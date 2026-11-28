@@ -1,7 +1,6 @@
 import {
   PWA_SPLASH_BACKGROUND,
   THEME_CHROME,
-  detectPwaStandaloneClient,
   htmlColorSchemeCss,
   readDevicePrefersDark,
   type ThemeName,
@@ -45,6 +44,6 @@ export function applyRootThemeBootstrap(pref?: ThemePreference): ThemeName {
   const bg = THEME_CHROME[mode]
   root.style.backgroundColor = bg
   if (document.body) document.body.style.backgroundColor = bg
-  root.style.colorScheme = htmlColorSchemeCss(mode, detectPwaStandaloneClient())
+  root.style.colorScheme = htmlColorSchemeCss(mode)
   return mode
 }
