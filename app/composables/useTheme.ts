@@ -8,6 +8,7 @@ import {
   TABBAR_CHROME,
   THEME_CHROME,
   htmlColorSchemeCss,
+  readDevicePrefersDark,
   type ThemeName,
   type ThemePreference,
 } from '~/utils/themeChrome'
@@ -26,13 +27,14 @@ let systemMqHooked = false
 
 export function systemPrefersDark(): boolean {
   if (!import.meta.client) return false
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return readDevicePrefersDark()
 }
 
-/** SSR state yuklanganidan keyin — cookie `system` bo‘lsa qurilma rejimi */
+/** Cookie `system` — qurilma / Telegram rejimi */
 export function syncSystemPrefersDarkState(): void {
   if (!import.meta.client) return
-  useState('zt-system-prefers-dark', () => false).value = systemPrefersDark()
+  useState('zt-system-prefers-dark', () => readDevicePrefersDark()).value =
+    readDevicePrefersDark()
 }
 
 export function resolveTheme(pref: ThemePreference, systemDark = false): ThemeName {
@@ -47,11 +49,19 @@ function hookSystemColorScheme(
   if (!import.meta.client || systemMqHooked) return
   systemMqHooked = true
   const mq = window.matchMedia('(prefers-color-scheme: dark)')
-  systemDark.value = mq.matches
-  mq.addEventListener('change', () => {
-    systemDark.value = mq.matches
+  const sync = () => {
+    systemDark.value = readDevicePrefersDark()
     onChange()
-  })
+  }
+  systemDark.value = readDevicePrefersDark()
+  mq.addEventListener('change', sync)
+  try {
+    const tg = (window as Window & { Telegram?: { WebApp?: { onEvent?: Function } } })
+      .Telegram?.WebApp
+    tg?.onEvent?.('themeChanged', sync)
+  } catch {
+    /* */
+  }
 }
 
 /** Brauzer/Telegram/Flutter — PWA tizim paneliga tegmaydi */
@@ -106,11 +116,19 @@ export const useTheme = () => {
     watch: true,
   })
 
-  const systemPrefersDarkState = useState('zt-system-prefers-dark', () => false)
-
-  const effectiveTheme = computed<ThemeName>(() =>
-    resolveTheme(theme.value, systemPrefersDarkState.value),
+  const systemPrefersDarkState = useState('zt-system-prefers-dark', () =>
+    import.meta.client ? readDevicePrefersDark() : false,
   )
+
+  const effectiveTheme = computed<ThemeName>(() => {
+    const pref = theme.value
+    if (pref === 'dark' || pref === 'light') return pref
+    const sysDark = import.meta.client
+      ? readDevicePrefersDark()
+      : systemPrefersDarkState.value
+    void systemPrefersDarkState.value
+    return sysDark ? 'dark' : 'light'
+  })
 
   const syncChrome = () => {
     applyBrowserChrome(effectiveTheme.value)

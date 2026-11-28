@@ -1,7 +1,12 @@
 import { isFlutterWebView, isPwaStandalone } from '~/utils/appEmbed'
 import { isAndroidDevice } from '~/utils/devicePlatform'
 import { replaceIosStatusBarMeta } from '~/utils/themeColorMeta'
-import { STATUS_BAR_CHROME, THEME_CHROME, type ThemeName } from '~/utils/themeChrome'
+import {
+  STATUS_BAR_CHROME,
+  THEME_CHROME,
+  readDevicePrefersDark,
+  type ThemeName,
+} from '~/utils/themeChrome'
 
 const COLOR_SCHEME_STYLE_ID = 'zt-pwa-color-scheme'
 
@@ -25,9 +30,7 @@ function resolveModeFromCookie(): ThemeName {
   try {
     const match = document.cookie.match(/(?:^|;\s*)zt-theme=([^;]+)/)
     const pref = match ? decodeURIComponent(match[1]) : 'system'
-    const dark =
-      pref === 'dark' ||
-      (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const dark = pref === 'dark' || (pref === 'system' && readDevicePrefersDark())
     return dark ? 'dark' : 'light'
   } catch {
     return 'light'

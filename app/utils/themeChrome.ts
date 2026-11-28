@@ -1,6 +1,26 @@
 export type ThemeName = 'light' | 'dark'
 export type ThemePreference = ThemeName | 'system'
 
+/** Qurilma / Telegram Mini App qorong‘u rejimi */
+export function readDevicePrefersDark(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const tg = (
+      window as Window & { Telegram?: { WebApp?: { colorScheme?: string } } }
+    ).Telegram?.WebApp
+    const tgScheme = String(tg?.colorScheme || '').trim().toLowerCase()
+    if (tgScheme === 'dark') return true
+    if (tgScheme === 'light') return false
+  } catch {
+    /* */
+  }
+  try {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches
+  } catch {
+    return false
+  }
+}
+
 /** Android/iOS PWA splash ekrani — doim qorong‘u fon */
 export const PWA_SPLASH_BACKGROUND = '#020617'
 

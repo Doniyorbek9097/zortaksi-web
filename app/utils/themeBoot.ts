@@ -3,6 +3,7 @@ import {
   THEME_CHROME,
   detectPwaStandaloneClient,
   htmlColorSchemeCss,
+  readDevicePrefersDark,
   type ThemeName,
   type ThemePreference,
 } from '~/utils/themeChrome'
@@ -26,10 +27,7 @@ export function resolveEffectiveThemeName(
   systemDark?: boolean,
 ): ThemeName {
   const system =
-    systemDark ??
-    (import.meta.client
-      ? window.matchMedia('(prefers-color-scheme: dark)').matches
-      : false)
+    systemDark ?? (import.meta.client ? readDevicePrefersDark() : false)
   if (pref === 'dark') return 'dark'
   if (pref === 'light') return 'light'
   return system ? 'dark' : 'light'
