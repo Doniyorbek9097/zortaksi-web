@@ -1,19 +1,46 @@
 export type ThemeName = 'light' | 'dark'
 export type ThemePreference = ThemeName | 'system'
 
-/** Qurilma / Telegram Mini App qorong‘u rejimi */
-export function readDevicePrefersDark(): boolean {
-  if (typeof window === 'undefined') return false
+function telegramMiniAppColorScheme(): ThemeName | null {
+  if (typeof window === 'undefined') return null
+  if (document.documentElement.dataset.ztEmbed === 'telegram') {
+    /* platform aniqlanadi — pastdagi WebApp tekshiruvi */
+  }
   try {
     const tg = (
-      window as Window & { Telegram?: { WebApp?: { colorScheme?: string } } }
+      window as Window & {
+        Telegram?: {
+          WebApp?: {
+            colorScheme?: string
+            initData?: string
+            platform?: string
+          }
+        }
+      }
     ).Telegram?.WebApp
-    const tgScheme = String(tg?.colorScheme || '').trim().toLowerCase()
-    if (tgScheme === 'dark') return true
-    if (tgScheme === 'light') return false
+    if (!tg) return null
+    const initData = String(tg.initData || '').trim()
+    const platform = String(tg.platform || '').trim().toLowerCase()
+    const inMiniApp =
+      initData.length > 0 ||
+      (!!platform && platform !== 'unknown') ||
+      document.documentElement.dataset.ztEmbed === 'telegram'
+    if (!inMiniApp) return null
+    const tgScheme = String(tg.colorScheme || '').trim().toLowerCase()
+    if (tgScheme === 'dark') return 'dark'
+    if (tgScheme === 'light') return 'light'
   } catch {
     /* */
   }
+  return null
+}
+
+/** Qurilma rejimi; Telegram — faqat haqiqiy Mini App ichida */
+export function readDevicePrefersDark(): boolean {
+  if (typeof window === 'undefined') return false
+  const tgScheme = telegramMiniAppColorScheme()
+  if (tgScheme === 'dark') return true
+  if (tgScheme === 'light') return false
   try {
     return window.matchMedia('(prefers-color-scheme: dark)').matches
   } catch {
