@@ -43,3 +43,17 @@ function hexLuminance(hex: string): number {
 export function isLightChromeColor(hex: string): boolean {
   return hexLuminance(hex) > 0.6
 }
+
+/** Brauzer: `light dark` — qurilma + `.dark`; PWA: faqat joriy rejim */
+export function htmlColorSchemeCss(mode: ThemeName, inPwa: boolean): string {
+  if (inPwa) return mode === 'light' ? 'only light' : 'only dark'
+  return 'light dark'
+}
+
+export function detectPwaStandaloneClient(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.matchMedia('(display-mode: standalone)').matches) return true
+  if (window.matchMedia('(display-mode: fullscreen)').matches) return true
+  if (window.matchMedia('(display-mode: minimal-ui)').matches) return true
+  return (navigator as Navigator & { standalone?: boolean }).standalone === true
+}

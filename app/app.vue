@@ -24,9 +24,7 @@ useHead({
     lang: computed(() => (script.value === 'latin' ? 'uz-Latn' : 'uz-Cyrl')),
     style: computed(() => {
       if (import.meta.client && isPwaStandalone()) return undefined
-      const mode = effectiveTheme.value
-      const scheme = mode === 'light' ? 'only light' : 'only dark'
-      return `color-scheme: ${scheme}; background-color: ${chromeColor.value}`
+      return `color-scheme: light dark; background-color: ${chromeColor.value}`
     }),
   },
   bodyAttrs: {

@@ -7,6 +7,7 @@ import {
   STATUS_BAR_CHROME,
   TABBAR_CHROME,
   THEME_CHROME,
+  htmlColorSchemeCss,
   type ThemeName,
   type ThemePreference,
 } from '~/utils/themeChrome'
@@ -68,11 +69,11 @@ export function applyBrowserChrome(value: ThemeName) {
   root.style.backgroundColor = color
   if (document.body) document.body.style.backgroundColor = color
 
+  root.style.colorScheme = htmlColorSchemeCss(value, inPwa)
+
   if (inPwa) {
-    root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
     applyPwaStatusBarChrome(value)
   } else {
-    root.style.colorScheme = value === 'light' ? 'only light' : 'only dark'
     scheduleThemeColorRepaint(value, statusBarColor, color)
   }
 
